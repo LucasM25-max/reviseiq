@@ -82,9 +82,9 @@ const GEMINI_KEYS = [
 ];
 // AI Tutor — Gemini cascade
 const TUTOR_MODELS = [
-  {model:"gemini-1.5-flash",    label:"Gemini 1.5 Flash", dailyLimit:40},
-  {model:"gemini-1.5-flash-8b", label:"Gemini Flash 8B",  dailyLimit:60},
-  {model:"gemini-1.0-pro",      label:"Gemini 1.0 Pro",   dailyLimit:50},
+  {model:"gemini-2.0-flash",    label:"Gemini 2.0 Flash", dailyLimit:40},
+  {model:"gemini-1.5-flash",    label:"Gemini 1.5 Flash", dailyLimit:60},
+  {model:"gemini-1.5-flash-8b", label:"Gemini Flash 8B",  dailyLimit:80},
 ];
 const tutorUsageKey=function(u){return "gcse:tu:"+(u||"").replace(/\W/g,"-")+":"+new Date().toISOString().slice(0,10);};
 async function getTutorUsage(u){
@@ -112,7 +112,7 @@ function _geminiExtract(d){
     d.candidates[0].content.parts[0].text||null;
 }
 async function callGeminiSimple(prompt, maxTokens, keyOverride){
-  var models = ["gemini-1.5-flash","gemini-1.5-flash-8b","gemini-1.0-pro"];
+  var models = ["gemini-2.0-flash","gemini-1.5-flash","gemini-1.5-flash-8b"];
   var keys = keyOverride ? [keyOverride] : [nextGeminiKey(),nextGeminiKey(),nextGeminiKey()];
   var lastErr = new Error("AI unavailable");
   for(var mi=0;mi<models.length;mi++){
@@ -134,7 +134,7 @@ async function callGeminiSimple(prompt, maxTokens, keyOverride){
   throw lastErr;
 }
 async function callGeminiChat(modelName, systemPrompt, messages, keyOverride){
-  var modelList = modelName ? [modelName,"gemini-1.5-flash","gemini-1.5-flash-8b"] : ["gemini-1.5-flash","gemini-1.5-flash-8b"];
+  var modelList = modelName ? [modelName,"gemini-2.0-flash","gemini-1.5-flash","gemini-1.5-flash-8b"] : ["gemini-2.0-flash","gemini-1.5-flash","gemini-1.5-flash-8b"];
   modelList = modelList.filter(function(m,i){return modelList.indexOf(m)===i;});
   var keys = keyOverride ? [keyOverride,nextGeminiKey()] : [nextGeminiKey(),nextGeminiKey(),nextGeminiKey()];
   var contents=[];
@@ -2935,7 +2935,7 @@ Style: warm, encouraging, clear. Use ## headings and bullet points to organise l
 
   // tutorCall: calls Gemini directly with model from modelDef, proper message formatting
   const tutorCall = async function(modelDef, systemPrompt, hist) {
-    var modelName = (modelDef && modelDef.model) || "gemini-1.5-flash";
+    var modelName = (modelDef && modelDef.model) || "gemini-2.0-flash";
     var key = nextGeminiKey();
     var url = "https://generativelanguage.googleapis.com/v1beta/models/" + modelName + ":generateContent?key=" + key;
     // Build Gemini contents from history — extract plain text from each message
