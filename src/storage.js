@@ -5,13 +5,14 @@ import {
 
 // Paste your Firebase config here in Part 2
 const firebaseConfig = {
-  apiKey: "PASTE_HERE",
-  authDomain: "PASTE_HERE",
-  projectId: "PASTE_HERE",
-  storageBucket: "PASTE_HERE",
-  messagingSenderId: "PASTE_HERE",
-  appId: "PASTE_HERE"
-}
+  apiKey: "AIzaSyDpYEu-uFFXe8tdr3xVaKLB2_-vO9cgU4M",
+  authDomain: "reviseiq-25b69.firebaseapp.com",
+  projectId: "reviseiq-25b69",
+  storageBucket: "reviseiq-25b69.firebasestorage.app",
+  messagingSenderId: "101390114831",
+  appId: "1:101390114831:web:3840366067c5dfed61437a",
+  measurementId: "G-N4L5WFR4B1"
+};
 
 const app = initializeApp(firebaseConfig)
 const db = getFirestore(app)
