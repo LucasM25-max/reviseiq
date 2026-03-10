@@ -82,9 +82,8 @@ const GEMINI_KEYS = [
 ];
 // AI Tutor — Gemini cascade
 const TUTOR_MODELS = [
-  {model:"gemini-2.0-flash",      label:"Gemini 2.0 Flash",      dailyLimit:40},
-  {model:"gemini-1.5-flash",      label:"Gemini 1.5 Flash",      dailyLimit:60},
-  {model:"gemini-2.0-flash-lite", label:"Gemini 2.0 Flash Lite",  dailyLimit:80},
+  {model:"gemini-2.0-flash", label:"Gemini 2.0 Flash", dailyLimit:40},
+  {model:"gemini-1.5-flash", label:"Gemini 1.5 Flash", dailyLimit:60},
 ];
 const tutorUsageKey=function(u){return "gcse:tu:"+(u||"").replace(/\W/g,"-")+":"+new Date().toISOString().slice(0,10);};
 async function getTutorUsage(u){
@@ -100,6 +99,8 @@ async function pickTutorModel(u){
 }
 
 // ── Gemini key cycling ───────────────────────────────────────────────────────
+// Only two confirmed-working free-tier models (no flash-lite, no 1.0-pro, no 8b)
+var _GEMINI_MODELS = ["gemini-2.0-flash","gemini-1.5-flash"];
 var _gkIdx = 1;
 function nextGeminiKey(){
   var k = GEMINI_KEYS[_gkIdx];
@@ -111,32 +112,53 @@ function _geminiExtract(d){
     d.candidates[0].content.parts&&d.candidates[0].content.parts[0]&&
     d.candidates[0].content.parts[0].text||null;
 }
-async function callGeminiSimple(prompt, maxTokens, keyOverride){
-  var models = ["gemini-2.0-flash","gemini-1.5-flash","gemini-2.0-flash-lite"];
-  var keys = keyOverride ? [keyOverride] : [nextGeminiKey(),nextGeminiKey(),nextGeminiKey()];
+// Core Gemini caller: tries each key for a given model, returns text or throws
+async function _geminiRequest(modelName, reqBody){
   var lastErr = new Error("AI unavailable");
-  for(var mi=0;mi<models.length;mi++){
-    for(var ki=0;ki<keys.length;ki++){
-      try{
-        var url="https://generativelanguage.googleapis.com/v1beta/models/"+models[mi]+":generateContent?key="+keys[ki];
-        var resp=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({contents:[{role:"user",parts:[{text:prompt}]}],
-            generationConfig:{maxOutputTokens:maxTokens||1500,temperature:0.4}})});
-        var dat=await resp.json();
-        if(dat.error){lastErr=new Error(dat.error.message||"Gemini error");
-          if(dat.error.code===429||dat.error.status==="RESOURCE_EXHAUSTED")continue; else break;}
-        var txt=_geminiExtract(dat);
-        if(!txt){lastErr=new Error("Empty response");continue;}
-        return txt;
-      }catch(ex){lastErr=ex;}
+  // Try every available key for this model before giving up
+  var startIdx = _gkIdx;
+  for(var attempt=0; attempt<GEMINI_KEYS.length-1; attempt++){
+    var key = nextGeminiKey();
+    try{
+      var url = "https://generativelanguage.googleapis.com/v1beta/models/"+modelName+":generateContent?key="+key;
+      var resp = await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(reqBody)});
+      var dat = await resp.json();
+      if(dat.error){
+        lastErr = new Error(dat.error.message||"Gemini error");
+        var isQuota = dat.error.code===429||dat.error.status==="RESOURCE_EXHAUSTED"||dat.error.code===403;
+        if(isQuota) continue; // try next key for same model
+        else throw lastErr;  // non-quota error — don't retry
+      }
+      var txt = _geminiExtract(dat);
+      if(!txt) throw new Error("Empty response from "+modelName);
+      return txt;
+    }catch(ex){
+      if(ex===lastErr) continue; // already a quota error, keep trying keys
+      lastErr = ex; break;       // unexpected error — stop
     }
   }
   throw lastErr;
 }
-async function callGeminiChat(modelName, systemPrompt, messages, keyOverride){
-  var modelList = modelName ? [modelName,"gemini-2.0-flash","gemini-1.5-flash","gemini-2.0-flash-lite"] : ["gemini-2.0-flash","gemini-1.5-flash","gemini-2.0-flash-lite"];
-  modelList = modelList.filter(function(m,i){return modelList.indexOf(m)===i;});
-  var keys = keyOverride ? [keyOverride,nextGeminiKey()] : [nextGeminiKey(),nextGeminiKey(),nextGeminiKey()];
+// Cascade across models, rotating keys at each level
+async function _geminiCascade(preferredModel, reqBody){
+  var models = preferredModel
+    ? [preferredModel].concat(_GEMINI_MODELS.filter(function(m){return m!==preferredModel;}))
+    : _GEMINI_MODELS.slice();
+  var lastErr = new Error("AI unavailable");
+  for(var mi=0; mi<models.length; mi++){
+    try{ return await _geminiRequest(models[mi], reqBody); }
+    catch(e){ lastErr=e; }
+  }
+  throw lastErr;
+}
+async function callGeminiSimple(prompt, maxTokens, _ignored){
+  var reqBody = {
+    contents:[{role:"user",parts:[{text:prompt}]}],
+    generationConfig:{maxOutputTokens:maxTokens||1500,temperature:0.4}
+  };
+  return _geminiCascade(null, reqBody);
+}
+async function callGeminiChat(modelName, systemPrompt, messages, _ignored){
   var contents=[];
   for(var i=0;i<messages.length;i++){
     var msg=messages[i];
@@ -155,24 +177,9 @@ async function callGeminiChat(modelName, systemPrompt, messages, keyOverride){
   }
   while(contents.length>0&&contents[0].role!=="user") contents.shift();
   if(!contents.length) contents.push({role:"user",parts:[{text:"Hello"}]});
-  var lastErr=new Error("AI unavailable");
-  for(var mi=0;mi<modelList.length;mi++){
-    for(var ki=0;ki<keys.length;ki++){
-      try{
-        var url="https://generativelanguage.googleapis.com/v1beta/models/"+modelList[mi]+":generateContent?key="+keys[ki];
-        var reqBody={contents:contents,generationConfig:{maxOutputTokens:1500,temperature:0.7}};
-        if(systemPrompt) reqBody.systemInstruction={parts:[{text:systemPrompt}]};
-        var resp=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(reqBody)});
-        var dat=await resp.json();
-        if(dat.error){lastErr=new Error(dat.error.message||"Gemini error");
-          if(dat.error.code===429||dat.error.status==="RESOURCE_EXHAUSTED")continue; else break;}
-        var txt=_geminiExtract(dat);
-        if(!txt){lastErr=new Error("Empty response");continue;}
-        return txt;
-      }catch(ex){lastErr=ex;}
-    }
-  }
-  throw lastErr;
+  var reqBody={contents:contents,generationConfig:{maxOutputTokens:1500,temperature:0.7}};
+  if(systemPrompt) reqBody.systemInstruction={parts:[{text:systemPrompt}]};
+  return _geminiCascade(modelName||null, reqBody);
 }
 // Account format helpers (supports both legacy string and new {h,gki} object)
 function getAccHash(acc){return typeof acc==="string"?acc:acc?.h;}
