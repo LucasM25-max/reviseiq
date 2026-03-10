@@ -82,8 +82,7 @@ const GEMINI_KEYS = [
 ];
 // AI Tutor — Gemini cascade
 const TUTOR_MODELS = [
-  {model:"gemini-2.0-flash", label:"Gemini 2.0 Flash", dailyLimit:40},
-  {model:"gemini-1.5-flash", label:"Gemini 1.5 Flash", dailyLimit:60},
+  {model:"gemini-2.0-flash", label:"Gemini 2.0 Flash", dailyLimit:999},
 ];
 const tutorUsageKey=function(u){return "gcse:tu:"+(u||"").replace(/\W/g,"-")+":"+new Date().toISOString().slice(0,10);};
 async function getTutorUsage(u){
@@ -100,7 +99,7 @@ async function pickTutorModel(u){
 
 // ── Gemini key cycling ───────────────────────────────────────────────────────
 // Only two confirmed-working free-tier models (no flash-lite, no 1.0-pro, no 8b)
-var _GEMINI_MODELS = ["gemini-2.0-flash","gemini-1.5-flash"];
+var _GEMINI_MODELS = ["gemini-2.0-flash"];
 var _gkIdx = 1;
 function nextGeminiKey(){
   var k = GEMINI_KEYS[_gkIdx];
