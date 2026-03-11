@@ -47,8 +47,16 @@ textarea,input,select{font-family:'IBM Plex Sans',sans-serif!important}
 `;
 document.head.appendChild(_gs);
 
-const ADMIN_USER = "LucasM_25";
+const ADMIN_USER = "lucasm_25@outlook.com";
 const isAdmin    = u => u === ADMIN_USER;
+// Extract a friendly first name from an email address
+function getDisplayName(email) {
+  if(!email) return "";
+  var local = (email.split("@")[0])||email;
+  var m = local.match(/^([A-Za-z]+)/);
+  if(m) return m[1].charAt(0).toUpperCase()+m[1].slice(1).toLowerCase();
+  return local.slice(0,12);
+}
 const EXAM_BOARDS = ["AQA","Edexcel","Eduqas","OCR","WJEC"];
 const DEFAULT_BOARD = "AQA";
 
@@ -100,6 +108,18 @@ var _gkIdx = 0;
 var _keyCooldown = {};
 var _KEY_COOLDOWN_MS = 60000;
 
+// Retry fetch once on network failure (handles intermittent "Failed to fetch")
+async function _fetchWithRetry(url, opts) {
+  var lastErr;
+  for(var attempt=0; attempt<2; attempt++){
+    try{
+      if(attempt>0) await new Promise(function(r){setTimeout(r,500);});
+      return await fetch(url, opts);
+    }catch(e){ lastErr=e; }
+  }
+  throw lastErr;
+}
+
 // Core caller — OpenAI-compatible format, works with Groq
 async function _aiRequest(systemPrompt, messages){
   // Build messages array
@@ -137,7 +157,7 @@ async function _aiRequest(systemPrompt, messages){
     for(var ki=0; ki<validKeys.length; ki++){
       if(Date.now() < (_keyCooldown[ki]||0)) continue;
       try{
-        var resp = await fetch(GROQ_URL,{
+        var resp = await _fetchWithRetry(GROQ_URL,{
           method:"POST",
           headers:{"Content-Type":"application/json","Authorization":"Bearer "+validKeys[ki]},
           body:JSON.stringify({model:model, messages:msgs, max_tokens:1500, temperature:0.7})
@@ -313,7 +333,7 @@ function SchoolLeaderboard({ user, school, D }) {
               background:isMe?(D?"rgba(99,102,241,.2)":"#eef2ff"):(D?"#1f2937":"#f9fafb"),
               border:isMe?"1.5px solid #6366f1":"1.5px solid transparent"}}>
               <span style={{fontSize:13,width:22,textAlign:"center"}}>{medal||<span style={{fontSize:11,color:mu2,fontFamily:"monospace"}}>#{i+1}</span>}</span>
-              <span style={{flex:1,fontSize:13,fontWeight:isMe?700:400,color:isMe?"#6366f1":tx2}}>{e.username}{isMe?" (you)":""}</span>
+              <span style={{flex:1,fontSize:13,fontWeight:isMe?700:400,color:isMe?"#6366f1":tx2}}>{getDisplayName(e.username)}{isMe?" (you)":""}</span>
               <span style={{fontSize:12,fontWeight:600,color:mu2}}>{e.score||0} pts</span>
             </div>
           );
@@ -1325,6 +1345,39 @@ function ForecastBar({cards,fcHist,D,accent}) {
 }
 
 /* ─── ADMIN IMPORT MODAL ─────────────────────────────────────────────────── */
+function ManageAccountsModal({D, accounts, adminUser, onClose, onDelete}) {
+  var users = Object.keys(accounts).filter(function(u){ return u!==adminUser; }).sort();
+  var bd = D?"#374151":"#e5e7eb";
+  return (
+    <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:9500,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+      <div onClick={function(e){e.stopPropagation();}} style={{background:D?"#1f2937":"#fff",borderRadius:16,width:500,maxWidth:"96vw",maxHeight:"80vh",display:"flex",flexDirection:"column",boxShadow:"0 30px 80px rgba(0,0,0,.3)"}}>
+        <div style={{padding:"18px 22px",borderBottom:"1px solid "+bd,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <h2 style={{fontSize:17,fontWeight:700,margin:0}}>👥 Manage Accounts</h2>
+          <button onClick={onClose} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",color:D?"#9ca3af":"#6b7280"}}>✕</button>
+        </div>
+        <div style={{padding:"14px 22px",flex:1,overflowY:"auto"}}>
+          {users.length===0 && <p style={{color:D?"#9ca3af":"#6b7280",fontSize:13}}>No user accounts yet.</p>}
+          {users.map(function(u){ return (
+            <div key={u} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",borderRadius:10,border:"1px solid "+bd,marginBottom:8,background:D?"#111827":"#f9fafb"}}>
+              <div>
+                <div style={{fontWeight:600,fontSize:13,color:D?"#f9fafb":"#111827"}}>{getDisplayName(u)}</div>
+                <div style={{fontSize:11,color:D?"#9ca3af":"#6b7280"}}>{u}</div>
+              </div>
+              <button onClick={function(){if(window.confirm("Delete account for "+u+"? This cannot be undone."))onDelete(u);}}
+                style={{padding:"5px 12px",borderRadius:7,border:"1px solid #ef4444",background:"none",color:"#ef4444",fontWeight:600,fontSize:12,cursor:"pointer"}}>
+                Delete
+              </button>
+            </div>
+          );})}
+        </div>
+        <div style={{padding:"12px 22px",borderTop:"1px solid "+bd,textAlign:"right"}}>
+          <button onClick={onClose} style={{padding:"8px 20px",borderRadius:10,border:"1px solid "+bd,background:"transparent",color:D?"#e5e7eb":"#374151",cursor:"pointer",fontSize:13}}>Close</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ImportModal({D,subjects,onClose,onDone}) {
   const [raw,setRaw] = React.useState("");
   const [status,setStatus] = React.useState(null); // null | "ok" | "err"
@@ -1346,9 +1399,41 @@ function ImportModal({D,subjects,onClose,onDone}) {
         if(!id||!board){throw new Error("Each entry needs 'id' and 'board' fields");}
         const subjDef = subjects.find(s=>s.id===id);
         if(!subjDef){throw new Error("Unknown subject id: "+id+". Valid ids: "+subjects.map(s=>s.id).join(", "));}
-        if(custom!==undefined) await window.storage.set("gcse:c:"+id+":"+board, JSON.stringify(custom), true);
-        if(extras!==undefined) await window.storage.set("gcse:e:"+id+":"+board, JSON.stringify(extras), true);
-        if(papers!==undefined) await window.storage.set("gcse:p:"+id+":"+board, JSON.stringify(papers), true);
+        // MERGE — never overwrite, only add new items
+        if(custom!==undefined){
+          let existing=[];
+          try{const r=await window.storage.get("gcse:c:"+id+":"+board,true);if(r?.value)existing=JSON.parse(r.value);}catch(_){}
+          // Add custom topics whose id isn't already present
+          const existingIds=new Set((existing||[]).map(function(c){return c.id;}));
+          const merged=(existing||[]).concat((custom||[]).filter(function(c){return !existingIds.has(c.id);}));
+          await window.storage.set("gcse:c:"+id+":"+board, JSON.stringify(merged), true);
+        }
+        if(extras!==undefined){
+          let existing={};
+          try{const r=await window.storage.get("gcse:e:"+id+":"+board,true);if(r?.value)existing=JSON.parse(r.value);}catch(_){}
+          // Merge extras per section: combine arrays, deduplicate by id
+          const merged=Object.assign({},existing);
+          Object.keys(extras||{}).forEach(function(secId){
+            const newItems=extras[secId]||{};
+            const ex=existing[secId]||{};
+            merged[secId]={};
+            ['notes','flashcards','questions'].forEach(function(k){
+              const exArr=ex[k]||[];
+              const newArr=newItems[k]||[];
+              const exIds=new Set(exArr.map(function(x){return x.id;}));
+              merged[secId][k]=exArr.concat(newArr.filter(function(x){return !exIds.has(x.id);}));
+            });
+          });
+          await window.storage.set("gcse:e:"+id+":"+board, JSON.stringify(merged), true);
+        }
+        if(papers!==undefined){
+          let existing=[];
+          try{const r=await window.storage.get("gcse:p:"+id+":"+board,true);if(r?.value)existing=JSON.parse(r.value);}catch(_){}
+          // Add papers whose title+year combo isn't already present
+          const exKeys=new Set((existing||[]).map(function(p){return (p.title||"")+(p.year||"");}));
+          const merged=(existing||[]).concat((papers||[]).filter(function(p){return !exKeys.has((p.title||"")+(p.year||""));}));
+          await window.storage.set("gcse:p:"+id+":"+board, JSON.stringify(merged), true);
+        }
         imported++;
       }
       setStatus("ok"); setMsg("✓ Imported "+imported+" subject"+(imported!==1?"s":"")+" successfully. Reload the app to see changes.");
@@ -1614,7 +1699,7 @@ function Header({user,D,onDark,onHome,onDash,onTarget,onTimetable,onBlurt,onMock
           <button onClick={onFriends}   style={{fontSize:11,background:"none",border:"none",cursor:"pointer",color:mu(D),whiteSpace:"nowrap"}}>👥 Friends</button>
           <button onClick={onDark}      style={{fontSize:12,background:"none",border:"none",cursor:"pointer",color:mu(D)}}>{D?"☀️":"🌙"}</button>
           <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
-            <span style={{fontSize:12,color:mu(D)}}>{user}</span>
+            <span style={{fontSize:12,color:mu(D)}}>{getDisplayName(user)}</span>
             {isAdmin(user)&&<span style={{fontSize:10,fontWeight:700,background:"#6366f1",color:"#fff",padding:"2px 7px",borderRadius:20}}>ADMIN</span>}
           </div>
         </div>}
@@ -3565,9 +3650,9 @@ function AppFooter({D, onContact}) {
           {" · "}Built with the help of{" "}
           <span style={{color:"#f97316"}}>Claude</span>
           {", AI powered by "}
-          <span style={{color:"#4285f4"}}>Gemini</span>
+          <span style={{color:"#f55036"}}>Groq</span>
           {" · "}
-          <span style={{fontSize:11}}>Not affiliated with Anthropic or Google.</span>
+          <span style={{fontSize:11}}>Not affiliated with Anthropic or Groq.</span>
         </div>
         <button onClick={onContact}
           style={{fontSize:12,fontWeight:600,color:"#6366f1",background:"none",border:"1px solid #6366f1",borderRadius:8,padding:"6px 14px",cursor:"pointer"}}>
@@ -3583,7 +3668,6 @@ var SK_MSGS = "gcse:contact-msgs";
 
 function ContactScreen({D, user, isAdmin, onBack}) {
   var [tab, setTab] = useState(isAdmin ? "inbox" : "send");
-  var [name, setName] = useState(user||"");
   var [year, setYear] = useState("");
   var [msg, setMsg] = useState("");
   var [sent, setSent] = useState(false);
@@ -3604,12 +3688,12 @@ function ContactScreen({D, user, isAdmin, onBack}) {
   }
 
   function handleSend(){
-    if(!msg.trim()||!name.trim()) return;
+    if(!msg.trim()) return;
     setSending(true);
     var newEntry = {
       id: Math.random().toString(36).slice(2,9),
-      from: user||name,
-      name: name,
+      from: user,
+      name: user,
       yearGroup: year,
       message: msg.trim(),
       timestamp: Date.now(),
@@ -3643,6 +3727,20 @@ function ContactScreen({D, user, isAdmin, onBack}) {
         setReplyText(function(p){return Object.assign({},p,{[msgId]:""});});
         setRS(function(p){return Object.assign({},p,{[msgId]:false});});
       }).catch(function(){ setRS(function(p){return Object.assign({},p,{[msgId]:false});}); });
+    };
+    window.storage.get(SK_MSGS, true).then(function(r){
+      var existing=[];
+      try{ if(r&&r.value){var p=JSON.parse(r.value);if(Array.isArray(p))existing=p;} }catch(e){}
+      doWrite(existing);
+    }).catch(function(){ doWrite(msgs); });
+  }
+
+  function handleDeleteMsg(msgId){
+    var doWrite = function(existing){
+      var updated = existing.filter(function(m){ return m.id!==msgId; });
+      window.storage.set(SK_MSGS, JSON.stringify(updated), true).then(function(){
+        setMsgs(updated);
+      }).catch(function(){});
     };
     window.storage.get(SK_MSGS, true).then(function(r){
       var existing=[];
@@ -3685,12 +3783,6 @@ function ContactScreen({D, user, isAdmin, onBack}) {
             ) : (
               <div>
                 <div style={{marginBottom:14}}>
-                  <label style={{fontSize:11,fontWeight:700,color:D?"#9ca3af":"#6b7280",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:"0.05em"}}>Your name *</label>
-                  <input value={name} onChange={function(e){setName(e.target.value);}}
-                    placeholder="Enter your name"
-                    style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid "+bd,background:D?"#111827":"#f9fafb",color:D?"#f9fafb":"#111827",fontSize:13}}/>
-                </div>
-                <div style={{marginBottom:14}}>
                   <label style={{fontSize:11,fontWeight:700,color:D?"#9ca3af":"#6b7280",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:"0.05em"}}>Year group <span style={{fontWeight:400,textTransform:"none"}}>(optional)</span></label>
                   <input value={year} onChange={function(e){setYear(e.target.value);}}
                     placeholder="e.g. Year 11"
@@ -3702,8 +3794,8 @@ function ContactScreen({D, user, isAdmin, onBack}) {
                     rows={5} placeholder="Write your message here..."
                     style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid "+bd,background:D?"#111827":"#f9fafb",color:D?"#f9fafb":"#111827",fontSize:13,resize:"vertical"}}/>
                 </div>
-                <button onClick={handleSend} disabled={sending||!msg.trim()||!name.trim()}
-                  style={{padding:"10px 24px",borderRadius:8,border:"none",background:(!msg.trim()||!name.trim())?"#9ca3af":"#6366f1",color:"#fff",fontWeight:700,fontSize:14,cursor:(!msg.trim()||!name.trim())?"not-allowed":"pointer"}}>
+                <button onClick={handleSend} disabled={sending||!msg.trim()}
+                  style={{padding:"10px 24px",borderRadius:8,border:"none",background:!msg.trim()?"#9ca3af":"#6366f1",color:"#fff",fontWeight:700,fontSize:14,cursor:(!msg.trim()||!name.trim())?"not-allowed":"pointer"}}>
                   {sending?"Sending…":"Send Message"}
                 </button>
               </div>
@@ -3738,6 +3830,10 @@ function ContactScreen({D, user, isAdmin, onBack}) {
                   <button onClick={function(){handleReply(m.id);}} disabled={!!(replyingSending[m.id]||!(replyText[m.id]||"").trim())}
                     style={{padding:"0 16px",borderRadius:8,border:"none",background:"#6366f1",color:"#fff",fontWeight:600,fontSize:12,cursor:"pointer",alignSelf:"flex-end",height:36}}>
                     {replyingSending[m.id]?"…":"Reply"}
+                  </button>
+                  <button onClick={function(){if(window.confirm("Delete this message?"))handleDeleteMsg(m.id);}}
+                    style={{padding:"0 14px",borderRadius:8,border:"1px solid #ef4444",background:"none",color:"#ef4444",fontWeight:600,fontSize:12,cursor:"pointer",alignSelf:"flex-end",height:36}}>
+                    🗑
                   </button>
                 </div>
               </div>
@@ -3832,6 +3928,7 @@ export default function App() {
   const [flip,setFlip]       = useState(false);
   const [cramMode,setCramMode] = useState(false);
   const [importOpen,setImportOpen] = useState(false);
+  const [manageAccountsOpen,setManageAccountsOpen] = useState(false);
   const [fcHist,setFCH]      = useState({});
 
   const [qIdx,setQIdx]       = useState(0);
@@ -3928,11 +4025,9 @@ export default function App() {
     (async()=>{
       let accs={};
       try{const r=await window.storage.get(SK.ACCOUNTS,true);if(r?.value)accs=JSON.parse(r.value);}catch(_){}
-      // Ensure admin account in new {h,gki} format with correct hash
-      if(getAccHash(accs[ADMIN_USER])!==ADMIN_PASS_HASH||typeof accs[ADMIN_USER]==="string"){
-        accs={...accs,[ADMIN_USER]:{h:ADMIN_PASS_HASH,gki:0}};
-        try{await window.storage.set(SK.ACCOUNTS,JSON.stringify(accs),true);}catch(_){}
-      }
+      // Always ensure admin account exists with correct credentials
+      accs={...accs,[ADMIN_USER]:{h:ADMIN_PASS_HASH,gki:0}};
+      try{await window.storage.set(SK.ACCOUNTS,JSON.stringify(accs),true);}catch(_){}
       // Ensure admin has Gordon's School in leaderboard
       try{
         const lbKey=`gcse:lb:${ADMIN_USER.replace(/\W/g,"-")}`;
@@ -3951,7 +4046,7 @@ export default function App() {
     (async()=>{
       let savedSels={};
       try{
-        const r=await window.storage.get(SK.PROG(user));
+        const r=await window.storage.get(SK.PROG(user),true);
         if(r?.value){
           const p=JSON.parse(r.value);
           if(p.fcHist)  setFCH(p.fcHist);
@@ -4060,7 +4155,7 @@ export default function App() {
       });
       // Save — we read gradeSnapshots via functional update so use a ref approach
       try{
-        const r=await window.storage.get(SK.PROG(user));
+        const r=await window.storage.get(SK.PROG(user),true);
         const existing=r?.value?JSON.parse(r.value):{};
         const existingSnaps=existing.gradeSnapshots||[];
         const filteredSnaps=existingSnaps.filter(function(s){return s.date!==today;});
@@ -4072,7 +4167,7 @@ export default function App() {
           activityCounts,
           boardSels,
           gradeSnapshots:newSnaps
-        }));
+        }),true);
       }catch(_){}
       if(user){
         const lbKey="gcse:lb:"+user.replace(/\W/g,"-");
@@ -4097,9 +4192,9 @@ export default function App() {
     await Promise.all(subjects.map(s=>ensureBoardLoaded(s.id,board)));
     // Save board selections
     try{
-      const prog = await window.storage.get(SK.PROG(user));
+      const prog = await window.storage.get(SK.PROG(user),true);
       const existing = prog&&prog.value ? JSON.parse(prog.value) : {};
-      await window.storage.set(SK.PROG(user), JSON.stringify({...existing, boardSels:newSels}));
+      await window.storage.set(SK.PROG(user), JSON.stringify({...existing, boardSels:newSels}),true);
     }catch(_){}
     // Add exam date to timetable if provided
     if(examDate){
@@ -4272,36 +4367,35 @@ export default function App() {
 const hProps={user,D,onDark:()=>setD(!D),onHome:()=>setScreen("home"),onDash:()=>setScreen("dashboard"),onTarget:()=>{setTTSubj(null);setScreen("target")},onTimetable:()=>setScreen("timetable"),onBlurt:()=>{setBlurtSubjId(null);setBlurtSecId2(null);setScreen("blurting");},onMock:()=>setScreen("mock"),onTutor:()=>{setTutorSubjId(null);setScreen("tutor");},onCoach:()=>setScreen("coach"),onFriends:()=>setScreen("friends"),streak,onSearch:()=>setSearchOpen(true),globalOverlays:_goEl};
 
   if(screen==="login"){
-    const uTrim=nameIn.trim(), passOk=passIn.length>=4&&passIn.length<=30, canSubmit=uTrim.length>=2&&passOk;
+    const uTrim=nameIn.trim().toLowerCase();
+    const emailOk=/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(uTrim);
+    const passOk=passIn.length>=4&&passIn.length<=30;
+    const canSubmit=emailOk&&passOk;
     const handleAuth=()=>{
       if(!canSubmit)return;
       const u=uTrim;
       if(authMode==="signup"){
-        if(u===ADMIN_USER){setAuthE("That username is reserved.");return;}
-        if(accounts[u]){setAuthE("Username already exists — please log in.");return;}
-        // Assign google key: count non-admin accounts, cycle through 10 general keys
+        if(u===ADMIN_USER){setAuthE("That email is reserved.");return;}
+        if(accounts[u]){setAuthE("An account with that email already exists — please log in.");return;}
         const nonAdminCount=Object.keys(accounts).filter(k=>k!==ADMIN_USER).length;
         const gki=(nonAdminCount%10)+1;
         const n={...accounts,[u]:{h:hashPw(passIn),gki}};setAccs(n);saveAccounts(n);
         setGK("");
         if(schoolIn.trim()){
-          const lbKey=`gcse:lb:${u.replace(/\W/g,"-")}`;
+          const lbKey="gcse:lb:"+u.replace(/\W/g,"-");
           window.storage.set(lbKey,JSON.stringify({username:u,school:schoolIn.trim(),score:0}),true).catch(()=>{});
           setUserSchool(schoolIn.trim());
         }
         setUser(u);setScreen("home");setAuthE("");setShowPass(false);
       }else{
         if(!accounts[u]){setAuthE("No account found — sign up first.");return;}
-        // Support both legacy string format and new {h,gki} format
         if(getAccHash(accounts[u])!==hashPw(passIn)){setAuthE("Incorrect password.");return;}
         boardLoadedRef.current={};
-        // Set google key for this user (no longer needed — AI uses Claude)
         setGK("");
-        // Set school
         if(u===ADMIN_USER){
           setUserSchool(ADMIN_SCHOOL);
         }else{
-          const lbKey=`gcse:lb:${u.replace(/\W/g,"-")}`;
+          const lbKey="gcse:lb:"+u.replace(/\W/g,"-");
           window.storage.get(lbKey,true).then(r=>{if(r?.value){try{const e=JSON.parse(r.value);if(e.school)setUserSchool(e.school);}catch(e){}}}).catch(()=>{});
         }
         setUser(u);setScreen("home");setAuthE("");setShowPass(false);
@@ -4323,7 +4417,7 @@ const hProps={user,D,onDark:()=>setD(!D),onHome:()=>setScreen("home"),onDash:()=
             ))}
           </div>
           <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:14}}>
-            <input style={I(D)} placeholder="Username" value={nameIn} onChange={e=>{setNameIn(e.target.value);setAuthE("");}} onKeyDown={e=>e.key==="Enter"&&handleAuth()}/>
+            <input style={I(D)} placeholder="Email address" value={nameIn} onChange={e=>{setNameIn(e.target.value);setAuthE("");}} onKeyDown={e=>e.key==="Enter"&&handleAuth()} type="email" autoCapitalize="off" autoCorrect="off"/>
             <div style={{position:"relative"}}>
               <input type="password" style={I(D)} placeholder="Password (4–30 characters)" value={passIn} maxLength={30} onChange={e=>{setPassIn(e.target.value);setAuthE("");}} onKeyDown={e=>e.key==="Enter"&&handleAuth()}/>
             </div>
@@ -4412,7 +4506,7 @@ const hProps={user,D,onDark:()=>setD(!D),onHome:()=>setScreen("home"),onDash:()=
     <div style={{minHeight:"100vh",background:bg,color:tx(D)}} className="fade-in">
       <Header {...hProps}/>
       <div style={{maxWidth:960,margin:"0 auto",padding:"40px 24px"}}>
-        <h2 style={{fontSize:24,fontWeight:700,marginBottom:streak>0?16:4}}>Hey {user} 👋</h2>
+        <h2 style={{fontSize:24,fontWeight:700,marginBottom:streak>0?16:4}}>Hey {getDisplayName(user)} 👋</h2>
         {streak>0&&(
           <div style={{...C(D),padding:"18px 22px",marginBottom:22,background:streak>=7?(D?"#1c0d05":"#fff7ed"):undefined,borderColor:streak>=7?"#f97316":undefined}}>
             <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:12}}>
@@ -4447,8 +4541,10 @@ const hProps={user,D,onDark:()=>setD(!D),onHome:()=>setScreen("home"),onDash:()=
           <span style={{fontSize:11,fontWeight:700,color:"#6366f1"}}>⚡ ADMIN MODE</span>
           <span style={{fontSize:12,color:mu(D)}}>Navigate into a subject to add topics, notes, flashcards, questions and past papers.</span>
           <button onClick={()=>setImportOpen(true)} style={{marginLeft:"auto",padding:"6px 14px",borderRadius:8,border:"1.5px solid #6366f1",background:"#6366f1",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>📥 Import Data</button>
+          <button onClick={()=>setManageAccountsOpen(true)} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #6366f1",background:"none",color:"#6366f1",fontSize:12,fontWeight:600,cursor:"pointer"}}>👥 Manage Accounts</button>
         </div>}
         {importOpen&&<ImportModal D={D} subjects={subjects} onClose={()=>setImportOpen(false)} onDone={()=>{ensureAllBoardsLoaded(boardSels);}}/>}
+        {manageAccountsOpen&&<ManageAccountsModal D={D} accounts={accounts} adminUser={ADMIN_USER} onClose={()=>setManageAccountsOpen(false)} onDelete={function(email){var n={...accounts};delete n[email];setAccs(n);saveAccounts(n);}}/>}
 
         <TodayWidget D={D} subjects={subjects} allSections={allSections} fcHist={fcHist}
           stats={stats} timetableExams={timetableExams} boardSels={boardSels}
