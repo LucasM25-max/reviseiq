@@ -66,67 +66,48 @@ const hashPw = s => btoa(encodeURIComponent(s)).slice(0,32);
 const ADMIN_PASS_HASH = hashPw("ReviseIQAdmin");
 const ADMIN_SCHOOL = "Gordon's School";
 
-// ── Gemini API Keys ───────────────────────────────────────────────────────────
-// Each key should be from a DIFFERENT Google account's AI Studio project.
-// Get keys at: aistudio.google.com → "Get API key" → "Create API key in new project"
-const GEMINI_KEYS = [
-  "AIzaSyBqKAvYVR-yM_LAEKvbO8lCiNxnlNIVZOw",
-  "AIzaSyA9F-0KmeFKwY7bFLQL1Vg0g85cRSKZwmE",
+// ── AI: Groq (free, no billing required) ─────────────────────────────────────
+// Get free keys at console.groq.com — sign up, go to API Keys, create one.
+// Each key: 14,400 requests/day free. Add multiple keys from multiple accounts.
+const GROQ_KEYS = [
+  "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",
 ];
-
-// Models tried in order per request — skips any that return "not found" or "limit:0"
-var _AI_MODELS = [
-  "gemini-2.0-flash",
-  "gemini-2.0-flash-lite",
-  "gemini-2.0-flash-exp",
-  "gemini-1.5-flash",
-  "gemini-1.5-flash-latest",
-  "gemini-1.5-flash-8b",
-  "gemini-1.5-flash-8b-latest",
-  "gemini-1.5-pro",
-  "gemini-1.5-pro-latest",
-  "gemini-pro",
+const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
+// Models tried in order — if one fails, next is tried automatically
+var _GROQ_MODELS = [
+  "llama-3.3-70b-versatile",
+  "llama-3.1-8b-instant",
+  "gemma2-9b-it",
+  "mixtral-8x7b-32768",
 ];
+// Keep GEMINI_KEYS as alias so any legacy references don't break
+var GEMINI_KEYS = GROQ_KEYS;
 
-// AI Tutor model config (for display/usage tracking)
 const TUTOR_MODELS = [
-  {model:"gemini-2.0-flash", label:"Gemini 2.0 Flash", dailyLimit:999},
+  {model:"llama-3.3-70b-versatile", label:"Llama 3.3 70B", dailyLimit:999},
 ];
-const GEMINI_KEYS_ALIAS = GEMINI_KEYS; // keep any legacy ref
 const tutorUsageKey=function(u){return "gcse:tu:"+(u||"").replace(/\W/g,"-")+":"+new Date().toISOString().slice(0,10);};
 async function getTutorUsage(u){
   try{var r=await window.storage.get(tutorUsageKey(u),true);return r&&r.value?JSON.parse(r.value):{};} catch(e){return {};}
 }
 async function incTutorUsage(u,modelName){
-  try{var key2=tutorUsageKey(u);var cur=await getTutorUsage(u);cur[modelName]=(cur[modelName]||0)+1;await window.storage.set(key2,JSON.stringify(cur),true);}catch(e){}
+  try{var k2=tutorUsageKey(u);var cur=await getTutorUsage(u);cur[modelName]=(cur[modelName]||0)+1;await window.storage.set(k2,JSON.stringify(cur),true);}catch(e){}
 }
 async function pickTutorModel(u){ return TUTOR_MODELS[0]; }
+function nextGeminiKey(){ return GROQ_KEYS[0]||""; } // legacy stub
 
-// ── Core AI caller ────────────────────────────────────────────────────────────
 var _gkIdx = 0;
 var _keyCooldown = {};
 var _KEY_COOLDOWN_MS = 60000;
 
-function nextGeminiKey(){
-  var total = GEMINI_KEYS.length;
-  for(var i=0;i<total;i++){
-    _gkIdx = (_gkIdx+1) % total;
-    if(Date.now() > (_keyCooldown[_gkIdx]||0)) return GEMINI_KEYS[_gkIdx];
-  }
-  return GEMINI_KEYS[0];
-}
-
-function _gemExtract(d){
-  try{return d.candidates[0].content.parts[0].text||null;}catch(e){return null;}
-}
-
-// Tries every model × every key until one succeeds
+// Core caller — OpenAI-compatible format, works with Groq
 async function _aiRequest(systemPrompt, messages){
-  // Build Gemini contents array from messages
-  var contents = [];
+  // Build messages array
+  var msgs = [];
+  if(systemPrompt) msgs.push({role:"system", content:systemPrompt});
   for(var i=0;i<messages.length;i++){
     var m = messages[i];
-    var role = m.role==="assistant"?"model":"user";
+    var role = m.role==="assistant"?"assistant":"user";
     var txt = "";
     if(m._d && typeof m._d.text==="string") txt = m._d.text;
     else if(typeof m.content==="string") txt = m.content;
@@ -135,76 +116,65 @@ async function _aiRequest(systemPrompt, messages){
         .map(function(p){return p.text||"";}).join("\n");
     }
     if(!txt.trim()) continue;
-    if(contents.length>0 && contents[contents.length-1].role===role){
-      contents[contents.length-1].parts[0].text += "\n"+txt;
+    // Merge consecutive same-role turns
+    if(msgs.length>0 && msgs[msgs.length-1].role===role){
+      msgs[msgs.length-1].content += "\n"+txt;
     } else {
-      contents.push({role:role, parts:[{text:txt}]});
+      msgs.push({role:role, content:txt});
     }
   }
-  while(contents.length>0 && contents[0].role!=="user") contents.shift();
-  if(!contents.length) contents.push({role:"user",parts:[{text:"Hello"}]});
-  // Prepend system prompt into first user message (avoids systemInstruction field issues)
-  if(systemPrompt){
-    contents[0].parts[0].text = systemPrompt + "\n\n---\n\n" + contents[0].parts[0].text;
+  // Must end with a user message
+  if(!msgs.length || msgs[msgs.length-1].role!=="user"){
+    msgs.push({role:"user", content:"Hello"});
   }
-  var reqBody = {contents:contents, generationConfig:{maxOutputTokens:1500, temperature:0.7}};
 
-  var keys = GEMINI_KEYS.filter(function(k){return k&&k.length>10;});
-  if(!keys.length) throw new Error("No Gemini API keys configured.");
-  var lastErr = new Error("AI unavailable.");
+  var validKeys = GROQ_KEYS.filter(function(k){return k&&k.length>10&&k!=="PASTE_GROQ_KEY_HERE";});
+  if(!validKeys.length) throw new Error("No Groq API key set. Add your key from console.groq.com into the GROQ_KEYS array in App.jsx.");
 
-  for(var mi=0; mi<_AI_MODELS.length; mi++){
-    var model = _AI_MODELS[mi];
-    var modelBad = false;
-    for(var ki=0; ki<keys.length; ki++){
-      var key = keys[ki];
+  var lastErr = new Error("AI unavailable — all keys exhausted.");
+  for(var mi=0; mi<_GROQ_MODELS.length; mi++){
+    var model = _GROQ_MODELS[mi];
+    for(var ki=0; ki<validKeys.length; ki++){
       if(Date.now() < (_keyCooldown[ki]||0)) continue;
       try{
-        var url = "https://generativelanguage.googleapis.com/v1beta/models/"+model+":generateContent?key="+key;
-        var resp = await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(reqBody)});
+        var resp = await fetch(GROQ_URL,{
+          method:"POST",
+          headers:{"Content-Type":"application/json","Authorization":"Bearer "+validKeys[ki]},
+          body:JSON.stringify({model:model, messages:msgs, max_tokens:1500, temperature:0.7})
+        });
         var dat = await resp.json();
         if(dat.error){
-          var code = dat.error.code||0;
-          var status = dat.error.status||"";
-          var msg = dat.error.message||"Gemini error";
-          var ml = msg.toLowerCase();
-          // "limit: 0" means this project has ZERO access to this model.
-          // The KEY is fine — mark the MODEL as bad and try the next model.
-          // Do NOT put the key on cooldown or it won't be tried for other models.
-          if(ml.indexOf("limit: 0")!==-1 || ml.indexOf("limit:0")!==-1){
-            modelBad = true; lastErr = new Error(msg); break;
+          var errMsg = (typeof dat.error==="string")?dat.error:(dat.error.message||"Groq error");
+          var el = errMsg.toLowerCase();
+          // Model not found — try next model
+          if(el.indexOf("model")!==-1 && (el.indexOf("not found")!==-1||el.indexOf("does not exist")!==-1||el.indexOf("not supported")!==-1)){
+            lastErr = new Error(errMsg); break; // break key loop → next model
           }
-          // Model not found / not supported — skip entire model, keys are fine
-          if(ml.indexOf("not found")!==-1 || ml.indexOf("not supported")!==-1 ||
-             ml.indexOf("does not exist")!==-1 || ml.indexOf("invalid model")!==-1 ||
-             ml.indexOf("not available")!==-1){
-            modelBad = true; lastErr = new Error(msg); break;
-          }
-          // Genuine rate limit (not limit:0) — key is temporarily exhausted, try next key
-          if(code===429 || status==="RESOURCE_EXHAUSTED" ||
-             ml.indexOf("quota exceeded")!==-1 || ml.indexOf("rate limit")!==-1 ||
-             ml.indexOf("exhausted")!==-1){
+          // Rate limit — cool this key, try next key
+          if(resp.status===429||el.indexOf("rate")!==-1||el.indexOf("limit")!==-1||el.indexOf("quota")!==-1){
             _keyCooldown[ki] = Date.now()+_KEY_COOLDOWN_MS;
-            lastErr = new Error(msg); continue;
+            lastErr = new Error(errMsg); continue;
           }
-          // Unknown error — surface it
-          throw new Error(msg);
+          throw new Error(errMsg);
         }
-        var result = _gemExtract(dat);
-        if(!result){ lastErr=new Error("Empty response"); continue; }
-        return result; // success!
+        var text = dat.choices&&dat.choices[0]&&dat.choices[0].message&&dat.choices[0].message.content;
+        if(!text){ lastErr=new Error("Empty response"); continue; }
+        return text; // success!
       }catch(ex){
-        lastErr = ex; continue;
+        var em = (ex.message||"").toLowerCase();
+        if(em.indexOf("rate")!==-1||em.indexOf("429")!==-1||em.indexOf("quota")!==-1){
+          _keyCooldown[ki]=Date.now()+_KEY_COOLDOWN_MS;
+        }
+        lastErr=ex; continue;
       }
     }
-    if(modelBad) continue; // this model not supported, try next
   }
   throw lastErr;
 }
 
-// Public API — same signatures so nothing else needs changing
+// Public API — identical signatures, nothing else in the app needs changing
 async function callGeminiSimple(prompt, maxTokens, _ignored){
-  return _aiRequest(null, [{role:"user",content:prompt}]);
+  return _aiRequest(null, [{role:"user", content:prompt}]);
 }
 async function callGeminiChat(_modelIgnored, systemPrompt, messages, _ignored){
   return _aiRequest(systemPrompt||null, messages);
