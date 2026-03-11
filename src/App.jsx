@@ -66,148 +66,136 @@ const hashPw = s => btoa(encodeURIComponent(s)).slice(0,32);
 const ADMIN_PASS_HASH = hashPw("ReviseIQAdmin");
 const ADMIN_SCHOOL = "Gordon's School";
 
-// ── Gemini API Keys ──────────────────────────────────────────────────────────
-// IMPORTANT: Each key must be from a DIFFERENT Google account's AI Studio project.
-// Keys from the same project share one quota pool and will all fail together.
+// ── Gemini API Keys ───────────────────────────────────────────────────────────
+// Each key should be from a DIFFERENT Google account's AI Studio project.
 // Get keys at: aistudio.google.com → "Get API key" → "Create API key in new project"
 const GEMINI_KEYS = [
   "AIzaSyBqKAvYVR-yM_LAEKvbO8lCiNxnlNIVZOw",
   "AIzaSyA9F-0KmeFKwY7bFLQL1Vg0g85cRSKZwmE",
 ];
 
-// AI Tutor — Gemini model config
+// Models tried in order per request — skips any that return "not found"
+var _AI_MODELS = [
+  "gemini-2.0-flash",
+  "gemini-2.0-flash-lite",
+  "gemini-1.5-flash",
+  "gemini-1.5-flash-8b",
+  "gemini-1.0-pro",
+];
+
+// AI Tutor model config (for display/usage tracking)
 const TUTOR_MODELS = [
   {model:"gemini-2.0-flash", label:"Gemini 2.0 Flash", dailyLimit:999},
 ];
+const GEMINI_KEYS_ALIAS = GEMINI_KEYS; // keep any legacy ref
 const tutorUsageKey=function(u){return "gcse:tu:"+(u||"").replace(/\W/g,"-")+":"+new Date().toISOString().slice(0,10);};
 async function getTutorUsage(u){
   try{var r=await window.storage.get(tutorUsageKey(u),true);return r&&r.value?JSON.parse(r.value):{};} catch(e){return {};}
 }
 async function incTutorUsage(u,modelName){
-  try{var key=tutorUsageKey(u);var cur=await getTutorUsage(u);cur[modelName]=(cur[modelName]||0)+1;await window.storage.set(key,JSON.stringify(cur),true);}catch(e){}
+  try{var key2=tutorUsageKey(u);var cur=await getTutorUsage(u);cur[modelName]=(cur[modelName]||0)+1;await window.storage.set(key2,JSON.stringify(cur),true);}catch(e){}
 }
-async function pickTutorModel(u){
-  var usage=await getTutorUsage(u);
-  for(var i=0;i<TUTOR_MODELS.length;i++){if((usage[TUTOR_MODELS[i].model]||0)<TUTOR_MODELS[i].dailyLimit)return TUTOR_MODELS[i];}
-  return TUTOR_MODELS[TUTOR_MODELS.length-1];
-}
+async function pickTutorModel(u){ return TUTOR_MODELS[0]; }
 
-// ── Gemini key cycling ───────────────────────────────────────────────────────
-var _GEMINI_MODEL = "gemini-2.0-flash";
+// ── Core AI caller ────────────────────────────────────────────────────────────
 var _gkIdx = 0;
-// Per-key cooldown: skip a key for 60s after it returns a rate-limit error
-var _keyCooldown = {}; // { keyIndex: timestampMs }
+var _keyCooldown = {};
 var _KEY_COOLDOWN_MS = 60000;
 
-function _nextKeyIdx(){
-  // Find the next key not in cooldown, cycling through all keys
+function nextGeminiKey(){
   var total = GEMINI_KEYS.length;
-  for(var i=0; i<total; i++){
-    _gkIdx = (_gkIdx + 1) % total;
-    var coolUntil = _keyCooldown[_gkIdx] || 0;
-    if(Date.now() > coolUntil) return _gkIdx;
+  for(var i=0;i<total;i++){
+    _gkIdx = (_gkIdx+1) % total;
+    if(Date.now() > (_keyCooldown[_gkIdx]||0)) return GEMINI_KEYS[_gkIdx];
   }
-  // All keys in cooldown — use the one whose cooldown expires soonest
-  var best = 0; var bestTime = Infinity;
-  for(var j=0; j<total; j++){
-    var t = _keyCooldown[j] || 0;
-    if(t < bestTime){ bestTime = t; best = j; }
-  }
-  _gkIdx = best;
-  return best;
+  return GEMINI_KEYS[0];
 }
 
-function nextGeminiKey(){ return GEMINI_KEYS[_nextKeyIdx()]; }
-
-function _geminiExtract(d){
-  return d&&d.candidates&&d.candidates[0]&&d.candidates[0].content&&
-    d.candidates[0].content.parts&&d.candidates[0].content.parts[0]&&
-    d.candidates[0].content.parts[0].text||null;
+function _gemExtract(d){
+  try{return d.candidates[0].content.parts[0].text||null;}catch(e){return null;}
 }
 
-// Core caller: tries every key once, putting rate-limited keys on cooldown
-async function _geminiRequest(reqBody){
-  var total = GEMINI_KEYS.length;
-  var tried = 0;
-  var lastErr = new Error("No valid Gemini API keys configured. Please add keys from separate Google AI Studio accounts.");
-  var startIdx = _gkIdx;
-  while(tried < total){
-    var ki = _nextKeyIdx();
-    tried++;
-    var key = GEMINI_KEYS[ki];
-    if(!key || key.startsWith("REPLACE_WITH")){
-      lastErr = new Error("Gemini API keys not configured. Ask your admin to add API keys.");
-      continue;
+// Tries every model × every key until one succeeds
+async function _aiRequest(systemPrompt, messages){
+  // Build Gemini contents array from messages
+  var contents = [];
+  for(var i=0;i<messages.length;i++){
+    var m = messages[i];
+    var role = m.role==="assistant"?"model":"user";
+    var txt = "";
+    if(m._d && typeof m._d.text==="string") txt = m._d.text;
+    else if(typeof m.content==="string") txt = m.content;
+    else if(Array.isArray(m.content)){
+      txt = m.content.filter(function(p){return p.type==="text";})
+        .map(function(p){return p.text||"";}).join("\n");
     }
-    try{
-      // Use v1 (stable) endpoint
-      var url = "https://generativelanguage.googleapis.com/v1beta/models/"+_GEMINI_MODEL+":generateContent?key="+key;
-      var resp = await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(reqBody)});
-      var dat = await resp.json();
-      if(dat.error){
-        var code = dat.error.code;
-        var status = dat.error.status||"";
-        var msg = dat.error.message||"Gemini error";
-        // limit:0 means this key's project has no access to the model at all — skip permanently
-        if(msg.indexOf("limit: 0")!==-1 || msg.indexOf("limit:0")!==-1){
-          _keyCooldown[ki] = Date.now() + 24*60*60*1000; // cool for 24h (no access, not just rate limited)
-          lastErr = new Error("API key "+ki+" has no quota for this model. Add new keys from separate Google accounts at aistudio.google.com.");
-          continue;
+    if(!txt.trim()) continue;
+    if(contents.length>0 && contents[contents.length-1].role===role){
+      contents[contents.length-1].parts[0].text += "\n"+txt;
+    } else {
+      contents.push({role:role, parts:[{text:txt}]});
+    }
+  }
+  while(contents.length>0 && contents[0].role!=="user") contents.shift();
+  if(!contents.length) contents.push({role:"user",parts:[{text:"Hello"}]});
+  // Prepend system prompt into first user message (avoids systemInstruction field issues)
+  if(systemPrompt){
+    contents[0].parts[0].text = systemPrompt + "\n\n---\n\n" + contents[0].parts[0].text;
+  }
+  var reqBody = {contents:contents, generationConfig:{maxOutputTokens:1500, temperature:0.7}};
+
+  var keys = GEMINI_KEYS.filter(function(k){return k&&k.length>10;});
+  if(!keys.length) throw new Error("No Gemini API keys configured.");
+  var lastErr = new Error("AI unavailable.");
+
+  for(var mi=0; mi<_AI_MODELS.length; mi++){
+    var model = _AI_MODELS[mi];
+    var modelBad = false;
+    for(var ki=0; ki<keys.length; ki++){
+      var key = keys[ki];
+      if(Date.now() < (_keyCooldown[ki]||0)) continue;
+      try{
+        var url = "https://generativelanguage.googleapis.com/v1beta/models/"+model+":generateContent?key="+key;
+        var resp = await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(reqBody)});
+        var dat = await resp.json();
+        if(dat.error){
+          var code = dat.error.code||0;
+          var status = dat.error.status||"";
+          var msg = dat.error.message||"Gemini error";
+          var ml = msg.toLowerCase();
+          // Model not available on this project — try next model
+          if(ml.indexOf("not found")!==-1 || ml.indexOf("not supported")!==-1 ||
+             ml.indexOf("does not exist")!==-1 || ml.indexOf("invalid model")!==-1){
+            modelBad = true; lastErr = new Error(msg); break;
+          }
+          // Quota/rate — put key on cooldown, try next key
+          if(code===429 || status==="RESOURCE_EXHAUSTED" ||
+             ml.indexOf("quota")!==-1 || ml.indexOf("rate")!==-1 ||
+             ml.indexOf("limit")!==-1 || ml.indexOf("exhausted")!==-1){
+            _keyCooldown[ki] = Date.now()+_KEY_COOLDOWN_MS;
+            lastErr = new Error(msg); continue;
+          }
+          // Unknown error — surface it
+          throw new Error(msg);
         }
-        // Rate limit / quota exhausted — put key on 60s cooldown, try next
-        if(code===429||status==="RESOURCE_EXHAUSTED"||(code===403&&msg.toLowerCase().indexOf("quota")!==-1)){
-          _keyCooldown[ki] = Date.now() + _KEY_COOLDOWN_MS;
-          lastErr = new Error(msg);
-          continue;
-        }
-        // Any other error — surface immediately, don't try more keys
-        throw new Error(msg);
-      }
-      var txt = _geminiExtract(dat);
-      if(!txt) throw new Error("Empty response from Gemini");
-      return txt;
-    }catch(ex){
-      if(ex.message && (ex.message.indexOf("limit: 0")!==-1||ex.message.indexOf("quota")!==-1||ex.message.indexOf("429")!==-1)){
+        var result = _gemExtract(dat);
+        if(!result){ lastErr=new Error("Empty response"); continue; }
+        return result; // success!
+      }catch(ex){
         lastErr = ex; continue;
       }
-      throw ex; // surface non-quota errors immediately
     }
+    if(modelBad) continue; // this model not supported, try next
   }
   throw lastErr;
 }
 
+// Public API — same signatures so nothing else needs changing
 async function callGeminiSimple(prompt, maxTokens, _ignored){
-  return _geminiRequest({
-    contents:[{role:"user",parts:[{text:prompt}]}],
-    generationConfig:{maxOutputTokens:maxTokens||1500,temperature:0.4}
-  });
+  return _aiRequest(null, [{role:"user",content:prompt}]);
 }
-
 async function callGeminiChat(_modelIgnored, systemPrompt, messages, _ignored){
-  var contents=[];
-  for(var i=0;i<messages.length;i++){
-    var msg=messages[i];
-    var role=msg.role==="assistant"?"model":"user";
-    var msgTxt="";
-    if(typeof msg.content==="string") msgTxt=msg.content||" ";
-    else if(Array.isArray(msg.content)){
-      msgTxt=msg.content.filter(function(p){return p.type==="text";}).map(function(p){return p.text||"";}).join("\n")||" ";
-    }
-    if(!msgTxt.trim()) continue;
-    if(contents.length>0&&contents[contents.length-1].role===role){
-      contents[contents.length-1].parts[0].text+="\n"+msgTxt;
-    } else {
-      contents.push({role:role,parts:[{text:msgTxt}]});
-    }
-  }
-  while(contents.length>0&&contents[0].role!=="user") contents.shift();
-  if(!contents.length) contents.push({role:"user",parts:[{text:"Hello"}]});
-  // Prepend system prompt into the first user message — universally supported
-  if(systemPrompt){
-    contents[0].parts[0].text = systemPrompt + "\n\n---\n\n" + contents[0].parts[0].text;
-  }
-  var reqBody={contents:contents,generationConfig:{maxOutputTokens:1500,temperature:0.7}};
-  return _geminiRequest(reqBody);
+  return _aiRequest(systemPrompt||null, messages);
 }
 // Account format helpers (supports both legacy string and new {h,gki} object)
 function getAccHash(acc){return typeof acc==="string"?acc:acc?.h;}
@@ -2968,35 +2956,9 @@ Style: warm, encouraging, clear. Use ## headings and bullet points to organise l
     return parts.length===1&&!attachedFiles.length?text:parts;
   };
 
-  // tutorCall: delegates to the shared _geminiRequest (handles key rotation, cooldown, v1 endpoint)
+  // tutorCall: delegates to shared _aiRequest
   const tutorCall = async function(modelDef, systemPrompt, hist) {
-    // Build Gemini contents from history — prefer _d.text for clean plain-text history
-    var contents = [];
-    for (var i = 0; i < hist.length; i++) {
-      var m = hist[i];
-      var role = m.role === "assistant" ? "model" : "user";
-      var textVal = "";
-      if (m._d && typeof m._d.text === "string") textVal = m._d.text;
-      else if (typeof m.content === "string") textVal = m.content;
-      else if (Array.isArray(m.content)){
-        textVal = m.content.filter(function(p){return p.type==="text";})
-          .map(function(p){return p.text||"";}).join("\n");
-      }
-      if (!textVal.trim()) continue;
-      if (contents.length > 0 && contents[contents.length-1].role === role){
-        contents[contents.length-1].parts[0].text += "\n" + textVal;
-      } else {
-        contents.push({role:role, parts:[{text:textVal}]});
-      }
-    }
-    while (contents.length > 0 && contents[0].role !== "user") contents.shift();
-    if (!contents.length) contents.push({role:"user", parts:[{text:"Hello"}]});
-    // Prepend system prompt into the first user message — universally supported
-    if (systemPrompt){
-      contents[0].parts[0].text = systemPrompt + "\n\n---\n\n" + contents[0].parts[0].text;
-    }
-    var reqBody = {contents:contents, generationConfig:{maxOutputTokens:1500, temperature:0.7}};
-    return _geminiRequest(reqBody);
+    return _aiRequest(systemPrompt||null, hist);
   };
   // Keep callAI / callGemini aliases so other callsites keep working
   const callAI = async function(modelDef, systemPrompt, hist) { return tutorCall(modelDef, systemPrompt, hist); };
