@@ -66,21 +66,17 @@ const hashPw = s => btoa(encodeURIComponent(s)).slice(0,32);
 const ADMIN_PASS_HASH = hashPw("ReviseIQAdmin");
 const ADMIN_SCHOOL = "Gordon's School";
 
-// Google Gemini API keys - index 0 is admin, 1-10 are general
+// ── Gemini API Keys ──────────────────────────────────────────────────────────
+// IMPORTANT: Each key must be from a DIFFERENT Google account's AI Studio project.
+// Keys from the same project share one quota pool and will all fail together.
+// Get keys at: aistudio.google.com → "Get API key" → "Create API key in new project"
 const GEMINI_KEYS = [
-  "AIzaSyBhZ1p0PVVfO6DPRqCN54Q7TzAyzsUNVY0",
-  "AIzaSyAVVuW9r6fRXRiWlMgrk3Ce4AeLPRh0iYI",
-  "AIzaSyDyO-v-futTRBC4lemL_AwcmiwjWQX51X4",
-  "AIzaSyCvcgZkN3O_RqJAua6C_8QnFXSblR8PLyQ",
-  "AIzaSyACvoaSJRh_zgCfjOI1VXxfHjpq1Wh27P4",
-  "AIzaSyAd5dWuPvCb-tAJu2FJWciO3RynbfyauHk",
-  "AIzaSyC4sdc7Gq4Ly6KrSALYI63lKN4bOSY1KBQ",
-  "AIzaSyDxFAMV2qV401gYPde0CmevvWzuXHd-oIU",
-  "AIzaSyBVAGZ1sasqWP3xEJk00uAFmoY8sI2O0tI",
-  "AIzaSyBXRc27NXiZJREx1lIW8ja0ramZxv0PlO0",
   "AIzaSyBqKAvYVR-yM_LAEKvbO8lCiNxnlNIVZOw",
+  "AIzaSyA9F-0KmeFKwY7bFLQL1Vg0g85cRSKZwmE",
+  // Add more keys here — one per Google account
 ];
-// AI Tutor — Gemini cascade
+
+// AI Tutor — Gemini model config
 const TUTOR_MODELS = [
   {model:"gemini-2.0-flash", label:"Gemini 2.0 Flash", dailyLimit:999},
 ];
@@ -98,66 +94,97 @@ async function pickTutorModel(u){
 }
 
 // ── Gemini key cycling ───────────────────────────────────────────────────────
-// Only two confirmed-working free-tier models (no flash-lite, no 1.0-pro, no 8b)
-var _GEMINI_MODELS = ["gemini-2.0-flash"];
-var _gkIdx = 1;
-function nextGeminiKey(){
-  var k = GEMINI_KEYS[_gkIdx];
-  _gkIdx = (_gkIdx % (GEMINI_KEYS.length-1)) + 1;
-  return k;
+var _GEMINI_MODEL = "gemini-2.0-flash";
+var _gkIdx = 0;
+// Per-key cooldown: skip a key for 60s after it returns a rate-limit error
+var _keyCooldown = {}; // { keyIndex: timestampMs }
+var _KEY_COOLDOWN_MS = 60000;
+
+function _nextKeyIdx(){
+  // Find the next key not in cooldown, cycling through all keys
+  var total = GEMINI_KEYS.length;
+  for(var i=0; i<total; i++){
+    _gkIdx = (_gkIdx + 1) % total;
+    var coolUntil = _keyCooldown[_gkIdx] || 0;
+    if(Date.now() > coolUntil) return _gkIdx;
+  }
+  // All keys in cooldown — use the one whose cooldown expires soonest
+  var best = 0; var bestTime = Infinity;
+  for(var j=0; j<total; j++){
+    var t = _keyCooldown[j] || 0;
+    if(t < bestTime){ bestTime = t; best = j; }
+  }
+  _gkIdx = best;
+  return best;
 }
+
+function nextGeminiKey(){ return GEMINI_KEYS[_nextKeyIdx()]; }
+
 function _geminiExtract(d){
   return d&&d.candidates&&d.candidates[0]&&d.candidates[0].content&&
     d.candidates[0].content.parts&&d.candidates[0].content.parts[0]&&
     d.candidates[0].content.parts[0].text||null;
 }
-// Core Gemini caller: tries each key for a given model, returns text or throws
-async function _geminiRequest(modelName, reqBody){
-  var lastErr = new Error("AI unavailable");
-  // Try every available key for this model before giving up
+
+// Core caller: tries every key once, putting rate-limited keys on cooldown
+async function _geminiRequest(reqBody){
+  var total = GEMINI_KEYS.length;
+  var tried = 0;
+  var lastErr = new Error("No valid Gemini API keys configured. Please add keys from separate Google AI Studio accounts.");
   var startIdx = _gkIdx;
-  for(var attempt=0; attempt<GEMINI_KEYS.length-1; attempt++){
-    var key = nextGeminiKey();
+  while(tried < total){
+    var ki = _nextKeyIdx();
+    tried++;
+    var key = GEMINI_KEYS[ki];
+    if(!key || key.startsWith("REPLACE_WITH")){
+      lastErr = new Error("Gemini API keys not configured. Ask your admin to add API keys.");
+      continue;
+    }
     try{
-      var url = "https://generativelanguage.googleapis.com/v1beta/models/"+modelName+":generateContent?key="+key;
+      // Use v1 (stable) endpoint
+      var url = "https://generativelanguage.googleapis.com/v1/models/"+_GEMINI_MODEL+":generateContent?key="+key;
       var resp = await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(reqBody)});
       var dat = await resp.json();
       if(dat.error){
-        lastErr = new Error(dat.error.message||"Gemini error");
-        var isQuota = dat.error.code===429||dat.error.status==="RESOURCE_EXHAUSTED"||dat.error.code===403;
-        if(isQuota) continue; // try next key for same model
-        else throw lastErr;  // non-quota error — don't retry
+        var code = dat.error.code;
+        var status = dat.error.status||"";
+        var msg = dat.error.message||"Gemini error";
+        // limit:0 means this key's project has no access to the model at all — skip permanently
+        if(msg.indexOf("limit: 0")!==-1 || msg.indexOf("limit:0")!==-1){
+          _keyCooldown[ki] = Date.now() + 24*60*60*1000; // cool for 24h (no access, not just rate limited)
+          lastErr = new Error("API key "+ki+" has no quota for this model. Add new keys from separate Google accounts at aistudio.google.com.");
+          continue;
+        }
+        // Rate limit / quota exhausted — put key on 60s cooldown, try next
+        if(code===429||status==="RESOURCE_EXHAUSTED"||(code===403&&msg.toLowerCase().indexOf("quota")!==-1)){
+          _keyCooldown[ki] = Date.now() + _KEY_COOLDOWN_MS;
+          lastErr = new Error(msg);
+          continue;
+        }
+        // Any other error — surface immediately, don't try more keys
+        throw new Error(msg);
       }
       var txt = _geminiExtract(dat);
-      if(!txt) throw new Error("Empty response from "+modelName);
+      if(!txt) throw new Error("Empty response from Gemini");
       return txt;
     }catch(ex){
-      if(ex===lastErr) continue; // already a quota error, keep trying keys
-      lastErr = ex; break;       // unexpected error — stop
+      if(ex.message && (ex.message.indexOf("limit: 0")!==-1||ex.message.indexOf("quota")!==-1||ex.message.indexOf("429")!==-1)){
+        lastErr = ex; continue;
+      }
+      throw ex; // surface non-quota errors immediately
     }
   }
   throw lastErr;
 }
-// Cascade across models, rotating keys at each level
-async function _geminiCascade(preferredModel, reqBody){
-  var models = preferredModel
-    ? [preferredModel].concat(_GEMINI_MODELS.filter(function(m){return m!==preferredModel;}))
-    : _GEMINI_MODELS.slice();
-  var lastErr = new Error("AI unavailable");
-  for(var mi=0; mi<models.length; mi++){
-    try{ return await _geminiRequest(models[mi], reqBody); }
-    catch(e){ lastErr=e; }
-  }
-  throw lastErr;
-}
+
 async function callGeminiSimple(prompt, maxTokens, _ignored){
-  var reqBody = {
+  return _geminiRequest({
     contents:[{role:"user",parts:[{text:prompt}]}],
     generationConfig:{maxOutputTokens:maxTokens||1500,temperature:0.4}
-  };
-  return _geminiCascade(null, reqBody);
+  });
 }
-async function callGeminiChat(modelName, systemPrompt, messages, _ignored){
+
+async function callGeminiChat(_modelIgnored, systemPrompt, messages, _ignored){
   var contents=[];
   for(var i=0;i<messages.length;i++){
     var msg=messages[i];
@@ -178,7 +205,7 @@ async function callGeminiChat(modelName, systemPrompt, messages, _ignored){
   if(!contents.length) contents.push({role:"user",parts:[{text:"Hello"}]});
   var reqBody={contents:contents,generationConfig:{maxOutputTokens:1500,temperature:0.7}};
   if(systemPrompt) reqBody.systemInstruction={parts:[{text:systemPrompt}]};
-  return _geminiCascade(modelName||null, reqBody);
+  return _geminiRequest(reqBody);
 }
 // Account format helpers (supports both legacy string and new {h,gki} object)
 function getAccHash(acc){return typeof acc==="string"?acc:acc?.h;}
@@ -2939,45 +2966,32 @@ Style: warm, encouraging, clear. Use ## headings and bullet points to organise l
     return parts.length===1&&!attachedFiles.length?text:parts;
   };
 
-  // tutorCall: calls Gemini directly with model from modelDef, proper message formatting
+  // tutorCall: delegates to the shared _geminiRequest (handles key rotation, cooldown, v1 endpoint)
   const tutorCall = async function(modelDef, systemPrompt, hist) {
-    var modelName = (modelDef && modelDef.model) || "gemini-2.0-flash";
-    var key = nextGeminiKey();
-    var url = "https://generativelanguage.googleapis.com/v1beta/models/" + modelName + ":generateContent?key=" + key;
-    // Build Gemini contents from history — extract plain text from each message
+    // Build Gemini contents from history — prefer _d.text for clean plain-text history
     var contents = [];
     for (var i = 0; i < hist.length; i++) {
       var m = hist[i];
       var role = m.role === "assistant" ? "model" : "user";
-      // Prefer _d.text (the display text), fall back to content string/array
       var textVal = "";
-      if (m._d && typeof m._d.text === "string") {
-        textVal = m._d.text;
-      } else if (typeof m.content === "string") {
-        textVal = m.content;
-      } else if (Array.isArray(m.content)) {
-        textVal = m.content.filter(function(p) { return p.type === "text"; })
-          .map(function(p) { return p.text || ""; }).join("\n");
+      if (m._d && typeof m._d.text === "string") textVal = m._d.text;
+      else if (typeof m.content === "string") textVal = m.content;
+      else if (Array.isArray(m.content)){
+        textVal = m.content.filter(function(p){return p.type==="text";})
+          .map(function(p){return p.text||"";}).join("\n");
       }
       if (!textVal.trim()) continue;
-      // Merge consecutive same-role turns
-      if (contents.length > 0 && contents[contents.length - 1].role === role) {
-        contents[contents.length - 1].parts[0].text += "\n" + textVal;
+      if (contents.length > 0 && contents[contents.length-1].role === role){
+        contents[contents.length-1].parts[0].text += "\n" + textVal;
       } else {
-        contents.push({ role: role, parts: [{ text: textVal }] });
+        contents.push({role:role, parts:[{text:textVal}]});
       }
     }
-    // Must start with user
     while (contents.length > 0 && contents[0].role !== "user") contents.shift();
-    if (!contents.length) contents.push({ role: "user", parts: [{ text: "Hello" }] });
-    var reqBody = { contents: contents, generationConfig: { maxOutputTokens: 1500, temperature: 0.7 } };
-    if (systemPrompt) reqBody.systemInstruction = { parts: [{ text: systemPrompt }] };
-    var resp = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(reqBody) });
-    var dat = await resp.json();
-    if (dat.error) throw new Error(dat.error.message || "Gemini error " + (dat.error.code || ""));
-    var txt = _geminiExtract(dat);
-    if (!txt) throw new Error("Empty response from " + modelName);
-    return txt;
+    if (!contents.length) contents.push({role:"user", parts:[{text:"Hello"}]});
+    var reqBody = {contents:contents, generationConfig:{maxOutputTokens:1500, temperature:0.7}};
+    if (systemPrompt) reqBody.systemInstruction = {parts:[{text:systemPrompt}]};
+    return _geminiRequest(reqBody);
   };
   // Keep callAI / callGemini aliases so other callsites keep working
   const callAI = async function(modelDef, systemPrompt, hist) { return tutorCall(modelDef, systemPrompt, hist); };
