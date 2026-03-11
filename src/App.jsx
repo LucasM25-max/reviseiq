@@ -60,6 +60,9 @@ function getDisplayName(email) {
 const EXAM_BOARDS = ["AQA","Edexcel","Eduqas","OCR","WJEC"];
 const DEFAULT_BOARD = "AQA";
 
+// Personal subjects key — stored in personal (non-shared) storage per user
+const SK_PERSONAL = u => "gcse:ps:"+u.replace(/\W/g,"-");
+
 const SK = {
   ACCOUNTS:  "gcse:accounts",
   PROG:      u => `gcse:prog:${u.replace(/\W/g,"-")}`,
@@ -74,25 +77,18 @@ const hashPw = s => btoa(encodeURIComponent(s)).slice(0,32);
 const ADMIN_PASS_HASH = hashPw("ReviseIQAdmin");
 const ADMIN_SCHOOL = "Gordon's School";
 
-// ── AI: Groq (free, no billing required) ─────────────────────────────────────
-// Get free keys at console.groq.com — sign up, go to API Keys, create one.
-// Each key: 14,400 requests/day free. Add multiple keys from multiple accounts.
-const GROQ_KEYS = [
-  "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",
+// ── AI: Groq via Vercel proxy (/api/ai) ──────────────────────────────────────
+// API key lives in Vercel Environment Variables as GROQ_API_KEY — never in browser code.
+// The /api/ai serverless function proxies requests to Groq, eliminating all CORS issues.
+var GEMINI_KEYS = []; // legacy alias — no longer used directly
+const TUTOR_MODELS = [
+  {model:"llama-3.3-70b-versatile", label:"Llama 3.3 70B", dailyLimit:999},
 ];
-const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
-// Models tried in order — if one fails, next is tried automatically
 var _GROQ_MODELS = [
   "llama-3.3-70b-versatile",
   "llama-3.1-8b-instant",
   "gemma2-9b-it",
   "mixtral-8x7b-32768",
-];
-// Keep GEMINI_KEYS as alias so any legacy references don't break
-var GEMINI_KEYS = GROQ_KEYS;
-
-const TUTOR_MODELS = [
-  {model:"llama-3.3-70b-versatile", label:"Llama 3.3 70B", dailyLimit:999},
 ];
 const tutorUsageKey=function(u){return "gcse:tu:"+(u||"").replace(/\W/g,"-")+":"+new Date().toISOString().slice(0,10);};
 async function getTutorUsage(u){
@@ -102,27 +98,10 @@ async function incTutorUsage(u,modelName){
   try{var k2=tutorUsageKey(u);var cur=await getTutorUsage(u);cur[modelName]=(cur[modelName]||0)+1;await window.storage.set(k2,JSON.stringify(cur),true);}catch(e){}
 }
 async function pickTutorModel(u){ return TUTOR_MODELS[0]; }
-function nextGeminiKey(){ return GROQ_KEYS[0]||""; } // legacy stub
+function nextGeminiKey(){ return ""; } // legacy stub
 
-var _gkIdx = 0;
-var _keyCooldown = {};
-var _KEY_COOLDOWN_MS = 60000;
-
-// Retry fetch once on network failure (handles intermittent "Failed to fetch")
-async function _fetchWithRetry(url, opts) {
-  var lastErr;
-  for(var attempt=0; attempt<2; attempt++){
-    try{
-      if(attempt>0) await new Promise(function(r){setTimeout(r,500);});
-      return await fetch(url, opts);
-    }catch(e){ lastErr=e; }
-  }
-  throw lastErr;
-}
-
-// Core caller — OpenAI-compatible format, works with Groq
+// Core caller — calls the /api/ai Vercel proxy, tries each model in order
 async function _aiRequest(systemPrompt, messages){
-  // Build messages array
   var msgs = [];
   if(systemPrompt) msgs.push({role:"system", content:systemPrompt});
   for(var i=0;i<messages.length;i++){
@@ -136,63 +115,44 @@ async function _aiRequest(systemPrompt, messages){
         .map(function(p){return p.text||"";}).join("\n");
     }
     if(!txt.trim()) continue;
-    // Merge consecutive same-role turns
     if(msgs.length>0 && msgs[msgs.length-1].role===role){
       msgs[msgs.length-1].content += "\n"+txt;
     } else {
       msgs.push({role:role, content:txt});
     }
   }
-  // Must end with a user message
   if(!msgs.length || msgs[msgs.length-1].role!=="user"){
     msgs.push({role:"user", content:"Hello"});
   }
 
-  var validKeys = GROQ_KEYS.filter(function(k){return k&&k.length>10&&k!=="PASTE_GROQ_KEY_HERE";});
-  if(!validKeys.length) throw new Error("No Groq API key set. Add your key from console.groq.com into the GROQ_KEYS array in App.jsx.");
-
-  var lastErr = new Error("AI unavailable — all keys exhausted.");
+  var lastErr = new Error("AI unavailable.");
   for(var mi=0; mi<_GROQ_MODELS.length; mi++){
-    var model = _GROQ_MODELS[mi];
-    for(var ki=0; ki<validKeys.length; ki++){
-      if(Date.now() < (_keyCooldown[ki]||0)) continue;
-      try{
-        var resp = await _fetchWithRetry(GROQ_URL,{
-          method:"POST",
-          headers:{"Content-Type":"application/json","Authorization":"Bearer "+validKeys[ki]},
-          body:JSON.stringify({model:model, messages:msgs, max_tokens:1500, temperature:0.7})
-        });
-        var dat = await resp.json();
-        if(dat.error){
-          var errMsg = (typeof dat.error==="string")?dat.error:(dat.error.message||"Groq error");
-          var el = errMsg.toLowerCase();
-          // Model not found — try next model
-          if(el.indexOf("model")!==-1 && (el.indexOf("not found")!==-1||el.indexOf("does not exist")!==-1||el.indexOf("not supported")!==-1)){
-            lastErr = new Error(errMsg); break; // break key loop → next model
-          }
-          // Rate limit — cool this key, try next key
-          if(resp.status===429||el.indexOf("rate")!==-1||el.indexOf("limit")!==-1||el.indexOf("quota")!==-1){
-            _keyCooldown[ki] = Date.now()+_KEY_COOLDOWN_MS;
-            lastErr = new Error(errMsg); continue;
-          }
-          throw new Error(errMsg);
+    try{
+      var resp = await fetch("/api/ai",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({model:_GROQ_MODELS[mi], messages:msgs, max_tokens:1500, temperature:0.7})
+      });
+      var dat = await resp.json();
+      if(dat.error){
+        var errMsg = (typeof dat.error==="string")?dat.error:(dat.error.message||"AI error");
+        var el = errMsg.toLowerCase();
+        if(el.indexOf("model")!==-1&&(el.indexOf("not found")!==-1||el.indexOf("does not exist")!==-1)){
+          lastErr=new Error(errMsg); continue; // try next model
         }
-        var text = dat.choices&&dat.choices[0]&&dat.choices[0].message&&dat.choices[0].message.content;
-        if(!text){ lastErr=new Error("Empty response"); continue; }
-        return text; // success!
-      }catch(ex){
-        var em = (ex.message||"").toLowerCase();
-        if(em.indexOf("rate")!==-1||em.indexOf("429")!==-1||em.indexOf("quota")!==-1){
-          _keyCooldown[ki]=Date.now()+_KEY_COOLDOWN_MS;
-        }
-        lastErr=ex; continue;
+        throw new Error(errMsg);
       }
+      var text = dat.choices&&dat.choices[0]&&dat.choices[0].message&&dat.choices[0].message.content;
+      if(!text){ lastErr=new Error("Empty response from AI"); continue; }
+      return text;
+    }catch(ex){
+      lastErr=ex; continue;
     }
   }
   throw lastErr;
 }
 
-// Public API — identical signatures, nothing else in the app needs changing
+// Public API — identical signatures, nothing else needs changing
 async function callGeminiSimple(prompt, maxTokens, _ignored){
   return _aiRequest(null, [{role:"user", content:prompt}]);
 }
@@ -221,6 +181,7 @@ const ALL_SUBJECTS = [
   { id:"dt",           name:"Design & Technology",  icon:"🔧", accent:"#ea580c", light:"#fff7ed", mid:"#ffedd5", dk:"#7c2d12" },
   { id:"drama",        name:"Drama",                icon:"🎭", accent:"#a855f7", light:"#faf5ff", mid:"#f3e8ff", dk:"#581c87" },
   { id:"music",        name:"Music",                icon:"🎵", accent:"#f43f5e", light:"#fff1f2", mid:"#ffe4e6", dk:"#881337" },
+  { id:"politics",     name:"Politics",             icon:"🏛️", accent:"#0f766e", light:"#f0fdfa", mid:"#ccfbf1", dk:"#134e4a", _politics:true },
 ];
 
 const SM2_QUALITY_MAP = [0, 3, 4, 5];
@@ -3650,7 +3611,7 @@ function AppFooter({D, onContact}) {
           {" · "}Built with the help of{" "}
           <span style={{color:"#f97316"}}>Claude</span>
           {", AI powered by "}
-          <span style={{color:"#f55036"}}>Groq</span>
+          <span style={{color:"#f55036"}}>Groq / Llama</span>
           {" · "}
           <span style={{fontSize:11}}>Not affiliated with Anthropic or Groq.</span>
         </div>
@@ -3660,6 +3621,336 @@ function AppFooter({D, onContact}) {
         </button>
       </div>
     </footer>
+  );
+}
+
+
+/* ─── PERSONAL SUBJECTS ──────────────────────────────────────────────────── */
+// Generates a stable ID from a string
+function _psId(s){ return (s||"").toLowerCase().replace(/[^a-z0-9]/g,"-").replace(/-+/g,"-").slice(0,30)+"-"+Math.random().toString(36).slice(2,6); }
+
+// Modal: create or edit a personal subject
+function CreatePersonalSubjectModal({D, onSave, onClose}) {
+  const [name,setName] = React.useState("");
+  const [icon,setIcon] = React.useState("📚");
+  const [color,setColor] = React.useState("#6366f1");
+  var icons = ["📚","🔬","🧮","✍️","🌱","🎨","🏃","🎸","💡","🌍","📷","🍎","💻","🏛️","🎭"];
+  var colors = ["#6366f1","#0ea5e9","#10b981","#f59e0b","#ef4444","#a855f7","#ec4899","#0f766e","#d97706","#3b82f6"];
+  var bd = D?"#374151":"#e5e7eb";
+  return (
+    <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:9500,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+      <div onClick={function(e){e.stopPropagation();}} style={{background:D?"#1f2937":"#fff",borderRadius:16,width:440,maxWidth:"96vw",boxShadow:"0 30px 80px rgba(0,0,0,.3)",padding:28}}>
+        <h2 style={{fontSize:17,fontWeight:700,marginBottom:18}}>✨ New Personal Subject</h2>
+        <div style={{marginBottom:14}}>
+          <label style={{fontSize:11,fontWeight:700,color:D?"#9ca3af":"#6b7280",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:"0.05em"}}>Subject Name *</label>
+          <input value={name} onChange={function(e){setName(e.target.value);}} placeholder="e.g. Spanish Vocabulary, Piano Theory…"
+            style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid "+bd,background:D?"#111827":"#f9fafb",color:D?"#f9fafb":"#111827",fontSize:13}}/>
+        </div>
+        <div style={{marginBottom:14}}>
+          <label style={{fontSize:11,fontWeight:700,color:D?"#9ca3af":"#6b7280",display:"block",marginBottom:8,textTransform:"uppercase",letterSpacing:"0.05em"}}>Icon</label>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+            {icons.map(function(ic){return (
+              <button key={ic} onClick={function(){setIcon(ic);}}
+                style={{width:36,height:36,borderRadius:8,border:"2px solid "+(ic===icon?color:bd),background:ic===icon?color+"22":"transparent",fontSize:18,cursor:"pointer"}}>
+                {ic}
+              </button>
+            );})}
+          </div>
+        </div>
+        <div style={{marginBottom:22}}>
+          <label style={{fontSize:11,fontWeight:700,color:D?"#9ca3af":"#6b7280",display:"block",marginBottom:8,textTransform:"uppercase",letterSpacing:"0.05em"}}>Colour</label>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+            {colors.map(function(c){return (
+              <button key={c} onClick={function(){setColor(c);}}
+                style={{width:28,height:28,borderRadius:7,background:c,border:c===color?"3px solid "+c:"2px solid transparent",boxShadow:c===color?"0 0 0 2px white, 0 0 0 4px "+c:"none",cursor:"pointer"}}/>
+            );})}
+          </div>
+        </div>
+        <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
+          <button onClick={onClose} style={{padding:"9px 18px",borderRadius:10,border:"1px solid "+bd,background:"transparent",color:D?"#e5e7eb":"#374151",cursor:"pointer",fontSize:13}}>Cancel</button>
+          <button disabled={!name.trim()} onClick={function(){if(!name.trim())return;onSave({id:_psId(name),name:name.trim(),icon:icon,accent:color,light:color+"18",mid:color+"28",topics:[]});}}
+            style={{padding:"9px 20px",borderRadius:10,border:"none",background:name.trim()?"#6366f1":"#d1d5db",color:"#fff",fontWeight:600,fontSize:13,cursor:name.trim()?"pointer":"not-allowed"}}>
+            Create Subject
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Modal: add a topic to a personal subject
+function AddPersonalTopicModal({D, onSave, onClose}) {
+  const [title,setTitle] = React.useState("");
+  var bd = D?"#374151":"#e5e7eb";
+  return (
+    <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:9500,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+      <div onClick={function(e){e.stopPropagation();}} style={{background:D?"#1f2937":"#fff",borderRadius:16,width:380,maxWidth:"96vw",boxShadow:"0 30px 80px rgba(0,0,0,.3)",padding:28}}>
+        <h2 style={{fontSize:16,fontWeight:700,marginBottom:16}}>＋ Add Topic</h2>
+        <input autoFocus value={title} onChange={function(e){setTitle(e.target.value);}}
+          onKeyDown={function(e){if(e.key==="Enter"&&title.trim())onSave({id:_psId(title),title:title.trim(),notes:[],flashcards:[]});}}
+          placeholder="Topic title…"
+          style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid "+bd,background:D?"#111827":"#f9fafb",color:D?"#f9fafb":"#111827",fontSize:13,marginBottom:16}}/>
+        <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
+          <button onClick={onClose} style={{padding:"8px 16px",borderRadius:9,border:"1px solid "+bd,background:"transparent",color:D?"#e5e7eb":"#374151",cursor:"pointer",fontSize:13}}>Cancel</button>
+          <button disabled={!title.trim()} onClick={function(){if(title.trim())onSave({id:_psId(title),title:title.trim(),notes:[],flashcards:[]});}}
+            style={{padding:"8px 16px",borderRadius:9,border:"none",background:title.trim()?"#6366f1":"#d1d5db",color:"#fff",fontWeight:600,fontSize:13,cursor:title.trim()?"pointer":"not-allowed"}}>
+            Add
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Personal subject section screen (notes + flashcards, AI-assisted)
+function PersonalSectionScreen({D, subj, topic, user, onBack, onSave}) {
+  const [noteText,setNoteText] = React.useState("");
+  const [fcFront,setFcFront] = React.useState("");
+  const [fcBack,setFcBack] = React.useState("");
+  const [aiText,setAiText] = React.useState("");
+  const [aiLoading,setAiLoading] = React.useState(false);
+  const [aiErr,setAiErr] = React.useState("");
+  const [tab,setTab] = React.useState("notes");
+  const [flip,setFlip] = React.useState(false);
+  const [fcIdx,setFcIdx] = React.useState(0);
+  var bd = D?"#374151":"#e5e7eb";
+  var tx2 = D?"#f9fafb":"#111827";
+  var bg = D?"#111827":"#f9fafb";
+
+  var notes = topic.notes||[];
+  var flashcards = topic.flashcards||[];
+
+  function addNote(){
+    if(!noteText.trim()) return;
+    var n={id:_psId(noteText),text:noteText.trim(),created:Date.now()};
+    onSave({...topic,notes:[...notes,n]});
+    setNoteText("");
+  }
+
+  function deleteNote(id){
+    onSave({...topic,notes:notes.filter(function(n){return n.id!==id;})});
+  }
+
+  function addFlashcard(){
+    if(!fcFront.trim()||!fcBack.trim()) return;
+    var fc={id:_psId(fcFront),front:fcFront.trim(),back:fcBack.trim()};
+    onSave({...topic,flashcards:[...flashcards,fc]});
+    setFcFront(""); setFcBack("");
+  }
+
+  function deleteFlashcard(id){
+    onSave({...topic,flashcards:flashcards.filter(function(f){return f.id!==id;})});
+    if(fcIdx>=flashcards.length-1) setFcIdx(Math.max(0,flashcards.length-2));
+  }
+
+  function generateFromText(){
+    if(!aiText.trim()) return;
+    setAiLoading(true); setAiErr("");
+    var topicSnap = topic;
+    var notesSnap = notes;
+    var flashcardsSnap = flashcards;
+    var p;
+    if(tab==="notes"){
+      p = "You are a study assistant. The user has pasted the following text. Extract the key facts and turn them into clear, concise bullet-point notes. Return ONLY the notes as a plain text list, one point per line starting with \u2022.\n\n"+aiText;
+      callGeminiSimple(p, 1200).then(function(result){
+        var ls = result.split("\n").filter(function(l){return l.trim();});
+        var newNotes = ls.map(function(l){return {id:_psId(l),text:l.replace(/^\u2022\s*/,"").trim(),created:Date.now()};});
+        onSave(Object.assign({},topicSnap,{notes:notesSnap.concat(newNotes)}));
+        setAiText("");
+        setAiLoading(false);
+      }).catch(function(e){setAiErr(e.message||"AI error — try again");setAiLoading(false);});
+    } else {
+      p = "You are a study assistant. The user has pasted the following text. Create 6-10 flashcard question-answer pairs covering the key facts. Return ONLY valid JSON (no markdown): [{\"front\":\"question\",\"back\":\"answer\"}]\n\n"+aiText;
+      callGeminiSimple(p, 1200).then(function(raw){
+        var s=raw.indexOf("["), e2=raw.lastIndexOf("]");
+        if(s<0||e2<0) throw new Error("Could not parse AI response");
+        var arr = JSON.parse(raw.slice(s,e2+1));
+        var newFcs = arr.map(function(item){return {id:_psId(item.front||"fc"),front:(item.front||"").trim(),back:(item.back||"").trim()};});
+        onSave(Object.assign({},topicSnap,{flashcards:flashcardsSnap.concat(newFcs)}));
+        setAiText("");
+        setAiLoading(false);
+      }).catch(function(e){setAiErr(e.message||"AI error — try again");setAiLoading(false);});
+    }
+  }
+
+  var curFc = flashcards[fcIdx]||null;
+
+  return (
+    <div style={{minHeight:"100vh",background:bg,color:tx2}} className="fade-in">
+      <div style={{maxWidth:760,margin:"0 auto",padding:"32px 24px"}}>
+        <button onClick={onBack} style={{fontSize:13,color:D?"#9ca3af":"#6b7280",background:"none",border:"none",cursor:"pointer",marginBottom:16}}>← Back</button>
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:24}}>
+          <div style={{width:44,height:44,borderRadius:12,background:subj.accent+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22}}>{subj.icon}</div>
+          <div>
+            <h2 style={{fontSize:18,fontWeight:700,margin:0}}>{topic.title}</h2>
+            <p style={{fontSize:12,color:D?"#9ca3af":"#6b7280",margin:0}}>{subj.name} · Personal</p>
+          </div>
+        </div>
+
+        <div style={{display:"flex",borderBottom:"1px solid "+bd,marginBottom:20,gap:2}}>
+          {[["notes","📖 Notes"],["flashcards","🃏 Flashcards"]].map(function(pair){var t=pair[0],label=pair[1];return (
+            <button key={t} onClick={function(){setTab(t);setFlip(false);}}
+              style={{padding:"10px 16px",fontSize:13,fontWeight:tab===t?600:400,color:tab===t?subj.accent:D?"#9ca3af":"#6b7280",background:"none",border:"none",cursor:"pointer",borderBottom:tab===t?"2px solid "+subj.accent:"2px solid transparent",marginBottom:-1}}>
+              {label}
+            </button>
+          );})}
+        </div>
+
+        {/* AI Generate from text */}
+        <div style={{background:D?"#1f2937":"#fff",border:"1px solid "+bd,borderRadius:12,padding:16,marginBottom:20}}>
+          <div style={{fontSize:12,fontWeight:700,color:D?"#9ca3af":"#6b7280",marginBottom:8}}>🤖 AI Generate {tab==="notes"?"Notes":"Flashcards"} from Text</div>
+          <textarea value={aiText} onChange={function(e){setAiText(e.target.value);}}
+            placeholder={"Paste any text, paragraphs or notes here and AI will generate "+( tab==="notes"?"bullet-point notes":"flashcard pairs")+" from it…"}
+            rows={3} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+bd,background:D?"#111827":"#f9fafb",color:tx2,fontSize:12,resize:"vertical",boxSizing:"border-box"}}/>
+          {aiErr&&<p style={{fontSize:12,color:"#ef4444",margin:"6px 0 0"}}>{aiErr}</p>}
+          <button disabled={!aiText.trim()||aiLoading} onClick={generateFromText}
+            style={{marginTop:8,padding:"7px 16px",borderRadius:8,border:"none",background:aiText.trim()&&!aiLoading?subj.accent:"#d1d5db",color:"#fff",fontWeight:600,fontSize:12,cursor:aiText.trim()&&!aiLoading?"pointer":"not-allowed"}}>
+            {aiLoading?"Generating…":"✨ Generate"}
+          </button>
+        </div>
+
+        {tab==="notes"&&(
+          <div>
+            <div style={{display:"flex",gap:8,marginBottom:16}}>
+              <input value={noteText} onChange={function(e){setNoteText(e.target.value);}}
+                onKeyDown={function(e){if(e.key==="Enter")addNote();}}
+                placeholder="Add a note…"
+                style={{flex:1,padding:"9px 12px",borderRadius:8,border:"1px solid "+bd,background:D?"#111827":"#f9fafb",color:tx2,fontSize:13}}/>
+              <button disabled={!noteText.trim()} onClick={addNote}
+                style={{padding:"9px 16px",borderRadius:8,border:"none",background:noteText.trim()?subj.accent:"#d1d5db",color:"#fff",fontWeight:600,fontSize:13,cursor:noteText.trim()?"pointer":"not-allowed"}}>Add</button>
+            </div>
+            {notes.length===0&&<p style={{fontSize:13,color:D?"#9ca3af":"#6b7280",textAlign:"center",padding:"32px 0"}}>No notes yet. Add one above or use AI to generate from text.</p>}
+            {notes.map(function(n){return (
+              <div key={n.id} style={{background:D?"#1f2937":"#fff",border:"1px solid "+bd,borderRadius:10,padding:"12px 14px",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10}}>
+                <p style={{fontSize:13,lineHeight:1.7,margin:0,flex:1,whiteSpace:"pre-wrap"}}>{n.text}</p>
+                <button onClick={function(){deleteNote(n.id);}} style={{background:"none",border:"none",color:"#ef4444",cursor:"pointer",fontSize:14,flexShrink:0,padding:"0 4px"}}>✕</button>
+              </div>
+            );})}
+          </div>
+        )}
+
+        {tab==="flashcards"&&(
+          <div>
+            {curFc?(
+              <div style={{marginBottom:20}}>
+                <div onClick={function(){setFlip(function(f){return !f;});}}
+                  style={{cursor:"pointer",background:D?"#1f2937":"#fff",border:"2px solid "+subj.accent,borderRadius:16,padding:"32px 24px",textAlign:"center",minHeight:140,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",marginBottom:12,userSelect:"none"}}>
+                  <div style={{fontSize:10,fontWeight:700,color:subj.accent,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:8}}>{flip?"Answer":"Question"}</div>
+                  <div style={{fontSize:16,fontWeight:600}}>{flip?curFc.back:curFc.front}</div>
+                  <div style={{fontSize:11,color:D?"#6b7280":"#9ca3af",marginTop:10}}>Tap to flip</div>
+                </div>
+                <div style={{display:"flex",gap:10,justifyContent:"space-between",alignItems:"center"}}>
+                  <button disabled={fcIdx===0} onClick={function(){setFcIdx(function(i){return i-1;});setFlip(false);}}
+                    style={{padding:"7px 16px",borderRadius:8,border:"1px solid "+bd,background:"transparent",color:D?"#e5e7eb":"#374151",cursor:fcIdx===0?"not-allowed":"pointer",opacity:fcIdx===0?0.4:1}}>← Prev</button>
+                  <span style={{fontSize:12,color:D?"#9ca3af":"#6b7280"}}>{fcIdx+1} / {flashcards.length}</span>
+                  <div style={{display:"flex",gap:8}}>
+                    <button onClick={function(){deleteFlashcard(curFc.id);}} style={{padding:"7px 12px",borderRadius:8,border:"1px solid #ef4444",background:"none",color:"#ef4444",cursor:"pointer",fontSize:12}}>Delete</button>
+                    <button disabled={fcIdx>=flashcards.length-1} onClick={function(){setFcIdx(function(i){return i+1;});setFlip(false);}}
+                      style={{padding:"7px 16px",borderRadius:8,border:"1px solid "+bd,background:"transparent",color:D?"#e5e7eb":"#374151",cursor:fcIdx>=flashcards.length-1?"not-allowed":"pointer",opacity:fcIdx>=flashcards.length-1?0.4:1}}>Next →</button>
+                  </div>
+                </div>
+              </div>
+            ):(
+              <p style={{fontSize:13,color:D?"#9ca3af":"#6b7280",textAlign:"center",padding:"24px 0"}}>No flashcards yet. Add some below or use AI to generate from text.</p>
+            )}
+            <div style={{background:D?"#1f2937":"#fff",border:"1px solid "+bd,borderRadius:12,padding:16}}>
+              <div style={{fontSize:12,fontWeight:700,color:D?"#9ca3af":"#6b7280",marginBottom:10}}>＋ Add Flashcard</div>
+              <input value={fcFront} onChange={function(e){setFcFront(e.target.value);}} placeholder="Front (question / term)"
+                style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid "+bd,background:D?"#111827":"#f9fafb",color:tx2,fontSize:13,marginBottom:8,boxSizing:"border-box"}}/>
+              <input value={fcBack} onChange={function(e){setFcBack(e.target.value);}} placeholder="Back (answer / definition)"
+                style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid "+bd,background:D?"#111827":"#f9fafb",color:tx2,fontSize:13,marginBottom:10,boxSizing:"border-box"}}/>
+              <button disabled={!fcFront.trim()||!fcBack.trim()} onClick={addFlashcard}
+                style={{padding:"8px 16px",borderRadius:8,border:"none",background:fcFront.trim()&&fcBack.trim()?subj.accent:"#d1d5db",color:"#fff",fontWeight:600,fontSize:12,cursor:fcFront.trim()&&fcBack.trim()?"pointer":"not-allowed"}}>
+                Add Flashcard
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Personal subject screen — lists topics, allows adding new ones
+function PersonalSubjectScreen({D, subj, personalSubjects, onBack, onSaveSubjects, user}) {
+  const [addTopicOpen,setAddTopicOpen] = React.useState(false);
+  const [activeTopic,setActiveTopic] = React.useState(null);
+  const [editingName,setEditingName] = React.useState(false);
+  const [newName,setNewName] = React.useState(subj.name);
+  var bd = D?"#374151":"#e5e7eb";
+  var bg = D?"#111827":"#f9fafb";
+  var tx2 = D?"#f9fafb":"#111827";
+
+  if(activeTopic){
+    function saveTopicData(updated){
+      var newSubj = {...subj,topics:subj.topics.map(function(t){return t.id===updated.id?updated:t;})};
+      var newPs = personalSubjects.map(function(s){return s.id===subj.id?newSubj:s;});
+      onSaveSubjects(newPs);
+    }
+    return <PersonalSectionScreen D={D} subj={subj} topic={activeTopic} user={user} onBack={function(){setActiveTopic(null);}} onSave={saveTopicData}/>;
+  }
+
+  function deleteSelf(){
+    if(window.confirm("Delete subject "+subj.name+" and all its content? This cannot be undone."))
+      onSaveSubjects(personalSubjects.filter(function(s){return s.id!==subj.id;}));
+  }
+
+  function deleteTopic(id){
+    var newSubj = {...subj,topics:subj.topics.filter(function(t){return t.id!==id;})};
+    onSaveSubjects(personalSubjects.map(function(s){return s.id===subj.id?newSubj:s;}));
+  }
+
+  return (
+    <div style={{minHeight:"100vh",background:bg,color:tx2}} className="fade-in">
+      <div style={{maxWidth:960,margin:"0 auto",padding:"32px 24px"}}>
+        <button onClick={onBack} style={{fontSize:13,color:D?"#9ca3af":"#6b7280",background:"none",border:"none",cursor:"pointer",marginBottom:20}}>← My Subjects</button>
+        <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:24,flexWrap:"wrap"}}>
+          <div style={{width:56,height:56,borderRadius:16,background:subj.accent+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26}}>{subj.icon}</div>
+          <div style={{flex:1,minWidth:0}}>
+            {editingName?(
+              <input autoFocus value={newName} onChange={function(e){setNewName(e.target.value);}}
+                onBlur={function(){if(newName.trim()){var ns={...subj,name:newName.trim()};onSaveSubjects(personalSubjects.map(function(s){return s.id===subj.id?ns:s;}));}setEditingName(false);}}
+                onKeyDown={function(e){if(e.key==="Enter"){if(newName.trim()){var ns={...subj,name:newName.trim()};onSaveSubjects(personalSubjects.map(function(s){return s.id===subj.id?ns:s;}));}setEditingName(false);}if(e.key==="Escape")setEditingName(false);}}
+                style={{fontSize:20,fontWeight:700,border:"2px solid "+subj.accent,borderRadius:8,padding:"4px 10px",background:"transparent",color:tx2,width:"100%"}}/>
+            ):(
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <h2 style={{fontSize:22,fontWeight:700,margin:0}}>{subj.name}</h2>
+                <button onClick={function(){setEditingName(true);setNewName(subj.name);}} style={{background:"none",border:"1px solid #9ca3af",borderRadius:6,cursor:"pointer",fontSize:12,color:"#9ca3af",padding:"3px 8px"}}>✏️</button>
+              </div>
+            )}
+            <p style={{fontSize:12,color:D?"#9ca3af":"#6b7280",margin:"4px 0 0"}}>Personal Subject · Only visible to you</p>
+          </div>
+          <button onClick={deleteSelf} style={{padding:"7px 14px",borderRadius:9,border:"1px solid #ef4444",background:"none",color:"#ef4444",fontWeight:600,fontSize:12,cursor:"pointer"}}>Delete Subject</button>
+        </div>
+
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+          <h3 style={{fontSize:15,fontWeight:700,margin:0}}>Topics</h3>
+          <button onClick={function(){setAddTopicOpen(true);}}
+            style={{padding:"7px 16px",borderRadius:9,border:"none",background:subj.accent,color:"#fff",fontWeight:600,fontSize:13,cursor:"pointer"}}>＋ Add Topic</button>
+        </div>
+
+        {subj.topics.length===0&&<div style={{textAlign:"center",padding:"40px 0",color:D?"#9ca3af":"#6b7280",fontSize:13}}>No topics yet — add one above to get started.</div>}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:12}}>
+          {subj.topics.map(function(t){return (
+            <div key={t.id} style={{position:"relative"}}>
+              <div role="button" tabIndex={0} onClick={function(){setActiveTopic(t);}}
+                style={{padding:"14px 16px",borderRadius:12,border:"1.5px solid "+bd,background:"transparent",cursor:"pointer",textAlign:"left",transition:"all .15s",color:tx2}}
+                onMouseEnter={function(e){e.currentTarget.style.borderColor=subj.accent;e.currentTarget.style.background=subj.accent+"12";}}
+                onMouseLeave={function(e){e.currentTarget.style.borderColor=bd;e.currentTarget.style.background="transparent";}}>
+                <div style={{fontWeight:600,fontSize:13,marginBottom:6,paddingRight:28}}>{t.title}</div>
+                <div style={{display:"flex",gap:8}}>
+                  <span style={{fontSize:11,color:D?"#9ca3af":"#6b7280"}}>📝 {(t.notes||[]).length}</span>
+                  <span style={{fontSize:11,color:D?"#9ca3af":"#6b7280"}}>🃏 {(t.flashcards||[]).length}</span>
+                </div>
+              </div>
+              <button onClick={function(){deleteTopic(t.id);}} style={{position:"absolute",top:6,right:6,background:"#fee2e2",border:"1.5px solid #ef4444",borderRadius:5,cursor:"pointer",fontSize:10,color:"#ef4444",padding:"2px 6px",fontWeight:700}}>✕</button>
+            </div>
+          );})}
+        </div>
+
+        {addTopicOpen&&<AddPersonalTopicModal D={D} onClose={function(){setAddTopicOpen(false);}} onSave={function(t){var newSubj={...subj,topics:[...subj.topics,t]};onSaveSubjects(personalSubjects.map(function(s){return s.id===subj.id?newSubj:s;}));setAddTopicOpen(false);}}/>}
+      </div>
+    </div>
   );
 }
 
@@ -3929,6 +4220,10 @@ export default function App() {
   const [cramMode,setCramMode] = useState(false);
   const [importOpen,setImportOpen] = useState(false);
   const [manageAccountsOpen,setManageAccountsOpen] = useState(false);
+  // Personal subjects — private to each user, not shared
+  const [personalSubjects,setPersonalSubjects] = useState([]);
+  const [personalScreen,setPersonalScreen] = useState(null); // null | {subjId} | {subjId,secId}
+  const [createPersonalOpen,setCreatePersonalOpen] = useState(false);
   const [fcHist,setFCH]      = useState({});
 
   const [qIdx,setQIdx]       = useState(0);
@@ -3947,6 +4242,7 @@ export default function App() {
   const [streakPop,setStreakPop] = useState(false);
 
   const [modal,setModal]     = useState(null);
+  const [editingTitle,setEditingTitle] = useState(null); // {id, parentId?, value}
   const [ttSubj,setTTSubj]   = useState(null);
   const [ttItems,setTTI]     = useState([]);
   const [ttIdx,setTTIdx]     = useState(0);
@@ -4067,6 +4363,11 @@ export default function App() {
         if(tr?.value){const td=JSON.parse(tr.value);if(td.exams&&Array.isArray(td.exams))setTimetableExams(td.exams);}
       }catch(_){}
       await ensureAllBoardsLoaded(savedSels);
+      // Load personal subjects (private to this user)
+      try{
+        const pr=await window.storage.get(SK_PERSONAL(user),false);
+        if(pr?.value){var ps=JSON.parse(pr.value);if(Array.isArray(ps))setPersonalSubjects(ps);}
+      }catch(_){}
     })();
   },[user,ready]);
 
@@ -4092,6 +4393,11 @@ export default function App() {
   },[]);
 
   const saveAccounts = async n => { try{await window.storage.set(SK.ACCOUNTS,JSON.stringify(n),true);}catch(_){} };
+  const savePersonalSubjects = (ps) => {
+    if(!user) return;
+    setPersonalSubjects(ps);
+    window.storage.set(SK_PERSONAL(user),JSON.stringify(ps),false).catch(()=>{});
+  };
   // Global keyboard shortcuts
   useEffect(()=>{
     const handler=(e)=>{
@@ -4346,6 +4652,34 @@ export default function App() {
     if(secId===sId){setScreen("subject");setSecId(null);}
   };
 
+  // Rename a custom topic or subtopic title
+  const renameCustomTopic = (topicId, newTitle) => {
+    if(!subjDef||!newTitle.trim()) return;
+    const sId=subjDef.id, b=curBoard;
+    setBoardData(prev=>{
+      const cur=prev[sId+":"+b]||{custom:[],extras:{},papers:[]};
+      const next={...cur,custom:cur.custom.map(cs=>{
+        if(cs.id===topicId) return {...cs,title:newTitle.trim()};
+        return cs;
+      })};
+      window.storage.set(SK.CUSTOM(sId,b),JSON.stringify(next.custom),true).catch(()=>{});
+      return{...prev,[sId+":"+b]:next};
+    });
+  };
+  const renameCustomSubtopic = (parentTopicId, subtopicId, newTitle) => {
+    if(!subjDef||!newTitle.trim()) return;
+    const sId=subjDef.id, b=curBoard;
+    setBoardData(prev=>{
+      const cur=prev[sId+":"+b]||{custom:[],extras:{},papers:[]};
+      const next={...cur,custom:cur.custom.map(cs=>{
+        if(cs.id!==parentTopicId) return cs;
+        return {...cs,subtopics:(cs.subtopics||[]).map(st=>st.id===subtopicId?{...st,title:newTitle.trim()}:st)};
+      })};
+      window.storage.set(SK.CUSTOM(sId,b),JSON.stringify(next.custom),true).catch(()=>{});
+      return{...prev,[sId+":"+b]:next};
+    });
+  };
+
   const addPaper = paper => { const cur=getBD(subjDef.id,curBoard); saveBD(subjDef.id,curBoard,{papers:[...cur.papers,paper]}); setModal(null); };
   const deletePaper = id => { const cur=getBD(subjDef.id,curBoard); saveBD(subjDef.id,curBoard,{papers:cur.papers.filter(p=>p.id!==id)}); };
 
@@ -4365,6 +4699,12 @@ export default function App() {
   const bg=D?"#030712":"#f9fafb", bd2=D?"#1f2937":"#e5e7eb";
   const _goEl=<GlobalOverlays D={D} online={online} shortcutModal={shortcutModal} setShortcutModal={setShortcutModal} searchOpen={searchOpen} setSearchOpen={setSearchOpen} onboarding={onboarding} handleOnboardingComplete={handleOnboardingComplete} subjects={subjects} allSections={allSections} boardData={boardData} boardSels={boardSels} handleSearchNavigate={handleSearchNavigate} screen={screen} onHome={()=>setScreen("home")} onMock={()=>setScreen("mock")} onTutor={()=>{setTutorSubjId(null);setScreen("tutor");}} onTimetable={()=>setScreen("timetable")} onDash={()=>setScreen("dashboard")} streak={streak}/>;
 const hProps={user,D,onDark:()=>setD(!D),onHome:()=>setScreen("home"),onDash:()=>setScreen("dashboard"),onTarget:()=>{setTTSubj(null);setScreen("target")},onTimetable:()=>setScreen("timetable"),onBlurt:()=>{setBlurtSubjId(null);setBlurtSecId2(null);setScreen("blurting");},onMock:()=>setScreen("mock"),onTutor:()=>{setTutorSubjId(null);setScreen("tutor");},onCoach:()=>setScreen("coach"),onFriends:()=>setScreen("friends"),streak,onSearch:()=>setSearchOpen(true),globalOverlays:_goEl};
+
+  // Personal subject routing — handled before the main screen router
+  if(personalScreen&&personalScreen.subjId){
+    var _ps = personalSubjects.find(function(s){return s.id===personalScreen.subjId;});
+    if(_ps) return <PersonalSubjectScreen D={D} subj={_ps} personalSubjects={personalSubjects} user={user} onBack={function(){setPersonalScreen(null);}} onSaveSubjects={savePersonalSubjects}/>;
+  }
 
   if(screen==="login"){
     const uTrim=nameIn.trim().toLowerCase();
@@ -4468,7 +4808,7 @@ const hProps={user,D,onDark:()=>setD(!D),onHome:()=>setScreen("home"),onDash:()=
 
   if(screen==="mock") return (<>
     <Header {...hProps}/>
-    <MockExamScreen user={user} D={D} subjects={subjects} allSections={allSections} boardSels={boardSels} boardData={boardData} onBack={()=>setScreen("home")} onMarkActivity={markTodayActive}/>
+    <MockExamScreen user={user} D={D} subjects={subjects.filter(function(s){return !s._politics;})} allSections={allSections} boardSels={boardSels} boardData={boardData} onBack={()=>setScreen("home")} onMarkActivity={markTodayActive}/>
   </>);
 
   if(screen==="tutor") return (<>
@@ -4599,6 +4939,37 @@ const hProps={user,D,onDark:()=>setD(!D),onHome:()=>setScreen("home"),onDash:()=
           })}
         </div>
       </div>
+      {/* ── My Personal Subjects ── */}
+      <div style={{maxWidth:960,margin:"0 auto",padding:"0 24px 32px"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,marginTop:8}}>
+          <div>
+            <h3 style={{fontSize:16,fontWeight:700,margin:0,color:D?"#f9fafb":"#111827"}}>📚 My Subjects</h3>
+            <p style={{fontSize:11,color:D?"#6b7280":"#9ca3af",margin:"2px 0 0"}}>Personal content — only visible to you</p>
+          </div>
+          <button onClick={()=>setCreatePersonalOpen(true)}
+            style={{padding:"7px 16px",borderRadius:9,border:"none",background:"#6366f1",color:"#fff",fontWeight:600,fontSize:13,cursor:"pointer"}}>＋ New Subject</button>
+        </div>
+        {personalSubjects.length===0&&(
+          <div style={{padding:"20px 16px",borderRadius:12,border:"1.5px dashed "+(D?"#374151":"#d1d5db"),textAlign:"center",color:D?"#6b7280":"#9ca3af",fontSize:13}}>
+            Create personal subjects for anything you want to learn — Spanish vocab, music theory, anything. Only you can see them.
+          </div>
+        )}
+        {personalSubjects.length>0&&(
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:12}}>
+            {personalSubjects.map(function(ps){return (
+              <button key={ps.id} onClick={()=>setPersonalScreen({subjId:ps.id})}
+                style={{...C(D),padding:20,textAlign:"left",cursor:"pointer",display:"block",width:"100%",transition:"transform .15s"}}
+                onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";}}
+                onMouseLeave={e=>{e.currentTarget.style.transform="";}}>
+                <div style={{width:40,height:40,borderRadius:10,background:ps.accent+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,marginBottom:10}}>{ps.icon}</div>
+                <div style={{fontWeight:700,fontSize:14,marginBottom:4}}>{ps.name}</div>
+                <span style={{fontSize:11,color:mu(D),background:D?"#1f2937":"#f3f4f6",padding:"2px 7px",borderRadius:10}}>{(ps.topics||[]).length} topics</span>
+              </button>
+            );})}
+          </div>
+        )}
+      </div>
+      {createPersonalOpen&&<CreatePersonalSubjectModal D={D} onClose={()=>setCreatePersonalOpen(false)} onSave={function(ns){savePersonalSubjects([...personalSubjects,ns]);setCreatePersonalOpen(false);}}/>}
       <AppFooter D={D} onContact={()=>setScreen("contact")}/>
     </div>
    );
@@ -4658,8 +5029,18 @@ const hProps={user,D,onDark:()=>setD(!D),onHome:()=>setScreen("home"),onDash:()=
               })()}
             </div>
           </div>
+          {subj._politics&&<div style={{padding:"12px 16px",borderRadius:12,background:D?"#134e4a22":"#f0fdfa",border:"1.5px solid #0f766e",marginBottom:20,display:"flex",flexWrap:"wrap",alignItems:"center",gap:10}}>
+            <span style={{fontSize:18}}>🏛️</span>
+            <div style={{flex:1,minWidth:200}}>
+              <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap",marginBottom:3}}>
+                <span style={{fontWeight:700,fontSize:13,color:"#0f766e"}}>General Political Knowledge</span>
+                <span style={{fontSize:11,fontWeight:700,background:"#0f766e",color:"#fff",padding:"2px 8px",borderRadius:20}}>🔄 Updated Weekly</span>
+              </div>
+              <p style={{fontSize:12,color:D?"#9ca3af":"#6b7280",margin:0}}>This is <strong>not GCSE content</strong> — it's factual, non-biased political awareness for well-rounded world knowledge. Notes only. Use the AI Tutor to explore any topic further.</p>
+            </div>
+          </div>}
           <div style={{display:"flex",borderBottom:`1px solid ${bd2}`,marginBottom:24,gap:2}}>
-            {[["sections","📚 Topics"],["papers","📄 Past Papers"]].map(([t,label])=>(
+            {(subj._politics?[["sections","📚 Topics"]]:[["sections","📚 Topics"],["papers","📄 Past Papers"]]).map(([t,label])=>(
               <button key={t} onClick={()=>setSubjTab(t)} style={{padding:"10px 18px",fontSize:13,fontWeight:subjTab===t?600:400,color:subjTab===t?subj.accent:mu(D),background:"none",border:"none",cursor:"pointer",borderBottom:subjTab===t?`2px solid ${subj.accent}`:"2px solid transparent",marginBottom:-1,transition:"color .15s"}}>{label}</button>
             ))}
           </div>
@@ -4673,8 +5054,17 @@ const hProps={user,D,onDark:()=>setD(!D),onHome:()=>setScreen("home"),onDash:()=
                   return tp._adminGroups.map(grp=>(
                     <div key={grp._adminTopicId} style={{...C(D),marginBottom:14,padding:22}}>
                       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,marginBottom:grp.sections.length>0?14:10,flexWrap:"wrap"}}>
-                        <span style={{fontWeight:700,fontSize:15}}>{grp._adminTopicTitle}</span>
+                        {admin&&editingTitle&&editingTitle.id===grp._adminTopicId?(
+                          <input autoFocus value={editingTitle.value}
+                            onChange={e=>setEditingTitle(t=>({...t,value:e.target.value}))}
+                            onBlur={()=>{renameCustomTopic(grp._adminTopicId,editingTitle.value);setEditingTitle(null);}}
+                            onKeyDown={e=>{if(e.key==="Enter"){renameCustomTopic(grp._adminTopicId,editingTitle.value);setEditingTitle(null);}if(e.key==="Escape")setEditingTitle(null);}}
+                            style={{fontWeight:700,fontSize:15,border:"1.5px solid #6366f1",borderRadius:6,padding:"2px 8px",background:"transparent",color:"inherit",flex:1}}/>
+                        ):(
+                          <span style={{fontWeight:700,fontSize:15}}>{grp._adminTopicTitle}</span>
+                        )}
                         {admin&&<div style={{display:"flex",gap:8,alignItems:"center"}}>
+                          {!editingTitle&&<button onClick={()=>setEditingTitle({id:grp._adminTopicId,value:grp._adminTopicTitle})} style={{background:"none",border:"1px solid #9ca3af",borderRadius:7,cursor:"pointer",fontSize:11,color:"#9ca3af",padding:"3px 9px"}}>✏️</button>}
                           <button onClick={()=>setModal({mode:"subtopic",_parentTopicId:grp._adminTopicId})} style={{...B("#6366f1",true,{fontSize:12,padding:"5px 12px"})}}>＋ Sub-topic</button>
                           <button onClick={()=>deleteCustomSec(grp._adminTopicId)} style={{background:"#fee2e2",border:"1.5px solid #ef4444",borderRadius:8,cursor:"pointer",fontSize:12,color:"#ef4444",padding:"5px 10px",fontWeight:700}}>✕ Delete</button>
                         </div>}
@@ -4690,7 +5080,16 @@ const hProps={user,D,onDark:()=>setD(!D),onHome:()=>setScreen("home"),onDash:()=
                               onMouseEnter={e=>{e.currentTarget.style.borderColor=subj.accent;e.currentTarget.style.background=subj.light}}
                               onMouseLeave={e=>{e.currentTarget.style.borderColor=bd2;e.currentTarget.style.background="transparent"}}>
                               <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:6,marginBottom:5}}>
-                              <div style={{fontSize:13,fontWeight:600}}>{sec.title}</div>
+                              {admin&&editingTitle&&editingTitle.id===sec.id?(
+                                <input autoFocus value={editingTitle.value}
+                                  onClick={e=>e.stopPropagation()}
+                                  onChange={e=>setEditingTitle(t=>({...t,value:e.target.value}))}
+                                  onBlur={()=>{if(sec._isSubtopic)renameCustomSubtopic(grp._adminTopicId,sec.id,editingTitle.value);else renameCustomTopic(sec.id,editingTitle.value);setEditingTitle(null);}}
+                                  onKeyDown={e=>{if(e.key==="Enter"){if(sec._isSubtopic)renameCustomSubtopic(grp._adminTopicId,sec.id,editingTitle.value);else renameCustomTopic(sec.id,editingTitle.value);setEditingTitle(null);}if(e.key==="Escape")setEditingTitle(null);}}
+                                  style={{fontSize:13,fontWeight:600,border:"1.5px solid #6366f1",borderRadius:6,padding:"2px 6px",background:"transparent",color:"inherit",width:"100%"}}/>
+                              ):(
+                                <div style={{fontSize:13,fontWeight:600}}>{sec.title}</div>
+                              )}
                               {(()=>{
   const cards=sec.flashcards||[];
   if(!cards.length) return null;
@@ -4707,12 +5106,15 @@ const hProps={user,D,onDark:()=>setD(!D),onHome:()=>setScreen("home"),onDash:()=
                                 <span style={{fontSize:11,color:mu(D)}}>❓ {(sec.questions||[]).length}</span>
                               </div>
                             </div>
-                            {admin&&<button
-                              onClick={e=>{e.stopPropagation();
-                                if(sec._isSubtopic)deleteSubtopic(grp._adminTopicId,sec.id);
-                                else deleteCustomSec(sec.id);
-                              }}
-                              style={{position:"absolute",top:6,right:6,background:"#fee2e2",border:"1.5px solid #ef4444",borderRadius:6,cursor:"pointer",fontSize:11,color:"#ef4444",zIndex:10,padding:"3px 7px",lineHeight:1,fontWeight:700}}>✕</button>}
+                            {admin&&<div style={{position:"absolute",top:6,right:6,display:"flex",gap:4}}>
+                              {!editingTitle&&<button onClick={e=>{e.stopPropagation();setEditingTitle({id:sec.id,parentId:sec._isSubtopic?grp._adminTopicId:null,value:sec.title});}} style={{background:"none",border:"1px solid #9ca3af",borderRadius:5,cursor:"pointer",fontSize:10,color:"#9ca3af",padding:"2px 5px"}}>✏️</button>}
+                              <button
+                                onClick={e=>{e.stopPropagation();
+                                  if(sec._isSubtopic)deleteSubtopic(grp._adminTopicId,sec.id);
+                                  else deleteCustomSec(sec.id);
+                                }}
+                                style={{background:"#fee2e2",border:"1.5px solid #ef4444",borderRadius:5,cursor:"pointer",fontSize:10,color:"#ef4444",padding:"2px 5px",fontWeight:700}}>✕</button>
+                            </div>}
                           </div>
                         ))}
                       </div>
@@ -4835,7 +5237,7 @@ const hProps={user,D,onDark:()=>setD(!D),onHome:()=>setScreen("home"),onDash:()=
           </div>
 
           <div style={{display:"flex",borderBottom:`1px solid ${bd2}`,marginBottom:24,gap:2}}>
-            {[["notes","📖 Notes"],["flashcards","🃏 Flashcards"],["questions","❓ Questions"]].map(([t,label])=>(
+            {(subj._politics?[["notes","📖 Notes"]]:[["notes","📖 Notes"],["flashcards","🃏 Flashcards"],["questions","❓ Questions"]]).map(([t,label])=>(
               <button key={t} onClick={()=>setTab(t)} style={{padding:"10px 16px",fontSize:13,fontWeight:tab===t?600:400,color:tab===t?subj.accent:mu(D),background:"none",border:"none",cursor:"pointer",borderBottom:tab===t?`2px solid ${subj.accent}`:"2px solid transparent",marginBottom:-1,transition:"color .15s"}}>{label}</button>
             ))}
           </div>
