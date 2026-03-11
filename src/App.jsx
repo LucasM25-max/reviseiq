@@ -73,7 +73,6 @@ const ADMIN_SCHOOL = "Gordon's School";
 const GEMINI_KEYS = [
   "AIzaSyBqKAvYVR-yM_LAEKvbO8lCiNxnlNIVZOw",
   "AIzaSyA9F-0KmeFKwY7bFLQL1Vg0g85cRSKZwmE",
-  // Add more keys here — one per Google account
 ];
 
 // AI Tutor — Gemini model config
@@ -142,7 +141,7 @@ async function _geminiRequest(reqBody){
     }
     try{
       // Use v1 (stable) endpoint
-      var url = "https://generativelanguage.googleapis.com/v1/models/"+_GEMINI_MODEL+":generateContent?key="+key;
+      var url = "https://generativelanguage.googleapis.com/v1beta/models/"+_GEMINI_MODEL+":generateContent?key="+key;
       var resp = await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(reqBody)});
       var dat = await resp.json();
       if(dat.error){
@@ -203,8 +202,11 @@ async function callGeminiChat(_modelIgnored, systemPrompt, messages, _ignored){
   }
   while(contents.length>0&&contents[0].role!=="user") contents.shift();
   if(!contents.length) contents.push({role:"user",parts:[{text:"Hello"}]});
+  // Prepend system prompt into the first user message — universally supported
+  if(systemPrompt){
+    contents[0].parts[0].text = systemPrompt + "\n\n---\n\n" + contents[0].parts[0].text;
+  }
   var reqBody={contents:contents,generationConfig:{maxOutputTokens:1500,temperature:0.7}};
-  if(systemPrompt) reqBody.systemInstruction={parts:[{text:systemPrompt}]};
   return _geminiRequest(reqBody);
 }
 // Account format helpers (supports both legacy string and new {h,gki} object)
@@ -2989,8 +2991,11 @@ Style: warm, encouraging, clear. Use ## headings and bullet points to organise l
     }
     while (contents.length > 0 && contents[0].role !== "user") contents.shift();
     if (!contents.length) contents.push({role:"user", parts:[{text:"Hello"}]});
+    // Prepend system prompt into the first user message — universally supported
+    if (systemPrompt){
+      contents[0].parts[0].text = systemPrompt + "\n\n---\n\n" + contents[0].parts[0].text;
+    }
     var reqBody = {contents:contents, generationConfig:{maxOutputTokens:1500, temperature:0.7}};
-    if (systemPrompt) reqBody.systemInstruction = {parts:[{text:systemPrompt}]};
     return _geminiRequest(reqBody);
   };
   // Keep callAI / callGemini aliases so other callsites keep working
