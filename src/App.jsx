@@ -74,13 +74,18 @@ const GEMINI_KEYS = [
   "AIzaSyA9F-0KmeFKwY7bFLQL1Vg0g85cRSKZwmE",
 ];
 
-// Models tried in order per request — skips any that return "not found"
+// Models tried in order per request — skips any that return "not found" or "limit:0"
 var _AI_MODELS = [
   "gemini-2.0-flash",
   "gemini-2.0-flash-lite",
+  "gemini-2.0-flash-exp",
   "gemini-1.5-flash",
+  "gemini-1.5-flash-latest",
   "gemini-1.5-flash-8b",
-  "gemini-1.0-pro",
+  "gemini-1.5-flash-8b-latest",
+  "gemini-1.5-pro",
+  "gemini-1.5-pro-latest",
+  "gemini-pro",
 ];
 
 // AI Tutor model config (for display/usage tracking)
@@ -163,15 +168,22 @@ async function _aiRequest(systemPrompt, messages){
           var status = dat.error.status||"";
           var msg = dat.error.message||"Gemini error";
           var ml = msg.toLowerCase();
-          // Model not available on this project — try next model
-          if(ml.indexOf("not found")!==-1 || ml.indexOf("not supported")!==-1 ||
-             ml.indexOf("does not exist")!==-1 || ml.indexOf("invalid model")!==-1){
+          // "limit: 0" means this project has ZERO access to this model.
+          // The KEY is fine — mark the MODEL as bad and try the next model.
+          // Do NOT put the key on cooldown or it won't be tried for other models.
+          if(ml.indexOf("limit: 0")!==-1 || ml.indexOf("limit:0")!==-1){
             modelBad = true; lastErr = new Error(msg); break;
           }
-          // Quota/rate — put key on cooldown, try next key
+          // Model not found / not supported — skip entire model, keys are fine
+          if(ml.indexOf("not found")!==-1 || ml.indexOf("not supported")!==-1 ||
+             ml.indexOf("does not exist")!==-1 || ml.indexOf("invalid model")!==-1 ||
+             ml.indexOf("not available")!==-1){
+            modelBad = true; lastErr = new Error(msg); break;
+          }
+          // Genuine rate limit (not limit:0) — key is temporarily exhausted, try next key
           if(code===429 || status==="RESOURCE_EXHAUSTED" ||
-             ml.indexOf("quota")!==-1 || ml.indexOf("rate")!==-1 ||
-             ml.indexOf("limit")!==-1 || ml.indexOf("exhausted")!==-1){
+             ml.indexOf("quota exceeded")!==-1 || ml.indexOf("rate limit")!==-1 ||
+             ml.indexOf("exhausted")!==-1){
             _keyCooldown[ki] = Date.now()+_KEY_COOLDOWN_MS;
             lastErr = new Error(msg); continue;
           }
