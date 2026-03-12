@@ -414,95 +414,195 @@ async function blurtAnalyse(notesText, blurtText) {
   return JSON.parse(s>=0&&e>=0?clean.slice(s,e+1):clean);
 }
 
+/* ─── GENERATE PARTED PAPER ─────────────────────────────────────────────────── */
+// Generates structured GCSE-style questions with numbered groups and lettered parts.
+// Returns [{id,type:"structured",number,context,totalMarks,parts:[{label,type,marks,text,markScheme,...}]}]
+async function generatePartedPaper(subjName, board, paper, mergedTopics) {
+  var notesCtx = mergedTopics.flatMap(function(t){
+    return t.sections.flatMap(function(s){
+      return (s.notes||[]).map(function(n){ return n.heading+": "+stripHtml(n.body); });
+    });
+  }).slice(0,12).join("\n");
+
+  var contextBlock = notesCtx
+    ? ("Revision content for context:\n" + notesCtx)
+    : ("Use standard " + board + " GCSE " + subjName + " content.");
+
+  var numGroups = paper.numGroups || 10;
+  var specGuide = paper.specGuide || "";
+  var totalMarks = paper.m || 80;
+
+  var prompt = "You are an expert " + board + " GCSE " + subjName + " examiner and paper setter.\n" +
+    "Generate a complete, realistic " + board + " GCSE " + subjName + " mock exam: \"" + paper.n + "\".\n\n" +
+    "CRITICAL MARKS REQUIREMENT: All parts across all questions MUST total EXACTLY " + totalMarks + " marks. Count carefully.\n" +
+    "Time allowed: " + paper.d + " minutes.\n" +
+    (paper.markDist ? "Mark distribution: " + paper.markDist + "\n" : "") +
+    "\nSPECIFICATION GUIDANCE:\n" + specGuide + "\n" +
+    "\nContext (use where relevant):\n" + contextBlock + "\n\n" +
+    "Generate exactly " + numGroups + " numbered question groups.\n\n" +
+    "STRUCTURE RULES:\n" +
+    "- Each group is numbered (1, 2, 3...) and has 2-5 lettered parts: (a), (b), (c), (d), (e)\n" +
+    "- Parts escalate in demand: (a) recall/state [1-2 marks] → middle parts describe/apply/calculate [2-4 marks] → final part explain/evaluate [4-9 marks]\n" +
+    "- context field: optional shared stimulus (data table, scenario, diagram description, quote) — use empty string if none\n" +
+    "- DO NOT include mark allocations in the question text\n" +
+    "- Use authentic " + board + " command words: state, name, identify, describe, explain, calculate, evaluate, compare, suggest, justify, assess\n" +
+    "- Mark schemes: detailed bullet-point using [1] per mark. Calculations: M1 method + A1 answer. Extended: Level 1-3 or 1-4 descriptors + indicative content\n" +
+    "- Cover DIVERSE topics — do not repeat the same topic twice\n" +
+    "- Include at least one data-based or graph-based question\n\n" +
+    "RESPOND ONLY with a valid JSON array. No markdown, no backticks, no extra text.\n" +
+    "Each element:\n" +
+    "{\"id\":\"q1\",\"type\":\"structured\",\"number\":1,\"context\":\"stimulus text or empty string\",\"totalMarks\":N,\"parts\":[\n" +
+    "  {\"label\":\"(a)\",\"type\":\"short\",\"marks\":1,\"text\":\"State...\",\"markScheme\":\"• Correct answer [1]\"},\n" +
+    "  {\"label\":\"(b)\",\"type\":\"short\",\"marks\":3,\"text\":\"Describe...\",\"markScheme\":\"• Point [1]\\n• Point [1]\\n• Point [1]\"},\n" +
+    "  {\"label\":\"(c)\",\"type\":\"extended\",\"marks\":6,\"text\":\"Evaluate...\",\"markScheme\":\"Level 3 (5-6): Detailed...\\nLevel 2 (3-4): Some...\\nLevel 1 (1-2): Basic...\\nIndicative content: ...\"}\n" +
+    "]}\n" +
+    "For MCQ parts also include: \"options\":[\"A text\",\"B text\",\"C text\",\"D text\"],\"answer\":0,\"explanation\":\"why A is correct\"";
+
+  var lastErr = null;
+  for (var attempt = 0; attempt < 3; attempt++) {
+    try {
+      if(attempt > 0) await new Promise(function(res){ setTimeout(res, 1000 * attempt); });
+      var raw = await callGeminiSimple(prompt, 7000);
+      var fence = "`"+"`"+"`";
+      raw = raw.split(fence+"json").join("").split(fence).join("").trim();
+      var start = raw.indexOf("[");
+      var end   = raw.lastIndexOf("]");
+      if(start < 0 || end < 0) throw new Error("No JSON array in response");
+      raw = raw.slice(start, end+1);
+      var groups = JSON.parse(raw);
+      if(!Array.isArray(groups) || !groups.length) throw new Error("Empty array");
+      return groups.map(function(g){
+        return Object.assign({}, g, {
+          id: g.id || ("q" + (g.number || uid())),
+          parts: (g.parts||[]).map(function(p){
+            return Object.assign({}, p, {id: g.id + "-" + (p.label||uid()).replace(/[^a-z0-9]/gi,"")});
+          })
+        });
+      });
+    } catch(e) { lastErr = e; }
+  }
+  throw lastErr;
+}
+
+
 /* ─── MOCK EXAM SPECS ────────────────────────────────────────────────────────── */
 const MOCK_SPECS={
   "maths:AQA":[
-    {n:"Paper 1 – Non-Calculator",d:90,m:80,paperType:"standard",mcq:0,sh:0,ex:0,free:80,
-     desc:"All Maths topics. No calculator. Show all working clearly.",
+    {n:"Paper 1 – Non-Calculator",d:90,m:80,paperType:"parted",numGroups:22,
+     markDist:"Target EXACTLY 80 marks total across all groups. Questions vary 1-6 marks each: questions 1-5 typically 1-2 marks, questions 6-15 typically 2-4 marks, questions 16-22 typically 3-6 marks",
+     specGuide:"AQA GCSE Maths Higher Tier. Paper 1 is non-calculator. Questions cover: Number, Algebra, Ratio/Proportion/Rates, Geometry/Measures, Probability, Statistics. Include worded problems, show-that proofs, and multi-step reasoning. All questions require written working — no MCQs. At least one algebra question, one geometry question, one statistics question.",
+     desc:"90 min, 80 marks. Non-calculator. All Higher Tier topics. Show all working clearly.",
      skills:["No calculator allowed","Show all working","QWC on some questions"]},
-    {n:"Paper 2 – Calculator",d:90,m:80,paperType:"standard",mcq:0,sh:0,ex:0,free:80,
-     desc:"Calculator allowed. Problem-solving and reasoning questions included.",
-     skills:["Calculator permitted","Problem-solving and reasoning questions"]},
-    {n:"Paper 3 – Calculator",d:90,m:80,paperType:"standard",mcq:0,sh:0,ex:0,free:80,
-     desc:"Calculator allowed. Synoptic paper assessing all content areas.",
-     skills:["Calculator permitted","Synoptic — all topics"]},
+    {n:"Paper 2 – Calculator",d:90,m:80,paperType:"parted",numGroups:22,
+     markDist:"Target EXACTLY 80 marks total across all groups. Questions vary 1-6 marks each: questions 1-5 typically 1-2 marks, questions 6-15 typically 2-4 marks, questions 16-22 typically 3-6 marks",
+     specGuide:"AQA GCSE Maths Higher Tier. Calculator allowed. Include trigonometry, bounds, financial maths, compound interest, reverse percentage, graph interpretation. At least one real-world context question. All questions require written working.",
+     desc:"90 min, 80 marks. Calculator allowed. Problem-solving and reasoning.",
+     skills:["Calculator permitted","Problem-solving","Show all working"]},
+    {n:"Paper 3 – Calculator",d:90,m:80,paperType:"parted",numGroups:22,
+     markDist:"Target EXACTLY 80 marks total across all groups. Slightly higher proportion of 3-6 mark questions than Paper 1",
+     specGuide:"AQA GCSE Maths Higher Tier. Synoptic paper. Include simultaneous equations, circle theorems, vectors, transformations, data analysis. Heavier weighting on multi-step reasoning questions.",
+     desc:"90 min, 80 marks. Calculator allowed. Synoptic — all topics.",
+     skills:["Calculator permitted","Synoptic — all topics","Multi-step reasoning"]},
   ],
   "maths:Edexcel":[
-    {n:"Paper 1 – Non-Calculator",d:90,m:80,paperType:"standard",mcq:0,sh:0,ex:0,free:80,
-     markDist:"40% 1-mark, 35% 2-mark, 20% 3-mark, 10% 4-mark, 3% 5–6 mark",
-     desc:"1 hour 30 min, 80 marks. Non-calculator. Covers all Higher Tier topics.",
-     skills:["No calculator","Show all working","40% 1-mark questions"]},
-    {n:"Paper 2 – Calculator",d:90,m:80,paperType:"standard",mcq:0,sh:0,ex:0,free:80,
-     markDist:"40% 1-mark, 35% 2-mark, 20% 3-mark, 12% 4-mark, 4% 5–6 mark",
-     desc:"1 hour 30 min, 80 marks. Calculator allowed.",
-     skills:["Calculator permitted","40% 1-mark questions"]},
-    {n:"Paper 3 – Calculator",d:90,m:80,paperType:"standard",mcq:0,sh:0,ex:0,free:80,
-     markDist:"35% 1-mark, 35% 2-mark, 25% 3-mark, 15% 4-mark, 5% 5–6 mark",
-     desc:"1 hour 30 min, 80 marks. Calculator allowed. Higher proportion of multi-mark questions.",
-     skills:["Calculator permitted","Higher proportion 3–6 mark questions"]},
+    {n:"Paper 1 – Non-Calculator",d:90,m:80,paperType:"parted",numGroups:22,
+     markDist:"Target EXACTLY 80 marks total. ~40% of questions are 1-mark, ~30% are 2-mark, ~20% are 3-4 mark, ~10% are 5-6 mark",
+     specGuide:"Edexcel GCSE Maths Higher Tier. Non-calculator. Cover: indices, algebraic manipulation, solving equations, quadratics, sequences, angles, areas/volumes. Include at least two 1-mark recall questions at the start of each group.",
+     desc:"90 min, 80 marks. Non-calculator. Higher Tier.",
+     skills:["No calculator","Show all working","~40% 1-mark questions"]},
+    {n:"Paper 2 – Calculator",d:90,m:80,paperType:"parted",numGroups:22,
+     markDist:"Target EXACTLY 80 marks total. ~40% of questions are 1-mark, ~30% are 2-mark, ~20% are 3-4 mark, ~10% are 5-6 mark",
+     specGuide:"Edexcel GCSE Maths Higher Tier. Calculator allowed. Include: Pythagoras, trigonometry, cumulative frequency, box plots, scatter graphs, ratio/proportion, standard form.",
+     desc:"90 min, 80 marks. Calculator allowed.",
+     skills:["Calculator permitted","~40% 1-mark questions","Show working"]},
+    {n:"Paper 3 – Calculator",d:90,m:80,paperType:"parted",numGroups:22,
+     markDist:"Target EXACTLY 80 marks total. Slightly heavier multi-mark weighting: ~30% 1-mark, ~35% 2-mark, ~25% 3-4 mark, ~10% 5-6 mark",
+     specGuide:"Edexcel GCSE Maths Higher Tier. Calculator allowed. More multi-mark questions. Include circle theorems, similar shapes, 3D trigonometry, set notation, conditional probability.",
+     desc:"90 min, 80 marks. Calculator allowed. Higher multi-mark weighting.",
+     skills:["Calculator permitted","Higher proportion 3-6 mark questions"]},
   ],
   "bio:AQA":[
-    {n:"Paper 1",d:105,m:100,paperType:"standard",mcq:0,sh:30,ex:5,free:0,
-     markDist:"45% 1-mark, 30% 2-mark, 14% 3-mark, 7% 4-mark, 4% 6-mark",
-     desc:"1 hr 45 min, 100 marks. Topics 1–4: Cell Biology, Organisation, Infection & Response, Bioenergetics. 10% maths, 15% practical.",
-     skills:["~10% maths skills","~15% practical skills","Short-answer and extended writing","No MCQ section"]},
-    {n:"Paper 2",d:105,m:100,paperType:"standard",mcq:0,sh:30,ex:5,free:0,
-     markDist:"45% 1-mark, 30% 2-mark, 14% 3-mark, 7% 4-mark, 4% 6-mark",
-     desc:"1 hr 45 min, 100 marks. Topics 5–7: Homeostasis, Inheritance, Ecology. 10% maths, 15% practical.",
-     skills:["~10% maths skills","~15% practical skills","Short-answer and extended writing"]},
+    {n:"Paper 1",d:105,m:100,paperType:"parted",numGroups:8,
+     markDist:"Target EXACTLY 100 marks total. ~45% 1-2 mark questions across 8 numbered question groups; at least one 6-mark extended writing in each paper; each numbered question has 4-9 lettered sub-parts (a)-(h)",
+     specGuide:"AQA GCSE Biology Paper 1. Topics 1-4: Cell Biology, Organisation, Infection and Response, Bioenergetics. Include ~10% maths skills (calculate, draw graph, analyse data). Include ~15% practical skills (describe/evaluate required practicals). At least one 6-mark extended writing question using a level-based mark scheme. Questions must reference AQA required practicals where appropriate.",
+     desc:"1h 45min, 100 marks. Topics 1-4: Cell Biology, Organisation, Infection & Response, Bioenergetics.",
+     skills:["~10% maths skills","~15% practical skills","6-mark extended writing"]},
+    {n:"Paper 2",d:105,m:100,paperType:"parted",numGroups:8,
+     markDist:"Target EXACTLY 100 marks total. ~45% 1-2 mark questions across 8 numbered question groups; at least one 6-mark extended writing in each paper; each numbered question has 4-9 lettered sub-parts (a)-(h)",
+     specGuide:"AQA GCSE Biology Paper 2. Topics 5-7: Homeostasis and Response, Inheritance/Variation/Evolution, Ecology. Include hormones, nervous system, DNA, natural selection, food webs, biodiversity. At least one 6-mark extended writing question. Include ~10% maths and ~15% practical skills.",
+     desc:"1h 45min, 100 marks. Topics 5-7: Homeostasis, Inheritance, Ecology.",
+     skills:["~10% maths skills","~15% practical skills","6-mark extended writing"]},
   ],
   "chem:AQA":[
-    {n:"Paper 1",d:105,m:100,paperType:"standard",mcq:0,sh:30,ex:5,free:0,
-     markDist:"45% 1-mark, 30% 2-mark, 14% 3-mark, 7% 4-mark, 4% 6-mark",
-     desc:"1 hr 45 min, 100 marks. Topics 1–5: Atomic structure, Bonding, Quantitative chemistry, Chemical changes, Energy changes. ~20% maths.",
-     skills:["~20% maths skills","~15% practical skills","No MCQ section"]},
-    {n:"Paper 2",d:105,m:100,paperType:"standard",mcq:0,sh:30,ex:5,free:0,
-     markDist:"45% 1-mark, 30% 2-mark, 14% 3-mark, 7% 4-mark, 4% 6-mark",
-     desc:"1 hr 45 min, 100 marks. Topics 6–10: Rate of reaction, Organic chemistry, Analysing resources.",
-     skills:["~20% maths skills","~15% practical skills"]},
+    {n:"Paper 1",d:105,m:100,paperType:"parted",numGroups:8,
+     markDist:"Target EXACTLY 100 marks total. ~45% 1-2 mark questions across 8 numbered question groups; at least one 6-mark extended writing in each paper; each numbered question has 4-9 lettered sub-parts (a)-(h)",
+     specGuide:"AQA GCSE Chemistry Paper 1. Topics 1-5: Atomic structure and periodic table, Bonding, Quantitative chemistry, Chemical changes, Energy changes. Include ~20% maths (mole calculations, balancing equations, yield, concentration). At least one 6-mark extended writing question. Include required practical questions.",
+     desc:"1h 45min, 100 marks. Topics 1-5. ~20% maths skills.",
+     skills:["~20% maths skills","~15% practical skills","6-mark extended writing"]},
+    {n:"Paper 2",d:105,m:100,paperType:"parted",numGroups:8,
+     markDist:"Target EXACTLY 100 marks total. ~45% 1-2 mark questions across 8 numbered question groups; at least one 6-mark extended writing in each paper; each numbered question has 4-9 lettered sub-parts (a)-(h)",
+     specGuide:"AQA GCSE Chemistry Paper 2. Topics 6-10: Rate of reaction, Organic chemistry (alkanes/alkenes/alcohols/carboxylic acids/polymers), Analysing and using resources (water treatment, life cycle assessment, Haber process). At least one 6-mark extended writing question.",
+     desc:"1h 45min, 100 marks. Topics 6-10.",
+     skills:["~20% maths skills","~15% practical skills","6-mark extended writing"]},
   ],
   "phys:AQA":[
-    {n:"Paper 1",d:105,m:100,paperType:"standard",mcq:0,sh:30,ex:5,free:0,
-     markDist:"45% 1-mark, 30% 2-mark, 14% 3-mark, 7% 4-mark, 4% 6-mark",
-     desc:"1 hr 45 min, 100 marks. Topics 1–4: Energy, Electricity, Particle model, Atomic structure. ~30% maths.",
-     skills:["~30% maths skills","~15% practical skills","Show all calculations"]},
-    {n:"Paper 2",d:105,m:100,paperType:"standard",mcq:0,sh:30,ex:5,free:0,
-     markDist:"45% 1-mark, 30% 2-mark, 14% 3-mark, 7% 4-mark, 4% 6-mark",
-     desc:"1 hr 45 min, 100 marks. Topics 5–8: Forces, Waves, Electromagnetism, Space Physics.",
-     skills:["~30% maths skills","~15% practical skills"]},
+    {n:"Paper 1",d:105,m:100,paperType:"parted",numGroups:8,
+     markDist:"Target EXACTLY 100 marks total. ~45% 1-2 mark questions across 8 numbered question groups; at least one 6-mark extended writing in each paper; each numbered question has 4-9 lettered sub-parts (a)-(h)",
+     specGuide:"AQA GCSE Physics Paper 1. Topics 1-4: Energy (stores/transfers/efficiency/power), Electricity (circuits/resistance/charge), Particle model of matter (density/states/gas pressure), Atomic structure (radioactivity/half-life/nuclear equations). Include ~30% maths — show all formula, substitution, rearrangement steps. At least one 6-mark extended writing question.",
+     desc:"1h 45min, 100 marks. Topics 1-4: Energy, Electricity, Particle model, Atomic structure.",
+     skills:["~30% maths skills","~15% practical skills","6-mark extended writing","Show all calculations"]},
+    {n:"Paper 2",d:105,m:100,paperType:"parted",numGroups:8,
+     markDist:"Target EXACTLY 100 marks total. ~45% 1-2 mark questions across 8 numbered question groups; at least one 6-mark extended writing in each paper; each numbered question has 4-9 lettered sub-parts (a)-(h)",
+     specGuide:"AQA GCSE Physics Paper 2. Topics 5-8: Forces (Newton's laws/momentum/stopping distances/pressure), Waves (EM spectrum/sound/reflection/refraction), Electromagnetism (motors/transformers/induction), Space physics (solar system/life cycle of stars/red-shift). Include ~30% maths. At least one 6-mark extended writing question.",
+     desc:"1h 45min, 100 marks. Topics 5-8: Forces, Waves, Electromagnetism, Space.",
+     skills:["~30% maths skills","~15% practical skills","6-mark extended writing"]},
   ],
   "bio:Edexcel":[
-    {n:"Paper 1",d:105,m:100,paperType:"standard",mcq:10,sh:20,ex:4,free:0,
-     desc:"Topics 1–5. Section A: 10 MCQs. Section B: structured questions. ~20% maths, ~25% practical.",
+    {n:"Paper 1",d:105,m:100,paperType:"parted",numGroups:6,
+     markDist:"Section A: 10 MCQs (1 mark each), Section B: structured questions (~90 marks)",
+     specGuide:"Edexcel GCSE Biology Paper 1. Topics 1-5. Start with exactly one group of 10 MCQ parts (1 mark each, single question per option, type:mcq), then 5 groups of structured short/extended questions. Include maths skills ~20% and practical skills ~25%.",
+     desc:"1h 45min, 100 marks. Topics 1-5. Section A: 10 MCQs, Section B: structured.",
      skills:["10 MCQs (Section A)","~20% maths","~25% practical"]},
-    {n:"Paper 2",d:105,m:100,paperType:"standard",mcq:10,sh:20,ex:4,free:0,
-     desc:"Topics 1–7 synoptic. 10 MCQs, then structured questions.",
+    {n:"Paper 2",d:105,m:100,paperType:"parted",numGroups:6,
+     markDist:"Section A: 10 MCQs (1 mark each), Section B: structured questions (~90 marks)",
+     specGuide:"Edexcel GCSE Biology Paper 2. Topics 1-7 synoptic. Start with exactly one group of 10 MCQ parts, then 5 groups of structured questions covering all topics synoptically.",
+     desc:"1h 45min, 100 marks. Topics 1-7 synoptic. 10 MCQs + structured.",
      skills:["10 MCQs","Synoptic across all topics"]},
-    {n:"Paper 3",d:75,m:70,paperType:"standard",mcq:5,sh:15,ex:3,free:0,
-     desc:"Synoptic paper. Topics 1–7. Focus on data analysis and practical skills.",
+    {n:"Paper 3",d:75,m:70,paperType:"parted",numGroups:5,
+     markDist:"Section A: 5 MCQs (1 mark each), Section B: structured questions",
+     specGuide:"Edexcel GCSE Biology Paper 3. Synoptic focus on data analysis, practical skills, and experimental design. Include at least two data-analysis parts. Start with one group of 5 MCQ parts.",
+     desc:"1h 15min, 70 marks. Synoptic. Data analysis and practical skills.",
      skills:["Synoptic questions","Data interpretation","Practical skills"]},
   ],
   "chem:Edexcel":[
-    {n:"Paper 1",d:105,m:100,paperType:"standard",mcq:10,sh:20,ex:4,free:0,
-     desc:"Topics 1–6. Section A: 10 MCQs. Section B: structured questions.",
+    {n:"Paper 1",d:105,m:100,paperType:"parted",numGroups:6,
+     markDist:"Section A: 10 MCQs (1 mark each), Section B: structured questions",
+     specGuide:"Edexcel GCSE Chemistry Paper 1. Topics 1-6. Start with one group of 10 MCQ parts, then 5 structured groups. Include ~20% maths (mole calculations, relative formula mass, percentage yield).",
+     desc:"1h 45min, 100 marks. Topics 1-6.",
      skills:["10 MCQs","~20% maths","~20% practical"]},
-    {n:"Paper 2",d:105,m:100,paperType:"standard",mcq:10,sh:20,ex:4,free:0,
-     desc:"Topics 1–9. 10 MCQs then structured questions. Synoptic elements.",
-     skills:["10 MCQs","Synoptic","Extended writing on chemistry concepts"]},
+    {n:"Paper 2",d:105,m:100,paperType:"parted",numGroups:6,
+     markDist:"Section A: 10 MCQs (1 mark each), Section B: structured questions",
+     specGuide:"Edexcel GCSE Chemistry Paper 2. Topics 1-9 synoptic. Start with one group of 10 MCQ parts, then 5 structured groups. Include extended writing on chemistry concepts.",
+     desc:"1h 45min, 100 marks. Topics 1-9 synoptic.",
+     skills:["10 MCQs","Synoptic","Extended writing"]},
   ],
   "phys:Edexcel":[
-    {n:"Paper 1",d:105,m:100,paperType:"standard",mcq:10,sh:20,ex:4,free:0,
-     desc:"Topics 1–6. Section A: 10 MCQs. Section B: structured questions.",
+    {n:"Paper 1",d:105,m:100,paperType:"parted",numGroups:6,
+     markDist:"Section A: 10 MCQs (1 mark each), Section B: structured questions",
+     specGuide:"Edexcel GCSE Physics Paper 1. Topics 1-6. Start with one group of 10 MCQ parts, then 5 structured groups. Include ~30% maths with formula triangles and multi-step calculations.",
+     desc:"1h 45min, 100 marks. Topics 1-6.",
      skills:["10 MCQs","~30% maths","~15% practical"]},
-    {n:"Paper 2",d:105,m:100,paperType:"standard",mcq:10,sh:20,ex:4,free:0,
-     desc:"Topics 1–8. Astronomy and Energy resources included.",
+    {n:"Paper 2",d:105,m:100,paperType:"parted",numGroups:6,
+     markDist:"Section A: 10 MCQs (1 mark each), Section B: structured questions",
+     specGuide:"Edexcel GCSE Physics Paper 2. Topics 1-8 including Astronomy and Energy resources. Start with one group of 10 MCQ parts, then 5 structured groups.",
+     desc:"1h 45min, 100 marks. Topics 1-8 including Astronomy.",
      skills:["10 MCQs","~30% maths","Astronomy questions"]},
   ],
   "eng-lang:AQA":[
     {n:"Paper 1 – Explorations in Creative Reading & Writing",d:105,m:80,paperType:"structured",
      paperPrompt:"eng-lang-p1",
-     desc:"Section A: Reading unseen literary fiction (40 marks). Section B: Creative writing — description or story opening (40 marks).",
-     skills:["Q1: 4×1-mark MCQ retrieval (lines 1–9)","Q2: 8-mark language analysis","Q3: 8-mark structure analysis","Q4: 20-mark critical evaluation","Q5: 40-mark creative writing (24 content + 16 accuracy)"]},
+     desc:"Section A: Reading unseen literary fiction (40 marks). Section B: Creative writing (40 marks).",
+     skills:["Q1: 4×1-mark MCQ retrieval","Q2: 8-mark language analysis","Q3: 8-mark structure analysis","Q4: 20-mark critical evaluation","Q5: 40-mark creative writing"]},
     {n:"Paper 2 – Writers' Viewpoints & Perspectives",d:105,m:80,paperType:"comingSoon",
      desc:"Coming soon — non-fiction reading + transactional writing.",skills:[]},
   ],
@@ -515,8 +615,8 @@ const MOCK_SPECS={
        {id:"novel",label:"Which 19th-century novel are you studying?",type:"select",
         options:["The Strange Case of Dr Jekyll and Mr Hyde","A Christmas Carol","Great Expectations","Jane Eyre","Frankenstein","Pride and Prejudice","The Sign of Four"]},
      ],
-     desc:"Section A: Shakespeare extract + whole text analysis (30+4 AO4 marks). Section B: 19th-century novel (30 marks).",
-     skills:["Extract + whole text analysis","AO4: 4 SPaG/context marks (Section A)","Focus on writer's methods","PEE/PETAL structure"]},
+     desc:"Section A: Shakespeare (30+4 AO4 marks). Section B: 19th-century novel (30 marks).",
+     skills:["Extract + whole text analysis","AO4: 4 SPaG marks","Focus on writer's methods","PEE/PETAL structure"]},
     {n:"Paper 2 – Modern Texts & Poetry",d:135,m:96,paperType:"comingSoon",
      desc:"Coming soon — modern prose/drama + anthology poetry + unseen poetry.",skills:[]},
   ],
@@ -527,64 +627,67 @@ const MOCK_SPECS={
      paperPrompt:"history-p2-elizabethan",
      configFields:[
        {id:"britishStudy",label:"British depth study",type:"select",
-        options:["Elizabethan England, c1568–1603"],
+        options:["Elizabethan England, c1568-1603"],
         note:"Only Elizabethan England is available in this version."},
        {id:"examYear",label:"Which year are you sitting your exam?",type:"select",
         options:["2026","2027","2028"],
         note:"Determines your Historic Environment question (Q4)."},
      ],
-     desc:"Section B: Elizabethan England. Q1: Interpretation (8 marks). Q2: Importance (8 marks). Q3: Account (8 marks). Q4: Historic Environment (16 marks).",
+     desc:"Section B: Elizabethan England. Q1: Interpretation (8). Q2: Importance (8). Q3: Account (8). Q4: Historic Environment (16).",
      skills:["Q1: Interpretation — 8 marks","Q2: Importance — 8 marks","Q3: Write an account — 8 marks","Q4: Historic Environment essay — 16 marks"]},
   ],
   "geography:AQA":[
-    {n:"Paper 1 – Living with the Physical Environment",d:90,m:88,paperType:"standard",mcq:0,sh:9,ex:3,free:0,
-     desc:"Natural Hazards, Living World, Physical Landscapes in the UK.",
+    {n:"Paper 1 – Living with the Physical Environment",d:90,m:88,paperType:"parted",numGroups:4,
+     markDist:"Mix of 1-mark, 2-mark, 4-mark and 6-mark/9-mark extended questions",
+     specGuide:"AQA GCSE Geography Paper 1. Three sections: A) The Challenge of Natural Hazards (tectonic hazards, weather hazards, climate change), B) The Living World (ecosystems, tropical rainforests, hot deserts), C) Physical Landscapes in the UK (coasts and/or rivers). Each group starts with 1-2 mark recall parts, then builds to a 6 or 9 mark extended answer. Include at least one map/figure-based question (describe what figure X shows). Use AQA command words: name, state, describe, explain, to what extent, assess. At least one 6-mark evaluation question and one 9-mark essay.",
+     desc:"1h 30min, 88 marks. Natural Hazards, Living World, Physical Landscapes.",
      skills:["OS map skills","6-mark and 9-mark extended answers","Data interpretation"]},
-    {n:"Paper 2 – Challenges in the Human Environment",d:90,m:88,paperType:"standard",mcq:0,sh:9,ex:3,free:0,
-     desc:"Urban Issues, Changing Economic World, Resource Management.",
-     skills:["Case study questions","6-mark and 9-mark extended answers"]},
-    {n:"Paper 3 – Geographical Applications",d:75,m:76,paperType:"standard",mcq:0,sh:5,ex:3,free:0,
-     desc:"Issue evaluation + fieldwork questions.",
+    {n:"Paper 2 – Challenges in the Human Environment",d:90,m:88,paperType:"parted",numGroups:4,
+     markDist:"Mix of 1-mark, 2-mark, 4-mark and 6-mark/9-mark extended questions",
+     specGuide:"AQA GCSE Geography Paper 2. Three sections: A) Urban Issues and Challenges (urbanisation, megacities, Rio or UK city case study), B) The Changing Economic World (development gap, NEEs like Nigeria, UK economic change), C) The Challenge of Resource Management (food/water/energy). Each group starts with 1-2 mark recall, builds to 6 or 9 mark extended. Include at least one case study question (refer to a specific named example).",
+     desc:"1h 30min, 88 marks. Urban Issues, Changing Economic World, Resource Management.",
+     skills:["Case study questions","6-mark and 9-mark extended answers","Named examples required"]},
+    {n:"Paper 3 – Geographical Applications",d:75,m:76,paperType:"parted",numGroups:3,
+     markDist:"Issue evaluation and fieldwork questions, culminating in a 12-mark decision-making question",
+     specGuide:"AQA GCSE Geography Paper 3. Section A: Issue evaluation (based on pre-release resource booklet — generate a fictional resource booklet on an environmental or human geography issue, then ask questions about it). Section B: Fieldwork — ask about physical and human fieldwork methods, data collection, presentation, and evaluation. Final question: 12-mark decision-making/evaluation question with 3 extra SPaG marks.",
+     desc:"1h 15min, 76 marks. Issue evaluation + fieldwork.",
      skills:["Pre-release stimulus analysis","Fieldwork skills","12-mark decision-making question"]},
   ],
-  "french:AQA":[
-    {n:"Listening",d:45,m:50,paperType:"comingSoon",desc:"Coming soon.",skills:[]},
-    {n:"Reading",d:60,m:60,paperType:"comingSoon",desc:"Coming soon.",skills:[]},
-    {n:"Writing",d:75,m:60,paperType:"comingSoon",desc:"Coming soon.",skills:[]},
-  ],
-  "spanish:AQA":[
-    {n:"Listening",d:45,m:50,paperType:"comingSoon",desc:"Coming soon.",skills:[]},
-    {n:"Reading",d:60,m:60,paperType:"comingSoon",desc:"Coming soon.",skills:[]},
-    {n:"Writing",d:75,m:60,paperType:"comingSoon",desc:"Coming soon.",skills:[]},
-  ],
-  "german:AQA":[
-    {n:"Listening",d:45,m:50,paperType:"comingSoon",desc:"Coming soon.",skills:[]},
-    {n:"Reading",d:60,m:60,paperType:"comingSoon",desc:"Coming soon.",skills:[]},
-    {n:"Writing",d:75,m:60,paperType:"comingSoon",desc:"Coming soon.",skills:[]},
-  ],
   "business:AQA":[
-    {n:"Paper 1",d:105,m:100,paperType:"standard",mcq:5,sh:8,ex:3,free:0,
-     desc:"Business operations, human resource management, and wider influences.",
-     skills:["5×1-mark MCQ","9-mark and 12-mark extended evaluation questions"]},
-    {n:"Paper 2",d:105,m:100,paperType:"standard",mcq:5,sh:8,ex:3,free:0,
-     desc:"Finance, marketing and external business influences.",
-     skills:["5×1-mark MCQ","Extended evaluation questions"]},
+    {n:"Paper 1",d:105,m:100,paperType:"parted",numGroups:5,
+     markDist:"5×1-mark MCQs, 2-mark, 4-mark, 9-mark, 12-mark questions",
+     specGuide:"AQA GCSE Business Paper 1. Topics: Business in the Real World, Influences on Business, Business Operations, Human Resources. First group: 5 MCQ parts (1 mark each) on key business terms. Remaining groups: structured questions. Include one 9-mark 'Evaluate' question and one 12-mark 'Evaluate/Justify' question with full level-based mark schemes (Level 1-4). Include real business contexts (name a plausible fictional company).",
+     desc:"1h 45min, 100 marks. Business operations, HR, and wider influences.",
+     skills:["5×1-mark MCQ","9-mark evaluate","12-mark evaluate/justify"]},
+    {n:"Paper 2",d:105,m:100,paperType:"parted",numGroups:5,
+     markDist:"5×1-mark MCQs, 2-mark, 4-mark, 9-mark, 12-mark questions",
+     specGuide:"AQA GCSE Business Paper 2. Topics: Finance, Marketing, and external business influences. First group: 5 MCQ parts. Remaining groups include financial calculations (revenue, profit, break-even), marketing mix questions, and one 12-mark evaluation question.",
+     desc:"1h 45min, 100 marks. Finance, marketing, external influences.",
+     skills:["5×1-mark MCQ","Financial calculations","12-mark evaluate"]},
   ],
   "computing:AQA":[
-    {n:"Paper 1 – Computational Thinking & Programming",d:150,m:80,paperType:"standard",mcq:0,sh:9,ex:2,free:0,
-     desc:"Programming, algorithms, computational thinking.",
-     skills:["Trace tables","Pseudocode writing","Program design tasks"]},
-    {n:"Paper 2 – Computer Systems",d:90,m:80,paperType:"standard",mcq:0,sh:9,ex:2,free:0,
-     desc:"Systems architecture, networks, cybersecurity, ethics.",
-     skills:["Binary calculations","Network scenarios","Extended explanations"]},
+    {n:"Paper 1 – Computational Thinking & Programming",d:150,m:80,paperType:"parted",numGroups:5,
+     markDist:"Mix of 1-mark, 2-mark, 4-mark and 8-mark questions",
+     specGuide:"AQA GCSE Computer Science Paper 1. Topics: Algorithms (flowcharts/pseudocode/trace tables/searching/sorting), Programming concepts (variables/loops/conditionals/procedures/functions), Data types, Computational thinking (decomposition/abstraction/pattern recognition). Include at least: one trace table question, one pseudocode-writing question, one algorithm efficiency question. Use AQA pseudocode syntax (x ← value, WHILE, FOR, IF/ELSE, SUBROUTINE). Mark schemes must show exact expected output for trace tables.",
+     desc:"2h 30min, 80 marks. Programming, algorithms, computational thinking.",
+     skills:["Trace tables","Pseudocode writing","Algorithm design"]},
+    {n:"Paper 2 – Computer Systems",d:90,m:80,paperType:"parted",numGroups:5,
+     markDist:"Mix of 1-mark, 2-mark, 4-mark and 8-mark questions",
+     specGuide:"AQA GCSE Computer Science Paper 2. Topics: Systems architecture (CPU/fetch-decode-execute/Von Neumann), Memory (RAM/ROM/secondary storage), Networking (LAN/WAN/protocols/TCP-IP/packet switching), Cybersecurity (threats/malware/social engineering/prevention), Ethical/legal/environmental issues (Data Protection Act, copyright). Include at least: one binary/hex conversion question, one networking scenario question, one ethics discussion question.",
+     desc:"1h 30min, 80 marks. Systems architecture, networks, cybersecurity, ethics.",
+     skills:["Binary/hex calculations","Network scenarios","Ethics discussion"]},
   ],
   "dt:AQA":[
-    {n:"Paper 1 – Core Technical Principles",d:90,m:100,paperType:"standard",mcq:20,sh:7,ex:2,free:0,
-     desc:"Section A: 20×1-mark MCQs. Section B: core technical principles.",
-     skills:["20×1-mark MCQs","Extended design/materials questions"]},
-    {n:"Paper 2 – Specialist Technical Principles",d:60,m:80,paperType:"standard",mcq:5,sh:7,ex:2,free:0,
-     desc:"Specialist focus area questions.",
-     skills:["5 MCQs","8-mark design/evaluation question"]},
+    {n:"Paper 1 – Core Technical Principles",d:90,m:100,paperType:"parted",numGroups:5,
+     markDist:"Section A: 20×1-mark MCQs; Section B: extended questions",
+     specGuide:"AQA GCSE Design and Technology Paper 1. First group: exactly 20 MCQ parts on core technical principles (materials, forces, scales of production, CAD/CAM, sustainability, smart/composite materials). Remaining 4 groups: structured extended questions on: 1) Materials and their properties, 2) Designing and making principles (ergonomics/anthropometrics), 3) New/emerging technologies, 4) Energy/sustainability. Include one 8-mark design question.",
+     desc:"1h 30min, 100 marks. Section A: 20 MCQs. Section B: technical principles.",
+     skills:["20×1-mark MCQs","Extended design questions","Materials knowledge"]},
+    {n:"Paper 2 – Specialist Technical Principles",d:60,m:80,paperType:"parted",numGroups:4,
+     markDist:"5 MCQs, 2-mark, 4-mark and 8-mark questions",
+     specGuide:"AQA GCSE Design and Technology Paper 2. Focus on specialist materials area (textiles, metals, polymers, timber, papers/boards, electronic/mechanical systems). First group: 5 MCQ parts on specialist knowledge. Then 3 structured groups building to an 8-mark evaluation question.",
+     desc:"1h, 80 marks. Specialist area focus.",
+     skills:["5 MCQs","Specialist materials","8-mark evaluation"]},
   ],
   "combined-sci:AQA":[
     {n:"All papers",d:75,m:70,paperType:"comingSoon",desc:"Coming soon — Combined Science Trilogy and Synergy papers.",skills:[]},
@@ -1609,6 +1712,8 @@ function SearchModal({D,subjects,allSections,boardData,boardSels,onNavigate,onCl
   );
 }
 
+
+/* ─── ACCOUNT SCREEN ──────────────────────────────────────────────────────── */
 /* ─── MOBILE BOTTOM NAV ──────────────────────────────────────────────────── */
 function MobileNav({D,screen,onHome,onMock,onTutor,onTimetable,onDash,onLeaderboards,streak}) {
   const tabs=[
@@ -1688,7 +1793,7 @@ function OnboardingWizard({D,onComplete}) {
 }
 
 
-function Header({user,userDisplayName,D,onDark,onHome,onDash,onTarget,onTimetable,onBlurt,onMock,onTutor,onCoach,onLeaderboards,streak,onSearch,globalOverlays,screen}) {
+function Header({user,userDisplayName,D,onDark,onHome,onDash,onTarget,onTimetable,onBlurt,onMock,onTutor,onCoach,onLeaderboards,onAccount,streak,onSearch,globalOverlays,screen}) {
   const [menuOpen,setMenuOpen] = React.useState(false);
   const isMobile = typeof window!=="undefined" && window.innerWidth<640;
   const navItems = [
@@ -1739,11 +1844,13 @@ function Header({user,userDisplayName,D,onDark,onHome,onDash,onTarget,onTimetabl
         <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
           {/* Dark mode */}
           <button onClick={onDark} style={{fontSize:15,background:"none",border:"none",cursor:"pointer",color:mu(D),padding:"4px",borderRadius:6}}>{D?"☀️":"🌙"}</button>
-          {/* User chip */}
-          <div style={{display:"flex",alignItems:"center",gap:6,padding:"4px 10px",borderRadius:20,background:D?"#1f2937":"#f3f4f6",border:`1px solid ${D?"#374151":"#e5e7eb"}`}}>
+          {/* User chip — click to go to account */}
+          <button onClick={onAccount} style={{display:"flex",alignItems:"center",gap:6,padding:"4px 10px",borderRadius:20,background:D?"#1f2937":"#f3f4f6",border:`1px solid ${D?"#374151":"#e5e7eb"}`,cursor:"pointer",transition:"background .15s"}}
+            onMouseEnter={function(e){e.currentTarget.style.background=D?"#374151":"#e5e7eb";}}
+            onMouseLeave={function(e){e.currentTarget.style.background=D?"#1f2937":"#f3f4f6";}}>
             <span style={{fontSize:12,fontWeight:600,color:tx(D),maxWidth:isMobile?80:140,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{displayName}</span>
             {isAdmin(user)&&<span style={{fontSize:9,fontWeight:700,background:"#6366f1",color:"#fff",padding:"1px 6px",borderRadius:10,letterSpacing:"0.04em"}}>ADMIN</span>}
-          </div>
+          </button>
           {/* Mobile hamburger */}
           {isMobile&&<button onClick={function(){setMenuOpen(function(o){return !o;})}} style={{fontSize:16,background:"none",border:"none",cursor:"pointer",color:mu(D),padding:"4px"}}>☰</button>}
         </div>
@@ -1764,6 +1871,81 @@ function Header({user,userDisplayName,D,onDark,onHome,onDash,onTarget,onTimetabl
     </header>
   );
 }
+
+/* ─── ACCOUNT SETTINGS SCREEN ───────────────────────────────────────────────── */
+function AccountScreen({D,user,userDisplayName,userSchool,accounts,onBack,onSave}) {
+  var [dnIn, setDNIn] = React.useState(userDisplayName||"");
+  var [schIn, setSchIn] = React.useState(userSchool||"");
+  var [pwIn, setPwIn] = React.useState("");
+  var [saved, setSaved] = React.useState(false);
+  var [pwErr, setPwErr] = React.useState("");
+
+  var isAdmin = user && user.toLowerCase().indexOf("admin")!==-1;
+  var isEmail = user && user.indexOf("@")!==-1;
+  var bd2=D?"#1f2937":"#e5e7eb";
+
+  var handleSave = function(){
+    if(pwIn&&(pwIn.length<4||pwIn.length>30)){setPwErr("Password must be 4-30 characters.");return;}
+    setPwErr("");
+    var changes={};
+    if(dnIn.trim()) changes.displayName=dnIn.trim();
+    changes.school=schIn.trim();
+    if(pwIn) changes.newPassword=pwIn;
+    onSave(changes);
+    setSaved(true);
+    setTimeout(function(){setSaved(false);},1800);
+  };
+
+  return (
+    <div style={{minHeight:"100vh",background:D?"#030712":"#f0f4ff",display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
+      <div style={{...C(D),width:"100%",maxWidth:440,padding:36,boxShadow:"0 20px 60px rgba(0,0,0,.1)"}}>
+        <button onClick={onBack} style={{fontSize:13,color:mu(D),background:"none",border:"none",cursor:"pointer",marginBottom:20}}>← Back</button>
+        <h2 style={{fontSize:20,fontWeight:700,marginBottom:4,color:tx(D)}}>⚙️ Account Settings</h2>
+        <p style={{fontSize:12,color:mu(D),marginBottom:24}}>Update your profile and leaderboard details</p>
+
+        <div style={{padding:"12px 16px",borderRadius:10,background:D?"#1f2937":"#f3f4f6",marginBottom:24,display:"flex",alignItems:"center",gap:10}}>
+          <div style={{width:36,height:36,borderRadius:"50%",background:"linear-gradient(135deg,#6366f1,#8b5cf6)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:700,fontSize:15,flexShrink:0}}>
+            {(userDisplayName||user||"?")[0].toUpperCase()}
+          </div>
+          <div>
+            <div style={{fontSize:14,fontWeight:700,color:tx(D)}}>{userDisplayName||user}</div>
+            <div style={{fontSize:11,color:mu(D)}}>{isEmail?"Email account":"Username account"}{userSchool?" · "+userSchool:""}</div>
+          </div>
+        </div>
+
+        <div style={{display:"flex",flexDirection:"column",gap:14,marginBottom:20}}>
+          <div>
+            <label style={{fontSize:11,fontWeight:700,color:mu(D),display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:"0.06em"}}>Display Name</label>
+            <input style={I(D)} value={dnIn} onChange={function(e){setDNIn(e.target.value);setSaved(false);}}
+              placeholder="Name shown on leaderboard" maxLength={40}/>
+            <p style={{fontSize:11,color:mu(D),marginTop:4}}>Shown on leaderboards instead of your username/email</p>
+          </div>
+          <div>
+            <label style={{fontSize:11,fontWeight:700,color:mu(D),display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:"0.06em"}}>School</label>
+            <input style={I(D)} value={schIn} onChange={function(e){setSchIn(e.target.value);setSaved(false);}}
+              placeholder="Your school name (for leaderboard)" maxLength={60}/>
+          </div>
+          <div>
+            <label style={{fontSize:11,fontWeight:700,color:mu(D),display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:"0.06em"}}>New Password <span style={{fontWeight:400,color:mu(D),textTransform:"none"}}>(leave blank to keep current)</span></label>
+            <input type="password" style={I(D)} value={pwIn} onChange={function(e){setPwIn(e.target.value);setSaved(false);setPwErr("");}}
+              placeholder="Enter new password" maxLength={30}/>
+            {pwErr&&<p style={{fontSize:11,color:"#ef4444",marginTop:4}}>{pwErr}</p>}
+          </div>
+        </div>
+
+        <button onClick={handleSave}
+          style={{width:"100%",background:saved?"#16a34a":"#6366f1",color:"#fff",border:"none",borderRadius:12,padding:"12px 0",fontSize:14,fontWeight:700,cursor:"pointer",transition:"all .2s",marginBottom:10}}>
+          {saved?"✓ Saved!":"Save Changes"}
+        </button>
+        <button onClick={onBack}
+          style={{width:"100%",background:"transparent",color:mu(D),border:"1.5px solid "+bd2,borderRadius:12,padding:"10px 0",fontSize:13,cursor:"pointer"}}>
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
 
 function AdminBar({D, actions}) {
   return (
@@ -2362,6 +2544,25 @@ function MockExamScreen({D,subjects,allSections,boardSels,boardData,user,onBack,
         return;
       }
 
+      if(paper.paperType==="parted"){
+        var partedGroups;
+        for(var pAttempt=0;pAttempt<3;pAttempt++){
+          try{
+            partedGroups=await generatePartedPaper(subj&&subj.name,selBoard,paper,merged);
+            if(partedGroups&&partedGroups.length) break;
+            if(pAttempt<2) await new Promise(function(res){setTimeout(res,1000*(pAttempt+1));});
+          }catch(pErr){
+            if(pAttempt===2) throw pErr;
+            await new Promise(function(res){setTimeout(res,1000*(pAttempt+1));});
+          }
+        }
+        if(!partedGroups||!partedGroups.length) throw new Error("No question groups generated.");
+        setExtract(null);setExtract2(null);
+        setQuestions(partedGroups);setAnswers({});setQI(0);setTL(paper.d*60);
+        onMarkActivity?.();setPhase("exam");
+        return;
+      }
+
       // Standard paper: draw from question bank + AI fill
       const allQ=merged.flatMap(t=>t.sections.flatMap(s=>(s.questions||[]))).sort(()=>Math.random()-0.5);
       const mcqs=allQ.filter(q=>q.type==="mcq");
@@ -2410,40 +2611,100 @@ function MockExamScreen({D,subjects,allSections,boardSels,boardData,user,onBack,
     }catch(e){setGE("Error: "+e.message);setPhase("setup");}
   };
 
+  // Helper: is this a structured/parted question group?
+  const isParted = q => q && q.type==="structured" && Array.isArray(q.parts) && q.parts.length>0;
+
+  const setAns=(qId,patch)=>setAnswers(p=>({...p,[qId]:{...(p[qId]||{}),...patch}}));
+  // For parted groups: answers[groupId].parts[pi] holds per-part answer
+  const setPartAns=(gId,pi,patch)=>setAnswers(p=>{
+    var cur=p[gId]||{};
+    var parts=[...(cur.parts||[])];
+    parts[pi]={...(parts[pi]||{}),...patch};
+    return {...p,[gId]:{...cur,parts}};
+  });
+  const getPartAns=(gId,pi)=>(answers[gId]?.parts||[])[pi]||{};
+
+  const answeredCount=questions.length>0?questions.filter(function(q){
+    var a=answers[q.id];
+    if(isParted(q)){return (a?.parts||[]).some(function(pa){return pa&&(pa.selOpt!=null||pa.textAns?.trim()||pa.fileAns);});}
+    return a?.selOpt!=null||a?.textAns?.trim()||a?.fileAns;
+  }).length:0;
+
   const doSubmit=async()=>{
     clearInterval(timerRef.current);setPhase("marking");
-    const fa={...answers};
-    const writtenQs=questions.filter(q=>q.type!=="mcq");
-    for(const q of writtenQs){
-      const a=fa[q.id];
-      const ansText=a?.textAns?.trim()||"";
-      const hasFile=!!(a?.fileAns);
+    var fa={...answers};
+    // Mark non-parted written questions
+    var writtenQs=questions.filter(function(q){return !isParted(q)&&q.type!=="mcq";});
+    for(var wi=0;wi<writtenQs.length;wi++){
+      var wq=writtenQs[wi];
+      var wa=fa[wq.id];
+      var ansText=(wa?.textAns||"").trim();
+      var hasFile=!!(wa?.fileAns);
       if(ansText||hasFile){
-        try{const r=await markAnswer(q,ansText||"[student uploaded a handwritten/image answer — please review the uploaded image and mark scheme]");fa[q.id]={...a,result:r};}
-        catch(e){fa[q.id]={...a,result:{score:0,feedback:"AI marking unavailable — please self-mark using the mark scheme."}};}
-      }else{fa[q.id]={...(a||{}),result:{score:0,feedback:"Not attempted."}};}
+        try{var wr=await markAnswer(wq,ansText||"[student uploaded image — see mark scheme]");fa[wq.id]={...wa,result:wr};}
+        catch(e){fa[wq.id]={...(wa||{}),result:{score:0,feedback:"AI marking unavailable — self-mark using the mark scheme."}};}
+      }else{fa[wq.id]={...(wa||{}),result:{score:0,feedback:"Not attempted."}};}
     }
-    let scored=0,total=0;
-    for(const q of questions){
-      const m=Number(q.marks)||0;total+=m;
-      const a=fa[q.id];
-      if(q.type==="mcq"&&a?.selOpt===q.answer)scored+=1;
-      else if(a?.result?.score!=null&&!isNaN(Number(a.result.score)))scored+=Number(a.result.score);
+    // Mark parted question groups
+    var partedQs=questions.filter(isParted);
+    for(var gi=0;gi<partedQs.length;gi++){
+      var grp=partedQs[gi];
+      var gAns=fa[grp.id]||{};
+      var newParts=[...(gAns.parts||[])];
+      for(var pi=0;pi<grp.parts.length;pi++){
+        var part=grp.parts[pi];
+        var pAns=newParts[pi]||{};
+        if(part.type==="mcq"){
+          // MCQ parts self-score
+          newParts[pi]={...pAns};
+        } else {
+          var pText=(pAns.textAns||"").trim();
+          var pFile=!!(pAns.fileAns);
+          if(pText||pFile){
+            try{
+              var fakeQ={id:part.id,text:part.text,marks:part.marks,markScheme:part.markScheme};
+              var pr=await markAnswer(fakeQ,pText||"[student uploaded image — see mark scheme]");
+              newParts[pi]={...pAns,result:pr};
+            }catch(e){newParts[pi]={...pAns,result:{score:0,feedback:"AI marking unavailable — self-mark using mark scheme."}};}
+          } else {
+            newParts[pi]={...pAns,result:{score:0,feedback:"Not attempted."}};
+          }
+        }
+      }
+      fa[grp.id]={...gAns,parts:newParts};
+    }
+    var scored=0,total=0;
+    for(var si=0;si<questions.length;si++){
+      var sq=questions[si];
+      var sa=fa[sq.id];
+      if(isParted(sq)){
+        var sParts=sa?.parts||[];
+        for(var spi=0;spi<sq.parts.length;spi++){
+          var sp=sq.parts[spi];
+          var spa=sParts[spi]||{};
+          var m=Number(sp.marks)||0; total+=m;
+          if(sp.type==="mcq"&&spa.selOpt===sp.answer) scored+=1;
+          else if(spa.result?.score!=null&&!isNaN(Number(spa.result.score))) scored+=Number(spa.result.score);
+        }
+      } else {
+        var m2=Number(sq.marks)||0; total+=m2;
+        if(sq.type==="mcq"&&sa?.selOpt===sq.answer) scored+=1;
+        else if(sa?.result?.score!=null&&!isNaN(Number(sa.result.score))) scored+=Number(sa.result.score);
+      }
     }
     setAnswers(fa);
     var finalPct=total>0?Math.round(scored/total*100):0;
     var finalGrade=pctToGrade(finalPct);
     var finalResults={scored:scored,total:total,pct:finalPct,grade:finalGrade};
     setResults(finalResults);
-    // Save exam history (last 5 per paper)
     try{
       var histKey="gcse:exam-hist:"+(user||"anon")+":"+(selSubj||"")+"-"+(selBoard||"")+"-"+selPaper;
       window.storage.get(histKey).then(function(r){
         var hist=[];
-        try{ if(r&&r.value) hist=JSON.parse(r.value); }catch(e2){}
-        if(!Array.isArray(hist)) hist=[];
+        try{if(r&&r.value)hist=JSON.parse(r.value);}catch(e2){}
+        if(!Array.isArray(hist))hist=[];
         hist.push({date:new Date().toLocaleDateString("en-GB"),scored:scored,total:total,pct:finalPct,grade:finalGrade,paperName:paper&&paper.n});
-        if(hist.length>5) hist=hist.slice(hist.length-5);
+        if(hist.length>5)hist=hist.slice(hist.length-5);
         window.storage.set(histKey,JSON.stringify(hist));
         setExamHistory(hist);
       }).catch(function(){});
@@ -2451,9 +2712,6 @@ function MockExamScreen({D,subjects,allSections,boardSels,boardData,user,onBack,
     setPhase("results");
   };
   doSubmitRef.current=doSubmit;
-
-  const setAns=(qId,patch)=>setAnswers(p=>({...p,[qId]:{...(p[qId]||{}),...patch}}));
-  const answeredCount=questions.length>0?Object.keys(answers).filter(k=>answers[k]?.selOpt!=null||answers[k]?.textAns?.trim()||answers[k]?.fileAns).length:0;
 
   /* ── SETUP PHASE ── */
   if(phase==="setup")return (
@@ -2659,6 +2917,59 @@ function MockExamScreen({D,subjects,allSections,boardSels,boardData,user,onBack,
           <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:20}}>
             {questions.map(function(q,qi){
               var a=answers[q.id];
+              if(isParted(q)){
+                // Parted question review
+                var sParts=a?.parts||[];
+                var totalQ=0,scoredQ=0;
+                (q.parts||[]).forEach(function(pt,pi){var pa=sParts[pi]||{};totalQ+=Number(pt.marks||0);if(pt.type==="mcq"&&pa.selOpt===pt.answer)scoredQ+=1;else if(pa.result?.score!=null&&!isNaN(Number(pa.result.score)))scoredQ+=Number(pa.result.score);});
+                var qScCol=scoredQ===0?"#ef4444":scoredQ>=totalQ*0.7?"#16a34a":"#d97706";
+                return(
+                  <div key={q.id} style={{...C(D),padding:16}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,gap:8}}>
+                      <div style={{display:"flex",alignItems:"center",gap:8}}>
+                        <div style={{width:28,height:28,borderRadius:"50%",background:"#6366f1",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:13,flexShrink:0}}>{q.number}</div>
+                        <span style={{fontSize:12,fontWeight:700,color:tx(D)}}>Question {q.number} — Structured ({q.totalMarks} marks)</span>
+                      </div>
+                      <span style={{fontSize:14,fontWeight:800,color:qScCol}}>{scoredQ}/{totalQ}</span>
+                    </div>
+                    {q.context&&q.context.trim()&&<div style={{padding:"10px 12px",borderRadius:8,background:D?"#1f2937":"#fffbeb",fontSize:12,color:tx(D),lineHeight:1.7,marginBottom:10,whiteSpace:"pre-line"}}>{q.context}</div>}
+                    <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                      {(q.parts||[]).map(function(part,pi){
+                        var pAns=sParts[pi]||{};
+                        var pSc=part.type==="mcq"?(pAns.selOpt===part.answer?1:0):(pAns.result?.score??null);
+                        var pCol=pSc==null?"#9ca3af":pSc===0?"#ef4444":Number(pSc)>=Number(part.marks)*0.7?"#16a34a":"#d97706";
+                        return(
+                          <div key={pi} style={{padding:"12px 14px",borderRadius:8,background:D?"rgba(99,102,241,.06)":"#f8f9ff",borderLeft:"2px solid #6366f1"}}>
+                            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                              <span style={{fontWeight:700,fontSize:13,color:"#6366f1",fontFamily:"monospace"}}>{part.label} <span style={{fontSize:10,fontWeight:400,color:mu(D),fontFamily:"sans-serif"}}>({part.marks} marks)</span></span>
+                              <span style={{fontSize:12,fontWeight:800,color:pCol}}>{pSc!=null?pSc+"/"+part.marks:"—/"+part.marks}</span>
+                            </div>
+                            <div style={{fontSize:12,color:tx(D),marginBottom:8,lineHeight:1.6}}>{parseQuestionText(part.text,D,12)}</div>
+                            {part.type==="mcq"?(
+                              <div style={{padding:"7px 10px",borderRadius:7,background:pAns.selOpt===part.answer?"#dcfce7":"#fee2e2",fontSize:11,color:pAns.selOpt===part.answer?"#15803d":"#b91c1c"}}>
+                                {pAns.selOpt===part.answer?"✓ Correct":"✗ Incorrect"} — correct: {part.options&&part.options[part.answer]}
+                              </div>
+                            ):(
+                              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+                                <div>
+                                  <div style={{fontSize:9,fontWeight:700,color:mu(D),marginBottom:3,textTransform:"uppercase"}}>Your Answer</div>
+                                  <div style={{padding:"8px 10px",borderRadius:7,background:D?"#1f2937":"#f3f4f6",fontSize:11,color:tx(D),lineHeight:1.6,whiteSpace:"pre-line",minHeight:40}}>{pAns.textAns||"Not attempted"}</div>
+                                  {pAns.result?.feedback&&<div style={{marginTop:5,padding:"6px 9px",borderRadius:7,background:D?"rgba(99,102,241,.1)":"#eef2ff",fontSize:10,color:tx(D),lineHeight:1.5}}>{pAns.result.feedback}</div>}
+                                </div>
+                                <div>
+                                  <div style={{fontSize:9,fontWeight:700,color:mu(D),marginBottom:3,textTransform:"uppercase"}}>Mark Scheme</div>
+                                  <div style={{padding:"8px 10px",borderRadius:7,background:D?"rgba(16,185,129,.08)":"#f0fdf4",border:"1px solid "+(D?"#065f46":"#86efac"),fontSize:10,color:tx(D),lineHeight:1.7,whiteSpace:"pre-line",minHeight:40}}>{part.markScheme||"See teacher"}</div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              }
+              // Classic question review
               var isCorr=q.type==="mcq"?(a&&a.selOpt===q.answer):null;
               var sc=q.type==="mcq"?(isCorr?1:0):(a&&a.result&&a.result.score);
               var scCol=sc==null||isNaN(sc)?"#9ca3af":sc===0?"#ef4444":Number(sc)>=Number(q.marks)*0.7?"#16a34a":"#d97706";
@@ -2698,6 +3009,22 @@ function MockExamScreen({D,subjects,allSections,boardSels,boardData,user,onBack,
           <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:20}}>
             {questions.map(function(q,qi){
               var a=answers[q.id];
+              if(isParted(q)){
+                var sParts=a?.parts||[];
+                var totalQ=0,scoredQ=0;
+                (q.parts||[]).forEach(function(pt,pi){var pa=sParts[pi]||{};totalQ+=Number(pt.marks||0);if(pt.type==="mcq"&&pa.selOpt===pt.answer)scoredQ+=1;else if(pa.result?.score!=null&&!isNaN(Number(pa.result.score)))scoredQ+=Number(pa.result.score);});
+                var qScCol=scoredQ===0?"#ef4444":scoredQ>=totalQ*0.7?"#16a34a":"#d97706";
+                var attempted=(a?.parts||[]).some(function(pa){return pa&&(pa.selOpt!=null||pa.textAns?.trim());});
+                return(
+                  <div key={q.id} style={{...C(D),padding:14}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:6}}>
+                      <span style={{fontSize:12,color:mu(D)}}>Q{q.number} · Structured · {q.totalMarks} marks</span>
+                      <span style={{fontSize:13,fontWeight:800,color:qScCol}}>{scoredQ}/{totalQ}</span>
+                    </div>
+                    {!attempted&&<div style={{fontSize:11,color:"#9ca3af",marginTop:3}}>Not attempted</div>}
+                  </div>
+                );
+              }
               var isCorr=q.type==="mcq"?(a&&a.selOpt===q.answer):null;
               var sc=q.type==="mcq"?(isCorr?1:0):(a&&a.result&&a.result.score);
               var scCol=sc==null||isNaN(sc)?"#9ca3af":sc===0?"#ef4444":Number(sc)>=Number(q.marks)*0.7?"#16a34a":"#d97706";
@@ -2735,6 +3062,7 @@ function MockExamScreen({D,subjects,allSections,boardSels,boardData,user,onBack,
   if(!q)return null;
   const curAns=answers[q.id]||{};
   const hasExtract=(extract||extract2)&&(paper.paperType==="structured");
+  const qIsParted=isParted(q);
 
   return (
     <div style={{minHeight:"100vh",background:D?"#030712":"#f9fafb",color:tx(D)}} className="fade-in">
@@ -2847,8 +3175,12 @@ function MockExamScreen({D,subjects,allSections,boardSels,boardData,user,onBack,
         {/* Question nav dots */}
         <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:14}}>
           {questions.map((qq,i)=>{
-            const a=answers[qq.id];const done=a?.selOpt!=null||a?.textAns?.trim();
-            return (<div key={qq.id} onClick={()=>setQI(i)} title={`Q${i+1} (${qq.marks}mk)`}
+            const a=answers[qq.id];
+            var done;
+            if(isParted(qq)){done=(a?.parts||[]).some(function(pa){return pa&&(pa.selOpt!=null||pa.textAns?.trim()||pa.fileAns);});}
+            else{done=a?.selOpt!=null||a?.textAns?.trim()||a?.fileAns;}
+            const qMarks=isParted(qq)?qq.totalMarks:qq.marks;
+            return (<div key={qq.id} onClick={()=>setQI(i)} title={`Q${i+1} (${qMarks}mk)`}
               style={{width:9,height:9,borderRadius:"50%",cursor:"pointer",transition:"background .15s",flexShrink:0,
                 background:i===qIdx?"#6366f1":done?"#16a34a":(D?"#374151":"#d1d5db")}}/>);
           })}
@@ -2858,11 +3190,70 @@ function MockExamScreen({D,subjects,allSections,boardSels,boardData,user,onBack,
           <span style={{fontSize:13,color:mu(D)}}>Question {qIdx+1} of {questions.length}</span>
           <div style={{display:"flex",gap:6,alignItems:"center"}}>
             {q.section&&<span style={{fontSize:10,fontWeight:700,color:"#6366f1",background:D?"rgba(99,102,241,.15)":"#eef2ff",padding:"2px 8px",borderRadius:10}}>{q.section}</span>}
-            <span style={{fontSize:11,fontWeight:700,padding:"3px 10px",borderRadius:20,background:(subj&&subj.mid)||"#e0e7ff",color:(subj&&subj.dk)||"#312e81"}}>{q.marks} mark{q.marks!==1?"s":""}</span>
+            <span style={{fontSize:11,fontWeight:700,padding:"3px 10px",borderRadius:20,background:(subj&&subj.mid)||"#e0e7ff",color:(subj&&subj.dk)||"#312e81"}}>{qIsParted?q.totalMarks:q.marks} mark{(qIsParted?q.totalMarks:q.marks)!==1?"s":""}</span>
           </div>
         </div>
-        {(()=>{var totalMarks=questions.reduce(function(s,qq){return s+Number(qq.marks||0);},0);var recSecs=totalMarks>0?Math.round((paper.d*60/totalMarks)*Number(q.marks||0)):0;var recMins=Math.floor(recSecs/60);var recSec=recSecs%60;return totalMarks>0?(<div style={{fontSize:10,color:mu(D),marginBottom:10}}>Suggested time: ~{recMins>0?recMins+"m ":""}{recSec>0?recSec+"s":""}</div>):null;})()}
+        {(()=>{var totalMarks=questions.reduce(function(s,qq){return s+(isParted(qq)?Number(qq.totalMarks||0):Number(qq.marks||0));},0);var qMk=qIsParted?Number(q.totalMarks||0):Number(q.marks||0);var recSecs=totalMarks>0?Math.round((paper.d*60/totalMarks)*qMk):0;var recMins=Math.floor(recSecs/60);var recSec=recSecs%60;return totalMarks>0?(<div style={{fontSize:10,color:mu(D),marginBottom:10}}>Suggested time: ~{recMins>0?recMins+"m ":""}{recSec>0?recSec+"s":""}</div>):null;})()}
 
+        {/* ─ STRUCTURED / PARTED QUESTION ─ */}
+        {qIsParted?(
+          <div style={{display:"flex",flexDirection:"column",gap:14}}>
+            {/* Question number header */}
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <div style={{width:32,height:32,borderRadius:"50%",background:"#6366f1",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:15,flexShrink:0}}>{q.number}</div>
+              <div style={{fontSize:13,fontWeight:700,color:tx(D)}}>
+                {q.year==="AI Generated"&&<span style={{fontSize:10,fontWeight:400,fontStyle:"italic",color:mu(D),marginRight:6}}>AI Generated</span>}
+                {q.totalMarks} marks total
+              </div>
+            </div>
+            {/* Shared context / stimulus */}
+            {q.context&&q.context.trim()&&(
+              <div style={{padding:"14px 16px",borderRadius:10,background:D?"#1f2937":"#fffbeb",border:`1px solid ${D?"#374151":"#fde68a"}`,fontSize:13,color:tx(D),lineHeight:1.75,whiteSpace:"pre-line"}}>
+                {parseQuestionText(q.context,D,13)}
+              </div>
+            )}
+            {/* Each part */}
+            {(q.parts||[]).map(function(part,pi){
+              var pAns=getPartAns(q.id,pi);
+              return (
+                <div key={part.id||pi} style={{...C(D),padding:20,borderLeft:"3px solid #6366f1"}}>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10,gap:8,flexWrap:"wrap"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                      <span style={{fontWeight:800,fontSize:15,color:"#6366f1",fontFamily:"monospace",minWidth:28}}>{part.label}</span>
+                      <span style={{fontSize:11,fontWeight:600,color:mu(D),textTransform:"uppercase",letterSpacing:"0.05em"}}>{part.type==="mcq"?"Multiple Choice":part.type==="extended"?"Extended Response":"Short Answer"}</span>
+                    </div>
+                    <span style={{fontSize:11,fontWeight:700,padding:"2px 9px",borderRadius:20,background:(subj&&subj.mid)||"#e0e7ff",color:(subj&&subj.dk)||"#312e81",flexShrink:0}}>{part.marks} mark{part.marks!==1?"s":""}</span>
+                  </div>
+                  <div style={{fontSize:13,color:tx(D),marginBottom:12,lineHeight:1.7}}>{parseQuestionText(part.text,D,13)}</div>
+                  {part.type==="mcq"?(
+                    <div style={{display:"flex",flexDirection:"column",gap:7}}>
+                      {(part.options||[]).map(function(opt,oi){
+                        var sel=pAns.selOpt===oi;
+                        return(
+                          <button key={oi} onClick={function(){setPartAns(q.id,pi,{selOpt:oi});}}
+                            style={{textAlign:"left",padding:"9px 13px",borderRadius:9,border:`1.5px solid ${sel?"#6366f1":bd2}`,
+                              background:sel?(D?"rgba(99,102,241,.15)":"#eef2ff"):"transparent",
+                              cursor:"pointer",fontSize:13,color:sel?"#6366f1":tx(D),transition:"border-color .15s,background .15s"}}>
+                            <span style={{fontFamily:"monospace",marginRight:9,fontSize:11,opacity:0.7}}>{"ABCD"[oi]}.</span>{opt}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ):(
+                    <div>
+                      <textarea value={pAns.textAns||""} onChange={function(e){setPartAns(q.id,pi,{textAns:e.target.value});}}
+                        rows={part.type==="extended"?(part.marks>=6?10:7):4}
+                        placeholder="Write your answer here…"
+                        style={{...I(D,{resize:"vertical",lineHeight:1.7,width:"100%"})}}/>
+                      <p style={{fontSize:10,color:mu(D),marginTop:3}}>📷 Writing on paper? Submit first then self-mark using the mark scheme.</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ):(
+        /* ─ CLASSIC SINGLE QUESTION ─ */
         <div style={{...C(D),padding:24,marginBottom:14}}>
           <div style={{fontSize:11,fontWeight:600,color:mu(D),textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:10,display:"flex",gap:8,alignItems:"center"}}>
             <span>{q.type==="mcq"?"Multiple Choice":q.type==="short"?"Short Answer":"Extended Response"}</span>
@@ -2922,6 +3313,7 @@ function MockExamScreen({D,subjects,allSections,boardSels,boardData,user,onBack,
             </div>
           )}
         </div>
+        )}
 
         <div style={{display:"flex",gap:10}}>
           <button onClick={()=>setQI(i=>Math.max(0,i-1))} disabled={qIdx===0}
@@ -4796,7 +5188,7 @@ export default function App() {
 
   const bg=D?"#030712":"#f9fafb", bd2=D?"#1f2937":"#e5e7eb";
   const _goEl=<GlobalOverlays D={D} online={online} shortcutModal={shortcutModal} setShortcutModal={setShortcutModal} searchOpen={searchOpen} setSearchOpen={setSearchOpen} onboarding={onboarding} handleOnboardingComplete={handleOnboardingComplete} subjects={subjects} allSections={allSections} boardData={boardData} boardSels={boardSels} handleSearchNavigate={handleSearchNavigate} screen={screen} onHome={()=>setScreen("home")} onMock={()=>setScreen("mock")} onTutor={()=>{setTutorSubjId(null);setScreen("tutor");}} onTimetable={()=>setScreen("timetable")} onDash={()=>setScreen("dashboard")} onLeaderboards={()=>setScreen("friends")} streak={streak}/>;
-const hProps={user,userDisplayName,D,onDark:()=>setD(!D),onHome:()=>setScreen("home"),onDash:()=>setScreen("dashboard"),onTarget:()=>{setTTSubj(null);setScreen("target")},onTimetable:()=>setScreen("timetable"),onBlurt:()=>{setBlurtSubjId(null);setBlurtSecId2(null);setScreen("blurting");},onMock:()=>setScreen("mock"),onTutor:()=>{setTutorSubjId(null);setScreen("tutor");},onCoach:()=>setScreen("coach"),onLeaderboards:()=>setScreen("friends"),streak,onSearch:()=>setSearchOpen(true),globalOverlays:_goEl,screen};
+const hProps={user,userDisplayName,D,onDark:()=>setD(!D),onHome:()=>setScreen("home"),onDash:()=>setScreen("dashboard"),onTarget:()=>{setTTSubj(null);setScreen("target")},onTimetable:()=>setScreen("timetable"),onBlurt:()=>{setBlurtSubjId(null);setBlurtSecId2(null);setScreen("blurting");},onMock:()=>setScreen("mock"),onTutor:()=>{setTutorSubjId(null);setScreen("tutor");},onCoach:()=>setScreen("coach"),onLeaderboards:()=>setScreen("friends"),onAccount:()=>setScreen("account"),streak,onSearch:()=>setSearchOpen(true),globalOverlays:_goEl,screen};
 
   // Personal subject routing — handled before the main screen router
   if(personalScreen&&personalScreen.subjId){
@@ -4810,7 +5202,8 @@ const hProps={user,userDisplayName,D,onDark:()=>setD(!D),onHome:()=>setScreen("h
     const idLower=idTrim.toLowerCase();
     const isEmail=idLower.indexOf("@")!==-1;
     const emailOk=isEmail&&/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(idLower);
-    const usernameOk=!isEmail&&/^[a-zA-Z0-9_]{3,30}$/.test(idTrim);
+    const uClean=idTrim.trim(); // leading/trailing stripped
+    const usernameOk=!isEmail&&uClean.length>=3&&uClean.length<=30&&/^[a-zA-Z0-9_ ]+$/.test(uClean);
     const idOk=emailOk||usernameOk;
     const passOk=passIn.length>=4&&passIn.length<=30;
     // On signup: if email given it must be valid; otherwise just need a valid username
@@ -4819,8 +5212,8 @@ const hProps={user,userDisplayName,D,onDark:()=>setD(!D),onHome:()=>setScreen("h
 
     const handleAuth=()=>{
       if(!canSubmit)return;
-      // Normalise key: emails go lowercase, usernames kept as typed
-      const u=isEmail?idLower:idTrim;
+      // Normalise key: emails go lowercase, usernames kept as typed (normalise spaces)
+      const u=isEmail?idLower:idTrim.trim().replace(/  +/g," ");
       const dn=displayNameIn.trim()||getDisplayName(u);
       if(authMode==="signup"){
         if(u===ADMIN_USER){setAuthE("That identifier is reserved.");return;}
@@ -4877,7 +5270,7 @@ const hProps={user,userDisplayName,D,onDark:()=>setD(!D),onHome:()=>setScreen("h
 
     var idPlaceholder=authMode==="signup"?"Username or email (optional email)":"Email or username";
     var idHint=authMode==="signup"
-      ?(isEmail?(emailOk?"":"Enter a valid email"):(!idTrim?"":"3-30 chars: letters, numbers, _"))
+      ?(isEmail?(emailOk?"":"Enter a valid email"):(!uClean?"":"3-30 chars, letters/numbers/spaces allowed"))
       :"";
 
     return (
@@ -4969,6 +5362,39 @@ const hProps={user,userDisplayName,D,onDark:()=>setD(!D),onHome:()=>setScreen("h
 
   if(screen==="contact") return (
     <ContactScreen D={D} user={user} isAdmin={admin} onBack={()=>setScreen("home")}/>
+  );
+
+  if(screen==="account") return (
+    <AccountScreen
+      D={D} user={user} userDisplayName={userDisplayName} userSchool={userSchool}
+      accounts={accounts}
+      onBack={()=>setScreen("home")}
+      onSave={function(changes){
+        var updatedDN = changes.displayName || userDisplayName;
+        var updatedSchool = changes.school;
+        // Update display name in memory + accounts storage
+        if(changes.displayName !== undefined) {
+          setUserDisplayName(changes.displayName);
+          var accs2 = {...accounts, [user]: {...accounts[user], displayName: changes.displayName}};
+          setAccs(accs2); saveAccounts(accs2);
+        }
+        // Update password if changed
+        if(changes.newPassword) {
+          var accs3 = {...accounts, [user]: {...accounts[user], h: hashPw(changes.newPassword)}};
+          setAccs(accs3); saveAccounts(accs3);
+        }
+        // Update school + leaderboard entry
+        if(changes.school !== undefined) {
+          setUserSchool(changes.school);
+          var lbKey = "gcse:lb:" + user.replace(/\W/g, "-");
+          window.storage.get(lbKey, true).then(function(r){
+            var existing = {};
+            try { if(r&&r.value) existing = JSON.parse(r.value); } catch(e) {}
+            window.storage.set(lbKey, JSON.stringify({...existing, school: changes.school, displayName: updatedDN, username: user}), true).catch(function(){});
+          }).catch(function(){});
+        }
+      }}
+    />
   );
 
   if(screen==="friends") return (
@@ -5215,22 +5641,22 @@ const hProps={user,userDisplayName,D,onDark:()=>setD(!D),onHome:()=>setScreen("h
                         ):(
                           <span style={{fontWeight:700,fontSize:15}}>{grp._adminTopicTitle}</span>
                         )}
-                        {admin&&<div style={{display:"flex",gap:8,alignItems:"center"}}>
-                          {!editingTitle&&<button onClick={()=>setEditingTitle({id:grp._adminTopicId,value:grp._adminTopicTitle})} style={{background:"none",border:"1px solid #9ca3af",borderRadius:7,cursor:"pointer",fontSize:11,color:"#9ca3af",padding:"3px 9px"}}>✏️</button>}
-                          <button onClick={()=>setModal({mode:"subtopic",_parentTopicId:grp._adminTopicId})} style={{...B("#6366f1",true,{fontSize:12,padding:"5px 12px"})}}>＋ Sub-topic</button>
-                          <button onClick={()=>deleteCustomSec(grp._adminTopicId)} style={{background:"#fee2e2",border:"1.5px solid #ef4444",borderRadius:8,cursor:"pointer",fontSize:12,color:"#ef4444",padding:"5px 10px",fontWeight:700}}>✕ Delete</button>
+                        {admin&&<div style={{display:"flex",gap:6,alignItems:"center",flexShrink:0}}>
+                          {!editingTitle&&<button onClick={()=>setEditingTitle({id:grp._adminTopicId,value:grp._adminTopicTitle})} style={{padding:"5px 10px",borderRadius:7,border:"1.5px solid #6366f1",background:"transparent",cursor:"pointer",fontSize:11,color:"#6366f1",fontWeight:600}}>✏️ Rename</button>}
+                          <button onClick={()=>setModal({mode:"subtopic",_parentTopicId:grp._adminTopicId})} style={{padding:"5px 10px",borderRadius:7,border:"none",background:"#6366f1",cursor:"pointer",fontSize:11,color:"#fff",fontWeight:600}}>＋ Sub-topic</button>
+                          <button onClick={()=>deleteCustomSec(grp._adminTopicId)} style={{padding:"5px 10px",borderRadius:7,border:"1.5px solid #ef4444",background:"transparent",cursor:"pointer",fontSize:11,color:"#ef4444",fontWeight:600}}>🗑 Delete</button>
                         </div>}
                       </div>
                       {grp.sections.length===0&&<p style={{fontSize:12,color:mu(D),fontStyle:"italic",marginTop:4}}>No sub-topics yet — click "＋ Sub-topic" to add one.</p>}
                       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(190px,1fr))",gap:10}}>
                         {grp.sections.map(sec=>(
-                          <div key={sec.id} style={{position:"relative"}}>
+                          <div key={sec.id} style={{border:`1.5px solid ${bd2}`,borderRadius:12,overflow:"hidden",transition:"border-color .15s"}}>
                             <div role="button" tabIndex={0}
                               onClick={()=>navToSection(subIdx,ti,sec.id)}
                               onKeyDown={e=>e.key==="Enter"&&navToSection(subIdx,ti,sec.id)}
-                              style={{width:"100%",textAlign:"left",padding:"12px 14px",paddingRight:admin?"36px":"14px",borderRadius:12,border:`1.5px solid ${bd2}`,background:"transparent",cursor:"pointer",transition:"all .15s",color:tx(D)}}
-                              onMouseEnter={e=>{e.currentTarget.style.borderColor=subj.accent;e.currentTarget.style.background=subj.light}}
-                              onMouseLeave={e=>{e.currentTarget.style.borderColor=bd2;e.currentTarget.style.background="transparent"}}>
+                              style={{width:"100%",textAlign:"left",padding:"12px 14px",background:"transparent",cursor:"pointer",color:tx(D)}}
+                              onMouseEnter={e=>{e.currentTarget.closest("div[style]").style.borderColor=subj.accent;e.currentTarget.style.background=subj.light;}}
+                              onMouseLeave={e=>{e.currentTarget.closest("div[style]").style.borderColor=bd2;e.currentTarget.style.background="transparent";}}>
                               <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:6,marginBottom:5}}>
                               {admin&&editingTitle&&editingTitle.id===sec.id?(
                                 <input autoFocus value={editingTitle.value}
@@ -5240,7 +5666,7 @@ const hProps={user,userDisplayName,D,onDark:()=>setD(!D),onHome:()=>setScreen("h
                                   onKeyDown={e=>{if(e.key==="Enter"){if(sec._isSubtopic)renameCustomSubtopic(grp._adminTopicId,sec.id,editingTitle.value);else renameCustomTopic(sec.id,editingTitle.value);setEditingTitle(null);}if(e.key==="Escape")setEditingTitle(null);}}
                                   style={{fontSize:13,fontWeight:600,border:"1.5px solid #6366f1",borderRadius:6,padding:"2px 6px",background:"transparent",color:"inherit",width:"100%"}}/>
                               ):(
-                                <div style={{fontSize:13,fontWeight:600}}>{sec.title}</div>
+                                <div style={{fontSize:13,fontWeight:600,flex:1,minWidth:0}}>{sec.title}</div>
                               )}
                               {(()=>{
   const cards=sec.flashcards||[];
@@ -5258,14 +5684,15 @@ const hProps={user,userDisplayName,D,onDark:()=>setD(!D),onHome:()=>setScreen("h
                                 <span style={{fontSize:11,color:mu(D)}}>❓ {(sec.questions||[]).length}</span>
                               </div>
                             </div>
-                            {admin&&<div style={{position:"absolute",top:6,right:6,display:"flex",gap:4}}>
-                              {!editingTitle&&<button onClick={e=>{e.stopPropagation();setEditingTitle({id:sec.id,parentId:sec._isSubtopic?grp._adminTopicId:null,value:sec.title});}} style={{background:"none",border:"1px solid #9ca3af",borderRadius:5,cursor:"pointer",fontSize:10,color:"#9ca3af",padding:"2px 5px"}}>✏️</button>}
+                            {admin&&<div style={{display:"flex",gap:0,borderTop:`1px solid ${bd2}`,background:D?"rgba(0,0,0,.2)":"rgba(0,0,0,.03)"}}>
+                              {!editingTitle&&<button onClick={e=>{e.stopPropagation();setEditingTitle({id:sec.id,parentId:sec._isSubtopic?grp._adminTopicId:null,value:sec.title});}}
+                                style={{flex:1,padding:"5px 0",fontSize:11,background:"none",border:"none",cursor:"pointer",color:"#6366f1",fontWeight:600}}>✏️ Rename</button>}
                               <button
                                 onClick={e=>{e.stopPropagation();
                                   if(sec._isSubtopic)deleteSubtopic(grp._adminTopicId,sec.id);
                                   else deleteCustomSec(sec.id);
                                 }}
-                                style={{background:"#fee2e2",border:"1.5px solid #ef4444",borderRadius:5,cursor:"pointer",fontSize:10,color:"#ef4444",padding:"2px 5px",fontWeight:700}}>✕</button>
+                                style={{flex:1,padding:"5px 0",fontSize:11,background:"none",border:"none",cursor:"pointer",color:"#ef4444",fontWeight:600,borderLeft:`1px solid ${bd2}`}}>🗑 Delete</button>
                             </div>}
                           </div>
                         ))}
