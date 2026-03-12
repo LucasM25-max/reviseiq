@@ -16,6 +16,7 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Forward the full request body (model, messages, max_tokens, temperature etc.)
     const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
