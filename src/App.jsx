@@ -80,7 +80,7 @@ const ADMIN_SCHOOL = "Gordon's School";
 // ── AI: Groq via Vercel proxy (/api/ai) ──────────────────────────────────────
 // API key lives in Vercel Environment Variables as GROQ_API_KEY — never in browser code.
 // The /api/ai serverless function proxies requests to Groq, eliminating all CORS issues.
-var GEMINI_KEYS = []; // legacy alias — no longer used directly
+var _GROQ_KEY_ALIAS = []; // unused — kept to avoid reference errors in any cached code
 const TUTOR_MODELS = [
   {model:"llama-3.3-70b-versatile", label:"Llama 3.3 70B", dailyLimit:999},
 ];
@@ -98,12 +98,23 @@ async function incTutorUsage(u,modelName){
   try{var k2=tutorUsageKey(u);var cur=await getTutorUsage(u);cur[modelName]=(cur[modelName]||0)+1;await window.storage.set(k2,JSON.stringify(cur),true);}catch(e){}
 }
 async function pickTutorModel(u){ return TUTOR_MODELS[0]; }
-function nextGeminiKey(){ return ""; } // legacy stub
+// (no legacy Gemini stubs needed — all AI goes through _aiRequest → /api/ai → Groq)
 
 // Core caller — calls the /api/ai Vercel proxy, tries each model in order
-async function _aiRequest(systemPrompt, messages){
+async function _aiRequest(systemPrompt, messages, maxTokens){
+  var tokLimit = (maxTokens && maxTokens > 0) ? maxTokens : 1500;
   var msgs = [];
   if(systemPrompt) msgs.push({role:"system", content:systemPrompt});
+  // Detect if any user message has image files attached
+  var hasImages = false;
+  for(var ci=0;ci<messages.length;ci++){
+    var cm=messages[ci];
+    if(cm._d && cm._d.files && Array.isArray(cm._d.files)){
+      for(var fi2=0;fi2<cm._d.files.length;fi2++){
+        if(cm._d.files[fi2].isImage) hasImages=true;
+      }
+    }
+  }
   for(var i=0;i<messages.length;i++){
     var m = messages[i];
     var role = m.role==="assistant"?"assistant":"user";
@@ -114,24 +125,60 @@ async function _aiRequest(systemPrompt, messages){
       txt = m.content.filter(function(p){return p.type==="text";})
         .map(function(p){return p.text||"";}).join("\n");
     }
-    if(!txt.trim()) continue;
-    if(msgs.length>0 && msgs[msgs.length-1].role===role){
-      msgs[msgs.length-1].content += "\n"+txt;
+    // Append text/PDF file content inline so AI can see it
+    if(m._d && m._d.files && Array.isArray(m._d.files)){
+      var fileParts = [];
+      for(var fi=0;fi<m._d.files.length;fi++){
+        var f=m._d.files[fi];
+        if(f.isText && f.textContent) fileParts.push("[Uploaded text file: "+f.name+"]\n"+f.textContent);
+        else if(f.isPdf) fileParts.push("[Uploaded PDF: "+f.name+" — please analyse the content described by the student]");
+        else if(f.isImage){
+          // Image handled separately via content array below
+        } else if(f.unsupported){
+          fileParts.push("[Uploaded file: "+f.name+"]");
+        }
+      }
+      if(fileParts.length) txt = txt ? txt+"\n\n"+fileParts.join("\n\n") : fileParts.join("\n\n");
+    }
+    if(!txt.trim() && !(m._d && m._d.files && m._d.files.some(function(f){return f.isImage;}))) continue;
+    // Build content: if this message has images, use array format
+    var msgContent;
+    if(m._d && m._d.files && m._d.files.some(function(f){return f.isImage;})){
+      var contentArr = [];
+      if(txt.trim()) contentArr.push({type:"text",text:txt});
+      for(var ii=0;ii<m._d.files.length;ii++){
+        var imgF=m._d.files[ii];
+        if(imgF.isImage && imgF.data){
+          contentArr.push({type:"image_url",image_url:{url:"data:"+imgF.type+";base64,"+imgF.data}});
+        }
+      }
+      msgContent = contentArr;
     } else {
-      msgs.push({role:role, content:txt});
+      msgContent = txt;
+    }
+    // Merge consecutive same-role text-only messages
+    if(typeof msgContent==="string" && msgs.length>0 && msgs[msgs.length-1].role===role && typeof msgs[msgs.length-1].content==="string"){
+      msgs[msgs.length-1].content += "\n"+msgContent;
+    } else {
+      msgs.push({role:role, content:msgContent});
     }
   }
   if(!msgs.length || msgs[msgs.length-1].role!=="user"){
     msgs.push({role:"user", content:"Hello"});
   }
 
+  // Use vision-capable model first when images are present, then fall back
+  var modelList = hasImages
+    ? ["meta-llama/llama-4-scout-17b-16e-instruct","llama-3.2-11b-vision-preview"].concat(_GROQ_MODELS)
+    : _GROQ_MODELS;
+
   var lastErr = new Error("AI unavailable.");
-  for(var mi=0; mi<_GROQ_MODELS.length; mi++){
+  for(var mi=0; mi<modelList.length; mi++){
     try{
       var resp = await fetch("/api/ai",{
         method:"POST",
         headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({model:_GROQ_MODELS[mi], messages:msgs, max_tokens:1500, temperature:0.7})
+        body:JSON.stringify({model:modelList[mi], messages:msgs, max_tokens:tokLimit, temperature:0.7})
       });
       var dat = await resp.json();
       if(dat.error){
@@ -152,16 +199,20 @@ async function _aiRequest(systemPrompt, messages){
   throw lastErr;
 }
 
-// Public API — identical signatures, nothing else needs changing
-async function callGeminiSimple(prompt, maxTokens, _ignored){
-  return _aiRequest(null, [{role:"user", content:prompt}]);
+// Public API — callAI / callAIChat used throughout the app
+async function callAI(prompt, maxTokens){
+  return _aiRequest(null, [{role:"user", content:prompt}], maxTokens||1500);
 }
-async function callGeminiChat(_modelIgnored, systemPrompt, messages, _ignored){
-  return _aiRequest(systemPrompt||null, messages);
+async function callAIChat(systemPrompt, messages, maxTokens){
+  return _aiRequest(systemPrompt||null, messages, maxTokens||1500);
 }
+// Legacy aliases so any remaining callGeminiSimple / callGeminiChat calls still work
+var callGeminiSimple = callAI;
+var callGeminiChat = function(_ignored, systemPrompt, messages){ return callAIChat(systemPrompt, messages); };
 // Account format helpers (supports both legacy string and new {h,gki} object)
 function getAccHash(acc){return typeof acc==="string"?acc:acc?.h;}
 function getAccGki(acc){return typeof acc==="string"?null:(acc?.gki??null);}
+function getAccDisplayName(acc){return (acc&&typeof acc==="object"&&acc.displayName)||"";}
 
 const ALL_SUBJECTS = [
   { id:"maths",        name:"Maths",                icon:"📐", accent:"#0ea5e9", light:"#f0f9ff", mid:"#e0f2fe", dk:"#0c4a6e" },
@@ -285,16 +336,17 @@ function SchoolLeaderboard({ user, school, D }) {
   return (
     <div style={{marginTop:14}}>
       <p style={{fontSize:11,fontWeight:600,color:mu2,textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:8}}>🏫 {school} Leaderboard</p>
-      <div style={{display:"flex",flexDirection:"column",gap:4}}>
-        {entries.slice(0,10).map((e,i) => {
+      <div style={{display:"flex",flexDirection:"column",gap:4,maxHeight:340,overflowY:"auto",paddingRight:2}}>
+        {entries.map((e,i) => {
           const isMe = e.username === user;
           const medal = i===0?"🥇":i===1?"🥈":i===2?"🥉":null;
+          const name = e.displayName || getDisplayName(e.username);
           return (
             <div key={e.username} style={{display:"flex",alignItems:"center",gap:10,padding:"7px 12px",borderRadius:8,
               background:isMe?(D?"rgba(99,102,241,.2)":"#eef2ff"):(D?"#1f2937":"#f9fafb"),
-              border:isMe?"1.5px solid #6366f1":"1.5px solid transparent"}}>
+              border:isMe?"1.5px solid #6366f1":"1.5px solid transparent",flexShrink:0}}>
               <span style={{fontSize:13,width:22,textAlign:"center"}}>{medal||<span style={{fontSize:11,color:mu2,fontFamily:"monospace"}}>#{i+1}</span>}</span>
-              <span style={{flex:1,fontSize:13,fontWeight:isMe?700:400,color:isMe?"#6366f1":tx2}}>{getDisplayName(e.username)}{isMe?" (you)":""}</span>
+              <span style={{flex:1,fontSize:13,fontWeight:isMe?700:400,color:isMe?"#6366f1":tx2}}>{name}{isMe?" (you)":""}</span>
               <span style={{fontSize:12,fontWeight:600,color:mu2}}>{e.score||0} pts</span>
             </div>
           );
@@ -811,14 +863,15 @@ function FriendsPanel({user,D}){
       {tab==="lb"&&(
         lb.length<=1
           ?<p style={{fontSize:12,color:mu(D),fontStyle:"italic",padding:"4px 0"}}>Add friends to see your friends leaderboard!</p>
-          :<div style={{display:"flex",flexDirection:"column",gap:4}}>
+          :<div style={{display:"flex",flexDirection:"column",gap:4,maxHeight:320,overflowY:"auto"}}>
             {lb.map((e,i)=>{
               const isMe=e.u===user;
               const medal=i===0?"🥇":i===1?"🥈":i===2?"🥉":null;
+              const name=lbMap[e.u]?.displayName||getDisplayName(e.u);
               return (
                 <div key={e.u} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 10px",borderRadius:8,background:isMe?(D?"rgba(99,102,241,.2)":"#eef2ff"):(D?"#1f2937":"#f9fafb"),border:isMe?"1.5px solid #6366f1":"1.5px solid transparent"}}>
                   <span style={{fontSize:12,width:20,textAlign:"center"}}>{medal||<span style={{fontSize:10,color:mu(D)}}>{i+1}</span>}</span>
-                  <span style={{flex:1,fontSize:12,fontWeight:isMe?700:400,color:isMe?"#6366f1":tx(D)}}>{e.u}{isMe?" (you)":""}</span>
+                  <span style={{flex:1,fontSize:12,fontWeight:isMe?700:400,color:isMe?"#6366f1":tx(D)}}>{name}{isMe?" (you)":""}</span>
                   {e.school&&<span style={{fontSize:10,color:mu(D),overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:80}}>{e.school}</span>}
                   <span style={{fontSize:11,fontWeight:600,color:mu(D),flexShrink:0}}>{e.score} pts</span>
                 </div>
@@ -880,7 +933,7 @@ function renderMath(src, display=false) {
 }
 function parseLatex(s, mathReady) {
   if (!s) return "";
-  // Normalise backslash-bracket math from Gemini into $$ / $
+  // Normalise backslash-bracket math notation (e.g. from Llama) into $$ / $
   s = s.split("\\[").join("$$").split("\\]").join("$$").split("\\(").join("$").split("\\)").join("$");
   if (!mathReady) return s;
   const out=[]; let i=0, cur="";
@@ -2986,11 +3039,10 @@ Style: warm, encouraging, clear. Use ## headings and bullet points to organise l
 
   // tutorCall: delegates to shared _aiRequest
   const tutorCall = async function(modelDef, systemPrompt, hist) {
-    return _aiRequest(systemPrompt||null, hist);
+    return _aiRequest(systemPrompt||null, hist, 1500);
   };
-  // Keep callAI / callGemini aliases so other callsites keep working
-  const callAI = async function(modelDef, systemPrompt, hist) { return tutorCall(modelDef, systemPrompt, hist); };
-  const callGemini = function(modelDef, systemPrompt, hist) { return tutorCall(modelDef, systemPrompt, hist); };
+  // Keep callAI / callAIChat aliases for any remaining callsites
+  const callAILocal = async function(modelDef, systemPrompt, hist) { return tutorCall(modelDef, systemPrompt, hist); };
 
   const send=async()=>{
     if((!input.trim()&&!files.length)||sending)return;
@@ -3063,7 +3115,7 @@ Style: warm, encouraging, clear. Use ## headings and bullet points to organise l
     var hist2=[...messages,userMsg];
     setMsgs(hist2);
     pickTutorModel(user).then(function(chosenModel){
-      return callGemini(chosenModel,buildSys(),[{role:"user",content:promptText}],null).then(function(rt){
+      return tutorCall(chosenModel,buildSys(),[{role:"user",content:promptText}],null).then(function(rt){
         incTutorUsage(user,chosenModel.model);
         setActiveModel(chosenModel);
         var nm=[...hist2,{role:"assistant",content:rt,_d:{text:rt,stag:ctx.hasContent?"notes":"general",chips:["What is the answer to Q1?","Explain Q2 further","Give me 3 more questions"]}}];
@@ -3611,7 +3663,7 @@ function AppFooter({D, onContact}) {
           {" · "}Built with the help of{" "}
           <span style={{color:"#f97316"}}>Claude</span>
           {", AI powered by "}
-          <span style={{color:"#f55036"}}>Groq / Llama</span>
+          <span style={{color:"#10a37f"}}>Llama via Groq</span>
           {" · "}
           <span style={{fontSize:11}}>Not affiliated with Anthropic or Groq.</span>
         </div>
@@ -4190,9 +4242,11 @@ function getSectionDot(sec, fcHist, stats) {
 export default function App() {
   const [user,setUser]       = useState("");
   const [userSchool,setUserSchool] = useState("");
+  const [userDisplayName,setUserDisplayName] = useState("");
   const [nameIn,setNameIn]   = useState("");
   const [passIn,setPassIn]   = useState("");
   const [schoolIn,setSchIn]  = useState("");
+  const [displayNameIn,setDNIn] = useState("");
   const [authMode,setAM]     = useState("login");
   const [authErr,setAuthE]   = useState("");
   const [accounts,setAccs]   = useState({});
@@ -4482,12 +4536,12 @@ export default function App() {
         try{
           const prev=await window.storage.get(lbKey,true);
           const existing=prev?.value?JSON.parse(prev.value):{};
-          await window.storage.set(lbKey,JSON.stringify({...existing,username:user,score}),true);
+          await window.storage.set(lbKey,JSON.stringify({...existing,username:user,displayName:userDisplayName||existing.displayName||getDisplayName(user),score}),true);
         }catch(_){}
       }
     },600);
     return ()=>clearTimeout(saveTimer.current);
-  },[user,fcHist,stats,targetGrades,activityDates,activityCounts,boardSels]);
+  },[user,userDisplayName,fcHist,stats,targetGrades,activityDates,activityCounts,boardSels]);
 
   const handleOnboardingComplete = useCallback(async(board, examDate) => {
     setOnboarding(null);
@@ -4714,29 +4768,44 @@ const hProps={user,D,onDark:()=>setD(!D),onHome:()=>setScreen("home"),onDash:()=
     const handleAuth=()=>{
       if(!canSubmit)return;
       const u=uTrim;
+      const dn=displayNameIn.trim()||getDisplayName(u); // fall back to email-derived name
       if(authMode==="signup"){
         if(u===ADMIN_USER){setAuthE("That email is reserved.");return;}
         if(accounts[u]){setAuthE("An account with that email already exists — please log in.");return;}
         const nonAdminCount=Object.keys(accounts).filter(k=>k!==ADMIN_USER).length;
         const gki=(nonAdminCount%10)+1;
-        const n={...accounts,[u]:{h:hashPw(passIn),gki}};setAccs(n);saveAccounts(n);
+        const n={...accounts,[u]:{h:hashPw(passIn),gki,displayName:dn}};setAccs(n);saveAccounts(n);
         setGK("");
+        setUserDisplayName(dn);
         if(schoolIn.trim()){
           const lbKey="gcse:lb:"+u.replace(/\W/g,"-");
-          window.storage.set(lbKey,JSON.stringify({username:u,school:schoolIn.trim(),score:0}),true).catch(()=>{});
+          window.storage.set(lbKey,JSON.stringify({username:u,displayName:dn,school:schoolIn.trim(),score:0}),true).catch(()=>{});
           setUserSchool(schoolIn.trim());
         }
-        setUser(u);setScreen("home");setAuthE("");setShowPass(false);
+        setUser(u);setScreen("home");setAuthE("");setShowPass(false);setDNIn("");
       }else{
         if(!accounts[u]){setAuthE("No account found — sign up first.");return;}
         if(getAccHash(accounts[u])!==hashPw(passIn)){setAuthE("Incorrect password.");return;}
         boardLoadedRef.current={};
         setGK("");
+        const storedDN=getAccDisplayName(accounts[u])||getDisplayName(u);
+        setUserDisplayName(storedDN);
         if(u===ADMIN_USER){
           setUserSchool(ADMIN_SCHOOL);
         }else{
           const lbKey="gcse:lb:"+u.replace(/\W/g,"-");
-          window.storage.get(lbKey,true).then(r=>{if(r?.value){try{const e=JSON.parse(r.value);if(e.school)setUserSchool(e.school);}catch(e){}}}).catch(()=>{});
+          window.storage.get(lbKey,true).then(r=>{
+            if(r?.value){
+              try{
+                const e=JSON.parse(r.value);
+                if(e.school)setUserSchool(e.school);
+                // Backfill displayName if missing
+                if(!e.displayName&&storedDN){
+                  window.storage.set(lbKey,JSON.stringify({...e,displayName:storedDN}),true).catch(()=>{});
+                }
+              }catch(e){}
+            }
+          }).catch(()=>{});
         }
         setUser(u);setScreen("home");setAuthE("");setShowPass(false);
       }
@@ -4758,6 +4827,7 @@ const hProps={user,D,onDark:()=>setD(!D),onHome:()=>setScreen("home"),onDash:()=
           </div>
           <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:14}}>
             <input style={I(D)} placeholder="Email address" value={nameIn} onChange={e=>{setNameIn(e.target.value);setAuthE("");}} onKeyDown={e=>e.key==="Enter"&&handleAuth()} type="email" autoCapitalize="off" autoCorrect="off"/>
+            {authMode==="signup"&&<input style={I(D)} placeholder="Your name (shown on leaderboard)" value={displayNameIn} onChange={e=>setDNIn(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleAuth()}/>}
             <div style={{position:"relative"}}>
               <input type="password" style={I(D)} placeholder="Password (4–30 characters)" value={passIn} maxLength={30} onChange={e=>{setPassIn(e.target.value);setAuthE("");}} onKeyDown={e=>e.key==="Enter"&&handleAuth()}/>
             </div>
