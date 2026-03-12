@@ -312,8 +312,14 @@ function useSchoolLeaderboard(user, school) {
         const all = fetched.filter(r => r.status === "fulfilled" && r.value?.value)
           .map(r => { try { return JSON.parse(r.value.value); } catch(e){ return null; } })
           .filter(e => e && e.username && e.school);
+        // Filter to only active accounts
+        let activeUsernames = new Set();
+        try{const ar2=await window.storage.get("gcse:accounts",true);if(ar2?.value){const accs2=JSON.parse(ar2.value);Object.keys(accs2).forEach(k=>activeUsernames.add(k.toLowerCase()));}}catch(_){}
         const schoolNorm = school.trim().toLowerCase();
-        setEntries(all.filter(e => e.school.trim().toLowerCase() === schoolNorm).sort((a, b) => (b.score||0) - (a.score||0)));
+        const filtered = activeUsernames.size>0
+          ? all.filter(e => e.school.trim().toLowerCase() === schoolNorm && activeUsernames.has(e.username.toLowerCase()))
+          : all.filter(e => e.school.trim().toLowerCase() === schoolNorm);
+        setEntries(filtered.sort((a, b) => (b.score||0) - (a.score||0)));
       } catch (_) {}
       setLoading(false);
     })();
@@ -914,20 +920,47 @@ function FriendsPanel({user,D}){
   },[fd.friends.join(",")]);// eslint-disable-line
 
   const sendReq=async()=>{
-    const target=search.trim();
-    if(!target||target===user){setMsg("Enter a valid username.");return;}
-    if(fd.friends.includes(target)){setMsg("Already friends!");return;}
-    if(fd.sent.includes(target)){setMsg("Request already sent.");return;}
+    const query=search.trim().toLowerCase();
+    if(!query){setMsg("Enter an email, username or display name.");return;}
     setBusy(true);setMsg("");
     try{
       const ar=await window.storage.get("gcse:accounts",true);
       const accs=ar?.value?JSON.parse(ar.value):{};
-      if(!accs[target]){setMsg("User not found.");setBusy(false);return;}
+      // Find matching account key by email, username, or display name
+      let targetKey=null;
+      for(const k of Object.keys(accs)){
+        const dn=(accs[k]?.displayName||"").toLowerCase();
+        if(k.toLowerCase()===query||dn===query){targetKey=k;break;}
+      }
+      // Also search leaderboard entries by display name if not found yet
+      if(!targetKey){
+        try{
+          const lbList=await window.storage.list("gcse:lb:",true);
+          if(lbList?.keys?.length){
+            const all=await Promise.allSettled(lbList.keys.map(k=>window.storage.get(k,true)));
+            for(const r of all){
+              if(r.status==="fulfilled"&&r.value?.value){
+                try{
+                  const e=JSON.parse(r.value.value);
+                  const dn=(e.displayName||"").toLowerCase();
+                  const un=(e.username||"").toLowerCase();
+                  if(dn===query||un===query){targetKey=e.username||null;break;}
+                }catch(_){}
+              }
+            }
+          }
+        }catch(_){}
+      }
+      if(!targetKey){setMsg("No user found with that email, username or display name.");setBusy(false);return;}
+      if(targetKey===user){setMsg("That's you!");setBusy(false);return;}
+      if(fd.friends.includes(targetKey)){setMsg("Already friends with "+targetKey+"!");setBusy(false);return;}
+      if(fd.sent.includes(targetKey)){setMsg("Request already sent to "+targetKey+".");setBusy(false);return;}
       let inc=[];
-      try{const qr=await window.storage.get(FQKEY(target),true);if(qr?.value)inc=JSON.parse(qr.value);}catch(e){}
-      if(!inc.includes(user)){inc.push(user);await window.storage.set(FQKEY(target),JSON.stringify(inc),true);}
-      await saveFD({...fd,sent:[...fd.sent,target]});
-      setSearch("");setMsg(`✓ Friend request sent to ${target}!`);
+      try{const qr=await window.storage.get(FQKEY(targetKey),true);if(qr?.value)inc=JSON.parse(qr.value);}catch(e){}
+      if(!inc.includes(user)){inc.push(user);await window.storage.set(FQKEY(targetKey),JSON.stringify(inc),true);}
+      await saveFD({...fd,sent:[...fd.sent,targetKey]});
+      const dispName=accs[targetKey]?.displayName||targetKey;
+      setSearch("");setMsg("✓ Friend request sent to "+dispName+"!");
     }catch(e){setMsg("Error: "+e.message);}
     setBusy(false);
   };
@@ -988,9 +1021,9 @@ function FriendsPanel({user,D}){
 
       {tab==="add"&&(
         <div>
-          <p style={{fontSize:12,color:mu(D),marginBottom:8}}>Find a friend by their exact username:</p>
+          <p style={{fontSize:12,color:mu(D),marginBottom:8}}>Search by email, username or display name:</p>
           <div style={{display:"flex",gap:8}}>
-            <input style={{...I(D,{flex:1})}} placeholder="Username…" value={search} onChange={e=>{setSearch(e.target.value);setMsg("");}} onKeyDown={e=>e.key==="Enter"&&sendReq()}/>
+            <input style={{...I(D,{flex:1})}} placeholder="Email, username or display name…" value={search} onChange={e=>{setSearch(e.target.value);setMsg("");}} onKeyDown={e=>e.key==="Enter"&&sendReq()}/>
             <button onClick={sendReq} disabled={busy||!search.trim()} style={{...B("#6366f1",false,{padding:"8px 14px",fontSize:12,opacity:busy||!search.trim()?0.4:1,cursor:busy||!search.trim()?"not-allowed":"pointer"})}}>{busy?"…":"Add"}</button>
           </div>
           {msg&&<p style={{fontSize:11,marginTop:5,color:msg.startsWith("✓")?"#16a34a":"#ef4444"}}>{msg}</p>}
@@ -998,9 +1031,15 @@ function FriendsPanel({user,D}){
             <div style={{marginTop:12}}>
               <p style={{fontSize:11,fontWeight:600,color:mu(D),textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:6}}>Your friends</p>
               {fd.friends.map(fr=>(
-                <div key={fr} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:`1px solid ${bd2}`}}>
-                  <span style={{flex:1,fontSize:12,color:tx(D)}}>{fr}</span>
-                  <button onClick={()=>removeFriend(fr)} style={{fontSize:10,color:"#ef4444",background:"none",border:"none",cursor:"pointer"}}>Remove</button>
+                <div key={fr} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 0",borderBottom:`1px solid ${bd2}`}}>
+                  <div style={{width:28,height:28,borderRadius:"50%",background:"linear-gradient(135deg,#6366f1,#8b5cf6)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:700,fontSize:12,flexShrink:0}}>
+                    {(lbMap[fr]?.displayName||fr||"?")[0].toUpperCase()}
+                  </div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:12,fontWeight:600,color:tx(D),overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{lbMap[fr]?.displayName||fr}</div>
+                    {lbMap[fr]?.school&&<div style={{fontSize:10,color:mu(D)}}>{lbMap[fr].school}</div>}
+                  </div>
+                  <button onClick={()=>removeFriend(fr)} style={{fontSize:10,color:"#ef4444",background:"none",border:"none",cursor:"pointer",flexShrink:0}}>Remove</button>
                 </div>
               ))}
             </div>
@@ -5462,7 +5501,7 @@ const hProps={user,userDisplayName,D,onDark:()=>setD(!D),onHome:()=>setScreen("h
           </div>
         </div>}
         {importOpen&&<ImportModal D={D} subjects={subjects} onClose={()=>setImportOpen(false)} onDone={()=>{ensureAllBoardsLoaded(boardSels);}}/>}
-        {manageAccountsOpen&&<ManageAccountsModal D={D} accounts={accounts} adminUser={ADMIN_USER} onClose={()=>setManageAccountsOpen(false)} onDelete={function(email){var n={...accounts};delete n[email];setAccs(n);saveAccounts(n);}}/>}
+        {manageAccountsOpen&&<ManageAccountsModal D={D} accounts={accounts} adminUser={ADMIN_USER} onClose={()=>setManageAccountsOpen(false)} onDelete={function(email){var n={...accounts};delete n[email];setAccs(n);saveAccounts(n);var lbKey="gcse:lb:"+email.replace(/\W/g,"-");window.storage.delete(lbKey,true).catch(function(){});}}/>}
 
         <TodayWidget D={D} subjects={subjects} allSections={allSections} fcHist={fcHist}
           stats={stats} timetableExams={timetableExams} boardSels={boardSels}
