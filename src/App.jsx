@@ -49,13 +49,16 @@ document.head.appendChild(_gs);
 
 const ADMIN_USER = "lucasm_25@outlook.com";
 const isAdmin    = u => u === ADMIN_USER;
-// Extract a friendly first name from an email address
-function getDisplayName(email) {
-  if(!email) return "";
-  var local = (email.split("@")[0])||email;
-  var m = local.match(/^([A-Za-z]+)/);
-  if(m) return m[1].charAt(0).toUpperCase()+m[1].slice(1).toLowerCase();
-  return local.slice(0,12);
+// Extract display name from account key (email or plain username)
+function getDisplayName(key) {
+  if(!key) return "";
+  if(key.indexOf("@")!==-1){
+    var local=(key.split("@")[0])||key;
+    var m=local.match(/^([A-Za-z]+)/);
+    if(m) return m[1].charAt(0).toUpperCase()+m[1].slice(1).toLowerCase();
+    return local.slice(0,20);
+  }
+  return key; // plain username — return whole thing
 }
 const EXAM_BOARDS = ["AQA","Edexcel","Eduqas","OCR","WJEC"];
 const DEFAULT_BOARD = "AQA";
@@ -340,7 +343,7 @@ function SchoolLeaderboard({ user, school, D }) {
         {entries.map((e,i) => {
           const isMe = e.username === user;
           const medal = i===0?"🥇":i===1?"🥈":i===2?"🥉":null;
-          const name = e.displayName || getDisplayName(e.username);
+          const name = e.displayName || e.username || "";
           return (
             <div key={e.username} style={{display:"flex",alignItems:"center",gap:10,padding:"7px 12px",borderRadius:8,
               background:isMe?(D?"rgba(99,102,241,.2)":"#eef2ff"):(D?"#1f2937":"#f9fafb"),
@@ -867,7 +870,7 @@ function FriendsPanel({user,D}){
             {lb.map((e,i)=>{
               const isMe=e.u===user;
               const medal=i===0?"🥇":i===1?"🥈":i===2?"🥉":null;
-              const name=lbMap[e.u]?.displayName||getDisplayName(e.u);
+              const name=lbMap[e.u]?.displayName||e.u||"";
               return (
                 <div key={e.u} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 10px",borderRadius:8,background:isMe?(D?"rgba(99,102,241,.2)":"#eef2ff"):(D?"#1f2937":"#f9fafb"),border:isMe?"1.5px solid #6366f1":"1.5px solid transparent"}}>
                   <span style={{fontSize:12,width:20,textAlign:"center"}}>{medal||<span style={{fontSize:10,color:mu(D)}}>{i+1}</span>}</span>
@@ -1607,13 +1610,13 @@ function SearchModal({D,subjects,allSections,boardData,boardSels,onNavigate,onCl
 }
 
 /* ─── MOBILE BOTTOM NAV ──────────────────────────────────────────────────── */
-function MobileNav({D,screen,onHome,onMock,onTutor,onTimetable,onDash,streak}) {
+function MobileNav({D,screen,onHome,onMock,onTutor,onTimetable,onDash,onLeaderboards,streak}) {
   const tabs=[
-    {id:"home",   icon:"🏠", label:"Home",     fn:onHome},
-    {id:"mock",   icon:"📝", label:"Mock",     fn:onMock},
-    {id:"tutor",  icon:"🤖", label:"Tutor",    fn:onTutor},
-    {id:"timetable",icon:"📅",label:"Timetable",fn:onTimetable},
-    {id:"dashboard",icon:"📊",label:"Progress", fn:onDash},
+    {id:"home",    icon:"🏠", label:"Home",    fn:onHome},
+    {id:"mock",    icon:"📝", label:"Mock",    fn:onMock},
+    {id:"tutor",   icon:"🤖", label:"Tutor",   fn:onTutor},
+    {id:"dashboard",icon:"📊",label:"Progress",fn:onDash},
+    {id:"friends", icon:"🏆", label:"Boards",  fn:onLeaderboards},
   ];
   return (
     <nav style={{position:"fixed",bottom:0,left:0,right:0,height:58,background:D?"#0d1117":"#fff",borderTop:`1px solid ${D?"#1f2937":"#e5e7eb"}`,display:"flex",zIndex:100}}>
@@ -1685,44 +1688,78 @@ function OnboardingWizard({D,onComplete}) {
 }
 
 
-function Header({user,D,onDark,onHome,onDash,onTarget,onTimetable,onBlurt,onMock,onTutor,onCoach,onFriends,streak,onSearch,globalOverlays}) {
+function Header({user,userDisplayName,D,onDark,onHome,onDash,onTarget,onTimetable,onBlurt,onMock,onTutor,onCoach,onLeaderboards,streak,onSearch,globalOverlays,screen}) {
+  const [menuOpen,setMenuOpen] = React.useState(false);
   const isMobile = typeof window!=="undefined" && window.innerWidth<640;
+  const navItems = [
+    {id:"timetable", icon:"📅", label:"Timetable",  fn:onTimetable},
+    {id:"blurting",  icon:"🧠", label:"Blurting",   fn:onBlurt},
+    {id:"mock",      icon:"📝", label:"Mock Exam",  fn:onMock},
+    {id:"tutor",     icon:"🤖", label:"AI Tutor",   fn:onTutor},
+    {id:"coach",     icon:"✍️",  label:"Exam Coach", fn:onCoach},
+    {id:"target",    icon:"🎯", label:"Target",     fn:onTarget},
+    {id:"dashboard", icon:"📊", label:"Progress",   fn:onDash},
+    {id:"friends",   icon:"🏆", label:"Leaderboards",fn:onLeaderboards},
+  ];
+  const displayName = userDisplayName || getDisplayName(user);
   return (
     <header style={{background:D?"#0d1117":"#fff",borderBottom:`1px solid ${D?"#1f2937":"#e5e7eb"}`,position:"sticky",top:0,zIndex:50}}>
-      <div style={{maxWidth:1080,margin:"0 auto",padding:"0 16px",height:52,display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
-        <button onClick={onHome} style={{fontWeight:700,fontSize:14,background:"none",border:"none",cursor:"pointer",color:tx(D),flexShrink:0}}>🎓 ReviseIQ</button>
-        {/* Search button always visible */}
-        <button onClick={onSearch} style={{background:"none",border:`1px solid ${D?"#374151":"#e5e7eb"}`,borderRadius:8,padding:"5px 10px",fontSize:12,color:mu(D),cursor:"pointer",display:"flex",alignItems:"center",gap:5,flexShrink:0}}>
-          <span>🔍</span><span style={{display:isMobile?"none":"inline"}}>Search</span><kbd style={{fontSize:10,background:D?"#374151":"#f3f4f6",padding:"1px 5px",borderRadius:4,display:isMobile?"none":"inline"}}>⌘K</kbd>
+      <div style={{maxWidth:1100,margin:"0 auto",padding:"0 16px",height:54,display:"flex",alignItems:"center",gap:8}}>
+        {/* Logo */}
+        <button onClick={onHome} style={{fontWeight:800,fontSize:15,background:"none",border:"none",cursor:"pointer",color:tx(D),flexShrink:0,letterSpacing:"-0.01em",paddingRight:8}}>🎓 ReviseIQ</button>
+
+        {/* Search */}
+        <button onClick={onSearch} style={{background:D?"#1f2937":"#f3f4f6",border:`1px solid ${D?"#374151":"#e5e7eb"}`,borderRadius:8,padding:"5px 10px",fontSize:12,color:mu(D),cursor:"pointer",display:"flex",alignItems:"center",gap:6,flexShrink:0,transition:"background .15s"}}>
+          <span style={{fontSize:13}}>🔍</span>
+          {!isMobile&&<span style={{color:D?"#9ca3af":"#6b7280"}}>Search</span>}
+          {!isMobile&&<kbd style={{fontSize:10,background:D?"#374151":"#e5e7eb",color:D?"#9ca3af":"#6b7280",padding:"1px 6px",borderRadius:4,fontFamily:"inherit"}}>Ctrl+K</kbd>}
         </button>
-        {/* Desktop nav — hidden on mobile */}
-        {!isMobile&&<div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"nowrap",overflowX:"auto"}}>
-          {streak>0&&(
-            <div style={{display:"flex",alignItems:"center",gap:5,padding:"4px 10px",borderRadius:20,background:streak>=7?(D?"#7c2d12":"#fff7ed"):(D?"#1c1917":"#f9fafb"),border:`1.5px solid ${streak>=7?"#f97316":"#d1d5db"}`,flexShrink:0}}>
-              <span style={{fontSize:14}}>🔥</span>
-              <span style={{fontSize:13,fontWeight:700,color:streak>=7?"#f97316":mu(D)}}>{streak}</span>
-            </div>
-          )}
-          <button onClick={onTimetable} style={{fontSize:11,background:"none",border:"none",cursor:"pointer",color:mu(D),whiteSpace:"nowrap"}}>📅 Timetable</button>
-          <button onClick={onBlurt}     style={{fontSize:11,background:"none",border:"none",cursor:"pointer",color:mu(D),whiteSpace:"nowrap"}}>🧠 Blurting</button>
-          <button onClick={onMock}      style={{fontSize:11,background:"none",border:"none",cursor:"pointer",color:mu(D),whiteSpace:"nowrap"}}>📝 Mock</button>
-          <button onClick={onTutor}     style={{fontSize:11,background:"none",border:"none",cursor:"pointer",color:mu(D),whiteSpace:"nowrap"}}>🤖 AI Tutor</button>
-          <button onClick={onCoach}     style={{fontSize:11,background:"none",border:"none",cursor:"pointer",color:mu(D),whiteSpace:"nowrap"}}>✍️ Exam Coach</button>
-          <button onClick={onTarget}    style={{fontSize:11,background:"none",border:"none",cursor:"pointer",color:mu(D),whiteSpace:"nowrap"}}>🎯 Target</button>
-          <button onClick={onDash}      style={{fontSize:11,background:"none",border:"none",cursor:"pointer",color:mu(D),whiteSpace:"nowrap"}}>📊 Progress</button>
-          <button onClick={onFriends}   style={{fontSize:11,background:"none",border:"none",cursor:"pointer",color:mu(D),whiteSpace:"nowrap"}}>👥 Friends</button>
-          <button onClick={onDark}      style={{fontSize:12,background:"none",border:"none",cursor:"pointer",color:mu(D)}}>{D?"☀️":"🌙"}</button>
-          <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
-            <span style={{fontSize:12,color:mu(D)}}>{getDisplayName(user)}</span>
-            {isAdmin(user)&&<span style={{fontSize:10,fontWeight:700,background:"#6366f1",color:"#fff",padding:"2px 7px",borderRadius:20}}>ADMIN</span>}
+
+        {/* Streak pill */}
+        {streak>0&&(
+          <div style={{display:"flex",alignItems:"center",gap:4,padding:"4px 10px",borderRadius:20,background:streak>=7?(D?"#431407":"#fff7ed"):(D?"#1c1917":"#f9fafb"),border:`1.5px solid ${streak>=7?"#f97316":"#d1d5db"}`,flexShrink:0}}>
+            <span style={{fontSize:13}}>🔥</span>
+            <span style={{fontSize:12,fontWeight:700,color:streak>=7?"#f97316":mu(D)}}>{streak}d</span>
           </div>
-        </div>}
-        {/* Mobile: dark mode + user only */}
-        {isMobile&&<div style={{display:"flex",alignItems:"center",gap:8}}>
-          <button onClick={onDark} style={{fontSize:14,background:"none",border:"none",cursor:"pointer",color:mu(D)}}>{D?"☀️":"🌙"}</button>
-          <span style={{fontSize:12,color:mu(D)}}>{user}</span>
-        </div>}
+        )}
+
+        {/* Desktop nav */}
+        {!isMobile&&<nav style={{display:"flex",alignItems:"center",gap:1,flex:1,overflowX:"auto",scrollbarWidth:"none"}}>
+          {navItems.map(function(item){
+            var active=screen===item.id;
+            return (
+              <button key={item.id} onClick={item.fn}
+                style={{fontSize:12,padding:"6px 9px",background:active?(D?"rgba(99,102,241,.15)":"#eef2ff"):"none",border:"none",borderRadius:7,cursor:"pointer",color:active?"#6366f1":mu(D),whiteSpace:"nowrap",fontWeight:active?600:400,transition:"all .12s",flexShrink:0}}>
+                {item.icon} {item.label}
+              </button>
+            );
+          })}
+        </nav>}
+
+        <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
+          {/* Dark mode */}
+          <button onClick={onDark} style={{fontSize:15,background:"none",border:"none",cursor:"pointer",color:mu(D),padding:"4px",borderRadius:6}}>{D?"☀️":"🌙"}</button>
+          {/* User chip */}
+          <div style={{display:"flex",alignItems:"center",gap:6,padding:"4px 10px",borderRadius:20,background:D?"#1f2937":"#f3f4f6",border:`1px solid ${D?"#374151":"#e5e7eb"}`}}>
+            <span style={{fontSize:12,fontWeight:600,color:tx(D),maxWidth:isMobile?80:140,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{displayName}</span>
+            {isAdmin(user)&&<span style={{fontSize:9,fontWeight:700,background:"#6366f1",color:"#fff",padding:"1px 6px",borderRadius:10,letterSpacing:"0.04em"}}>ADMIN</span>}
+          </div>
+          {/* Mobile hamburger */}
+          {isMobile&&<button onClick={function(){setMenuOpen(function(o){return !o;})}} style={{fontSize:16,background:"none",border:"none",cursor:"pointer",color:mu(D),padding:"4px"}}>☰</button>}
+        </div>
       </div>
+
+      {/* Mobile dropdown menu */}
+      {isMobile&&menuOpen&&(
+        <div style={{position:"absolute",top:54,left:0,right:0,background:D?"#111827":"#fff",borderBottom:`1px solid ${D?"#1f2937":"#e5e7eb"}`,zIndex:49,padding:"8px 12px",display:"flex",flexWrap:"wrap",gap:4}}>
+          {navItems.map(function(item){return (
+            <button key={item.id} onClick={function(){item.fn();setMenuOpen(false);}}
+              style={{fontSize:12,padding:"7px 12px",background:D?"#1f2937":"#f3f4f6",border:"none",borderRadius:8,cursor:"pointer",color:mu(D),whiteSpace:"nowrap"}}>
+              {item.icon} {item.label}
+            </button>
+          );})}
+        </div>
+      )}
     {globalOverlays}
     </header>
   );
@@ -1730,9 +1767,16 @@ function Header({user,D,onDark,onHome,onDash,onTarget,onTimetable,onBlurt,onMock
 
 function AdminBar({D, actions}) {
   return (
-    <div style={{display:"flex",gap:10,padding:"10px 14px",borderRadius:12,background:D?"#1a1a2e":"#f5f3ff",border:"1.5px solid #6366f1",marginBottom:18,flexWrap:"wrap",alignItems:"center"}}>
-      <span style={{fontSize:11,fontWeight:700,color:"#6366f1",letterSpacing:"0.05em"}}>⚡ ADMIN</span>
-      {actions.map((a,i)=><button key={i} onClick={a.fn} style={{...B("#6366f1",true,{fontSize:12,padding:"5px 12px"})}}>{a.label}</button>)}
+    <div style={{display:"flex",gap:8,padding:"8px 12px",borderRadius:10,background:D?"rgba(99,102,241,.12)":"#eef2ff",border:"1.5px solid #6366f1",marginBottom:16,alignItems:"center",flexWrap:"wrap"}}>
+      <span style={{fontSize:10,fontWeight:800,color:"#6366f1",letterSpacing:"0.08em",textTransform:"uppercase",marginRight:4}}>⚡ Admin</span>
+      {actions.map(function(a,i){return (
+        <button key={i} onClick={a.fn}
+          style={{fontSize:12,padding:"5px 14px",borderRadius:7,border:"1.5px solid #6366f1",background:"#6366f1",color:"#fff",cursor:"pointer",fontWeight:600,whiteSpace:"nowrap",transition:"opacity .15s"}}
+          onMouseEnter={function(e){e.currentTarget.style.opacity="0.85";}}
+          onMouseLeave={function(e){e.currentTarget.style.opacity="1";}}>
+          {a.label}
+        </button>
+      );})}
     </div>
   );
 }
@@ -4206,7 +4250,7 @@ function ContactScreen({D, user, isAdmin, onBack}) {
 }
 
 /* ─── GLOBAL OVERLAYS ────────────────────────────────────────────────────── */
-function GlobalOverlays({D,online,shortcutModal,setShortcutModal,searchOpen,setSearchOpen,onboarding,handleOnboardingComplete,subjects,allSections,boardData,boardSels,handleSearchNavigate,screen,onHome,onMock,onTutor,onTimetable,onDash,streak}) {
+function GlobalOverlays({D,online,shortcutModal,setShortcutModal,searchOpen,setSearchOpen,onboarding,handleOnboardingComplete,subjects,allSections,boardData,boardSels,handleSearchNavigate,screen,onHome,onMock,onTutor,onTimetable,onDash,onLeaderboards,streak}) {
   const isMobile=typeof window!=="undefined"&&window.innerWidth<640;
   const content=(
     <>
@@ -4214,7 +4258,7 @@ function GlobalOverlays({D,online,shortcutModal,setShortcutModal,searchOpen,setS
       {shortcutModal&&<ShortcutModal D={D} onClose={()=>setShortcutModal(false)}/>}
       {searchOpen&&<SearchModal D={D} subjects={subjects} allSections={allSections} boardData={boardData} boardSels={boardSels} onNavigate={handleSearchNavigate} onClose={()=>setSearchOpen(false)}/>}
       {onboarding&&<OnboardingWizard D={D} onComplete={handleOnboardingComplete}/>}
-      {isMobile&&!["login"].includes(screen)&&<MobileNav D={D} screen={screen} onHome={onHome} onMock={onMock} onTutor={onTutor} onTimetable={onTimetable} onDash={onDash} streak={streak}/>}
+      {isMobile&&!["login"].includes(screen)&&<MobileNav D={D} screen={screen} onHome={onHome} onMock={onMock} onTutor={onTutor} onTimetable={onTimetable} onDash={onDash} onLeaderboards={onLeaderboards} streak={streak}/>}
     </>
   );
   return content;
@@ -4751,8 +4795,8 @@ export default function App() {
   };
 
   const bg=D?"#030712":"#f9fafb", bd2=D?"#1f2937":"#e5e7eb";
-  const _goEl=<GlobalOverlays D={D} online={online} shortcutModal={shortcutModal} setShortcutModal={setShortcutModal} searchOpen={searchOpen} setSearchOpen={setSearchOpen} onboarding={onboarding} handleOnboardingComplete={handleOnboardingComplete} subjects={subjects} allSections={allSections} boardData={boardData} boardSels={boardSels} handleSearchNavigate={handleSearchNavigate} screen={screen} onHome={()=>setScreen("home")} onMock={()=>setScreen("mock")} onTutor={()=>{setTutorSubjId(null);setScreen("tutor");}} onTimetable={()=>setScreen("timetable")} onDash={()=>setScreen("dashboard")} streak={streak}/>;
-const hProps={user,D,onDark:()=>setD(!D),onHome:()=>setScreen("home"),onDash:()=>setScreen("dashboard"),onTarget:()=>{setTTSubj(null);setScreen("target")},onTimetable:()=>setScreen("timetable"),onBlurt:()=>{setBlurtSubjId(null);setBlurtSecId2(null);setScreen("blurting");},onMock:()=>setScreen("mock"),onTutor:()=>{setTutorSubjId(null);setScreen("tutor");},onCoach:()=>setScreen("coach"),onFriends:()=>setScreen("friends"),streak,onSearch:()=>setSearchOpen(true),globalOverlays:_goEl};
+  const _goEl=<GlobalOverlays D={D} online={online} shortcutModal={shortcutModal} setShortcutModal={setShortcutModal} searchOpen={searchOpen} setSearchOpen={setSearchOpen} onboarding={onboarding} handleOnboardingComplete={handleOnboardingComplete} subjects={subjects} allSections={allSections} boardData={boardData} boardSels={boardSels} handleSearchNavigate={handleSearchNavigate} screen={screen} onHome={()=>setScreen("home")} onMock={()=>setScreen("mock")} onTutor={()=>{setTutorSubjId(null);setScreen("tutor");}} onTimetable={()=>setScreen("timetable")} onDash={()=>setScreen("dashboard")} onLeaderboards={()=>setScreen("friends")} streak={streak}/>;
+const hProps={user,userDisplayName,D,onDark:()=>setD(!D),onHome:()=>setScreen("home"),onDash:()=>setScreen("dashboard"),onTarget:()=>{setTTSubj(null);setScreen("target")},onTimetable:()=>setScreen("timetable"),onBlurt:()=>{setBlurtSubjId(null);setBlurtSecId2(null);setScreen("blurting");},onMock:()=>setScreen("mock"),onTutor:()=>{setTutorSubjId(null);setScreen("tutor");},onCoach:()=>setScreen("coach"),onLeaderboards:()=>setScreen("friends"),streak,onSearch:()=>setSearchOpen(true),globalOverlays:_goEl,screen};
 
   // Personal subject routing — handled before the main screen router
   if(personalScreen&&personalScreen.subjId){
@@ -4761,17 +4805,26 @@ const hProps={user,D,onDark:()=>setD(!D),onHome:()=>setScreen("home"),onDash:()=
   }
 
   if(screen==="login"){
-    const uTrim=nameIn.trim().toLowerCase();
-    const emailOk=/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(uTrim);
+    // Accept email OR plain username (letters/numbers/underscores, 3-30 chars)
+    const idTrim=nameIn.trim();
+    const idLower=idTrim.toLowerCase();
+    const isEmail=idLower.indexOf("@")!==-1;
+    const emailOk=isEmail&&/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(idLower);
+    const usernameOk=!isEmail&&/^[a-zA-Z0-9_]{3,30}$/.test(idTrim);
+    const idOk=emailOk||usernameOk;
     const passOk=passIn.length>=4&&passIn.length<=30;
-    const canSubmit=emailOk&&passOk;
+    // On signup: if email given it must be valid; otherwise just need a valid username
+    const signupIdOk=authMode==="signup"?(isEmail?emailOk:usernameOk):idOk;
+    const canSubmit=signupIdOk&&passOk;
+
     const handleAuth=()=>{
       if(!canSubmit)return;
-      const u=uTrim;
-      const dn=displayNameIn.trim()||getDisplayName(u); // fall back to email-derived name
+      // Normalise key: emails go lowercase, usernames kept as typed
+      const u=isEmail?idLower:idTrim;
+      const dn=displayNameIn.trim()||getDisplayName(u);
       if(authMode==="signup"){
-        if(u===ADMIN_USER){setAuthE("That email is reserved.");return;}
-        if(accounts[u]){setAuthE("An account with that email already exists — please log in.");return;}
+        if(u===ADMIN_USER){setAuthE("That identifier is reserved.");return;}
+        if(accounts[u]){setAuthE("An account with that "+(isEmail?"email":"username")+" already exists.");return;}
         const nonAdminCount=Object.keys(accounts).filter(k=>k!==ADMIN_USER).length;
         const gki=(nonAdminCount%10)+1;
         const n={...accounts,[u]:{h:hashPw(passIn),gki,displayName:dn}};setAccs(n);saveAccounts(n);
@@ -4784,62 +4837,85 @@ const hProps={user,D,onDark:()=>setD(!D),onHome:()=>setScreen("home"),onDash:()=
         }
         setUser(u);setScreen("home");setAuthE("");setShowPass(false);setDNIn("");
       }else{
-        if(!accounts[u]){setAuthE("No account found — sign up first.");return;}
-        if(getAccHash(accounts[u])!==hashPw(passIn)){setAuthE("Incorrect password.");return;}
+        // Login: try exact key first, then case-insensitive search for usernames
+        var matchKey=null;
+        if(accounts[u]){
+          matchKey=u;
+        } else {
+          // Case-insensitive fallback for old accounts
+          var lower=u.toLowerCase();
+          var allKeys=Object.keys(accounts);
+          for(var ki=0;ki<allKeys.length;ki++){
+            if(allKeys[ki].toLowerCase()===lower){matchKey=allKeys[ki];break;}
+          }
+        }
+        if(!matchKey){setAuthE("No account found. Check spelling or sign up.");return;}
+        if(getAccHash(accounts[matchKey])!==hashPw(passIn)){setAuthE("Incorrect password.");return;}
         boardLoadedRef.current={};
         setGK("");
-        const storedDN=getAccDisplayName(accounts[u])||getDisplayName(u);
+        const storedDN=getAccDisplayName(accounts[matchKey])||getDisplayName(matchKey);
         setUserDisplayName(storedDN);
-        if(u===ADMIN_USER){
+        if(matchKey===ADMIN_USER){
           setUserSchool(ADMIN_SCHOOL);
         }else{
-          const lbKey="gcse:lb:"+u.replace(/\W/g,"-");
-          window.storage.get(lbKey,true).then(r=>{
-            if(r?.value){
+          const lbKey="gcse:lb:"+matchKey.replace(/\W/g,"-");
+          window.storage.get(lbKey,true).then(function(r){
+            if(r&&r.value){
               try{
-                const e=JSON.parse(r.value);
+                var e=JSON.parse(r.value);
                 if(e.school)setUserSchool(e.school);
-                // Backfill displayName if missing
                 if(!e.displayName&&storedDN){
-                  window.storage.set(lbKey,JSON.stringify({...e,displayName:storedDN}),true).catch(()=>{});
+                  window.storage.set(lbKey,JSON.stringify({...e,displayName:storedDN}),true).catch(function(){});
                 }
-              }catch(e){}
+              }catch(ex){}
             }
-          }).catch(()=>{});
+          }).catch(function(){});
         }
-        setUser(u);setScreen("home");setAuthE("");setShowPass(false);
+        setUser(matchKey);setScreen("home");setAuthE("");setShowPass(false);
       }
     };
+
+    var idPlaceholder=authMode==="signup"?"Username or email (optional email)":"Email or username";
+    var idHint=authMode==="signup"
+      ?(isEmail?(emailOk?"":"Enter a valid email"):(!idTrim?"":"3-30 chars: letters, numbers, _"))
+      :"";
+
     return (
       <div style={{minHeight:"100vh",background:D?"#030712":"#f0f4ff",display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
-        <div style={{...C(D),width:"100%",maxWidth:380,padding:40,boxShadow:"0 25px 60px rgba(0,0,0,.12)"}}>
+        <div style={{...C(D),width:"100%",maxWidth:400,padding:40,boxShadow:"0 25px 60px rgba(0,0,0,.12)"}}>
           <div style={{textAlign:"center",marginBottom:28}}>
             <div style={{fontSize:48,marginBottom:12}}>🎓</div>
-            <h1 style={{fontSize:22,fontWeight:700,color:tx(D),marginBottom:6}}>ReviseIQ</h1>
-            <p style={{fontSize:13,color:mu(D)}}>{ALL_SUBJECTS.length} Subjects · Multiple Exam Boards · AI-Powered</p>
+            <h1 style={{fontSize:22,fontWeight:700,color:tx(D),marginBottom:4}}>ReviseIQ</h1>
+            <p style={{fontSize:12,color:mu(D)}}>{ALL_SUBJECTS.length} subjects · AI-powered revision</p>
           </div>
-          <div style={{display:"flex",background:D?"#1f2937":"#f3f4f6",borderRadius:10,padding:4,marginBottom:20}}>
-            {["login","signup"].map(m=>(
-              <button key={m} onClick={()=>{setAM(m);setAuthE("");}} style={{flex:1,padding:"8px 0",borderRadius:8,border:"none",background:authMode===m?(D?"#374151":"#fff"):"transparent",fontWeight:authMode===m?600:400,fontSize:13,cursor:"pointer",color:authMode===m?tx(D):mu(D),transition:"all .15s"}}>
+          <div style={{display:"flex",background:D?"#1f2937":"#f3f4f6",borderRadius:10,padding:3,marginBottom:22,gap:3}}>
+            {["login","signup"].map(function(m){return (
+              <button key={m} onClick={function(){setAM(m);setAuthE("");}} style={{flex:1,padding:"9px 0",borderRadius:8,border:"none",background:authMode===m?(D?"#374151":"#fff"):"transparent",fontWeight:authMode===m?600:400,fontSize:13,cursor:"pointer",color:authMode===m?tx(D):mu(D),transition:"all .15s",boxShadow:authMode===m?"0 1px 4px rgba(0,0,0,.08)":"none"}}>
                 {m==="login"?"Log In":"Sign Up"}
               </button>
-            ))}
+            );})}
           </div>
           <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:14}}>
-            <input style={I(D)} placeholder="Email address" value={nameIn} onChange={e=>{setNameIn(e.target.value);setAuthE("");}} onKeyDown={e=>e.key==="Enter"&&handleAuth()} type="email" autoCapitalize="off" autoCorrect="off"/>
-            {authMode==="signup"&&<input style={I(D)} placeholder="Your name (shown on leaderboard)" value={displayNameIn} onChange={e=>setDNIn(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleAuth()}/>}
-            <div style={{position:"relative"}}>
-              <input type="password" style={I(D)} placeholder="Password (4–30 characters)" value={passIn} maxLength={30} onChange={e=>{setPassIn(e.target.value);setAuthE("");}} onKeyDown={e=>e.key==="Enter"&&handleAuth()}/>
+            <div>
+              <input style={I(D)} placeholder={idPlaceholder} value={nameIn} onChange={function(e){setNameIn(e.target.value);setAuthE("");}} onKeyDown={function(e){if(e.key==="Enter")handleAuth();}} autoCapitalize="off" autoCorrect="off" autoComplete="username" spellCheck="false"/>
+              {idHint&&idTrim&&<p style={{fontSize:11,color:"#f59e0b",marginTop:3,marginLeft:2}}>{idHint}</p>}
             </div>
-            {authMode==="signup"&&<input style={I(D)} placeholder="School (optional)" value={schoolIn} onChange={e=>setSchIn(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleAuth()}/>}
+            {authMode==="signup"&&(
+              <input style={I(D)} placeholder="Display name (shown on leaderboard)" value={displayNameIn} onChange={function(e){setDNIn(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter")handleAuth();}}/>
+            )}
+            <input type="password" style={I(D)} placeholder="Password (4–30 characters)" value={passIn} maxLength={30} onChange={function(e){setPassIn(e.target.value);setAuthE("");}} onKeyDown={function(e){if(e.key==="Enter")handleAuth();}}/>
+            {authMode==="signup"&&(
+              <input style={I(D)} placeholder="School (optional — for leaderboard)" value={schoolIn} onChange={function(e){setSchIn(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter")handleAuth();}}/>
+            )}
           </div>
-          {authErr&&<p style={{fontSize:12,color:"#ef4444",marginBottom:10,textAlign:"center"}}>{authErr}</p>}
+          {authErr&&<p style={{fontSize:12,color:"#ef4444",marginBottom:10,textAlign:"center",background:D?"rgba(239,68,68,.1)":"#fef2f2",padding:"8px 12px",borderRadius:8,border:"1px solid #fca5a5"}}>{authErr}</p>}
           <button disabled={!canSubmit} onClick={handleAuth}
-            style={{width:"100%",background:canSubmit?"#6366f1":"#d1d5db",color:"#fff",border:"none",borderRadius:12,padding:"13px 0",fontSize:14,fontWeight:600,cursor:canSubmit?"pointer":"default",transition:"background .2s"}}>
+            style={{width:"100%",background:canSubmit?"#6366f1":"#d1d5db",color:"#fff",border:"none",borderRadius:12,padding:"13px 0",fontSize:14,fontWeight:700,cursor:canSubmit?"pointer":"default",transition:"background .2s",letterSpacing:"0.02em"}}>
             {authMode==="login"?"Log In →":"Create Account →"}
           </button>
-          <div style={{marginTop:14,display:"flex",gap:6,justifyContent:"center",flexWrap:"wrap"}}>
-            {ALL_SUBJECTS.map(s=><span key={s.id} style={{fontSize:10,color:mu(D),background:D?"#1f2937":"#f3f4f6",padding:"2px 7px",borderRadius:20}}>{s.icon}</span>)}
+          {authMode==="login"&&<p style={{fontSize:11,color:mu(D),textAlign:"center",marginTop:10}}>No account? Switch to Sign Up above.</p>}
+          <div style={{marginTop:16,display:"flex",gap:5,justifyContent:"center",flexWrap:"wrap"}}>
+            {ALL_SUBJECTS.map(function(s){return <span key={s.id} style={{fontSize:11,color:mu(D),background:D?"#1f2937":"#f3f4f6",padding:"2px 8px",borderRadius:20}}>{s.icon}</span>;})}
           </div>
         </div>
       </div>
@@ -4898,15 +4974,19 @@ const hProps={user,D,onDark:()=>setD(!D),onHome:()=>setScreen("home"),onDash:()=
   if(screen==="friends") return (
     <div style={{minHeight:"100vh",background:bg,color:tx(D)}} className="fade-in">
       <Header {...hProps}/>
-      <div style={{maxWidth:600,margin:"0 auto",padding:"32px 24px"}}>
+      <div style={{maxWidth:700,margin:"0 auto",padding:"32px 24px"}}>
         <button onClick={()=>setScreen("home")} style={{fontSize:13,color:mu(D),background:"none",border:"none",cursor:"pointer",marginBottom:20}}>← Home</button>
-        <h2 style={{fontSize:22,fontWeight:700,marginBottom:4}}>👥 Friends</h2>
-        <p style={{fontSize:13,color:mu(D),marginBottom:20}}>Add friends and compare your progress scores</p>
-        <div style={{...C(D),padding:22}}>
-          <FriendsPanel user={user} D={D}/>
-        </div>
-        <div style={{...C(D),padding:16,marginTop:14}}>
-          <SchoolLeaderboard user={user} school={userSchool} D={D}/>
+        <h2 style={{fontSize:22,fontWeight:700,marginBottom:4}}>🏆 Leaderboards</h2>
+        <p style={{fontSize:13,color:mu(D),marginBottom:24}}>See how you rank at your school and with friends</p>
+        <div style={{display:"flex",flexDirection:"column",gap:16}}>
+          <div style={{...C(D),padding:22}}>
+            <SchoolLeaderboard user={user} school={userSchool} D={D}/>
+            {!userSchool&&<p style={{fontSize:12,color:mu(D),marginTop:10}}>You can add your school in Account Settings.</p>}
+          </div>
+          <div style={{...C(D),padding:22}}>
+            <p style={{fontSize:13,fontWeight:700,marginBottom:12,color:tx(D)}}>👥 Friends</p>
+            <FriendsPanel user={user} D={D}/>
+          </div>
         </div>
       </div>
     </div>
@@ -4916,7 +4996,7 @@ const hProps={user,D,onDark:()=>setD(!D),onHome:()=>setScreen("home"),onDash:()=
     <div style={{minHeight:"100vh",background:bg,color:tx(D)}} className="fade-in">
       <Header {...hProps}/>
       <div style={{maxWidth:960,margin:"0 auto",padding:"40px 24px"}}>
-        <h2 style={{fontSize:24,fontWeight:700,marginBottom:streak>0?16:4}}>Hey {getDisplayName(user)} 👋</h2>
+        <h2 style={{fontSize:24,fontWeight:700,marginBottom:streak>0?16:4}}>Hey {userDisplayName||getDisplayName(user)} 👋</h2>
         {streak>0&&(
           <div style={{...C(D),padding:"18px 22px",marginBottom:22,background:streak>=7?(D?"#1c0d05":"#fff7ed"):undefined,borderColor:streak>=7?"#f97316":undefined}}>
             <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:12}}>
@@ -4942,16 +5022,18 @@ const hProps={user,D,onDark:()=>setD(!D),onHome:()=>setScreen("home"),onDash:()=
                 </div>
               ));})()}
             </div>
-            <SchoolLeaderboard user={user} school={userSchool} D={D}/>
-            <FriendsPanel user={user} D={D}/>
           </div>
         )}
 
-        {admin&&<div style={{display:"flex",gap:10,padding:"10px 14px",borderRadius:12,background:D?"#1a1a2e":"#f5f3ff",border:"1.5px solid #6366f1",marginBottom:18,flexWrap:"wrap",alignItems:"center"}}>
-          <span style={{fontSize:11,fontWeight:700,color:"#6366f1"}}>⚡ ADMIN MODE</span>
-          <span style={{fontSize:12,color:mu(D)}}>Navigate into a subject to add topics, notes, flashcards, questions and past papers.</span>
-          <button onClick={()=>setImportOpen(true)} style={{marginLeft:"auto",padding:"6px 14px",borderRadius:8,border:"1.5px solid #6366f1",background:"#6366f1",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>📥 Import Data</button>
-          <button onClick={()=>setManageAccountsOpen(true)} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #6366f1",background:"none",color:"#6366f1",fontSize:12,fontWeight:600,cursor:"pointer"}}>👥 Manage Accounts</button>
+        {admin&&<div style={{borderRadius:12,background:D?"rgba(99,102,241,.1)":"#eef2ff",border:"1.5px solid #6366f1",marginBottom:20,overflow:"hidden"}}>
+          <div style={{padding:"10px 16px",display:"flex",alignItems:"center",gap:10,flexWrap:"wrap",borderBottom:`1px solid ${D?"rgba(99,102,241,.2)":"#c7d2fe"}`}}>
+            <span style={{fontSize:11,fontWeight:800,color:"#6366f1",letterSpacing:"0.08em",textTransform:"uppercase"}}>⚡ Admin Mode</span>
+            <span style={{fontSize:12,color:D?"#a5b4fc":"#4338ca",flex:1}}>Navigate into a subject to add topics, notes, flashcards, questions and past papers.</span>
+          </div>
+          <div style={{padding:"10px 16px",display:"flex",gap:8,flexWrap:"wrap"}}>
+            <button onClick={()=>setImportOpen(true)} style={{fontSize:12,padding:"6px 14px",borderRadius:7,border:"1.5px solid #6366f1",background:"#6366f1",color:"#fff",fontWeight:600,cursor:"pointer"}}>📥 Import Data</button>
+            <button onClick={()=>setManageAccountsOpen(true)} style={{fontSize:12,padding:"6px 14px",borderRadius:7,border:"1.5px solid #6366f1",background:"transparent",color:"#6366f1",fontWeight:600,cursor:"pointer"}}>👥 Manage Accounts</button>
+          </div>
         </div>}
         {importOpen&&<ImportModal D={D} subjects={subjects} onClose={()=>setImportOpen(false)} onDone={()=>{ensureAllBoardsLoaded(boardSels);}}/>}
         {manageAccountsOpen&&<ManageAccountsModal D={D} accounts={accounts} adminUser={ADMIN_USER} onClose={()=>setManageAccountsOpen(false)} onDelete={function(email){var n={...accounts};delete n[email];setAccs(n);saveAccounts(n);}}/>}
@@ -5054,15 +5136,15 @@ const hProps={user,D,onDark:()=>setD(!D),onHome:()=>setScreen("home"),onDash:()=
             <div style={{width:56,height:56,borderRadius:16,background:`linear-gradient(135deg,${subj.accent},${subj.accent}88)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,flexShrink:0}}>{subj.icon}</div>
             <div style={{flex:1,minWidth:0}}>
               <h2 style={{fontSize:22,fontWeight:700,marginBottom:6}}>{subj.name}</h2>
-              <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:10}}>
+              {!subj._politics&&<div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:10}}>
                 {EXAM_BOARDS.map(b=>(
                   <button key={b} onClick={()=>selectBoard(b)}
                     style={{padding:"4px 12px",borderRadius:20,border:`1.5px solid ${curBoard===b?subj.accent:bd2}`,background:curBoard===b?subj.accent:"transparent",color:curBoard===b?"#fff":mu(D),cursor:"pointer",fontSize:12,fontWeight:curBoard===b?700:400,transition:"all .15s"}}>
                     {b}
                   </button>
                 ))}
-              </div>
-              {(()=>{
+              </div>}
+              {!subj._politics&&(()=>{
                 const ss=stats.subjStats?.[subj.id];
                 const qPct=ss?.qM>0?Math.round((ss.qS/ss.qM)*100):null;
                 const predicted=qPct!=null?pctToGrade(qPct):null;
@@ -5658,8 +5740,6 @@ const hProps={user,D,onDark:()=>setD(!D),onHome:()=>setScreen("home"),onDash:()=
                 <span style={{fontSize:10,color:mu(D)}}>More</span>
               </div>
             </div>
-            <SchoolLeaderboard user={user} school={userSchool} D={D}/>
-            <FriendsPanel user={user} D={D}/>
           </div>
 
           {/* Stats summary row */}
