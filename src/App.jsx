@@ -1,5 +1,5 @@
-import '../src/storage.js'
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import '../src/storage.js' 
+import React, { useState, useEffect, useCallback, useRef } from "react"; 
 import ReactDOM from "react-dom/client";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar, Legend } from "recharts";
 
@@ -495,205 +495,200 @@ async function generatePartedPaper(subjName, board, paper, mergedTopics) {
 const MOCK_SPECS={
   "maths:AQA":[
     {n:"Paper 1 – Non-Calculator",d:90,m:80,paperType:"parted",numGroups:22,
-     markDist:"Target EXACTLY 80 marks total across all groups. Questions vary 1-6 marks each: questions 1-5 typically 1-2 marks, questions 6-15 typically 2-4 marks, questions 16-22 typically 3-6 marks",
-     specGuide:"AQA GCSE Maths Higher Tier. Paper 1 is non-calculator. Questions cover: Number, Algebra, Ratio/Proportion/Rates, Geometry/Measures, Probability, Statistics. Include worded problems, show-that proofs, and multi-step reasoning. All questions require written working — no MCQs. At least one algebra question, one geometry question, one statistics question.",
-     desc:"90 min, 80 marks. Non-calculator. All Higher Tier topics. Show all working clearly.",
-     skills:["No calculator allowed","Show all working","QWC on some questions"]},
+     markDist:"Target EXACTLY 80 marks total. Start with 4–6 groups of 1–3 mark questions (recall/method), then 8–10 groups of 3–5 marks (application/multi-step), finish with 4–6 groups of 5–8 marks (problem-solving/proof). A single 6-mark question should appear at least once.",
+     specGuide:"AQA GCSE Maths Higher Tier — Paper 1 Non-Calculator. Cover: Number (fractions, surds, indices, standard form, HCF/LCM), Algebra (expanding brackets, factorising, solving equations/inequalities, sequences, simultaneous equations, quadratics, functions, proof), Ratio/Proportion/Rates (percentage change, direct/inverse proportion, compound interest), Geometry/Measures (angles, area, volume, circle theorems, transformations, vectors, Pythagoras), Probability, Statistics (averages, cumulative frequency, histograms). All questions require written working. At least: one algebraic proof, one geometry question with circle theorems, one statistics interpretation. NO MCQs. Show method marks clearly.",
+     desc:"1h 30min, 80 marks. No calculator allowed.",
+     skills:["Algebraic proof","Circle theorems","Show-that questions"]},
     {n:"Paper 2 – Calculator",d:90,m:80,paperType:"parted",numGroups:22,
-     markDist:"Target EXACTLY 80 marks total across all groups. Questions vary 1-6 marks each: questions 1-5 typically 1-2 marks, questions 6-15 typically 2-4 marks, questions 16-22 typically 3-6 marks",
-     specGuide:"AQA GCSE Maths Higher Tier. Calculator allowed. Include trigonometry, bounds, financial maths, compound interest, reverse percentage, graph interpretation. At least one real-world context question. All questions require written working.",
-     desc:"90 min, 80 marks. Calculator allowed. Problem-solving and reasoning.",
-     skills:["Calculator permitted","Problem-solving","Show all working"]},
+     markDist:"Target EXACTLY 80 marks. Mix 1-mark retrieval, 3-4 mark method, 5-6 mark multi-step reasoning. At least two questions with 5+ marks.",
+     specGuide:"AQA GCSE Maths Higher Tier — Paper 2 Calculator. Include: trigonometry (sin/cos/tan, sine rule, cosine rule, 3D trig), bounds and error intervals, financial maths (compound/simple interest, depreciation), graph interpretation (distance-time, velocity-time, quadratic/cubic), reverse percentage, direct/inverse proportion, scatter graphs with correlation, similarity and congruence. Real-world context questions required. All written working shown.",
+     desc:"1h 30min, 80 marks. Calculator allowed.",
+     skills:["Trigonometry","Bounds","Graph interpretation"]},
     {n:"Paper 3 – Calculator",d:90,m:80,paperType:"parted",numGroups:22,
-     markDist:"Target EXACTLY 80 marks total across all groups. Slightly higher proportion of 3-6 mark questions than Paper 1",
-     specGuide:"AQA GCSE Maths Higher Tier. Synoptic paper. Include simultaneous equations, circle theorems, vectors, transformations, data analysis. Heavier weighting on multi-step reasoning questions.",
-     desc:"90 min, 80 marks. Calculator allowed. Synoptic — all topics.",
-     skills:["Calculator permitted","Synoptic — all topics","Multi-step reasoning"]},
+     markDist:"Target EXACTLY 80 marks. Synoptic — mix topics across questions. At least two 6-mark questions requiring extended multi-step reasoning.",
+     specGuide:"AQA GCSE Maths Higher Tier — Paper 3 Calculator. Synoptic paper — questions deliberately mix topics. Include: simultaneous equations (graphical and algebraic), circle theorems, vectors, enlargement/similar shapes, transformations, data analysis (box plots, cumulative frequency, histograms), algebraic fractions, iteration, further quadratics. At least two 6-mark problem-solving questions. Heavier weighting on multi-step reasoning requiring 4+ method steps.",
+     desc:"1h 30min, 80 marks. Calculator allowed.",
+     skills:["Circle theorems","Vectors","Multi-step reasoning"]},
   ],
   "maths:Edexcel":[
     {n:"Paper 1 – Non-Calculator",d:90,m:80,paperType:"parted",numGroups:22,
-     markDist:"Target EXACTLY 80 marks total. ~40% of questions are 1-mark, ~30% are 2-mark, ~20% are 3-4 mark, ~10% are 5-6 mark",
-     specGuide:"Edexcel GCSE Maths Higher Tier. Non-calculator. Cover: indices, algebraic manipulation, solving equations, quadratics, sequences, angles, areas/volumes. Include at least two 1-mark recall questions at the start of each group.",
-     desc:"90 min, 80 marks. Non-calculator. Higher Tier.",
-     skills:["No calculator","Show all working","~40% 1-mark questions"]},
+     markDist:"Target EXACTLY 80 marks. Start with short 1–2 mark recall questions; build to 4–6 mark problem-solving. Each group should list marks clearly.",
+     specGuide:"Edexcel GCSE Maths Higher Tier — Paper 1 Non-Calculator. Cover: indices and surds, algebraic manipulation (expanding, factorising), solving linear and quadratic equations, sequences (nth term arithmetic and geometric), angles (parallel lines, polygons, circle theorems), area and volume (composite shapes, sector/arc), probability trees, averages from frequency tables. At least two groups should start with a 1-mark recall part before extending. NO MCQs.",
+     desc:"1h 30min, 80 marks. No calculator allowed.",
+     skills:["Surds","Algebraic fractions","Angle proofs"]},
     {n:"Paper 2 – Calculator",d:90,m:80,paperType:"parted",numGroups:22,
-     markDist:"Target EXACTLY 80 marks total. ~40% of questions are 1-mark, ~30% are 2-mark, ~20% are 3-4 mark, ~10% are 5-6 mark",
-     specGuide:"Edexcel GCSE Maths Higher Tier. Calculator allowed. Include: Pythagoras, trigonometry, cumulative frequency, box plots, scatter graphs, ratio/proportion, standard form.",
-     desc:"90 min, 80 marks. Calculator allowed.",
-     skills:["Calculator permitted","~40% 1-mark questions","Show working"]},
+     markDist:"Target EXACTLY 80 marks. Include a balance of short (1–3 mark) and longer (4–6 mark) questions.",
+     specGuide:"Edexcel GCSE Maths Higher Tier — Paper 2 Calculator. Include: Pythagoras theorem in 2D and 3D, trigonometric ratios and graphs, cumulative frequency and box plots, scatter graphs and lines of best fit, ratio and proportion (recipe problems, map scales), standard form calculations, percentage change and reverse percentages, surface area and volume of prisms/cylinders/cones/spheres.",
+     desc:"1h 30min, 80 marks. Calculator allowed.",
+     skills:["3D Pythagoras","Cumulative frequency","Standard form"]},
     {n:"Paper 3 – Calculator",d:90,m:80,paperType:"parted",numGroups:22,
-     markDist:"Target EXACTLY 80 marks total. Slightly heavier multi-mark weighting: ~30% 1-mark, ~35% 2-mark, ~25% 3-4 mark, ~10% 5-6 mark",
-     specGuide:"Edexcel GCSE Maths Higher Tier. Calculator allowed. More multi-mark questions. Include circle theorems, similar shapes, 3D trigonometry, set notation, conditional probability.",
-     desc:"90 min, 80 marks. Calculator allowed. Higher multi-mark weighting.",
-     skills:["Calculator permitted","Higher proportion 3-6 mark questions"]},
+     markDist:"Target EXACTLY 80 marks. More 5–6 mark multi-step questions than Papers 1 and 2.",
+     specGuide:"Edexcel GCSE Maths Higher Tier — Paper 3 Calculator. More demanding questions. Include: circle theorems (tangent, chord, alternate segment), similar shapes and scale factors (area/volume scale factors), 3D trigonometry, conditional probability and Venn diagrams, set notation, further algebraic proof, transformations of graphs, iteration to find roots. Questions should require students to select and chain methods.",
+     desc:"1h 30min, 80 marks. Calculator allowed.",
+     skills:["Circle theorems","Conditional probability","Graph transformations"]},
   ],
   "bio:AQA":[
-    {n:"Paper 1",d:105,m:100,paperType:"parted",numGroups:8,
-     markDist:"Target EXACTLY 100 marks total. ~45% 1-2 mark questions across 8 numbered question groups; at least one 6-mark extended writing in each paper; each numbered question has 4-9 lettered sub-parts (a)-(h)",
-     specGuide:"AQA GCSE Biology Paper 1. Topics 1-4: Cell Biology, Organisation, Infection and Response, Bioenergetics. Include ~10% maths skills (calculate, draw graph, analyse data). Include ~15% practical skills (describe/evaluate required practicals). At least one 6-mark extended writing question using a level-based mark scheme. Questions must reference AQA required practicals where appropriate.",
-     desc:"1h 45min, 100 marks. Topics 1-4: Cell Biology, Organisation, Infection & Response, Bioenergetics.",
-     skills:["~10% maths skills","~15% practical skills","6-mark extended writing"]},
-    {n:"Paper 2",d:105,m:100,paperType:"parted",numGroups:8,
-     markDist:"Target EXACTLY 100 marks total. ~45% 1-2 mark questions across 8 numbered question groups; at least one 6-mark extended writing in each paper; each numbered question has 4-9 lettered sub-parts (a)-(h)",
-     specGuide:"AQA GCSE Biology Paper 2. Topics 5-7: Homeostasis and Response, Inheritance/Variation/Evolution, Ecology. Include hormones, nervous system, DNA, natural selection, food webs, biodiversity. At least one 6-mark extended writing question. Include ~10% maths and ~15% practical skills.",
-     desc:"1h 45min, 100 marks. Topics 5-7: Homeostasis, Inheritance, Ecology.",
-     skills:["~10% maths skills","~15% practical skills","6-mark extended writing"]},
+    {n:"Paper 1",d:105,m:100,paperType:"parted",numGroups:9,
+     markDist:"Target EXACTLY 100 marks. Section A: one group of exactly 4 MCQ parts (1 mark each, use type:mcq). Section B: 8 groups of structured questions mixing 1-mark recall, 2-mark describe, 3-4 mark explain, ending each group with one 6-mark extended writing question (level-based mark scheme with L1/L2/L3 descriptors). Total MCQ = 4 marks; structured = 96 marks.",
+     specGuide:"AQA GCSE Biology Paper 1. Duration 1h 45min. Topics 1–4 only: (1) Cell Biology — cell structure (animal/plant/bacterial), microscopy calculations, mitosis, cell cycle, stem cells, diffusion/osmosis/active transport with calculations; (2) Organisation — digestive system enzymes, food tests, heart/circulatory system, coronary heart disease, cancer, plant tissue/transport; (3) Infection and Response — communicable diseases, bacteria/viruses/fungi/protists, immune system, vaccination, antibiotics, drug development; (4) Bioenergetics — photosynthesis (word/symbol equation, factors, uses of glucose), aerobic/anaerobic respiration, exercise effects, metabolism. Required practicals: osmosis in potatoes, enzyme rate experiments, iodine test, Benedict's test. Include at least 2 maths questions (percentage change, magnification formula). Each group ends with a 6-mark level-based extended writing question.",
+     desc:"1h 45min, 100 marks. Topics 1–4: Cell Biology, Organisation, Infection & Response, Bioenergetics.",
+     skills:["Extended writing (6 marks)","Maths skills","Required practicals"]},
+    {n:"Paper 2",d:105,m:100,paperType:"parted",numGroups:9,
+     markDist:"Target EXACTLY 100 marks. Section A: one group of 4 MCQ parts. Section B: 8 groups of structured questions, each ending with one 6-mark extended writing question.",
+     specGuide:"AQA GCSE Biology Paper 2. Duration 1h 45min. Topics 5–7 only: (5) Homeostasis and Response — nervous system (CNS/receptors/effectors/reflex arc), hormones (endocrine system, ADH, blood glucose regulation, insulin/glucagon, diabetes, thermoregulation, menstrual cycle, fertility treatment, contraception, plant hormones/tropisms); (6) Inheritance, Variation and Evolution — DNA/genes/chromosomes/alleles, Mendel, genetic diagrams (monohybrid cross, Punnett square, sex determination), variation, mutation, natural selection, Darwin/Wallace, extinction, selective breeding, genetic engineering, cloning; (7) Ecology — ecosystems, food webs/chains, biotic/abiotic factors, adaptations, competition, sampling methods, human impacts on biodiversity, maintaining biodiversity, carbon/water/nitrogen cycles, decomposition, global warming. Include at least 2 maths questions. Each group ends with a 6-mark extended writing question.",
+     desc:"1h 45min, 100 marks. Topics 5–7: Homeostasis, Inheritance, Ecology.",
+     skills:["Genetic diagrams","Homeostasis mechanisms","Ecology calculations"]},
   ],
   "chem:AQA":[
-    {n:"Paper 1",d:105,m:100,paperType:"parted",numGroups:8,
-     markDist:"Target EXACTLY 100 marks total. ~45% 1-2 mark questions across 8 numbered question groups; at least one 6-mark extended writing in each paper; each numbered question has 4-9 lettered sub-parts (a)-(h)",
-     specGuide:"AQA GCSE Chemistry Paper 1. Topics 1-5: Atomic structure and periodic table, Bonding, Quantitative chemistry, Chemical changes, Energy changes. Include ~20% maths (mole calculations, balancing equations, yield, concentration). At least one 6-mark extended writing question. Include required practical questions.",
-     desc:"1h 45min, 100 marks. Topics 1-5. ~20% maths skills.",
-     skills:["~20% maths skills","~15% practical skills","6-mark extended writing"]},
-    {n:"Paper 2",d:105,m:100,paperType:"parted",numGroups:8,
-     markDist:"Target EXACTLY 100 marks total. ~45% 1-2 mark questions across 8 numbered question groups; at least one 6-mark extended writing in each paper; each numbered question has 4-9 lettered sub-parts (a)-(h)",
-     specGuide:"AQA GCSE Chemistry Paper 2. Topics 6-10: Rate of reaction, Organic chemistry (alkanes/alkenes/alcohols/carboxylic acids/polymers), Analysing and using resources (water treatment, life cycle assessment, Haber process). At least one 6-mark extended writing question.",
-     desc:"1h 45min, 100 marks. Topics 6-10.",
-     skills:["~20% maths skills","~15% practical skills","6-mark extended writing"]},
+    {n:"Paper 1",d:105,m:100,paperType:"parted",numGroups:9,
+     markDist:"Target EXACTLY 100 marks. One group of 4 MCQ parts (type:mcq). Eight groups of structured questions, each ending with one 6-mark extended writing question. Include at least 3 maths calculation questions.",
+     specGuide:"AQA GCSE Chemistry Paper 1. Duration 1h 45min. Topics 1–5: (1) Atomic Structure and Periodic Table — atomic model history, subatomic particles, electron configuration, periodic table groups/periods, Group 1/7/0 properties, transition metals; (2) Bonding/Structure/Properties — ionic/covalent/metallic bonding, giant ionic/simple molecular/giant covalent/metallic structures, allotropes of carbon, polymer properties; (3) Quantitative Chemistry — relative formula mass (Mr), moles, balancing equations, mole calculations (mass/Mr), limiting reactants, % yield, atom economy calculations; (4) Chemical Changes — reactivity series, displacement reactions, extraction of metals, reduction, electrolysis (products at electrodes), acids/bases/neutralisation, making salts; (5) Energy Changes — exothermic/endothermic reactions, bond energies, reaction profiles. Required practicals: electrolysis, titration, temperature change. Maths: at least 2 mole calculation groups.",
+     desc:"1h 45min, 100 marks. Topics 1–5: Atomic structure, Bonding, Quantitative chemistry, Chemical changes, Energy.",
+     skills:["Mole calculations","Electrolysis","6-mark extended writing"]},
+    {n:"Paper 2",d:105,m:100,paperType:"parted",numGroups:9,
+     markDist:"Target EXACTLY 100 marks. One group of 4 MCQ parts. Eight structured groups ending each with a 6-mark extended writing question.",
+     specGuide:"AQA GCSE Chemistry Paper 2. Duration 1h 45min. Topics 6–10: (6) Rate and Extent of Chemical Change — collision theory, factors affecting rate (temperature/concentration/surface area/catalysts), rate calculations, reversible reactions, Le Chatelier's principle; (7) Organic Chemistry — crude oil/fractional distillation, alkanes (combustion), cracking, alkenes (addition reactions, bromine water test), alcohols, carboxylic acids, condensation polymers, addition polymers; (8) Chemical Analysis — pure substances, paper chromatography (Rf values), gas tests (O2/CO2/H2/Cl2/NH3), flame tests, precipitate tests; (9) Atmospheric Science — evolution of Earth's atmosphere, greenhouse effect, air pollutants; (10) Using Resources — finite/renewable resources, water treatment, Haber process (conditions/equilibrium), life cycle assessment, carbon footprint, alternatives to plastics. Include Rf value calculation and rate of reaction graph analysis.",
+     desc:"1h 45min, 100 marks. Topics 6–10: Rates, Organic chemistry, Analysis, Atmosphere, Resources.",
+     skills:["Organic chemistry naming","Rate calculations","Haber process"]},
   ],
   "phys:AQA":[
-    {n:"Paper 1",d:105,m:100,paperType:"parted",numGroups:8,
-     markDist:"Target EXACTLY 100 marks total. ~45% 1-2 mark questions across 8 numbered question groups; at least one 6-mark extended writing in each paper; each numbered question has 4-9 lettered sub-parts (a)-(h)",
-     specGuide:"AQA GCSE Physics Paper 1. Topics 1-4: Energy (stores/transfers/efficiency/power), Electricity (circuits/resistance/charge), Particle model of matter (density/states/gas pressure), Atomic structure (radioactivity/half-life/nuclear equations). Include ~30% maths — show all formula, substitution, rearrangement steps. At least one 6-mark extended writing question.",
-     desc:"1h 45min, 100 marks. Topics 1-4: Energy, Electricity, Particle model, Atomic structure.",
-     skills:["~30% maths skills","~15% practical skills","6-mark extended writing","Show all calculations"]},
-    {n:"Paper 2",d:105,m:100,paperType:"parted",numGroups:8,
-     markDist:"Target EXACTLY 100 marks total. ~45% 1-2 mark questions across 8 numbered question groups; at least one 6-mark extended writing in each paper; each numbered question has 4-9 lettered sub-parts (a)-(h)",
-     specGuide:"AQA GCSE Physics Paper 2. Topics 5-8: Forces (Newton's laws/momentum/stopping distances/pressure), Waves (EM spectrum/sound/reflection/refraction), Electromagnetism (motors/transformers/induction), Space physics (solar system/life cycle of stars/red-shift). Include ~30% maths. At least one 6-mark extended writing question.",
-     desc:"1h 45min, 100 marks. Topics 5-8: Forces, Waves, Electromagnetism, Space.",
-     skills:["~30% maths skills","~15% practical skills","6-mark extended writing"]},
+    {n:"Paper 1",d:105,m:100,paperType:"parted",numGroups:9,
+     markDist:"Target EXACTLY 100 marks. One group of 4 MCQ parts. Eight structured groups; each group must include at least one calculation with formula/substitution/answer/units. Each group ends with one 6-mark extended writing question.",
+     specGuide:"AQA GCSE Physics Paper 1. Duration 1h 45min. Topics 1–4: (1) Energy — energy stores and transfers, conservation of energy, kinetic/gravitational/elastic potential energy calculations (KE=½mv², GPE=mgh, Ee=½ke²), power (P=E/t, P=W/t), efficiency calculations, thermal conductivity, specific heat capacity (Q=mcΔT), required practical; (2) Electricity — current/potential difference/resistance (V=IR), series/parallel circuits, electrical power (P=IV, P=I²R), energy transfer (E=Pt, E=QV), static electricity, electric fields, mains supply, national grid, transformers (Vp/Vs=np/ns); (3) Particle Model of Matter — density (ρ=m/V), states of matter, internal energy, specific heat capacity, specific latent heat (Q=mL), gas pressure/temperature/volume (pV=const, p/T=const); (4) Atomic Structure — nuclear model history, atomic structure, isotopes, radioactive decay (alpha/beta/gamma), nuclear equations, half-life calculations, fission and fusion. Every group MUST show: formula stated → substitution → working → answer with units.",
+     desc:"1h 45min, 100 marks. Topics 1–4: Energy, Electricity, Particle model, Atomic structure.",
+     skills:["Multi-step calculations","Nuclear equations","Energy efficiency"]},
+    {n:"Paper 2",d:105,m:100,paperType:"parted",numGroups:9,
+     markDist:"Target EXACTLY 100 marks. One group of 4 MCQ parts. Eight structured groups each with at least one calculation and one 6-mark extended writing question.",
+     specGuide:"AQA GCSE Physics Paper 2. Duration 1h 45min. Topics 5–8: (5) Forces — scalar/vector, resultant forces, moments (M=Fd), pressure (p=F/A, p=hρg), distance/speed/velocity/acceleration (v=u+at, v²=u²+2as, s=ut+½at²), Newton's laws, inertia, momentum (p=mv, conservation of momentum), stopping distances, drag; (6) Waves — transverse/longitudinal, wave equation (v=fλ), reflection/refraction/TIR, EM spectrum (properties/uses/dangers), sound, required practical (ripple tank/waves on string); (7) Magnetism and Electromagnetism — magnetic fields, motor effect (F=BIL), Fleming's left-hand rule, induced EMF (generator effect), AC generator, transformers; (8) Space Physics — solar system, life cycle of stars, orbital motion, red-shift/Big Bang evidence. Every calculation group: formula → substitution → working → answer with units.",
+     desc:"1h 45min, 100 marks. Topics 5–8: Forces, Waves, Electromagnetism, Space.",
+     skills:["Momentum calculations","EM spectrum","Wave equations"]},
   ],
   "bio:Edexcel":[
-    {n:"Paper 1",d:105,m:100,paperType:"parted",numGroups:6,
-     markDist:"Section A: 10 MCQs (1 mark each), Section B: structured questions (~90 marks)",
-     specGuide:"Edexcel GCSE Biology Paper 1. Topics 1-5. Start with exactly one group of 10 MCQ parts (1 mark each, single question per option, type:mcq), then 5 groups of structured short/extended questions. Include maths skills ~20% and practical skills ~25%.",
-     desc:"1h 45min, 100 marks. Topics 1-5. Section A: 10 MCQs, Section B: structured.",
-     skills:["10 MCQs (Section A)","~20% maths","~25% practical"]},
-    {n:"Paper 2",d:105,m:100,paperType:"parted",numGroups:6,
-     markDist:"Section A: 10 MCQs (1 mark each), Section B: structured questions (~90 marks)",
-     specGuide:"Edexcel GCSE Biology Paper 2. Topics 1-7 synoptic. Start with exactly one group of 10 MCQ parts, then 5 groups of structured questions covering all topics synoptically.",
-     desc:"1h 45min, 100 marks. Topics 1-7 synoptic. 10 MCQs + structured.",
-     skills:["10 MCQs","Synoptic across all topics"]},
+    {n:"Paper 1",d:105,m:100,paperType:"parted",numGroups:7,
+     markDist:"Target EXACTLY 100 marks. Section A: one group of exactly 10 MCQ parts (1 mark each, use type:mcq). Section B: 6 groups of structured questions totalling 90 marks. Mix of 2-mark describe, 3-mark explain, 4-mark analysis, 6-mark extended writing.",
+     specGuide:"Edexcel GCSE Biology Paper 1. Duration 1h 45min. Topics 1–5: Key concepts of biology (cells, microscopy, diffusion, osmosis, enzymes), Cells and control (mitosis, cell cycle, stem cells, cancer), Genetics (DNA, meiosis, genetic inheritance, mutation), Natural selection and genetic modification (adaptation, evolution, selective breeding, GMOs), Health, disease and the development of medicines (communicable diseases, non-communicable diseases, drug development). Section A must be exactly 10 MCQs. Section B groups start with short recall and build to 6-mark extended writing. Include at least 2 practical-based questions.",
+     desc:"1h 45min, 100 marks. Topics 1–5. Section A: 10 MCQs. Section B: structured questions.",
+     skills:["10 MCQs","Genetic inheritance","Extended writing"]},
+    {n:"Paper 2",d:105,m:100,paperType:"parted",numGroups:7,
+     markDist:"Target EXACTLY 100 marks. One group of 10 MCQ parts. Six structured groups totalling 90 marks. Final group should be a synoptic question linking multiple topics.",
+     specGuide:"Edexcel GCSE Biology Paper 2. Duration 1h 45min. Topics 1–7 synoptic: Plant structures and their functions (photosynthesis, transpiration, plant hormones), Animal coordination, control and homeostasis (endocrine system, blood glucose regulation, thermoregulation, kidney/water balance), Exchange and transport in animals (circulatory system, heart, gas exchange, lung structure), Ecosystems and material cycles (food chains/webs, population size, carbon cycle, water cycle, decomposition, biodiversity). Synoptic questions should link topics from Papers 1 and 2. Include data analysis. Section A: 10 MCQs. At least one 6-mark extended writing question.",
+     desc:"1h 45min, 100 marks. Topics 1–7 synoptic. Section A: 10 MCQs.",
+     skills:["Synoptic questions","Data analysis","Homeostasis"]},
     {n:"Paper 3",d:75,m:70,paperType:"parted",numGroups:5,
-     markDist:"Section A: 5 MCQs (1 mark each), Section B: structured questions",
-     specGuide:"Edexcel GCSE Biology Paper 3. Synoptic focus on data analysis, practical skills, and experimental design. Include at least two data-analysis parts. Start with one group of 5 MCQ parts.",
-     desc:"1h 15min, 70 marks. Synoptic. Data analysis and practical skills.",
-     skills:["Synoptic questions","Data interpretation","Practical skills"]},
+     markDist:"Target EXACTLY 70 marks. One group of 5 MCQ parts. Four structured groups; include extended analysis and evaluation questions.",
+     specGuide:"Edexcel GCSE Biology Paper 3. Duration 1h 15min. Synoptic — focuses on practical skills, data analysis, and experimental evaluation. Questions reference all 7 topic areas. Section A: 5 MCQs. Section B: 4 structured groups each based on a data set or experimental scenario. Students must: describe patterns in data, suggest explanations, evaluate methods, calculate means/percentages/rates, and draw conclusions. Include at least one question on planning an investigation (variables, controls, reliability).",
+     desc:"1h 15min, 70 marks. Synoptic — practical skills and data analysis.",
+     skills:["Data analysis","Experimental design","Synoptic reasoning"]},
   ],
   "chem:Edexcel":[
-    {n:"Paper 1",d:105,m:100,paperType:"parted",numGroups:6,
-     markDist:"Section A: 10 MCQs (1 mark each), Section B: structured questions",
-     specGuide:"Edexcel GCSE Chemistry Paper 1. Topics 1-6. Start with one group of 10 MCQ parts, then 5 structured groups. Include ~20% maths (mole calculations, relative formula mass, percentage yield).",
-     desc:"1h 45min, 100 marks. Topics 1-6.",
-     skills:["10 MCQs","~20% maths","~20% practical"]},
-    {n:"Paper 2",d:105,m:100,paperType:"parted",numGroups:6,
-     markDist:"Section A: 10 MCQs (1 mark each), Section B: structured questions",
-     specGuide:"Edexcel GCSE Chemistry Paper 2. Topics 1-9 synoptic. Start with one group of 10 MCQ parts, then 5 structured groups. Include extended writing on chemistry concepts.",
-     desc:"1h 45min, 100 marks. Topics 1-9 synoptic.",
-     skills:["10 MCQs","Synoptic","Extended writing"]},
+    {n:"Paper 1",d:105,m:100,paperType:"parted",numGroups:7,
+     markDist:"Target EXACTLY 100 marks. One group of 10 MCQs. Six structured groups mixing short-answer and calculation questions. At least 3 calculation questions (moles, Mr, percentage yield).",
+     specGuide:"Edexcel GCSE Chemistry Paper 1. Duration 1h 45min. Topics 1–6: Atomic structure (Bohr model, electron configuration, isotopes), Periodic Table (groups/periods, Group 1/7/0 properties, transition metals), Structure, bonding and properties of matter (ionic/covalent/metallic, giant/simple structures, allotropes), Quantitative chemistry (moles, Mr, mole calculations, limiting reactants, percentage yield, concentration of solutions), Chemical and ionic equations (balancing, state symbols), Electrolysis (products at electrodes, half equations). Section A: 10 MCQs. Section B: mole calculation questions MUST show formula → substitution → answer → unit.",
+     desc:"1h 45min, 100 marks. Topics 1–6. Section A: 10 MCQs. Section B: structured.",
+     skills:["Mole calculations","Electrolysis half-equations","Bonding structures"]},
+    {n:"Paper 2",d:105,m:100,paperType:"parted",numGroups:7,
+     markDist:"Target EXACTLY 100 marks. One group of 10 MCQs. Six structured groups synoptic. Include rate calculations and organic chemistry naming.",
+     specGuide:"Edexcel GCSE Chemistry Paper 2. Duration 1h 45min. Topics 1–9 synoptic: Acids, bases and salts (neutralisation, preparing salts, pH), Obtaining and using metals (reactivity series, extracting iron in blast furnace, aluminium by electrolysis, life cycle assessment), Reversible reactions and equilibria (Le Chatelier's principle, Haber process conditions/equilibrium), Organic chemistry (homologous series, alkanes/alkenes/alcohols/carboxylic acids/esters, addition/condensation polymerisation, cracking), Chemical analysis (chromatography Rf values, gas tests, flame tests, precipitate tests), Earth and atmospheric science (atmosphere composition, greenhouse effect, global warming, air pollution). Section A: 10 MCQs. Rf calculation and rate graph interpretation required.",
+     desc:"1h 45min, 100 marks. Topics 1–9 synoptic. Section A: 10 MCQs.",
+     skills:["Organic naming","Rf calculations","Haber process equilibrium"]},
   ],
   "phys:Edexcel":[
-    {n:"Paper 1",d:105,m:100,paperType:"parted",numGroups:6,
-     markDist:"Section A: 10 MCQs (1 mark each), Section B: structured questions",
-     specGuide:"Edexcel GCSE Physics Paper 1. Topics 1-6. Start with one group of 10 MCQ parts, then 5 structured groups. Include ~30% maths with formula triangles and multi-step calculations.",
-     desc:"1h 45min, 100 marks. Topics 1-6.",
-     skills:["10 MCQs","~30% maths","~15% practical"]},
-    {n:"Paper 2",d:105,m:100,paperType:"parted",numGroups:6,
-     markDist:"Section A: 10 MCQs (1 mark each), Section B: structured questions",
-     specGuide:"Edexcel GCSE Physics Paper 2. Topics 1-8 including Astronomy and Energy resources. Start with one group of 10 MCQ parts, then 5 structured groups.",
-     desc:"1h 45min, 100 marks. Topics 1-8 including Astronomy.",
-     skills:["10 MCQs","~30% maths","Astronomy questions"]},
+    {n:"Paper 1",d:105,m:100,paperType:"parted",numGroups:7,
+     markDist:"Target EXACTLY 100 marks. One group of 10 MCQs. Six structured groups. Every calculation MUST show: formula → substitution → working → answer with units.",
+     specGuide:"Edexcel GCSE Physics Paper 1. Duration 1h 45min. Topics 1–6: Motion (distance/displacement/speed/velocity/acceleration, s-t and v-t graphs, equations of motion v=u+at, v²=u²+2as, s=½(u+v)t), Forces and motion (Newton's laws, resultant force, F=ma, weight W=mg, friction, momentum p=mv, conservation of momentum, stopping distances), Conservation of energy (kinetic KE=½mv², gravitational GPE=mgh, elastic Ee=½ke², efficiency, power P=W/t), Waves (wave equation v=fλ, reflection, refraction, EM spectrum, sound), Light and the EM spectrum (absorption/reflection/transmission, colour, uses of EM waves), Radioactivity (atomic structure, nuclear decay, half-life, uses of radiation). Section A: 10 MCQs. All calculations show full working.",
+     desc:"1h 45min, 100 marks. Topics 1–6. Section A: 10 MCQs.",
+     skills:["Equations of motion","Energy calculations","Half-life"]},
+    {n:"Paper 2",d:105,m:100,paperType:"parted",numGroups:7,
+     markDist:"Target EXACTLY 100 marks. One group of 10 MCQs. Six structured groups including at least 2 electricity calculation groups and one space/astronomy group.",
+     specGuide:"Edexcel GCSE Physics Paper 2. Duration 1h 45min. Topics 1–8 including Astronomy: Astronomy (solar system, lifecycle of stars, red-shift, Big Bang), Energy — resources (renewable/non-renewable, advantages/disadvantages, power station efficiency), Electric circuits (current/voltage/resistance V=IR, series/parallel circuits, power P=IV and P=I²R, energy E=Pt), Static electricity (charge, electric fields, sparking), Magnetism and the motor effect (magnetic fields, F=BIL, Fleming's left-hand rule), Electromagnetic induction (generator effect, AC generator, transformer equation Vp/Vs=np/ns), Particle model (density ρ=m/V, SHC Q=mcΔT, SLH Q=mL, gas laws). Section A: 10 MCQs. All calculations: formula → substitution → answer → unit.",
+     desc:"1h 45min, 100 marks. Topics 1–8 including Astronomy. Section A: 10 MCQs.",
+     skills:["Transformer calculations","Circuit analysis","Gas laws"]},
   ],
   "eng-lang:AQA":[
     {n:"Paper 1 – Explorations in Creative Reading & Writing",d:105,m:80,paperType:"structured",
      paperPrompt:"eng-lang-p1",
-     desc:"Section A: Reading unseen literary fiction (40 marks). Section B: Creative writing (40 marks).",
-     skills:["Q1: 4×1-mark MCQ retrieval","Q2: 8-mark language analysis","Q3: 8-mark structure analysis","Q4: 20-mark critical evaluation","Q5: 40-mark creative writing"]},
+     desc:"1h 45min, 80 marks. Section A: 4 reading questions (40 marks). Section B: creative writing (40 marks).",
+     skills:["Reading comprehension","Language analysis","Creative writing"],
+     configFields:[]},
     {n:"Paper 2 – Writers' Viewpoints & Perspectives",d:105,m:80,paperType:"comingSoon",
-     desc:"Coming soon — non-fiction reading + transactional writing.",skills:[]},
+     desc:"Coming soon — non-fiction reading & transactional writing.",skills:[]},
   ],
   "eng-lit:AQA":[
     {n:"Paper 1 – Shakespeare & 19th-Century Novel",d:105,m:64,paperType:"structured",
      paperPrompt:"eng-lit-p1",
+     desc:"1h 45min, 64 marks. Section A: Shakespeare (34 marks). Section B: 19th-century novel (30 marks).",
+     skills:["Shakespeare analysis","19th-century prose","Level-based mark schemes"],
      configFields:[
-       {id:"shakespeare",label:"Which Shakespeare play are you studying?",type:"select",
-        options:["Macbeth","Romeo and Juliet","The Tempest","The Merchant of Venice","Much Ado About Nothing","Julius Caesar"]},
-       {id:"novel",label:"Which 19th-century novel are you studying?",type:"select",
-        options:["The Strange Case of Dr Jekyll and Mr Hyde","A Christmas Carol","Great Expectations","Jane Eyre","Frankenstein","Pride and Prejudice","The Sign of Four"]},
-     ],
-     desc:"Section A: Shakespeare (30+4 AO4 marks). Section B: 19th-century novel (30 marks).",
-     skills:["Extract + whole text analysis","AO4: 4 SPaG marks","Focus on writer's methods","PEE/PETAL structure"]},
+       {id:"shakespeare",label:"Shakespeare text",type:"select",options:["Macbeth","Romeo and Juliet","The Tempest","The Merchant of Venice","Much Ado About Nothing","Julius Caesar"],default:"Macbeth"},
+       {id:"novel",label:"19th-century novel",type:"select",options:["A Christmas Carol","The Strange Case of Dr Jekyll and Mr Hyde","Great Expectations","Jane Eyre","Frankenstein","Pride and Prejudice","The Sign of Four"],default:"A Christmas Carol"},
+     ]},
     {n:"Paper 2 – Modern Texts & Poetry",d:135,m:96,paperType:"comingSoon",
-     desc:"Coming soon — modern prose/drama + anthology poetry + unseen poetry.",skills:[]},
+     desc:"Coming soon — modern prose/drama + poetry anthology.",skills:[]},
   ],
   "history:AQA":[
     {n:"Paper 1 – Understanding the Modern World",d:105,m:84,paperType:"comingSoon",
-     desc:"Coming soon.",skills:[]},
+     desc:"Coming soon — Germany, Cold War, and conflict topics.",skills:[]},
     {n:"Paper 2 – Shaping the Nation (Elizabethan England)",d:105,m:40,paperType:"structured",
      paperPrompt:"history-p2-elizabethan",
+     desc:"1h 45min, 40 marks. Section B: Elizabethan England c1568–1603 (interpretation, explain, account, historic environment).",
+     skills:["Interpretation analysis","Explain significance","Historic environment"],
      configFields:[
-       {id:"britishStudy",label:"British depth study",type:"select",
-        options:["Elizabethan England, c1568-1603"],
-        note:"Only Elizabethan England is available in this version."},
-       {id:"examYear",label:"Which year are you sitting your exam?",type:"select",
-        options:["2026","2027","2028"],
-        note:"Determines your Historic Environment question (Q4)."},
-     ],
-     desc:"Section B: Elizabethan England. Q1: Interpretation (8). Q2: Importance (8). Q3: Account (8). Q4: Historic Environment (16).",
-     skills:["Q1: Interpretation — 8 marks","Q2: Importance — 8 marks","Q3: Write an account — 8 marks","Q4: Historic Environment essay — 16 marks"]},
+       {id:"britishStudy",label:"British depth study",type:"select",options:["Elizabethan England c1568-1603"],default:"Elizabethan England c1568-1603"},
+       {id:"examYear",label:"Exam year (affects historic environment question)",type:"select",options:["2026","2027","2028"],default:"2026"},
+     ]},
   ],
   "geography:AQA":[
     {n:"Paper 1 – Living with the Physical Environment",d:90,m:88,paperType:"parted",numGroups:4,
-     markDist:"Mix of 1-mark, 2-mark, 4-mark and 6-mark/9-mark extended questions",
-     specGuide:"AQA GCSE Geography Paper 1. Three sections: A) The Challenge of Natural Hazards (tectonic hazards, weather hazards, climate change), B) The Living World (ecosystems, tropical rainforests, hot deserts), C) Physical Landscapes in the UK (coasts and/or rivers). Each group starts with 1-2 mark recall parts, then builds to a 6 or 9 mark extended answer. Include at least one map/figure-based question (describe what figure X shows). Use AQA command words: name, state, describe, explain, to what extent, assess. At least one 6-mark evaluation question and one 9-mark essay.",
-     desc:"1h 30min, 88 marks. Natural Hazards, Living World, Physical Landscapes.",
-     skills:["OS map skills","6-mark and 9-mark extended answers","Data interpretation"]},
+     markDist:"Target EXACTLY 88 marks across 3 sections (3 groups of questions + 1 final evaluation). Section A (Natural Hazards) ~30 marks, Section B (Living World) ~30 marks, Section C (UK Physical Landscapes) ~28 marks. Include: 1-mark name/state, 2-mark describe, 4-mark explain, 6-mark extended, and one 9-mark essay with SPaG marks.",
+     specGuide:"AQA GCSE Geography Paper 1. 1h 30min, 88 marks. THREE compulsory sections: SECTION A — The Challenge of Natural Hazards: tectonic hazards (plate tectonics, earthquakes, volcanoes — causes, effects, responses, prediction), weather hazards (tropical storms — distribution, causes, effects, responses), climate change (causes, effects, managing). SECTION B — The Living World: ecosystems (food webs, nutrient cycles), tropical rainforests (structure, biodiversity, deforestation causes/effects, sustainable management), hot deserts (adaptations, opportunities, challenges, desertification) OR cold environments. SECTION C — Physical Landscapes in the UK: either coastal landscapes (erosion processes, landforms — headlands/bays/caves/arches/stacks/beaches, coastal management) OR river landscapes (erosion/transportation/deposition, meanders/oxbow lakes/floodplains/deltas, flood management). MUST include: at least one figure-based question ('Describe what Figure X shows'), AQA command words (name/state/describe/explain/assess/to what extent), one 9-mark essay with 3 SPaG marks, one 6-mark evaluation question.",
+     desc:"1h 30min, 88 marks. Three sections: Natural Hazards, Living World, UK Physical Landscapes.",
+     skills:["Figure analysis","6-mark extended writing","9-mark essay + SPaG"]},
     {n:"Paper 2 – Challenges in the Human Environment",d:90,m:88,paperType:"parted",numGroups:4,
-     markDist:"Mix of 1-mark, 2-mark, 4-mark and 6-mark/9-mark extended questions",
-     specGuide:"AQA GCSE Geography Paper 2. Three sections: A) Urban Issues and Challenges (urbanisation, megacities, Rio or UK city case study), B) The Changing Economic World (development gap, NEEs like Nigeria, UK economic change), C) The Challenge of Resource Management (food/water/energy). Each group starts with 1-2 mark recall, builds to 6 or 9 mark extended. Include at least one case study question (refer to a specific named example).",
-     desc:"1h 30min, 88 marks. Urban Issues, Changing Economic World, Resource Management.",
-     skills:["Case study questions","6-mark and 9-mark extended answers","Named examples required"]},
+     markDist:"Target EXACTLY 88 marks. Three sections: Section A (Urban Issues) ~30 marks, Section B (Changing Economic World) ~30 marks, Section C (Resource Management) ~28 marks. Same mark distribution pattern as Paper 1 — 1-mark, 2-mark, 4-mark, 6-mark, 9-mark questions.",
+     specGuide:"AQA GCSE Geography Paper 2. 1h 30min, 88 marks. THREE compulsory sections: SECTION A — Urban Issues and Challenges: urbanisation trends, megacities, Rio de Janeiro (growth, opportunities/challenges, favelas, improvements) OR UK city case study (regeneration, migration, suburbanisation), sustainable urban development. SECTION B — The Changing Economic World: development gap (measures of development, DTM, Rostow), causes of uneven development, LICs/NEEs (Nigeria case study: location, context, TNCs, international aid, political/social/economic changes), UK economy (post-industrial, science parks, quaternary sector). SECTION C — The Challenge of Resource Management: global distribution of food/water/energy, food supply issues (increasing food production, sustainable food), water supply (deficit/surplus, water transfer, sustainable water), energy supply (fossil fuels vs renewables, UK energy mix). Include case study questions requiring named examples. One 9-mark essay + 3 SPaG marks.",
+     desc:"1h 30min, 88 marks. Three sections: Urban Issues, Changing Economic World, Resource Management.",
+     skills:["Case study questions","Development gap","9-mark essay + SPaG"]},
     {n:"Paper 3 – Geographical Applications",d:75,m:76,paperType:"parted",numGroups:3,
-     markDist:"Issue evaluation and fieldwork questions, culminating in a 12-mark decision-making question",
-     specGuide:"AQA GCSE Geography Paper 3. Section A: Issue evaluation (based on pre-release resource booklet — generate a fictional resource booklet on an environmental or human geography issue, then ask questions about it). Section B: Fieldwork — ask about physical and human fieldwork methods, data collection, presentation, and evaluation. Final question: 12-mark decision-making/evaluation question with 3 extra SPaG marks.",
-     desc:"1h 15min, 76 marks. Issue evaluation + fieldwork.",
-     skills:["Pre-release stimulus analysis","Fieldwork skills","12-mark decision-making question"]},
+     markDist:"Target EXACTLY 76 marks. Section A (Issue Evaluation) ~36 marks: starts with 3-4 short questions about a fictional resource booklet then a 12-mark decision/evaluation question. Section B (Fieldwork) ~40 marks: 2 sections on physical and human fieldwork — data collection, presentation techniques, analysis, evaluation. Final question 8 marks.",
+     specGuide:"AQA GCSE Geography Paper 3. 1h 15min, 76 marks. SECTION A — Issue Evaluation: create a brief fictional 'pre-release resource booklet' (3 figures: map, graph, photograph description) on an environmental or human geography issue (e.g. coastal management, urban regeneration, sustainable energy). Questions progress: describe Figure 1 (2 marks), explain an issue shown (4 marks), use figures to assess the situation (6 marks), 12-mark decision-making question ('To what extent should [decision]? Use evidence from the resources and your own knowledge' — 9 marks + 3 SPaG). SECTION B — Fieldwork: questions on physical fieldwork (methods of data collection, health/safety, data presentation) and human fieldwork (hypothesis, sampling strategy, data analysis, reliability and validity). Include at least one question requiring students to sketch a graph or describe how they would present data.",
+     desc:"1h 15min, 76 marks. Section A: Issue evaluation. Section B: Fieldwork methods.",
+     skills:["Resource interpretation","Fieldwork evaluation","12-mark decision question"]},
   ],
   "business:AQA":[
-    {n:"Paper 1",d:105,m:100,paperType:"parted",numGroups:5,
-     markDist:"5×1-mark MCQs, 2-mark, 4-mark, 9-mark, 12-mark questions",
-     specGuide:"AQA GCSE Business Paper 1. Topics: Business in the Real World, Influences on Business, Business Operations, Human Resources. First group: 5 MCQ parts (1 mark each) on key business terms. Remaining groups: structured questions. Include one 9-mark 'Evaluate' question and one 12-mark 'Evaluate/Justify' question with full level-based mark schemes (Level 1-4). Include real business contexts (name a plausible fictional company).",
-     desc:"1h 45min, 100 marks. Business operations, HR, and wider influences.",
-     skills:["5×1-mark MCQ","9-mark evaluate","12-mark evaluate/justify"]},
-    {n:"Paper 2",d:105,m:100,paperType:"parted",numGroups:5,
-     markDist:"5×1-mark MCQs, 2-mark, 4-mark, 9-mark, 12-mark questions",
-     specGuide:"AQA GCSE Business Paper 2. Topics: Finance, Marketing, and external business influences. First group: 5 MCQ parts. Remaining groups include financial calculations (revenue, profit, break-even), marketing mix questions, and one 12-mark evaluation question.",
-     desc:"1h 45min, 100 marks. Finance, marketing, external influences.",
-     skills:["5×1-mark MCQ","Financial calculations","12-mark evaluate"]},
+    {n:"Paper 1",d:105,m:90,paperType:"parted",numGroups:5,
+     markDist:"Target EXACTLY 90 marks. Group 1: exactly 5 MCQ parts (1 mark each, type:mcq). Groups 2–5: structured questions. Include: one 3-mark question, two 6-mark 'Explain' questions, one 9-mark 'Analyse' question, one 12-mark 'Evaluate/Justify' question with level-based mark scheme (4 levels).",
+     specGuide:"AQA GCSE Business Paper 1. 1h 45min, 90 marks. Four topic areas: (1) Business in the Real World — business aims/objectives, stakeholders, business ownership types (sole trader/partnership/ltd/plc/franchise/social enterprise), business plans, location decisions, business growth; (2) Influences on Business — technology impacts, ethical trading, environmental considerations, economic climate, competitive environment, legislation (employment/consumer); (3) Business Operations — production methods (job/batch/flow), lean production (just in time/kaizen/cell production), quality management, procurement, supply chain management; (4) Human Resources — organisational structures (hierarchies, span of control), recruitment and selection, training (on-the-job/off-the-job), motivation theories (Taylor/Maslow/Herzberg), leadership styles, employment law. Group 1: 5 MCQs on key terms. Remaining groups: structured using a named fictional business context. 12-mark evaluation must include: 2+ justified points for, 2+ against, supported overall judgement.",
+     desc:"1h 45min, 90 marks. Business operations, HR, and wider influences.",
+     skills:["12-mark evaluate question","Motivation theories","Business contexts"]},
+    {n:"Paper 2",d:105,m:90,paperType:"parted",numGroups:5,
+     markDist:"Target EXACTLY 90 marks. Group 1: 5 MCQs. Groups 2–5: structured. Include financial calculations (revenue/profit/break-even/ARR), one 9-mark 'Analyse', one 12-mark 'Evaluate'.",
+     specGuide:"AQA GCSE Business Paper 2. 1h 45min, 90 marks. Three topic areas: (5) Finance — revenue (price × quantity), costs (fixed/variable/total), profit and loss, break-even (contribution/break-even point/margin of safety calculations and graphs), cash flow forecasts, sources of finance (internal/external — loans, shares, retained profit, crowdfunding, trade credit), financial statements (balance sheets, income statements); (6) Marketing — market research (primary/secondary, qualitative/quantitative), segmentation (demographic/geographic/psychographic), marketing mix (4Ps — product lifecycle, pricing strategies, distribution channels, promotional methods), use of digital marketing; (7) External Influences — economic climate (recession/growth, inflation, interest rates, unemployment, exchange rates effect on imports/exports), legislation (consumer law, employment law), environmental and ethical issues, globalisation and international trade. Financial calculations must show formula → working → answer → unit. Break-even point = fixed costs ÷ contribution per unit.",
+     desc:"1h 45min, 90 marks. Finance, marketing, external influences.",
+     skills:["Break-even calculations","Marketing mix","12-mark evaluate"]},
   ],
   "computing:AQA":[
-    {n:"Paper 1 – Computational Thinking & Programming",d:150,m:80,paperType:"parted",numGroups:5,
-     markDist:"Mix of 1-mark, 2-mark, 4-mark and 8-mark questions",
-     specGuide:"AQA GCSE Computer Science Paper 1. Topics: Algorithms (flowcharts/pseudocode/trace tables/searching/sorting), Programming concepts (variables/loops/conditionals/procedures/functions), Data types, Computational thinking (decomposition/abstraction/pattern recognition). Include at least: one trace table question, one pseudocode-writing question, one algorithm efficiency question. Use AQA pseudocode syntax (x ← value, WHILE, FOR, IF/ELSE, SUBROUTINE). Mark schemes must show exact expected output for trace tables.",
-     desc:"2h 30min, 80 marks. Programming, algorithms, computational thinking.",
+    {n:"Paper 1 – Computational Thinking & Programming",d:150,m:90,paperType:"parted",numGroups:6,
+     markDist:"Target EXACTLY 90 marks. Groups mix: 1-mark recall, 2-mark describe, 4-mark application, 8-mark extended. At least one trace table question, one pseudocode-writing question, one algorithm design question.",
+     specGuide:"AQA GCSE Computer Science Paper 1. 2h 30min, 90 marks. Topics: (1) Fundamentals of Algorithms — algorithm design (flowcharts, pseudocode), trace tables (show step-by-step variable changes), searching (linear vs binary — comparison), sorting (bubble, merge, insertion — steps and comparisons), Big O notation (awareness); (2) Programming Fundamentals — variables/constants, data types (integer/real/Boolean/string/char), sequence/selection/iteration, nested structures, string manipulation (length, substring, concatenation), file handling (open/read/write/close), exception handling; (3) Producing Robust Programs — defensive design (input validation, authentication), testing (normal/boundary/erroneous test data, trace tables to detect errors), syntax vs logic errors; (4) Boolean Logic — truth tables (AND/OR/NOT), logic diagrams; (5) Programming Languages — high vs low-level, compilers vs interpreters, IDEs (editor/debugger/translator). Use AQA pseudocode syntax EXACTLY: assignment uses ←, output uses OUTPUT, input uses USERINPUT, loops: FOR i ← 1 TO n, WHILE condition DO, IF/ELSE/ENDIF. Trace table questions MUST show exact column headers and cell values.",
+     desc:"2h 30min, 90 marks. Algorithms, programming, Boolean logic, languages.",
      skills:["Trace tables","Pseudocode writing","Algorithm design"]},
-    {n:"Paper 2 – Computer Systems",d:90,m:80,paperType:"parted",numGroups:5,
-     markDist:"Mix of 1-mark, 2-mark, 4-mark and 8-mark questions",
-     specGuide:"AQA GCSE Computer Science Paper 2. Topics: Systems architecture (CPU/fetch-decode-execute/Von Neumann), Memory (RAM/ROM/secondary storage), Networking (LAN/WAN/protocols/TCP-IP/packet switching), Cybersecurity (threats/malware/social engineering/prevention), Ethical/legal/environmental issues (Data Protection Act, copyright). Include at least: one binary/hex conversion question, one networking scenario question, one ethics discussion question.",
-     desc:"1h 30min, 80 marks. Systems architecture, networks, cybersecurity, ethics.",
-     skills:["Binary/hex calculations","Network scenarios","Ethics discussion"]},
+    {n:"Paper 2 – Computer Systems",d:90,m:90,paperType:"parted",numGroups:6,
+     markDist:"Target EXACTLY 90 marks. Mix 1-mark, 2-mark, 4-mark and 8-mark questions. Include at least one binary/hex conversion calculation and one networking scenario question.",
+     specGuide:"AQA GCSE Computer Science Paper 2. 1h 30min, 90 marks. Topics: (1) Systems Architecture — Von Neumann architecture (CPU, ALU, CU, registers: PC/MAR/MDR/ACC), fetch-decode-execute cycle (step by step), factors affecting CPU performance (cores/cache/clock speed), embedded systems; (2) Memory and Storage — RAM vs ROM (volatile/non-volatile), types of secondary storage (HDD/SSD/optical/magnetic), file sizes calculation (bits/bytes/KB/MB/GB), data representation: binary (denary↔binary↔hex conversions, binary addition, overflow, two's complement), character encoding (ASCII/Unicode), images (pixels/colour depth/resolution, file size = width×height×colour depth), sound (sample rate/bit depth/file size); (3) Computer Networks — types (LAN/WAN/PAN), topologies (bus/star/mesh), wired vs wireless, hardware (NIC/hub/switch/router/WAP), protocols (TCP/IP, HTTP/HTTPS, FTP, SMTP, DNS), packet switching (packets/headers/routing), the Internet vs World Wide Web; (4) Network Security — threats (malware/phishing/social engineering/brute force/denial of service/SQL injection), prevention (firewalls/encryption/strong passwords/2FA/access levels); (5) Systems Software — operating system functions (memory management, process management, file management, user interface), utility software; (6) Ethical, Legal, Cultural and Environmental Impacts — Data Protection Act 2018/GDPR, Computer Misuse Act 1990, Copyright Designs and Patents Act 1988, Freedom of Information Act, environmental impact, ethical issues (AI, privacy). Binary/hex questions MUST show full working.",
+     desc:"1h 30min, 90 marks. Systems architecture, networks, cybersecurity, data representation, ethics.",
+     skills:["Binary/hex conversions","Network protocols","Data Protection Act"]},
   ],
   "dt:AQA":[
     {n:"Paper 1 – Core Technical Principles",d:90,m:100,paperType:"parted",numGroups:5,
-     markDist:"Section A: 20×1-mark MCQs; Section B: extended questions",
-     specGuide:"AQA GCSE Design and Technology Paper 1. First group: exactly 20 MCQ parts on core technical principles (materials, forces, scales of production, CAD/CAM, sustainability, smart/composite materials). Remaining 4 groups: structured extended questions on: 1) Materials and their properties, 2) Designing and making principles (ergonomics/anthropometrics), 3) New/emerging technologies, 4) Energy/sustainability. Include one 8-mark design question.",
-     desc:"1h 30min, 100 marks. Section A: 20 MCQs. Section B: technical principles.",
-     skills:["20×1-mark MCQs","Extended design questions","Materials knowledge"]},
+     markDist:"Target EXACTLY 100 marks. Group 1: exactly 20 MCQ parts (1 mark each, type:mcq) = 20 marks. Groups 2–5: extended structured questions totalling 80 marks — include 4-mark, 6-mark, and 8-mark questions.",
+     specGuide:"AQA GCSE Design and Technology Paper 1. 1h 30min, 100 marks. SECTION A (20 marks): exactly 20 MCQ questions (type:mcq) covering all core technical principles — materials (timber: hardwood/softwood/manufactured boards; metals: ferrous/non-ferrous/alloys; polymers: thermoplastic/thermosetting; textiles: natural/synthetic/blended; papers/boards), forces and stresses (tension/compression/torsion/bending/shear), physical/working/aesthetic properties, scales of production (one-off/batch/mass/continuous), CAD/CAM (CNC router/laser cutter/3D printer — advantages/disadvantages), QA and QC, tolerances. SECTION B (80 marks across 4 groups): (B1) New and emerging technologies — 4 and 6-mark questions on automation, robotics, flexible manufacturing, biotechnology, nano-materials, smart materials, global vs local production, FabLabs; (B2) Energy generation and storage — renewable/non-renewable, energy storage, sustainability, carbon footprint, life cycle assessment; (B3) Designing and making principles — ergonomics, anthropometrics, inclusive design, user-centred design, 8-mark design question (sketch/annotate a product for a given brief); (B4) Material properties and selection — comparing materials for a given application, sustainability (reduce/reuse/recycle), finishes (paint/varnish/electroplating/anodising). The 8-mark design question requires a sketched annotated design solution.",
+     desc:"1h 30min, 100 marks. Section A: 20 MCQs. Section B: core technical principles.",
+     skills:["20 MCQs","8-mark design question","Material selection"]},
     {n:"Paper 2 – Specialist Technical Principles",d:60,m:80,paperType:"parted",numGroups:4,
-     markDist:"5 MCQs, 2-mark, 4-mark and 8-mark questions",
-     specGuide:"AQA GCSE Design and Technology Paper 2. Focus on specialist materials area (textiles, metals, polymers, timber, papers/boards, electronic/mechanical systems). First group: 5 MCQ parts on specialist knowledge. Then 3 structured groups building to an 8-mark evaluation question.",
-     desc:"1h, 80 marks. Specialist area focus.",
-     skills:["5 MCQs","Specialist materials","8-mark evaluation"]},
+     markDist:"Target EXACTLY 80 marks. Group 1: exactly 5 MCQ parts (type:mcq) = 5 marks. Groups 2–4: 3 structured groups totalling 75 marks, mixing 2-mark, 4-mark, 6-mark and 8-mark questions.",
+     specGuide:"AQA GCSE Design and Technology Paper 2. 1h, 80 marks. Specialist focus on one materials area (generate questions appropriate for either timber/metals/polymers/textiles/papers/boards/electronic systems). SECTION A (5 marks): 5 MCQ parts on specialist material properties, manufacturing processes, and tools. SECTION B (75 marks across 3 groups): (B1) Specialist material knowledge — properties (physical: density/strength/conductivity/malleability; working: machinability/weldability; aesthetic), selection criteria for a given application, 2-mark and 4-mark questions; (B2) Manufacturing processes for specialist area — forming (casting/forging/press forming for metals; injection moulding/blow moulding for polymers; warp/weft/weaving for textiles), cutting (marking out, sawing, chiselling for timber), joining (welding/soldering/adhesives/screws/bolts), finishing (sanding/painting/lacquering/plating), 4-mark and 6-mark questions; (B3) Evaluation question — 8-mark question: 'Evaluate the suitability of [specialist material] for [given product], considering its properties, manufacturing process, cost and sustainability. Justify your choice.' Level-based mark scheme L1(1-2), L2(3-4), L3(5-6), L4(7-8).",
+     desc:"1h, 80 marks. Specialist material focus. Section A: 5 MCQs. Section B: extended.",
+     skills:["5 MCQs","Material properties","8-mark evaluate"]},
   ],
   "combined-sci:AQA":[
     {n:"All papers",d:75,m:70,paperType:"comingSoon",desc:"Coming soon — Combined Science Trilogy and Synergy papers.",skills:[]},
@@ -845,31 +840,44 @@ OUTPUT ONLY VALID JSON. Use \n for line breaks in text. NO unescaped double quot
     throw new Error("Unknown paperPrompt: "+paper.paperPrompt);
   }
 
-  const rawText=await callGeminiSimple(prompt, 8000);
-  const d={content:[{text:rawText}]};
-  if(!rawText)throw new Error("Structured paper generation failed");
-  let raw=d.content[0].text.replace(/\x60{3}(?:json)?\n?/g,"").trim();
-  // Extract JSON from response if wrapped in other text
-  if(!raw.startsWith("{")){const m=raw.match(/\{[\s\S]*\}/);if(m)raw=m[0];}
-  // Attempt to recover from truncated JSON by finding the last valid closing
-  let parsed;
-  try{parsed=JSON.parse(raw);}
-  catch(parseErr){
-    // Try to salvage a partial response — truncate at last complete question
-    const lastBrace=raw.lastIndexOf("}");
-    const lastBracket=raw.lastIndexOf("]");
-    if(lastBracket>0&&lastBrace>0){
-      // Try closing the JSON array and object
-      const truncated=raw.slice(0,Math.max(lastBracket,lastBrace)+1);
-      try{
-        // Count open braces/brackets to determine what to close
-        let open=0;
-        for(const ch of truncated){if(ch==="{")open++;else if(ch==="}") open--;}
-        const closing="}".repeat(Math.max(0,open));
-        parsed=JSON.parse(truncated+closing);
-      }catch(e){throw new Error("Failed to parse AI response. Please try again.");}
-    }else throw new Error("Failed to parse AI response. Please try again.");
+  const rawText=await callGeminiSimple(prompt,8000);
+  if(!rawText)throw new Error("Structured paper generation failed — no response from AI.");
+
+  function sanitiseRaw(s){
+    s=s.replace(/```(?:json)?\s*/gi,"").replace(/```/g,"").trim();
+    const start=s.indexOf("{");const end=s.lastIndexOf("}");
+    if(start>=0&&end>start)s=s.slice(start,end+1);
+    s=s.replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g,"");
+    // Fix unescaped literal newlines inside string values
+    s=s.replace(/"((?:[^"\\]|\\.)*)"/g,function(_,inner){
+      return '"'+inner.replace(/\r?\n/g,"\\n")+'"';
+    });
+    return s;
   }
+  function tryParse(s){try{return JSON.parse(s);}catch(_){return null;}}
+  function repairAndParse(s){
+    let r=tryParse(s);if(r)return r;
+    // Close unclosed braces
+    let open=0,inStr=false,esc=false;
+    for(let i=0;i<s.length;i++){
+      const c=s[i];
+      if(esc){esc=false;continue;}
+      if(c==="\\"&&inStr){esc=true;continue;}
+      if(c==='"'){inStr=!inStr;continue;}
+      if(!inStr){if(c==="{")open++;else if(c==="}")open--;}
+    }
+    r=tryParse(s+"}".repeat(Math.max(0,open)));if(r)return r;
+    // Truncate at last complete brace
+    const lb=s.lastIndexOf("}");
+    if(lb>0){
+      r=tryParse(s.slice(0,lb+1));if(r)return r;
+      let op2=0;for(const c2 of s.slice(0,lb+1)){if(c2==="{")op2++;else if(c2==="}")op2--;}
+      r=tryParse(s.slice(0,lb+1)+"}".repeat(Math.max(0,op2)));if(r)return r;
+    }
+    return null;
+  }
+  const parsed=repairAndParse(sanitiseRaw(rawText));
+  if(!parsed)throw new Error("Failed to parse AI response — the model returned malformed JSON. Please try again.");
   return{
     extract:parsed.extract||null,
     extract2:parsed.extract2||null,
@@ -1754,29 +1762,7 @@ function SearchModal({D,subjects,allSections,boardData,boardSels,onNavigate,onCl
 
 /* ─── ACCOUNT SCREEN ──────────────────────────────────────────────────────── */
 /* ─── MOBILE BOTTOM NAV ──────────────────────────────────────────────────── */
-function MobileNav({D,screen,onHome,onMock,onTutor,onTimetable,onDash,onLeaderboards,streak}) {
-  const tabs=[
-    {id:"home",    icon:"🏠", label:"Home",    fn:onHome},
-    {id:"mock",    icon:"📝", label:"Mock",    fn:onMock},
-    {id:"tutor",   icon:"🤖", label:"Tutor",   fn:onTutor},
-    {id:"dashboard",icon:"📊",label:"Progress",fn:onDash},
-    {id:"friends", icon:"🏆", label:"Boards",  fn:onLeaderboards},
-  ];
-  return (
-    <nav style={{position:"fixed",bottom:0,left:0,right:0,height:58,background:D?"#0d1117":"#fff",borderTop:`1px solid ${D?"#1f2937":"#e5e7eb"}`,display:"flex",zIndex:100}}>
-      {tabs.map(t=>{
-        const active=screen===t.id;
-        return (
-          <button key={t.id} onClick={t.fn}
-            style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,background:"none",border:"none",cursor:"pointer",color:active?"#6366f1":D?"#6b7280":"#9ca3af",transition:"color .15s"}}>
-            <span style={{fontSize:19}}>{t.icon}</span>
-            <span style={{fontSize:9,fontWeight:active?700:500}}>{t.label}</span>
-          </button>
-        );
-      })}
-    </nav>
-  );
-}
+// MobileNav removed — hamburger dropdown in Header handles all navigation
 
 /* ─── ONBOARDING WIZARD ──────────────────────────────────────────────────── */
 function OnboardingWizard({D,onComplete}) {
@@ -1845,6 +1831,10 @@ function Header({user,userDisplayName,D,onDark,onHome,onDash,onTarget,onTimetabl
     {id:"dashboard", icon:"📊", label:"Progress",   fn:onDash},
     {id:"friends",   icon:"🏆", label:"Leaderboards",fn:onLeaderboards},
   ];
+  const mobileExtraItems = [
+    {id:"home",    icon:"🏠", label:"Home",    fn:onHome},
+    {id:"account", icon:"⚙️", label:"Account", fn:onAccount},
+  ];
   const displayName = userDisplayName || getDisplayName(user);
   return (
     <header style={{background:D?"#0d1117":"#fff",borderBottom:`1px solid ${D?"#1f2937":"#e5e7eb"}`,position:"sticky",top:0,zIndex:50}}>
@@ -1898,9 +1888,9 @@ function Header({user,userDisplayName,D,onDark,onHome,onDash,onTarget,onTimetabl
       {/* Mobile dropdown menu */}
       {isMobile&&menuOpen&&(
         <div style={{position:"absolute",top:54,left:0,right:0,background:D?"#111827":"#fff",borderBottom:`1px solid ${D?"#1f2937":"#e5e7eb"}`,zIndex:49,padding:"8px 12px",display:"flex",flexWrap:"wrap",gap:4}}>
-          {navItems.map(function(item){return (
+          {[...mobileExtraItems,...navItems].map(function(item){return (
             <button key={item.id} onClick={function(){item.fn();setMenuOpen(false);}}
-              style={{fontSize:12,padding:"7px 12px",background:D?"#1f2937":"#f3f4f6",border:"none",borderRadius:8,cursor:"pointer",color:mu(D),whiteSpace:"nowrap"}}>
+              style={{fontSize:12,padding:"7px 12px",background:screen===item.id?(D?"rgba(99,102,241,.2)":"#eef2ff"):(D?"#1f2937":"#f3f4f6"),border:"none",borderRadius:8,cursor:"pointer",color:screen===item.id?"#6366f1":mu(D),whiteSpace:"nowrap",fontWeight:screen===item.id?700:400}}>
               {item.icon} {item.label}
             </button>
           );})}
@@ -2123,17 +2113,29 @@ function TimetableScreen({D, subjects, allSections, user, stats, onNav, onBack})
   const [eSec,setESec]         = useState("");
   const [eDate,setEDate]       = useState("");
   const [eLabel,setELabel]     = useState("");
+  // School timetable state
+  const [schoolTT,setSchoolTT] = useState({
+    startTime:"08:30", endTime:"15:30",
+    days:[1,2,3,4,5], // Mon-Fri by default
+    events:[] // [{id,title,day,startTime,endTime}]
+  });
+  const [showSchoolTT,setShowSchoolTT] = useState(false);
+  const [newEvTitle,setNewEvTitle]     = useState("");
+  const [newEvDay,setNewEvDay]         = useState(1);
+  const [newEvStart,setNewEvStart]     = useState("09:00");
+  const [newEvEnd,setNewEvEnd]         = useState("10:00");
   const saveRef=useRef(null);
   const Lbl=t=><label style={{fontSize:11,fontWeight:600,color:mu(D),display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:"0.05em"}}>{t}</label>;
   const bd2=D?"#1f2937":"#e5e7eb";
   const today=new Date().toISOString().slice(0,10);
   const secList=allSections.filter(s=>s.subjectId===eSubj);
+  const DAY_NAMES=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 
   useEffect(()=>{
     (async()=>{
       try{
         const r=await window.storage.get(SK.TIMETABLE(user));
-        if(r?.value){const d=JSON.parse(r.value);if(d.exams)setExams(d.exams);if(d.sessions)setSessions(d.sessions);if(d.goalMet)setGoalMet(d.goalMet);}
+        if(r?.value){const d=JSON.parse(r.value);if(d.exams)setExams(d.exams);if(d.sessions)setSessions(d.sessions);if(d.goalMet)setGoalMet(d.goalMet);if(d.schoolTT)setSchoolTT(d.schoolTT);}
       }catch(_){}
       setLoaded(true);
     })();
@@ -2143,10 +2145,10 @@ function TimetableScreen({D, subjects, allSections, user, stats, onNav, onBack})
     if(!loaded)return;
     clearTimeout(saveRef.current);
     saveRef.current=setTimeout(()=>{
-      window.storage.set(SK.TIMETABLE(user),JSON.stringify({exams,sessions,goalMet})).catch(()=>{});
+      window.storage.set(SK.TIMETABLE(user),JSON.stringify({exams,sessions,goalMet,schoolTT})).catch(()=>{});
     },500);
     return ()=>clearTimeout(saveRef.current);
-  },[exams,sessions,goalMet,loaded]);
+  },[exams,sessions,goalMet,schoolTT,loaded]);
 
   const addExam=()=>{
     if(!eDate||!eSubj)return;
@@ -2162,15 +2164,71 @@ function TimetableScreen({D, subjects, allSections, user, stats, onNav, onBack})
   const sessionDone=s=>s.activities.every((_,ai)=>goalMet[`${s.id}_${ai}`]);
   const fmtD=d=>{const dt=new Date(d+"T12:00:00");return dt.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"});};
 
+  // Convert "HH:MM" to minutes since midnight
+  const toMins=t=>{const[h,m]=t.split(":").map(Number);return h*60+m;};
+  const fromMins=m=>{const h=Math.floor(m/60);const mn=m%60;return `${String(h).padStart(2,"0")}:${String(mn).padStart(2,"0")}`;};
+
+  // Find free 45-min slots on a given date, avoiding school hours and existing sessions
+  const getFreeSlots=(date, existingOnDay)=>{
+    const dow=date.getDay();
+    const isSchoolDay=schoolTT.days.includes(dow);
+    const schoolStart=toMins(schoolTT.startTime);
+    const schoolEnd=toMins(schoolTT.endTime);
+
+    // All candidate slots in a day: before school, lunch (~12:30-13:15), after school, evening
+    const candidates=[];
+    // Pre-school: 07:00–schoolStart
+    for(let m=7*60;m+45<=schoolStart&&m+45<=8*60+30;m+=30) candidates.push(m);
+    // Lunch: fixed 12:30 if school day and enough space before end  
+    if(isSchoolDay&&schoolEnd>13*60+15) candidates.push(12*60+30);
+    // After school: schoolEnd (or 15:00 on non-school days) onwards till 21:00
+    const afterStart=isSchoolDay?schoolEnd:15*60;
+    for(let m=afterStart;m+45<=21*60;m+=45) candidates.push(m);
+    // Non-school days: add morning slots
+    if(!isSchoolDay){
+      for(let m=9*60;m+45<=12*60;m+=45) candidates.push(m);
+    }
+
+    // Remove blocked slots (custom school events)
+    const blockedRanges=isSchoolDay
+      ?[{s:schoolStart,e:schoolEnd},...(schoolTT.events||[]).filter(ev=>ev.day===dow).map(ev=>({s:toMins(ev.startTime),e:toMins(ev.endTime)}))]
+      :[];
+
+    // Remove slots occupied by already-placed sessions
+    const occupiedRanges=(existingOnDay||[]).map(s=>({s:toMins(s.startTime),e:toMins(s.endTime)+45}));
+
+    return candidates
+      .filter(m=>{
+        const end=m+45;
+        for(const r of [...blockedRanges,...occupiedRanges]){
+          if(m<r.e&&end>r.s) return false;
+        }
+        return true;
+      })
+      .map(m=>({start:fromMins(m),end:fromMins(m+45)}));
+  };
+
+  // Get weak sections for a subject, sorted by accuracy ascending
+  const getWeakSections=(subjectId, sectionPool)=>{
+    const weakQ=stats?.weakQ||{};
+    const scored=sectionPool.map(sec=>{
+      const qs=weakQ[sec.id];
+      const pct=qs&&qs.t>0?qs.s/qs.t:null;
+      return {sec,pct};
+    });
+    const withData=scored.filter(x=>x.pct!==null).sort((a,b)=>a.pct-b.pct);
+    const withoutData=scored.filter(x=>x.pct===null);
+    return [...withData,...withoutData].map(x=>x.sec);
+  };
+
   const generate=()=>{
     if(!exams.length)return;
     const now=new Date();now.setHours(0,0,0,0);
-    const WKDY=[["16:00","16:45"],["17:00","17:45"],["18:00","18:45"]];
-    const WKND=[["10:00","10:45"],["11:00","11:45"],["14:00","14:45"],["15:00","15:45"]];
-    let tidx=0;
-    const getSlot=d=>{const s=d.getDay()===0||d.getDay()===6?WKND:WKDY;return s[(tidx++)%s.length];};
     const sorted=[...exams].filter(e=>new Date(e.date+"T00:00:00")>now).sort((a,b)=>a.date.localeCompare(b.date));
     const allSess=[];
+    // Track sessions per day for slot collision avoidance
+    const sessPerDay={};
+
     sorted.forEach(exam=>{
       const examDt=new Date(exam.date+"T00:00:00");examDt.setHours(0,0,0,0);
       const daysLeft=Math.round((examDt-now)/86400000);
@@ -2178,29 +2236,62 @@ function TimetableScreen({D, subjects, allSections, user, stats, onNav, onBack})
       const subj=subjects.find(s=>s.id===exam.subjectId);if(!subj)return;
       const pool=exam.sectionId?allSections.filter(s=>s.id===exam.sectionId):allSections.filter(s=>s.subjectId===exam.subjectId);
       const fallback=[{id:null,title:subj.name,flashcards:[],questions:[],notes:[],subjectId:exam.subjectId}];
-      const secs=pool.length?pool:fallback;
+      const rawPool=pool.length?pool:fallback;
+      // Sort pool so weakest sections come first
+      const secs=getWeakSections(exam.subjectId,rawPool);
+
       const gap=daysLeft<=7?1:daysLeft<=14?2:daysLeft<=30?3:5;
       const dates=[];
       for(let d=0;d<daysLeft&&dates.length<35;d+=gap){const dt=new Date(now);dt.setDate(dt.getDate()+d);dates.push(dt);}
       const db=new Date(examDt);db.setDate(db.getDate()-1);
       if(db>now&&!dates.find(d=>d.toISOString().slice(0,10)===db.toISOString().slice(0,10)))dates.push(db);
       dates.sort((a,b)=>a-b);
+
       dates.forEach((date,di)=>{
+        const dateStr=date.toISOString().slice(0,10);
+        const existing=sessPerDay[dateStr]||[];
+        const slots=getFreeSlots(date,existing);
+        if(!slots.length)return; // No free time — skip this date
+        const slot=slots[0]; // Take first available slot
+
         const sec=secs[di%secs.length];
-        const [st,et]=getSlot(date);
         const hasFC=(sec.flashcards||[]).length>0;
         const hasQ=(sec.questions||[]).length>0;
         const hasN=(sec.notes||[]).length>0;
         const isLast=di>=dates.length-2;
+
+        // Build specific activity tip mentioning the actual topic
+        const weakQ=stats?.weakQ||{};
+        const qs=weakQ[sec.id];
+        const pct=qs&&qs.t>0?Math.round((qs.s/qs.t)*100):null;
+        const weakWarning=pct!==null&&pct<60?` ⚠️ You scored ${pct}% on this topic — prioritise it!`:"";
+
         const acts=[];
-        if(hasFC)acts.push({...ACT_DEFS.flashcards,navType:"section",sectionId:sec.id,subjectId:exam.subjectId});
-        else     acts.push({...ACT_DEFS.blurting,   navType:"blurt",  sectionId:sec.id,subjectId:exam.subjectId});
-        if(di%3===0&&hasQ)     acts.push({...ACT_DEFS.questions,navType:"section",sectionId:sec.id,subjectId:exam.subjectId});
-        else if(di%3===1)      acts.push({...ACT_DEFS.blurting,  navType:"blurt",  sectionId:sec.id,subjectId:exam.subjectId});
-        else if(hasN)          acts.push({...ACT_DEFS.notes,     navType:"section",sectionId:sec.id,subjectId:exam.subjectId});
-        else if(hasQ)          acts.push({...ACT_DEFS.questions, navType:"section",sectionId:sec.id,subjectId:exam.subjectId});
-        if(isLast)acts.push({...ACT_DEFS.target,navType:"target",subjectId:exam.subjectId,sectionId:null});
-        allSess.push({id:`s${uid()}`,examId:exam.id,date:date.toISOString().slice(0,10),startTime:st,endTime:et,subjectId:exam.subjectId,sectionId:sec.id,topicLabel:sec.title,activities:acts});
+        if(hasFC)acts.push({...ACT_DEFS.flashcards,navType:"section",sectionId:sec.id,subjectId:exam.subjectId,
+          tip:`Review flashcards for "${sec.title}".${weakWarning} Try to recall each answer before flipping.`,
+          goal:`Complete all flashcards for "${sec.title}" — aim for 80%+ confidence`});
+        else acts.push({...ACT_DEFS.blurting,navType:"blurt",sectionId:sec.id,subjectId:exam.subjectId,
+          tip:`Blurting for "${sec.title}".${weakWarning} Write down everything you know from memory, then check your notes.`,
+          goal:`Fill at least one page blurting "${sec.title}" from memory`});
+        if(di%3===0&&hasQ) acts.push({...ACT_DEFS.questions,navType:"section",sectionId:sec.id,subjectId:exam.subjectId,
+          tip:`Practice questions on "${sec.title}".${weakWarning} Focus on past-paper style questions.`,
+          goal:`Score 70%+ on practice questions for "${sec.title}"`});
+        else if(di%3===1) acts.push({...ACT_DEFS.blurting,navType:"blurt",sectionId:sec.id,subjectId:exam.subjectId,
+          tip:`Second blurting pass for "${sec.title}".${weakWarning} Compare with your first attempt.`,
+          goal:`Identify 3+ things you missed in your first blurting session for "${sec.title}"`});
+        else if(hasN) acts.push({...ACT_DEFS.notes,navType:"section",sectionId:sec.id,subjectId:exam.subjectId,
+          tip:`Review revision notes for "${sec.title}".${weakWarning} Annotate key terms and definitions.`,
+          goal:`Read and annotate all notes for "${sec.title}"`});
+        else if(hasQ) acts.push({...ACT_DEFS.questions,navType:"section",sectionId:sec.id,subjectId:exam.subjectId,
+          tip:`Practice questions on "${sec.title}".${weakWarning}`,
+          goal:`Score 70%+ on questions for "${sec.title}"`});
+        if(isLast)acts.push({...ACT_DEFS.target,navType:"target",subjectId:exam.subjectId,sectionId:null,
+          tip:`Final exam-style test on ${subj.name}. Test yourself under timed conditions.`,
+          goal:`Complete a full Target Test for ${subj.name} — treat it like the real exam`});
+
+        const sess={id:`s${uid()}`,examId:exam.id,date:dateStr,startTime:slot.start,endTime:slot.end,subjectId:exam.subjectId,sectionId:sec.id,topicLabel:sec.title,activities:acts};
+        allSess.push(sess);
+        sessPerDay[dateStr]=[...(sessPerDay[dateStr]||[]),sess];
       });
     });
     allSess.sort((a,b)=>a.date.localeCompare(b.date)||a.startTime.localeCompare(b.startTime));
@@ -2218,20 +2309,66 @@ function TimetableScreen({D, subjects, allSections, user, stats, onNav, onBack})
         <button onClick={onBack} style={{fontSize:13,color:mu(D),background:"none",border:"none",cursor:"pointer",marginBottom:20}}>← Back</button>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:12,marginBottom:20}}>
           <div><h2 style={{fontSize:22,fontWeight:700,marginBottom:4}}>📅 Revision Timetable</h2>
-            <p style={{fontSize:13,color:mu(D)}}>Add your exam dates — we'll build a spaced revision plan.</p></div>
+            <p style={{fontSize:13,color:mu(D)}}>Add your exam dates — we'll build a spaced revision plan around your school day.</p></div>
           {totalS>0&&<div style={{fontSize:13,fontWeight:600,color:doneS===totalS?"#16a34a":"#6366f1",padding:"6px 14px",borderRadius:20,background:doneS===totalS?(D?"rgba(22,163,74,0.15)":"#dcfce7"):(D?"rgba(99,102,241,0.15)":"#eef2ff")}}>
             {doneS}/{totalS} sessions done
           </div>}
         </div>
 
         <div style={{display:"flex",borderBottom:`1px solid ${bd2}`,marginBottom:22,gap:2}}>
-          {[["exams","📋 My Exams"],["schedule","📅 Schedule"]].map(([t,lbl])=>(
+          {[["exams","📋 My Exams"],["school","🏫 School Day"],["schedule","📅 Schedule"]].map(([t,lbl])=>(
             <button key={t} onClick={()=>{if(t==="schedule"&&!sessions.length&&exams.length)generate();setTab(t);}}
               style={{padding:"10px 18px",fontSize:13,fontWeight:tab===t?600:400,color:tab===t?"#6366f1":mu(D),background:"none",border:"none",cursor:"pointer",borderBottom:tab===t?"2px solid #6366f1":"2px solid transparent",marginBottom:-1}}>
               {lbl}{t==="schedule"&&exams.length>0&&!sessions.length?<span style={{marginLeft:5,fontSize:10,color:"#f59e0b"}}>⚠ not generated</span>:""}
             </button>
           ))}
         </div>
+
+        {tab==="school"&&<div className="fade-in">
+          <div style={{...C(D),padding:22,marginBottom:16}}>
+            <h3 style={{fontWeight:700,fontSize:15,marginBottom:4}}>🏫 School Day Settings</h3>
+            <p style={{fontSize:12,color:mu(D),marginBottom:16}}>Set your school hours so revision sessions are only placed outside them.</p>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
+              <div>{Lbl("School Start")}<input type="time" style={I(D)} value={schoolTT.startTime} onChange={e=>setSchoolTT(p=>({...p,startTime:e.target.value}))}/></div>
+              <div>{Lbl("School End")}<input type="time" style={I(D)} value={schoolTT.endTime} onChange={e=>setSchoolTT(p=>({...p,endTime:e.target.value}))}/></div>
+            </div>
+            <div style={{marginBottom:16}}>
+              {Lbl("School Days")}
+              <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                {[1,2,3,4,5,6,0].map(d=>{
+                  const on=schoolTT.days.includes(d);
+                  return <button key={d} onClick={()=>setSchoolTT(p=>({...p,days:on?p.days.filter(x=>x!==d):[...p.days,d].sort()}))}
+                    style={{padding:"5px 12px",borderRadius:8,border:`1.5px solid ${on?"#6366f1":bd2}`,background:on?"#6366f1":"transparent",color:on?"#fff":mu(D),fontSize:12,cursor:"pointer",fontWeight:on?600:400}}>
+                    {DAY_NAMES[d]}
+                  </button>;
+                })}
+              </div>
+            </div>
+            <p style={{fontSize:11,color:mu(D),marginBottom:12}}>Optionally add specific lessons or activities that should be kept free (e.g. sports, clubs, lessons with extra study):</p>
+            <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"flex-end",marginBottom:12}}>
+              <div style={{flex:2,minWidth:120}}>{Lbl("Event name")}<input style={I(D)} placeholder="e.g. Football training" value={newEvTitle} onChange={e=>setNewEvTitle(e.target.value)}/></div>
+              <div>{Lbl("Day")}<select style={I(D)} value={newEvDay} onChange={e=>setNewEvDay(Number(e.target.value))}>
+                {[1,2,3,4,5,6,0].map(d=><option key={d} value={d}>{DAY_NAMES[d]}</option>)}
+              </select></div>
+              <div>{Lbl("Start")}<input type="time" style={I(D)} value={newEvStart} onChange={e=>setNewEvStart(e.target.value)}/></div>
+              <div>{Lbl("End")}<input type="time" style={I(D)} value={newEvEnd} onChange={e=>setNewEvEnd(e.target.value)}/></div>
+              <button onClick={()=>{if(!newEvTitle.trim())return;setSchoolTT(p=>({...p,events:[...p.events,{id:uid(),title:newEvTitle.trim(),day:newEvDay,startTime:newEvStart,endTime:newEvEnd}]}));setNewEvTitle("");}}
+                style={{...B("#6366f1",false,{padding:"9px 16px",fontSize:12,fontWeight:700,alignSelf:"flex-end"})}}>+ Add</button>
+            </div>
+            {(schoolTT.events||[]).length>0&&(
+              <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                {schoolTT.events.map(ev=>(
+                  <div key={ev.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",borderRadius:8,background:D?"#1f2937":"#f3f4f6"}}>
+                    <span style={{fontSize:12,fontWeight:600,color:tx(D),flex:1}}>{ev.title}</span>
+                    <span style={{fontSize:11,color:mu(D)}}>{DAY_NAMES[ev.day]} {ev.startTime}–{ev.endTime}</span>
+                    <button onClick={()=>setSchoolTT(p=>({...p,events:p.events.filter(e=>e.id!==ev.id)}))} style={{background:"none",border:"none",cursor:"pointer",color:"#ef4444",fontSize:14}}>×</button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <button onClick={()=>setTab("exams")} style={{...B("#6366f1",false,{width:"100%",padding:"11px 0",fontSize:13,fontWeight:700})}}>← Back to Exams</button>
+        </div>}
 
         {tab==="exams"&&<div className="fade-in">
           <div style={{...C(D),padding:22,marginBottom:16}}>
@@ -2275,10 +2412,10 @@ function TimetableScreen({D, subjects, allSections, user, stats, onNav, onBack})
                   </div>
                 );
               })}
-              <button onClick={()=>{generate();setTab("schedule");}}
-                style={{...B("#6366f1",false,{marginTop:6,width:"100%",padding:"12px 0",fontSize:14,fontWeight:700})}}>
-                Generate Timetable →
-              </button>
+              <div style={{display:"flex",gap:8,marginTop:6}}>
+                <button onClick={()=>setTab("school")} style={{...B("transparent",true,{flex:1,padding:"11px 0",fontSize:13,fontWeight:600,borderColor:bd2,color:mu(D)})}}>🏫 School Day Settings</button>
+                <button onClick={()=>{generate();setTab("schedule");}} style={{...B("#6366f1",false,{flex:2,padding:"12px 0",fontSize:14,fontWeight:700})}}>Generate Timetable →</button>
+              </div>
             </div>}
         </div>}
 
@@ -2372,7 +2509,7 @@ function TimetableScreen({D, subjects, allSections, user, stats, onNav, onBack})
                 );
               })}
               <div style={{marginTop:8,padding:"11px 16px",borderRadius:12,background:D?"#1f2937":"#f3f4f6",fontSize:12,color:mu(D)}}>
-                💡 Sessions are spaced using evidence-based intervals — more frequent as the exam approaches.
+                💡 Sessions use spaced intervals and prioritise your weakest topics. Times are placed outside your school day automatically.
               </div>
             </>}
         </div>}
@@ -4689,7 +4826,7 @@ function GlobalOverlays({D,online,shortcutModal,setShortcutModal,searchOpen,setS
       {shortcutModal&&<ShortcutModal D={D} onClose={()=>setShortcutModal(false)}/>}
       {searchOpen&&<SearchModal D={D} subjects={subjects} allSections={allSections} boardData={boardData} boardSels={boardSels} onNavigate={handleSearchNavigate} onClose={()=>setSearchOpen(false)}/>}
       {onboarding&&<OnboardingWizard D={D} onComplete={handleOnboardingComplete}/>}
-      {isMobile&&!["login"].includes(screen)&&<MobileNav D={D} screen={screen} onHome={onHome} onMock={onMock} onTutor={onTutor} onTimetable={onTimetable} onDash={onDash} onLeaderboards={onLeaderboards} streak={streak}/>}
+      
     </>
   );
   return content;
