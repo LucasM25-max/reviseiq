@@ -2205,7 +2205,7 @@ function BlurtingScreen({D,subjects,allSections,initSubjId,initSecId,onBack}) {
           </div>}
           <div style={{display:"flex",gap:10}}>
             <button onClick={reset} style={{flex:2,...B("#6366f1",false,{padding:"11px 0",fontSize:13,fontWeight:700})}}>Try Again</button>
-            <button onClick={()=>{setBSec("");setRes(null);setBlurt("");}} style={{flex:1,...B("transparent",true,{padding:"11px 0",fontSize:13,borderColor:D?"#374151":"#d1d5db",color:mu(D)})}}>Different Topic</button>
+            <button onClick={()=>{setBSecs(null);setRes(null);setBlurt("");}} style={{flex:1,...B("transparent",true,{padding:"11px 0",fontSize:13,borderColor:D?"#374151":"#d1d5db",color:mu(D)})}}>Different Topic</button>
           </div>
         </div>}
       </div>
@@ -6075,6 +6075,18 @@ const hProps={user,userDisplayName,D,onDark:()=>setD(!D),onHome:()=>setScreen("h
               })}
         {modal?.mode==="section"&&<CreateModal mode="section" D={D} subjects={subjects} onClose={()=>setModal(null)} onSave={addCustomSection}/>}
         {modal?.mode==="subtopic"&&modal._parentTopicId&&<CreateModal mode="subtopic" D={D} subjects={subjects} onClose={()=>setModal(null)} onSave={st=>addSubtopic(modal._parentTopicId,st)}/>}
+        {subjTab==="papers"&&(
+          <PastPapersTab
+            papers={curBData.papers||[]}
+            onAdd={()=>setModal({mode:"paper"})}
+            onDelete={deletePaper}
+            admin={admin}
+            D={D}
+            accent={subjDef?.accent||"#6366f1"}
+            board={curBoard}
+            subjectName={subjDef?.name||""}
+          />
+        )}
         {modal?.mode==="paper"&&<CreateModal mode="paper" D={D} subjects={subjects} onClose={()=>setModal(null)} onSave={addPaper}/>}
         {modal?.mode==="header"&&(
           <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,zIndex:200,background:"rgba(0,0,0,.55)",display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
