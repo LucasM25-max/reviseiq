@@ -94,6 +94,16 @@ var _GROQ_MODELS = [
   "mixtral-8x7b-32768",
 ];
 const tutorUsageKey=function(u){return "gcse:tu:"+(u||"").replace(/\W/g,"-")+":"+new Date().toISOString().slice(0,10);};
+if (!window.storage) {
+  console.warn("window.storage not found — using fallback");
+  window.storage = {
+    async get(key){ return { value: localStorage.getItem(key) }; },
+    async set(key,val){ localStorage.setItem(key,val); },
+    async list(prefix){
+      return { keys: Object.keys(localStorage).filter(k=>k.startsWith(prefix)) };
+    }
+  };
+}
 async function getTutorUsage(u){
   try{var r=await window.storage.get(tutorUsageKey(u),true);return r&&r.value?JSON.parse(r.value):{};} catch(e){return {};}
 }
@@ -192,7 +202,11 @@ async function _aiRequest(systemPrompt, messages, maxTokens){
         }
         throw new Error(errMsg);
       }
-      var text = dat.choices&&dat.choices[0]&&dat.choices[0].message&&dat.choices[0].message.content;
+      var text = dat?.choices?.[0]?.message?.content;
+      if (!text) {
+        console.error("Bad AI response:", dat);
+        throw new Error("Invalid AI response");
+      }
       if(!text){ lastErr=new Error("Empty response from AI"); continue; }
       return text;
     }catch(ex){
@@ -409,7 +423,9 @@ async function markAnswer(q, ans) {
   const raw = await callGeminiSimple(prompt, 800);
   const fence = "`"+"`"+"`"; const clean = raw.split(fence+"json").join("").split(fence).join("").trim();
   const s=clean.indexOf("{"), e=clean.lastIndexOf("}");
-  return JSON.parse(s>=0&&e>=0?clean.slice(s,e+1):clean);
+  const parsed = safeJsonParse(s>=0&&e>=0?clean.slice(s,e+1):clean);
+  if (!parsed) throw new Error("Invalid AI JSON (markAnswer)");
+  return parsed;
 }
 
 async function blurtAnalyse(notesText, blurtText) {
@@ -417,7 +433,9 @@ async function blurtAnalyse(notesText, blurtText) {
   const raw = await callGeminiSimple(prompt, 1000);
   const fence = "`"+"`"+"`"; const clean = raw.split(fence+"json").join("").split(fence).join("").trim();
   const s=clean.indexOf("{"), e=clean.lastIndexOf("}");
-  return JSON.parse(s>=0&&e>=0?clean.slice(s,e+1):clean);
+  const parsed = safeJsonParse(...);
+  if (!parsed) throw new Error("Invalid AI JSON (blurt)");
+  return parsed;
 }
 
 /* ─── GENERATE PARTED PAPER ─────────────────────────────────────────────────── */
@@ -475,7 +493,8 @@ async function generatePartedPaper(subjName, board, paper, mergedTopics) {
       var end   = raw.lastIndexOf("]");
       if(start < 0 || end < 0) throw new Error("No JSON array in response");
       raw = raw.slice(start, end+1);
-      var groups = JSON.parse(raw);
+      var groups = safeJsonParse(raw);
+      if (!groups) throw new Error("Invalid AI JSON (paper generation)");
       if(!Array.isArray(groups) || !groups.length) throw new Error("Empty array");
       return groups.map(function(g){
         return Object.assign({}, g, {
@@ -485,7 +504,10 @@ async function generatePartedPaper(subjName, board, paper, mergedTopics) {
           })
         });
       });
-    } catch(e) { lastErr = e; }
+    } catch(e) {
+      console.error("Paper generation attempt failed:", e);
+      lastErr = e;
+    }
   }
   throw lastErr;
 }
@@ -1194,6 +1216,17 @@ const B  = (color,outline,extra={}) => ({padding:"9px 16px",borderRadius:10,bord
 const mu = D => D?"#6b7280":"#9ca3af";
 const tx = D => D?"#f9fafb":"#111827";
 const uid = () => Math.random().toString(36).slice(2,9);
+function uid() {
+  return Math.random().toString(36).slice(2, 10);
+}
+function safeJsonParse(str) {
+  try {
+    return JSON.parse(str);
+  } catch (e) {
+    console.error("JSON parse failed:", e, str);
+    return null;
+  }
+}
 const stripHtml = s => (s||"").replace(/<[^>]*>/g,"").trim();
 const GRADES = ["U","1","2","3","4","5","6","7","8","9"];
 const pctToGrade = pct => pct>=90?"9":pct>=80?"8":pct>=70?"7":pct>=60?"6":pct>=50?"5":pct>=40?"4":pct>=30?"3":pct>=20?"2":pct>=10?"1":"U";
