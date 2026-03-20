@@ -383,7 +383,6 @@ function mergeTopics(baseTopics, boardCustom, boardExtras) {
       questions: [...(cs.questions||[]), ...(boardExtras[cs.id]?.questions||[])],
     }];
   }
-  const nonHeaderCustom = (boardCustom||[]).filter(cs => cs.type !== "header");
   const topicMap = (baseTopics||[]).map(topic => ({
     ...topic,
     sections: [
@@ -393,10 +392,10 @@ function mergeTopics(baseTopics, boardCustom, boardExtras) {
         flashcards: [...(sec.flashcards||[]), ...(boardExtras[sec.id]?.flashcards||[])],
         questions: [...(sec.questions||[]), ...(boardExtras[sec.id]?.questions||[])],
       })),
-      ...nonHeaderCustom.filter(cs => cs.topicId === topic.id).flatMap(expandAdminTopic),
+      ...(boardCustom||[]).filter(cs => cs.topicId === topic.id).flatMap(expandAdminTopic),
     ]
   }));
-  const loose = nonHeaderCustom.filter(cs => !cs.topicId || !(baseTopics||[]).find(t => t.id === cs.topicId));
+  const loose = (boardCustom||[]).filter(cs => !cs.topicId || !(baseTopics||[]).find(t => t.id === cs.topicId));
   if (loose.length > 0) {
     const groups = [];
     for (const cs of loose) { const expanded = expandAdminTopic(cs); groups.push({ _adminTopicId: cs.id, _adminTopicTitle: cs.title, sections: expanded }); }
@@ -758,7 +757,7 @@ async function generateStructuredPaper(subjName,board,paper,config,mergedTopics)
     // Two-step generation to avoid JSON truncation: first generate extract, then questions
     prompt=`You are an expert AQA GCSE English Language Paper 1 examiner. Generate a complete mock exam.
 
-STEP 1 — EXTRACT: Write a fictional prose extract of EXACTLY 30 numbered lines from an imaginary 20th/21st-century literary fiction work. It must be vivid, original (NOT from any real published work), and rich with language techniques. Make the opening dramatic or atmospheric, the middle developed, and the ending unresolved or tense.
+STEP 1 — EXTRACT: Write a fictional prose extract of EXACTLY 30 numbered lines from an imaginary 20th/21st-century literary fiction work. It must be vivid, original (NOT from any real published work), and rich with language techniques. Number each line (1, 2, 3...). Make the opening dramatic or atmospheric, the middle developed, and the ending unresolved or tense.
 
 STEP 2 — QUESTIONS (use \n for all line breaks inside text strings, never unescaped quotes):
 
@@ -1821,39 +1820,33 @@ function OnboardingWizard({D,onComplete}) {
 
 function Header({user,userDisplayName,D,onDark,onHome,onDash,onTarget,onTimetable,onBlurt,onMock,onTutor,onCoach,onLeaderboards,onAccount,streak,onSearch,globalOverlays,screen}) {
   const [menuOpen,setMenuOpen] = React.useState(false);
+  const isMobile = typeof window!=="undefined" && window.innerWidth<640;
   const navItems = [
-    {id:"home",      icon:"🏠", label:"Home",         fn:onHome},
-    {id:"timetable", icon:"📅", label:"Timetable",    fn:onTimetable},
-    {id:"blurting",  icon:"🧠", label:"Blurting",     fn:onBlurt},
-    {id:"mock",      icon:"📝", label:"Mock Exam",    fn:onMock},
-    {id:"tutor",     icon:"🤖", label:"AI Tutor",     fn:onTutor},
-    {id:"coach",     icon:"✍️",  label:"Exam Coach",   fn:onCoach},
-    {id:"target",    icon:"🎯", label:"Target",       fn:onTarget},
-    {id:"dashboard", icon:"📊", label:"Progress",     fn:onDash},
-    {id:"friends",   icon:"🏆", label:"Leaderboards", fn:onLeaderboards},
-    {id:"account",   icon:"⚙️", label:"Account",      fn:onAccount},
+    {id:"timetable", icon:"📅", label:"Timetable",  fn:onTimetable},
+    {id:"blurting",  icon:"🧠", label:"Blurting",   fn:onBlurt},
+    {id:"mock",      icon:"📝", label:"Mock Exam",  fn:onMock},
+    {id:"tutor",     icon:"🤖", label:"AI Tutor",   fn:onTutor},
+    {id:"coach",     icon:"✍️",  label:"Exam Coach", fn:onCoach},
+    {id:"target",    icon:"🎯", label:"Target",     fn:onTarget},
+    {id:"dashboard", icon:"📊", label:"Progress",   fn:onDash},
+    {id:"friends",   icon:"🏆", label:"Leaderboards",fn:onLeaderboards},
+  ];
+  const mobileExtraItems = [
+    {id:"home",    icon:"🏠", label:"Home",    fn:onHome},
+    {id:"account", icon:"⚙️", label:"Account", fn:onAccount},
   ];
   const displayName = userDisplayName || getDisplayName(user);
-  // Close menu when clicking outside
-  React.useEffect(function(){
-    if(!menuOpen) return;
-    function handler(e){
-      if(!e.target.closest("header")) setMenuOpen(false);
-    }
-    document.addEventListener("click", handler);
-    return function(){ document.removeEventListener("click", handler); };
-  },[menuOpen]);
   return (
     <header style={{background:D?"#0d1117":"#fff",borderBottom:`1px solid ${D?"#1f2937":"#e5e7eb"}`,position:"sticky",top:0,zIndex:50}}>
       <div style={{maxWidth:1100,margin:"0 auto",padding:"0 16px",height:54,display:"flex",alignItems:"center",gap:8}}>
         {/* Logo */}
-        <button onClick={function(){onHome();setMenuOpen(false);}} style={{fontWeight:800,fontSize:15,background:"none",border:"none",cursor:"pointer",color:tx(D),flexShrink:0,letterSpacing:"-0.01em",paddingRight:8}}>🎓 ReviseIQ</button>
+        <button onClick={onHome} style={{fontWeight:800,fontSize:15,background:"none",border:"none",cursor:"pointer",color:tx(D),flexShrink:0,letterSpacing:"-0.01em",paddingRight:8}}>🎓 ReviseIQ</button>
 
         {/* Search */}
         <button onClick={onSearch} style={{background:D?"#1f2937":"#f3f4f6",border:`1px solid ${D?"#374151":"#e5e7eb"}`,borderRadius:8,padding:"5px 10px",fontSize:12,color:mu(D),cursor:"pointer",display:"flex",alignItems:"center",gap:6,flexShrink:0,transition:"background .15s"}}>
           <span style={{fontSize:13}}>🔍</span>
-          <span style={{color:D?"#9ca3af":"#6b7280"}}>Search</span>
-          <kbd style={{fontSize:10,background:D?"#374151":"#e5e7eb",color:D?"#9ca3af":"#6b7280",padding:"1px 6px",borderRadius:4,fontFamily:"inherit",display:"none"}} className="hide-mobile">Ctrl+K</kbd>
+          {!isMobile&&<span style={{color:D?"#9ca3af":"#6b7280"}}>Search</span>}
+          {!isMobile&&<kbd style={{fontSize:10,background:D?"#374151":"#e5e7eb",color:D?"#9ca3af":"#6b7280",padding:"1px 6px",borderRadius:4,fontFamily:"inherit"}}>Ctrl+K</kbd>}
         </button>
 
         {/* Streak pill */}
@@ -1864,29 +1857,41 @@ function Header({user,userDisplayName,D,onDark,onHome,onDash,onTarget,onTimetabl
           </div>
         )}
 
+        {/* Desktop nav */}
+        {!isMobile&&<nav style={{display:"flex",alignItems:"center",gap:1,flex:1,overflowX:"auto",scrollbarWidth:"none"}}>
+          {navItems.map(function(item){
+            var active=screen===item.id;
+            return (
+              <button key={item.id} onClick={item.fn}
+                style={{fontSize:12,padding:"6px 9px",background:active?(D?"rgba(99,102,241,.15)":"#eef2ff"):"none",border:"none",borderRadius:7,cursor:"pointer",color:active?"#6366f1":mu(D),whiteSpace:"nowrap",fontWeight:active?600:400,transition:"all .12s",flexShrink:0}}>
+                {item.icon} {item.label}
+              </button>
+            );
+          })}
+        </nav>}
+
         <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
-          {/* Current screen label */}
-          {screen&&screen!=="home"&&navItems.find(function(n){return n.id===screen;})&&<span style={{fontSize:12,color:mu(D),fontWeight:500}}>{navItems.find(function(n){return n.id===screen;}).icon} {navItems.find(function(n){return n.id===screen;}).label}</span>}
           {/* Dark mode */}
           <button onClick={onDark} style={{fontSize:15,background:"none",border:"none",cursor:"pointer",color:mu(D),padding:"4px",borderRadius:6}}>{D?"☀️":"🌙"}</button>
-          {/* User chip */}
-          <div style={{display:"flex",alignItems:"center",gap:6,padding:"4px 10px",borderRadius:20,background:D?"#1f2937":"#f3f4f6",border:`1px solid ${D?"#374151":"#e5e7eb"}`}}>
-            <span style={{fontSize:12,fontWeight:600,color:tx(D),maxWidth:120,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{displayName}</span>
+          {/* User chip — click to go to account */}
+          <button onClick={onAccount} style={{display:"flex",alignItems:"center",gap:6,padding:"4px 10px",borderRadius:20,background:D?"#1f2937":"#f3f4f6",border:`1px solid ${D?"#374151":"#e5e7eb"}`,cursor:"pointer",transition:"background .15s"}}
+            onMouseEnter={function(e){e.currentTarget.style.background=D?"#374151":"#e5e7eb";}}
+            onMouseLeave={function(e){e.currentTarget.style.background=D?"#1f2937":"#f3f4f6";}}>
+            <span style={{fontSize:12,fontWeight:600,color:tx(D),maxWidth:isMobile?80:140,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{displayName}</span>
             {isAdmin(user)&&<span style={{fontSize:9,fontWeight:700,background:"#6366f1",color:"#fff",padding:"1px 6px",borderRadius:10,letterSpacing:"0.04em"}}>ADMIN</span>}
-          </div>
-          {/* Hamburger — always visible */}
-          <button onClick={function(e){e.stopPropagation();setMenuOpen(function(o){return !o;});}} style={{fontSize:18,background:"none",border:"none",cursor:"pointer",color:mu(D),padding:"4px 6px",borderRadius:6,lineHeight:1}}>☰</button>
+          </button>
+          {/* Mobile hamburger */}
+          {isMobile&&<button onClick={function(){setMenuOpen(function(o){return !o;})}} style={{fontSize:16,background:"none",border:"none",cursor:"pointer",color:mu(D),padding:"4px"}}>☰</button>}
         </div>
       </div>
 
-      {/* Dropdown menu — always hamburger on all screen sizes */}
-      {menuOpen&&(
-        <div style={{position:"absolute",top:54,right:0,left:"auto",minWidth:200,background:D?"#111827":"#fff",border:`1px solid ${D?"#1f2937":"#e5e7eb"}`,borderTop:"none",borderRadius:"0 0 12px 12px",zIndex:49,padding:"8px 8px 12px",boxShadow:"0 8px 24px rgba(0,0,0,.15)"}}>
-          {navItems.map(function(item){return (
+      {/* Mobile dropdown menu */}
+      {isMobile&&menuOpen&&(
+        <div style={{position:"absolute",top:54,left:0,right:0,background:D?"#111827":"#fff",borderBottom:`1px solid ${D?"#1f2937":"#e5e7eb"}`,zIndex:49,padding:"8px 12px",display:"flex",flexWrap:"wrap",gap:4}}>
+          {[...mobileExtraItems,...navItems].map(function(item){return (
             <button key={item.id} onClick={function(){item.fn();setMenuOpen(false);}}
-              style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"9px 14px",background:screen===item.id?(D?"rgba(99,102,241,.18)":"#eef2ff"):"transparent",border:"none",borderRadius:8,cursor:"pointer",color:screen===item.id?"#6366f1":tx(D),whiteSpace:"nowrap",fontWeight:screen===item.id?700:400,fontSize:13,textAlign:"left",marginBottom:1}}>
-              <span style={{fontSize:15,width:20,textAlign:"center"}}>{item.icon}</span>
-              {item.label}
+              style={{fontSize:12,padding:"7px 12px",background:screen===item.id?(D?"rgba(99,102,241,.2)":"#eef2ff"):(D?"#1f2937":"#f3f4f6"),border:"none",borderRadius:8,cursor:"pointer",color:screen===item.id?"#6366f1":mu(D),whiteSpace:"nowrap",fontWeight:screen===item.id?700:400}}>
+              {item.icon} {item.label}
             </button>
           );})}
         </div>
@@ -2001,148 +2006,16 @@ function SM2Dots({cards, fcHist, current}) {
   );
 }
 
-/* ─── SCOPE SELECTOR ─────────────────────────────────────────────────────────── */
-/* Reusable multi-select picker: choose any combination of sections/topics/subtopics.
-   Props:
-     D          — dark mode bool
-     subjects   — full subjects array
-     allSections — flat merged sections array
-     boardData  — boardData map
-     boardSels  — boardSels map
-     subjectId  — currently selected subject id
-     onSubject  — callback(id) when subject changes (optional — pass null to lock subject)
-     value      — array of selected section ids, or null/[] = "all"
-     onChange   — callback(sectionIds) where null means "all"
-*/
-function ScopeSelector({D,subjects,allSections,boardData,boardSels,subjectId,onSubject,value,onChange}) {
-  const [open,setOpen] = React.useState(false);
-  const bd2 = D?"#1f2937":"#e5e7eb";
-  const mu2 = mu(D);
-  const subj = subjects.find(function(s){return s.id===subjectId;});
-  const accent = subj?.accent||"#6366f1";
-
-  // Build flat list of all sections for this subject, grouped by their topic
-  const secs = allSections.filter(function(s){return s.subjectId===subjectId;});
-
-  // Group by topic - use _adminTopicTitle or just flat
-  const groups = React.useMemo(function(){
-    var seen = {};
-    var g = [];
-    secs.forEach(function(s){
-      var tKey = s._parentTopicTitle||s._adminTopicTitle||"Topics";
-      if(!seen[tKey]){seen[tKey]=[];g.push({title:tKey,secs:seen[tKey]});}
-      seen[tKey].push(s);
-    });
-    return g;
-  },[subjectId,allSections]);// eslint-disable-line
-
-  var allIds = secs.map(function(s){return s.id;});
-  var sel = value&&value.length ? value : null; // null = all selected
-  var isAll = !sel;
-  var selSet = sel ? new Set(sel) : null;
-
-  function toggle(id){
-    if(isAll){
-      // deselect just this one → select everything except it
-      onChange(allIds.filter(function(x){return x!==id;}));
-    } else {
-      var next = selSet.has(id) ? sel.filter(function(x){return x!==id;}) : [...sel,id];
-      onChange(next.length===allIds.length ? null : next.length===0 ? null : next);
-    }
-  }
-  function toggleAll(){onChange(null);}
-  function toggleGroup(secIds){
-    var allIn = secIds.every(function(id){return isAll||selSet.has(id);});
-    if(allIn){
-      // deselect all in group
-      var next2 = isAll ? allIds.filter(function(x){return !secIds.includes(x);}) : sel.filter(function(x){return !secIds.includes(x);});
-      onChange(next2.length===0?null:next2);
-    } else {
-      var next3 = isAll ? null : [...new Set([...sel,...secIds])];
-      if(next3&&next3.length===allIds.length) next3=null;
-      onChange(next3);
-    }
-  }
-
-  var label = isAll ? "All topics" : sel.length===1 ? (secs.find(function(s){return s.id===sel[0];})||{title:"1 topic"}).title : sel.length+" topics selected";
-
-  return (
-    <div style={{position:"relative"}}>
-      {onSubject&&(
-        <div style={{marginBottom:10}}>
-          <label style={{fontSize:11,fontWeight:600,color:mu2,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:"0.05em"}}>Subject</label>
-          <select style={I(D)} value={subjectId} onChange={function(e){onSubject(e.target.value);onChange(null);}}>
-            {subjects.filter(function(s){return !s._politics;}).map(function(s){return <option key={s.id} value={s.id}>{s.icon} {s.name}</option>;})}
-          </select>
-        </div>
-      )}
-      <label style={{fontSize:11,fontWeight:600,color:mu2,display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:"0.05em"}}>Topics / Sections</label>
-      <button onClick={function(){setOpen(function(o){return !o;});}}
-        style={{...I(D),textAlign:"left",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 12px"}}>
-        <span style={{fontSize:13,color:isAll?mu2:tx(D),fontWeight:isAll?400:600}}>{label}</span>
-        <span style={{fontSize:11,color:mu2}}>{open?"▲":"▼"}</span>
-      </button>
-      {open&&(
-        <div style={{position:"absolute",left:0,right:0,top:"100%",zIndex:60,background:D?"#111827":"#fff",border:`1px solid ${bd2}`,borderRadius:10,marginTop:4,maxHeight:280,overflowY:"auto",boxShadow:"0 8px 24px rgba(0,0,0,.18)",padding:"8px 0"}}>
-          {/* All option */}
-          <button onClick={function(){toggleAll();setOpen(false);}}
-            style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"8px 14px",background:"transparent",border:"none",cursor:"pointer",color:isAll?accent:tx(D),fontWeight:isAll?700:400,fontSize:13}}>
-            <span style={{width:16,height:16,borderRadius:4,border:`2px solid ${isAll?accent:bd2}`,background:isAll?accent:"transparent",display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#fff",flexShrink:0}}>{isAll?"✓":""}</span>
-            All topics
-          </button>
-          <div style={{height:1,background:bd2,margin:"4px 0"}}/>
-          {groups.map(function(grp){
-            var grpIds = grp.secs.map(function(s){return s.id;});
-            var grpAllIn = grpIds.every(function(id){return isAll||selSet&&selSet.has(id);});
-            var grpSomeIn = !grpAllIn && grpIds.some(function(id){return isAll||selSet&&selSet.has(id);});
-            return (
-              <div key={grp.title}>
-                {groups.length>1&&(
-                  <button onClick={function(){toggleGroup(grpIds);}}
-                    style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"6px 14px",background:D?"rgba(255,255,255,.04)":"rgba(0,0,0,.03)",border:"none",cursor:"pointer",color:mu2,fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.05em"}}>
-                    <span style={{width:14,height:14,borderRadius:3,border:`2px solid ${grpAllIn?accent:grpSomeIn?"#a5b4fc":bd2}`,background:grpAllIn?accent:"transparent",display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:9,color:"#fff",flexShrink:0}}>{grpAllIn?"✓":grpSomeIn?"−":""}</span>
-                    {grp.title}
-                  </button>
-                )}
-                {grp.secs.map(function(s){
-                  var checked = isAll||!!(selSet&&selSet.has(s.id));
-                  return (
-                    <button key={s.id} onClick={function(){toggle(s.id);}}
-                      style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"7px 14px 7px 24px",background:"transparent",border:"none",cursor:"pointer",color:checked?tx(D):mu2,fontSize:12,fontWeight:checked?600:400,textAlign:"left"}}>
-                      <span style={{width:14,height:14,borderRadius:3,border:`2px solid ${checked?accent:bd2}`,background:checked?accent:"transparent",display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:9,color:"#fff",flexShrink:0}}>{checked?"✓":""}</span>
-                      {s.title}
-                    </button>
-                  );
-                })}
-              </div>
-            );
-          })}
-          {secs.length===0&&<p style={{fontSize:12,color:mu2,padding:"10px 14px",margin:0}}>No sections yet for this subject.</p>}
-        </div>
-      )}
-      {!isAll&&sel&&sel.length>0&&(
-        <div style={{display:"flex",flexWrap:"wrap",gap:4,marginTop:8}}>
-          {sel.slice(0,6).map(function(id){
-            var s=secs.find(function(x){return x.id===id;});
-            return s?<span key={id} style={{fontSize:10,background:D?"rgba(99,102,241,.15)":"#eef2ff",color:accent,padding:"2px 8px",borderRadius:10,fontWeight:600}}>{s.title}</span>:null;
-          })}
-          {sel.length>6&&<span style={{fontSize:10,color:mu2,padding:"2px 6px"}}>+{sel.length-6} more</span>}
-          <button onClick={function(){onChange(null);}} style={{fontSize:10,color:"#ef4444",background:"none",border:"none",cursor:"pointer",padding:"2px 6px"}}>Clear</button>
-        </div>
-      )}
-    </div>
-  );
-}
-
 function BlurtingScreen({D,subjects,allSections,initSubjId,initSecId,onBack}) {
   const [bSubj,setBSubj] = useState(initSubjId||subjects[0]?.id||"");
-  const [bSecs,setBSecs] = useState(initSecId?[initSecId]:null); // null=all
+  const [bSec, setBSec]  = useState(initSecId||"");
   const [blurt,setBlurt] = useState("");
   const [res,  setRes]   = useState(null);
   const [busy, setBusy]  = useState(false);
   const [err,  setErr]   = useState("");
-  const activeSecs = allSections.filter(function(s){return s.subjectId===bSubj&&(!bSecs||bSecs.includes(s.id));});
-  const notesText = activeSecs.length ? activeSecs.map(function(s){return (s.notes||[]).map(function(n){return "## "+n.heading+"\n"+stripHtml(n.body);}).join("\n\n");}).filter(Boolean).join("\n\n") : "(no notes)";
+  const secList = allSections.filter(s=>s.subjectId===bSubj);
+  const sec = allSections.find(s=>s.id===bSec);
+  const notesText=(sec?.notes||[]).map(n=>`## ${n.heading}\n${stripHtml(n.body)}`).join("\n\n")||"(no notes)";
   const canSubmit=blurt.trim().split(/\s+/).filter(Boolean).length>=10&&bSubj;
   const Lbl=t=><label style={{fontSize:11,fontWeight:600,color:mu(D),display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:"0.05em"}}>{t}</label>;
   const submit=async()=>{
@@ -2165,12 +2038,20 @@ function BlurtingScreen({D,subjects,allSections,initSubjId,initSecId,onBack}) {
           💡 <strong>How it works:</strong> Close your notes. Select a topic. Write down <em>everything</em> you can recall — key terms, processes, dates, equations. Don't look anything up. ReviseIQ AI will compare your recall to your notes and pinpoint exactly what to revise.
         </div>
         {!res&&<div style={{display:"flex",flexDirection:"column",gap:14}}>
-          <ScopeSelector D={D} subjects={subjects} allSections={allSections} boardData={{}} boardSels={{}} subjectId={bSubj} onSubject={function(id){setBSubj(id);setBSecs(null);setRes(null);}} value={bSecs} onChange={function(v){setBSecs(v);setRes(null);}}/>
-          {activeSecs.length>0&&!activeSecs.some(function(s){return (s.notes||[]).length>0;})&&<div style={{padding:"9px 13px",borderRadius:9,background:D?"#1f2937":"#fffbeb",border:`1px solid ${D?"#374151":"#fde68a"}`,fontSize:12,color:D?"#fcd34d":"#92400e",marginTop:8}}>⚠️ No notes in selected sections — AI will still assess your recall but with less accuracy.</div>}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+            <div>{Lbl("Subject")}<select style={I(D)} value={bSubj} onChange={e=>{setBSubj(e.target.value);setBSec("");setRes(null);}}>
+              {subjects.map(s=><option key={s.id} value={s.id}>{s.icon} {s.name}</option>)}
+            </select></div>
+            <div>{Lbl("Topic / Section")}<select style={I(D)} value={bSec} onChange={e=>{setBSec(e.target.value);setRes(null);}}>
+              <option value="">— Select section (optional) —</option>
+              {secList.map(s=><option key={s.id} value={s.id}>{s.title}</option>)}
+            </select></div>
+          </div>
+          {bSec&&sec&&!(sec.notes||[]).length&&<div style={{padding:"9px 13px",borderRadius:9,background:D?"#1f2937":"#fffbeb",border:`1px solid ${D?"#374151":"#fde68a"}`,fontSize:12,color:D?"#fcd34d":"#92400e"}}>⚠️ No notes in this section — AI will still assess your recall but with less accuracy.</div>}
           <div>
             {Lbl("Your blurt — write everything from memory")}
             <textarea value={blurt} onChange={e=>setBlurt(e.target.value)} rows={13}
-              placeholder={bSecs&&bSecs.length===1&&activeSecs[0]?'Write down everything you remember about "'+activeSecs[0].title+'"…':"Select topics above, then start writing everything you know…"}
+              placeholder={bSec?`Write down everything you remember about "${sec?.title}"…`:"Select a topic above, then start writing everything you know…"}
               style={{...I(D,{resize:"vertical",lineHeight:1.75})}}/>
             <div style={{display:"flex",justifyContent:"space-between",marginTop:4}}>
               <span style={{fontSize:11,color:blurt.trim().split(/\s+/).filter(Boolean).length<10?mu(D):"#16a34a"}}>{blurt.trim().split(/\s+/).filter(Boolean).length} words{blurt.trim().split(/\s+/).filter(Boolean).length<10?" (write at least 10)":""}</span>
@@ -2205,7 +2086,7 @@ function BlurtingScreen({D,subjects,allSections,initSubjId,initSecId,onBack}) {
           </div>}
           <div style={{display:"flex",gap:10}}>
             <button onClick={reset} style={{flex:2,...B("#6366f1",false,{padding:"11px 0",fontSize:13,fontWeight:700})}}>Try Again</button>
-            <button onClick={()=>{setBSecs(null);setRes(null);setBlurt("");}} style={{flex:1,...B("transparent",true,{padding:"11px 0",fontSize:13,borderColor:D?"#374151":"#d1d5db",color:mu(D)})}}>Different Topic</button>
+            <button onClick={()=>{setBSec("");setRes(null);setBlurt("");}} style={{flex:1,...B("transparent",true,{padding:"11px 0",fontSize:13,borderColor:D?"#374151":"#d1d5db",color:mu(D)})}}>Different Topic</button>
           </div>
         </div>}
       </div>
@@ -2229,7 +2110,7 @@ function TimetableScreen({D, subjects, allSections, user, stats, onNav, onBack})
   const [loaded,setLoaded]     = useState(false);
   const [expanded,setExpanded] = useState({});
   const [eSubj,setESubj]       = useState(subjects[0]?.id||"");
-  const [eSecs,setESecs]       = useState(null); // null=all
+  const [eSec,setESec]         = useState("");
   const [eDate,setEDate]       = useState("");
   const [eLabel,setELabel]     = useState("");
   // School timetable state
@@ -2247,6 +2128,7 @@ function TimetableScreen({D, subjects, allSections, user, stats, onNav, onBack})
   const Lbl=t=><label style={{fontSize:11,fontWeight:600,color:mu(D),display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:"0.05em"}}>{t}</label>;
   const bd2=D?"#1f2937":"#e5e7eb";
   const today=new Date().toISOString().slice(0,10);
+  const secList=allSections.filter(s=>s.subjectId===eSubj);
   const DAY_NAMES=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 
   useEffect(()=>{
@@ -2271,10 +2153,10 @@ function TimetableScreen({D, subjects, allSections, user, stats, onNav, onBack})
   const addExam=()=>{
     if(!eDate||!eSubj)return;
     const subj=subjects.find(s=>s.id===eSubj);
-    const selSecs=eSecs&&eSecs.length>0?eSecs:null;
-    const label=eLabel||(selSecs&&selSecs.length===1?(()=>{const s=allSections.find(function(x){return x.id===selSecs[0];});return subj?.icon+" "+(s?s.title:subj?.name);})():subj?.icon+" "+subj?.name);
-    setExams(p=>[...p,{id:uid(),subjectId:eSubj,sectionIds:selSecs,date:eDate,label}]);
-    setEDate("");setELabel("");setESecs(null);setSessions([]);
+    const sec=allSections.find(s=>s.id===eSec);
+    const label=eLabel||(sec?`${subj?.icon} ${sec.title}`:`${subj?.icon} ${subj?.name}`);
+    setExams(p=>[...p,{id:uid(),subjectId:eSubj,sectionId:eSec||null,date:eDate,label}]);
+    setEDate("");setELabel("");setESec("");setSessions([]);
   };
   const removeExam=id=>{setExams(p=>p.filter(e=>e.id!==id));setSessions([]);setGoalMet({});};
   const toggleGoal=k=>setGoalMet(p=>({...p,[k]:!p[k]}));
@@ -2352,7 +2234,7 @@ function TimetableScreen({D, subjects, allSections, user, stats, onNav, onBack})
       const daysLeft=Math.round((examDt-now)/86400000);
       if(daysLeft<=0)return;
       const subj=subjects.find(s=>s.id===exam.subjectId);if(!subj)return;
-      const pool=exam.sectionIds&&exam.sectionIds.length?allSections.filter(s=>exam.sectionIds.includes(s.id)):allSections.filter(s=>s.subjectId===exam.subjectId);
+      const pool=exam.sectionId?allSections.filter(s=>s.id===exam.sectionId):allSections.filter(s=>s.subjectId===exam.subjectId);
       const fallback=[{id:null,title:subj.name,flashcards:[],questions:[],notes:[],subjectId:exam.subjectId}];
       const rawPool=pool.length?pool:fallback;
       // Sort pool so weakest sections come first
@@ -2491,9 +2373,17 @@ function TimetableScreen({D, subjects, allSections, user, stats, onNav, onBack})
         {tab==="exams"&&<div className="fade-in">
           <div style={{...C(D),padding:22,marginBottom:16}}>
             <h3 style={{fontWeight:700,fontSize:15,marginBottom:16}}>Add an Exam Date</h3>
-            <ScopeSelector D={D} subjects={subjects} allSections={allSections} boardData={{}} boardSels={{}} subjectId={eSubj} onSubject={function(id){setESubj(id);setESecs(null);}} value={eSecs} onChange={setESecs}/>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginTop:12,marginBottom:14}}>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+              <div>{Lbl("Subject")}<select style={I(D)} value={eSubj} onChange={e=>{setESubj(e.target.value);setESec("");}}>
+                {subjects.map(s=><option key={s.id} value={s.id}>{s.icon} {s.name}</option>)}
+              </select></div>
               <div>{Lbl("Exam Date")}<input type="date" style={I(D)} value={eDate} min={today} onChange={e=>setEDate(e.target.value)}/></div>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
+              <div>{Lbl("Topic / Section (optional)")}<select style={I(D)} value={eSec} onChange={e=>setESec(e.target.value)}>
+                <option value="">— All sections —</option>
+                {secList.map(s=><option key={s.id} value={s.id}>{s.title}</option>)}
+              </select></div>
               <div>{Lbl("Label (optional)")}<input style={I(D)} placeholder="e.g. Biology Paper 1" value={eLabel} onChange={e=>setELabel(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addExam()}/></div>
             </div>
             <button onClick={addExam} disabled={!eDate||!eSubj}
@@ -2745,7 +2635,6 @@ function MockExamScreen({D,subjects,allSections,boardSels,boardData,user,onBack,
   const [selSubj,setSS]=useState(subjects[0]?.id||"");
   const [selBoard,setSB]=useState("AQA");
   const [selPaper,setSP]=useState(0);
-  const [scopeSecs,setScopeSecs]=useState(null); // null=all sections
   const [config,setConfig]=useState({});
   const [questions,setQuestions]=useState([]);
   const [extract,setExtract]=useState(null);
@@ -2808,11 +2697,7 @@ function MockExamScreen({D,subjects,allSections,boardSels,boardData,user,onBack,
     setPhase("generating");setGE("");
     try{
       const bd3=boardData[`${selSubj}:${selBoard}`]||{custom:[],extras:{},papers:[]};
-      const mergedRaw=mergeTopics(subj?.topics||[],bd3.custom,bd3.extras);
-      // Filter to selected scope (null = all)
-      const merged=scopeSecs&&scopeSecs.length>0
-        ?mergedRaw.map(function(tp){return {...tp,sections:tp.sections.filter(function(s){return scopeSecs.includes(s.id);})};}).filter(function(tp){return tp.sections.length>0;})
-        :mergedRaw;
+      const merged=mergeTopics(subj?.topics||[],bd3.custom,bd3.extras);
 
       if(paper.paperType==="structured"){
         var result;
@@ -3014,7 +2899,7 @@ function MockExamScreen({D,subjects,allSections,boardSels,boardData,user,onBack,
         <div style={{...C(D),padding:24,marginBottom:14}}>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:16}}>
             <div><label style={{fontSize:11,fontWeight:600,color:mu(D),display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:"0.05em"}}>Subject</label>
-              <select style={I(D)} value={selSubj} onChange={e=>{setSS(e.target.value);setSP(0);setConfig({});setTier("");setScopeSecs(null);}}>
+              <select style={I(D)} value={selSubj} onChange={e=>{setSS(e.target.value);setSP(0);setConfig({});setTier("");}}>
                 {subjects.map(s=><option key={s.id} value={s.id}>{s.icon} {s.name}</option>)}
               </select></div>
             <div><label style={{fontSize:11,fontWeight:600,color:mu(D),display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:"0.05em"}}>Exam Board</label>
@@ -3035,9 +2920,6 @@ function MockExamScreen({D,subjects,allSections,boardSels,boardData,user,onBack,
               </div>
             </div>
           )}
-          <div style={{marginBottom:20}}>
-            <ScopeSelector D={D} subjects={subjects} allSections={allSections} boardData={boardData} boardSels={boardSels} subjectId={selSubj} onSubject={null} value={scopeSecs} onChange={function(v){setScopeSecs(v);}}/>
-          </div>
           <div style={{marginBottom:20}}>
             <label style={{fontSize:11,fontWeight:600,color:mu(D),display:"block",marginBottom:8,textTransform:"uppercase",letterSpacing:"0.05em"}}>Select Paper</label>
             <div style={{display:"flex",flexDirection:"column",gap:8}}>
@@ -3656,7 +3538,7 @@ function parseTutorContent(text,D){
 function AITutorScreen({D,subjects,allSections,boardSels,boardData,user,googleKey,onBack}){
   const [selSubj,setSS]=useState(subjects[0]?.id||"");
   const [selBoard,setSB]=useState("AQA");
-  const [selSecs,setSecs]=useState(null); // null=all
+  const [selSec,setSec]=useState("");
   const [mode,setMode]=useState("tutor");
   const [messages,setMsgs]=useState([]);
   const [input,setInput]=useState("");
@@ -3669,6 +3551,7 @@ function AITutorScreen({D,subjects,allSections,boardSels,boardData,user,googleKe
   const chatRef=useRef(null);
   const fileRef=useRef(null);
   const subj=subjects.find(function(s){return s.id===selSubj;});
+  const secList=allSections.filter(function(s){return s.subjectId===selSubj;});
   const bd2=D?"#1f2937":"#e5e7eb";
   var memKey="gcse:tutor-mem:"+(user||"anon")+":"+selSubj+":"+selBoard;
 
@@ -3697,16 +3580,17 @@ function AITutorScreen({D,subjects,allSections,boardSels,boardData,user,googleKe
     const bd3=boardData[`${selSubj}:${selBoard}`]||{custom:[],extras:{},papers:[]};
     const subjectDef=subjects.find(s=>s.id===selSubj);
     const merged=mergeTopics(subjectDef?.topics||[],bd3.custom,bd3.extras);
-    const secs=selSecs&&selSecs.length?merged.flatMap(t=>t.sections).filter(s=>selSecs.includes(s.id)):merged.flatMap(t=>t.sections);
+    const secs=selSec?merged.flatMap(t=>t.sections).filter(s=>s.id===selSec):merged.flatMap(t=>t.sections);
     const notes=secs.flatMap(s=>(s.notes||[]).map(n=>`### ${n.heading}\n${stripHtml(n.body)}`)).slice(0,20).join("\n\n");
     const fcs=secs.flatMap(s=>(s.flashcards||[]).map(f=>`Q: ${stripHtml(f.q)}\nA: ${stripHtml(f.a)}`)).slice(0,30).join("\n");
     const qs=secs.flatMap(s=>(s.questions||[]).map(q=>`Q(${q.marks}mk): ${stripHtml(q.text)}\nMS: ${stripHtml(q.markScheme||q.sampleAnswer||"")}`)).slice(0,20).join("\n\n");
     return{notes,fcs,qs,hasContent:!!(notes||fcs||qs)};
-  },[selSubj,selBoard,selSecs,boardData,subjects]);// eslint-disable-line
+  },[selSubj,selBoard,selSec,boardData,subjects]);// eslint-disable-line
 
   const buildSys=()=>{
     const{notes,fcs,qs,hasContent}=buildCtx();
-    const topicLabel=selSecs&&selSecs.length===1?(allSections.find(s=>s.id===selSecs[0])?.title||subj?.name+' ('+selBoard+')'):selSecs&&selSecs.length>1?selSecs.length+' topics ':subj?.name+' ('+selBoard+')';
+    const sec=allSections.find(s=>s.id===selSec);
+    const topicLabel=sec?sec.title:`${subj?.name} (${selBoard})`;
     const imgInstr=`When a diagram, chart or visual aid would genuinely help the student understand a concept, include [IMG: specific descriptive search term] (e.g. [IMG: mitosis stages diagram], [IMG: carbon cycle diagram], [IMG: Macbeth character map]). Only use this for genuinely educational visuals — not decoratively.`;
     const modeInstr=mode==="homework"
       ?`HOMEWORK HELP MODE: The student may upload images, PDFs or other files showing their homework. Walk them through the problem step by step with guiding questions — do NOT just give the answer directly. Encourage independent thinking. Celebrate correct steps warmly.`
@@ -3834,7 +3718,8 @@ Style: warm, encouraging, clear. Use ## headings and bullet points to organise l
     if(sending||quizzing)return;
     setQuizzing(true);setErr("");
     var ctx=buildCtx();
-    var topic=selSecs&&selSecs.length===1?(allSections.find(function(s){return s.id===selSecs[0];})||{title:subj?.name||"this topic"}).title:selSecs&&selSecs.length>1?selSecs.length+" topics":(subj?(subj.name+" ("+selBoard+")"):"this topic");
+    var sec=allSections.find(function(s){return s.id===selSec;});
+    var topic=sec?(sec.title||"this topic"):(subj?(subj.name+" ("+selBoard+")"):"this topic");
     var promptText="Generate 3 rapid-fire GCSE "+selBoard+" exam-style questions on \""+topic+"\". "+
       (ctx.hasContent?"Use this content: "+ctx.notes.slice(0,800)+" "+ctx.fcs.slice(0,400):" Use general GCSE knowledge.")+
       " Format: 1. [Q] (Answer: [A])  2. [Q] (Answer: [A])  3. [Q] (Answer: [A])  Mix question types. Max 25 words each.";
@@ -3882,15 +3767,16 @@ Style: warm, encouraging, clear. Use ## headings and bullet points to organise l
             </div>
           </div>
           <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-            <select style={{...I(D,{flex:1,minWidth:110,maxWidth:190})}} value={selSubj} onChange={e=>{setSS(e.target.value);setSecs(null);reset();}}>
+            <select style={{...I(D,{flex:1,minWidth:110,maxWidth:190})}} value={selSubj} onChange={e=>{setSS(e.target.value);setSec("");reset();}}>
               {subjects.map(s=><option key={s.id} value={s.id}>{s.icon} {s.name}</option>)}
             </select>
             <select style={{...I(D,{width:92})}} value={selBoard} onChange={e=>{setSB(e.target.value);reset();}}>
               {["AQA","Edexcel","OCR","Eduqas","WJEC"].map(b=><option key={b} value={b}>{b}</option>)}
             </select>
-            <div style={{position:"relative",flex:1,minWidth:120}}>
-              <ScopeSelector D={D} subjects={subjects} allSections={allSections} boardData={boardData} boardSels={boardSels} subjectId={selSubj} onSubject={null} value={selSecs} onChange={function(v){setSecs(v);reset();}}/>
-            </div>
+            <select style={{...I(D,{flex:1,minWidth:120})}} value={selSec} onChange={e=>{setSec(e.target.value);reset();}}>
+              <option value="">All topics</option>
+              {secList.map(s=><option key={s.id} value={s.id}>{s.title}</option>)}
+            </select>
             <div style={{display:"flex",alignItems:"center",gap:6,marginLeft:"auto"}}>
               <span title={`Responding with: ${activeModel.label}`} style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:10,background:D?"rgba(16,185,129,.15)":"#ecfdf5",color:"#059669",cursor:"default"}}>{activeModel.label}</span>
               {messages.length>0&&<button onClick={reset} style={{fontSize:11,color:mu(D),background:"none",border:`1px solid ${bd2}`,borderRadius:8,padding:"4px 10px",cursor:"pointer"}}>↺ New chat</button>}
@@ -4034,7 +3920,6 @@ function ExamCoachScreen({D,subjects,allSections,boardSels,boardData,onBack}) {
   const C2=D?{background:"#111827",border:"1px solid #1f2937",borderRadius:14}:{background:"#fff",border:"1px solid #e5e7eb",borderRadius:14};
 
   const [selSubj, setSelSubj] = React.useState(subjects[0]?.id||"");
-  const [selSecs, setSelSecs] = React.useState(null); // null=all
   const [selCW, setSelCW] = React.useState(COMMAND_WORDS[0].word);
   const [phase, setPhase] = React.useState("setup"); // setup | practice | feedback
   const [question, setQuestion] = React.useState("");
@@ -4050,7 +3935,7 @@ function ExamCoachScreen({D,subjects,allSections,boardSels,boardData,onBack}) {
 
   // Build context notes from allSections for selected subject
   function getContextNotes(){
-    const secs = allSections.filter(function(s){return s.subjectId===selSubj&&(!selSecs||selSecs.includes(s.id));});
+    const secs = allSections.filter(function(s){return s.subjectId===selSubj;});
     return secs.flatMap(function(s){
       return (s.notes||[]).map(function(n){return n.heading+": "+stripHtml(n.body);});
     }).slice(0,12).join("\n");
@@ -4126,13 +4011,10 @@ function ExamCoachScreen({D,subjects,allSections,boardSels,boardData,onBack}) {
           <div style={{display:"flex",gap:14,flexWrap:"wrap",marginBottom:16}}>
             <div style={{flex:1,minWidth:140}}>
               <label style={{fontSize:11,fontWeight:600,color:mu2,display:"block",marginBottom:6}}>SUBJECT</label>
-              <select value={selSubj} onChange={function(e){setSelSubj(e.target.value);setSelSecs(null);reset();}}
+              <select value={selSubj} onChange={function(e){setSelSubj(e.target.value);reset();}}
                 style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+(D?"#374151":"#d1d5db"),background:D?"#1f2937":"#fff",color:tx2,fontSize:13}}>
                 {subjects.map(function(s){return <option key={s.id} value={s.id}>{s.icon} {s.name}</option>;})}
               </select>
-              <div style={{marginTop:8}}>
-                <ScopeSelector D={D} subjects={subjects} allSections={allSections} boardData={boardData} boardSels={boardSels} subjectId={selSubj} onSubject={null} value={selSecs} onChange={function(v){setSelSecs(v);}}/>
-              </div>
             </div>
             <div style={{flex:2,minWidth:180}}>
               <label style={{fontSize:11,fontWeight:600,color:mu2,display:"block",marginBottom:6}}>COMMAND WORD</label>
@@ -4868,7 +4750,7 @@ function ContactScreen({D, user, isAdmin, onBack}) {
                     style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid "+bd,background:D?"#111827":"#f9fafb",color:D?"#f9fafb":"#111827",fontSize:13,resize:"vertical"}}/>
                 </div>
                 <button onClick={handleSend} disabled={sending||!msg.trim()}
-                  style={{padding:"10px 24px",borderRadius:8,border:"none",background:!msg.trim()?"#9ca3af":"#6366f1",color:"#fff",fontWeight:700,fontSize:14,cursor:(!msg.trim()||sending)?"not-allowed":"pointer"}}>
+                  style={{padding:"10px 24px",borderRadius:8,border:"none",background:!msg.trim()?"#9ca3af":"#6366f1",color:"#fff",fontWeight:700,fontSize:14,cursor:(!msg.trim()||!name.trim())?"not-allowed":"pointer"}}>
                   {sending?"Sending…":"Send Message"}
                 </button>
               </div>
@@ -5401,41 +5283,6 @@ export default function App() {
     setModal(null);
   };
 
-  // Add a visual section header (type:"header") — purely organisational, no content
-  const addSectionHeader = (title) => {
-    if(!subjDef||!title.trim()) return;
-    const sId=subjDef.id, b=curBoard;
-    const newHeader={id:uid(),type:"header",title:title.trim(),subjectId:sId};
-    setBoardData(prev=>{
-      const cur=prev[`${sId}:${b}`]||{custom:[],extras:{},papers:[]};
-      const next={...cur,custom:[...cur.custom,newHeader]};
-      window.storage.set(SK.CUSTOM(sId,b),JSON.stringify(next.custom),true).catch(()=>{});
-      return{...prev,[`${sId}:${b}`]:next};
-    });
-  };
-
-  const deleteSectionHeader = (headerId) => {
-    if(!subjDef) return;
-    const sId=subjDef.id, b=curBoard;
-    setBoardData(prev=>{
-      const cur=prev[`${sId}:${b}`]||{custom:[],extras:{},papers:[]};
-      const next={...cur,custom:cur.custom.filter(cs=>cs.id!==headerId)};
-      window.storage.set(SK.CUSTOM(sId,b),JSON.stringify(next.custom),true).catch(()=>{});
-      return{...prev,[`${sId}:${b}`]:next};
-    });
-  };
-
-  const renameSectionHeader = (headerId, newTitle) => {
-    if(!subjDef||!newTitle.trim()) return;
-    const sId=subjDef.id, b=curBoard;
-    setBoardData(prev=>{
-      const cur=prev[`${sId}:${b}`]||{custom:[],extras:{},papers:[]};
-      const next={...cur,custom:cur.custom.map(cs=>cs.id===headerId?{...cs,title:newTitle.trim()}:cs)};
-      window.storage.set(SK.CUSTOM(sId,b),JSON.stringify(next.custom),true).catch(()=>{});
-      return{...prev,[`${sId}:${b}`]:next};
-    });
-  };
-
   const addSubtopic = (parentTopicId, subtopic) => {
     if(!subjDef)return;
     const sId=subjDef.id, b=curBoard;
@@ -5879,8 +5726,7 @@ const hProps={user,userDisplayName,D,onDark:()=>setD(!D),onHome:()=>setScreen("h
       {createPersonalOpen&&<CreatePersonalSubjectModal D={D} onClose={()=>setCreatePersonalOpen(false)} onSave={function(ns){savePersonalSubjects([...personalSubjects,ns]);setCreatePersonalOpen(false);}}/>}
       <AppFooter D={D} onContact={()=>setScreen("contact")}/>
     </div>
-  </div>
-  );
+   );
   if(screen==="subject"&&subjDef){
     const subj=subjDef;
     return (
@@ -5955,157 +5801,127 @@ const hProps={user,userDisplayName,D,onDark:()=>setD(!D),onHome:()=>setScreen("h
 
           {subjTab==="sections"&&(
             <div className="fade-in">
-              {admin&&<AdminBar D={D} actions={[{label:`＋ New Topic (${curBoard})`,fn:()=>setModal({mode:"section"})},{label:"＋ Section Header",fn:()=>setModal({mode:"header"})}]}/>}
-              {curTopics.length===0&&curBData.custom.filter(c=>c.type!=="header").length===0&&<div style={{...C(D),padding:48,textAlign:"center"}}><p style={{fontSize:28,marginBottom:10}}>{subj.icon}</p><p style={{fontWeight:700,fontSize:15,marginBottom:4}}>{subj.name} · {curBoard}</p><p style={{fontSize:13,color:mu(D)}}>No topics yet.{admin?" Add one above.":""}</p></div>}
-              {/* Render base topics */}
-              {curTopics.filter(tp=>tp.id!=="_admin").map((tp,ti)=>(
-                <div key={tp.id} style={{...C(D),marginBottom:14,padding:22}}>
-                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
-                    {tp.number&&<span style={{fontSize:11,fontFamily:"monospace",color:mu(D),background:D?"#1f2937":"#f3f4f6",padding:"3px 8px",borderRadius:6}}>{tp.number}</span>}
-                    <span style={{fontWeight:700,fontSize:15}}>{tp.title}</span>
-                  </div>
-                  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(190px,1fr))",gap:10}}>
-                    {tp.sections.map(sec=>{
-                      const secTopicIdx=curTopics.findIndex(t=>t.id===tp.id);
-                      return (
-                      <div key={sec.id} style={{position:"relative"}}>
-                        <div role="button" tabIndex={0}
-                          onClick={()=>navToSection(subIdx,secTopicIdx,sec.id)}
-                          onKeyDown={e=>e.key==="Enter"&&navToSection(subIdx,secTopicIdx,sec.id)}
-                          style={{width:"100%",textAlign:"left",padding:"12px 14px",borderRadius:12,border:`1.5px solid ${bd2}`,background:"transparent",cursor:"pointer",transition:"all .15s",color:tx(D)}}
-                          onMouseEnter={e=>{e.currentTarget.style.borderColor=subj.accent;e.currentTarget.style.background=subj.light}}
-                          onMouseLeave={e=>{e.currentTarget.style.borderColor=bd2;e.currentTarget.style.background="transparent"}}>
-                          <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:6,marginBottom:5}}>
-                            <div style={{fontSize:13,fontWeight:600}}>{sec.title}</div>
-                            {(function(){var _c=sec.flashcards||[];if(!_c.length)return null;var _m=_c.filter(function(c){var _s=getCardState(fcHist,c.id);return _s&&_s.interval>7;}).length;var _p=Math.round((_m/_c.length)*100);return <div style={{display:"flex",alignItems:"center",gap:3,flexShrink:0}}><MasteryRing pct={_p} size={22} accent="#10b981"/><span style={{fontSize:9,color:"#10b981",fontWeight:700}}>{_p}%</span></div>;})()}
-                          </div>
-                          <div style={{display:"flex",gap:8}}>
-                            <span style={{fontSize:11,color:mu(D)}}>🃏 {(sec.flashcards||[]).length}</span>
-                            <span style={{fontSize:11,color:mu(D)}}>❓ {(sec.questions||[]).length}</span>
-                          </div>
-                        </div>
+              {admin&&<AdminBar D={D} actions={[{label:`＋ New Topic (${curBoard})`,fn:()=>setModal({mode:"section"})}]}/>}
+              {curTopics.length===0&&<div style={{...C(D),padding:48,textAlign:"center"}}><p style={{fontSize:28,marginBottom:10}}>{subj.icon}</p><p style={{fontWeight:700,fontSize:15,marginBottom:4}}>{subj.name} · {curBoard}</p><p style={{fontSize:13,color:mu(D)}}>No topics yet.{admin?" Add one above.":""}</p></div>}
+              {curTopics.map((tp,ti)=>{
+                if(tp.id==="_admin"&&tp._adminGroups){
+                  return tp._adminGroups.map(grp=>(
+                    <div key={grp._adminTopicId} style={{...C(D),marginBottom:14,padding:22}}>
+                      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,marginBottom:grp.sections.length>0?14:10,flexWrap:"wrap"}}>
+                        {admin&&editingTitle&&editingTitle.id===grp._adminTopicId?(
+                          <input autoFocus value={editingTitle.value}
+                            onChange={e=>setEditingTitle(t=>({...t,value:e.target.value}))}
+                            onBlur={()=>{renameCustomTopic(grp._adminTopicId,editingTitle.value);setEditingTitle(null);}}
+                            onKeyDown={e=>{if(e.key==="Enter"){renameCustomTopic(grp._adminTopicId,editingTitle.value);setEditingTitle(null);}if(e.key==="Escape")setEditingTitle(null);}}
+                            style={{fontWeight:700,fontSize:15,border:"1.5px solid #6366f1",borderRadius:6,padding:"2px 8px",background:"transparent",color:"inherit",flex:1}}/>
+                        ):(
+                          <span style={{fontWeight:700,fontSize:15}}>{grp._adminTopicTitle}</span>
+                        )}
+                        {admin&&<div style={{display:"flex",gap:6,alignItems:"center",flexShrink:0}}>
+                          {!editingTitle&&<button onClick={()=>setEditingTitle({id:grp._adminTopicId,value:grp._adminTopicTitle})} style={{padding:"5px 10px",borderRadius:7,border:"1.5px solid #6366f1",background:"transparent",cursor:"pointer",fontSize:11,color:"#6366f1",fontWeight:600}}>✏️ Rename</button>}
+                          <button onClick={()=>setModal({mode:"subtopic",_parentTopicId:grp._adminTopicId})} style={{padding:"5px 10px",borderRadius:7,border:"none",background:"#6366f1",cursor:"pointer",fontSize:11,color:"#fff",fontWeight:600}}>＋ Sub-topic</button>
+                          <button onClick={()=>deleteCustomSec(grp._adminTopicId)} style={{padding:"5px 10px",borderRadius:7,border:"1.5px solid #ef4444",background:"transparent",cursor:"pointer",fontSize:11,color:"#ef4444",fontWeight:600}}>🗑 Delete</button>
+                        </div>}
                       </div>
-                    );})}
-                  </div>
-                </div>
-              ))}
-              {/* Render admin custom topics + headers in order */}
-              {(curBData.custom||[]).map(function(item){
-                const adminTopicIdx=curTopics.findIndex(function(tp){return tp.id==="_admin";});
-                if(item.type==="header"){
-                  return (
-                    <div key={item.id} style={{display:"flex",alignItems:"center",gap:12,margin:"22px 0 10px"}}>
-                      {admin&&editingTitle&&editingTitle.id===item.id?(
-                        <input autoFocus value={editingTitle.value}
-                          onChange={function(e){setEditingTitle(function(t){return {...t,value:e.target.value};});}}
-                          onBlur={function(){renameSectionHeader(item.id,editingTitle.value);setEditingTitle(null);}}
-                          onKeyDown={function(e){if(e.key==="Enter"){renameSectionHeader(item.id,editingTitle.value);setEditingTitle(null);}if(e.key==="Escape")setEditingTitle(null);}}
-                          style={{fontWeight:700,fontSize:16,border:"1.5px solid #6366f1",borderRadius:6,padding:"3px 10px",background:"transparent",color:"inherit",flex:1}}/>
-                      ):(
-                        <span style={{fontWeight:800,fontSize:16,color:subj.accent,letterSpacing:"0.01em"}}>{item.title}</span>
-                      )}
-                      <div style={{flex:1,height:2,background:"linear-gradient(to right,"+subj.accent+"44,transparent)",borderRadius:2}}/>
-                      {admin&&!editingTitle&&(
-                        <div style={{display:"flex",gap:4,flexShrink:0}}>
-                          <button onClick={function(){setEditingTitle({id:item.id,value:item.title});}} style={{padding:"3px 8px",borderRadius:6,border:"1.5px solid #6366f1",background:"transparent",cursor:"pointer",fontSize:10,color:"#6366f1",fontWeight:600}}>✏️</button>
-                          <button onClick={function(){deleteSectionHeader(item.id);}} style={{padding:"3px 8px",borderRadius:6,border:"1.5px solid #ef4444",background:"transparent",cursor:"pointer",fontSize:10,color:"#ef4444",fontWeight:600}}>🗑</button>
-                        </div>
-                      )}
-                    </div>
-                  );
-                }
-                const grpSecs=(item.subtopics&&item.subtopics.length>0)
-                  ?item.subtopics.map(function(st){return {...st,_parentTopicId:item.id,_isSubtopic:true};})
-                  :[{...item,_parentTopicId:item.id,_isSubtopic:false}];
-                return (
-                  <div key={item.id} style={{...C(D),marginBottom:14,padding:22}}>
-                    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,marginBottom:grpSecs.length>0?14:10,flexWrap:"wrap"}}>
-                      {admin&&editingTitle&&editingTitle.id===item.id?(
-                        <input autoFocus value={editingTitle.value}
-                          onChange={function(e){setEditingTitle(function(t){return {...t,value:e.target.value};});}}
-                          onBlur={function(){renameCustomTopic(item.id,editingTitle.value);setEditingTitle(null);}}
-                          onKeyDown={function(e){if(e.key==="Enter"){renameCustomTopic(item.id,editingTitle.value);setEditingTitle(null);}if(e.key==="Escape")setEditingTitle(null);}}
-                          style={{fontWeight:700,fontSize:15,border:"1.5px solid #6366f1",borderRadius:6,padding:"2px 8px",background:"transparent",color:"inherit",flex:1}}/>
-                      ):(
-                        <span style={{fontWeight:700,fontSize:15}}>{item.title}</span>
-                      )}
-                      {admin&&<div style={{display:"flex",gap:6,alignItems:"center",flexShrink:0}}>
-                        {!editingTitle&&<button onClick={function(){setEditingTitle({id:item.id,value:item.title});}} style={{padding:"5px 10px",borderRadius:7,border:"1.5px solid #6366f1",background:"transparent",cursor:"pointer",fontSize:11,color:"#6366f1",fontWeight:600}}>✏️ Rename</button>}
-                        <button onClick={function(){setModal({mode:"subtopic",_parentTopicId:item.id});}} style={{padding:"5px 10px",borderRadius:7,border:"none",background:"#6366f1",cursor:"pointer",fontSize:11,color:"#fff",fontWeight:600}}>＋ Sub-topic</button>
-                        <button onClick={function(){deleteCustomSec(item.id);}} style={{padding:"5px 10px",borderRadius:7,border:"1.5px solid #ef4444",background:"transparent",cursor:"pointer",fontSize:11,color:"#ef4444",fontWeight:600}}>🗑 Delete</button>
-                      </div>}
-                    </div>
-                    {grpSecs.length===0&&<p style={{fontSize:12,color:mu(D),fontStyle:"italic",marginTop:4}}>No sub-topics yet.</p>}
-                    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(190px,1fr))",gap:10}}>
-                      {grpSecs.map(function(sec){return (
-                        <div key={sec.id} style={{border:"1.5px solid "+bd2,borderRadius:12,overflow:"hidden",transition:"border-color .15s"}}>
-                          <div role="button" tabIndex={0}
-                            onClick={function(){navToSection(subIdx,adminTopicIdx,sec.id);}}
-                            onKeyDown={function(e){if(e.key==="Enter")navToSection(subIdx,adminTopicIdx,sec.id);}}
-                            style={{width:"100%",textAlign:"left",padding:"12px 14px",background:"transparent",cursor:"pointer",color:tx(D)}}
-                            onMouseEnter={function(e){e.currentTarget.closest("div[style]").style.borderColor=subj.accent;e.currentTarget.style.background=subj.light;}}
-                            onMouseLeave={function(e){e.currentTarget.closest("div[style]").style.borderColor=bd2;e.currentTarget.style.background="transparent";}}>
-                            <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:6,marginBottom:5}}>
+                      {grp.sections.length===0&&<p style={{fontSize:12,color:mu(D),fontStyle:"italic",marginTop:4}}>No sub-topics yet — click "＋ Sub-topic" to add one.</p>}
+                      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(190px,1fr))",gap:10}}>
+                        {grp.sections.map(sec=>(
+                          <div key={sec.id} style={{border:`1.5px solid ${bd2}`,borderRadius:12,overflow:"hidden",transition:"border-color .15s"}}>
+                            <div role="button" tabIndex={0}
+                              onClick={()=>navToSection(subIdx,ti,sec.id)}
+                              onKeyDown={e=>e.key==="Enter"&&navToSection(subIdx,ti,sec.id)}
+                              style={{width:"100%",textAlign:"left",padding:"12px 14px",background:"transparent",cursor:"pointer",color:tx(D)}}
+                              onMouseEnter={e=>{e.currentTarget.closest("div[style]").style.borderColor=subj.accent;e.currentTarget.style.background=subj.light;}}
+                              onMouseLeave={e=>{e.currentTarget.closest("div[style]").style.borderColor=bd2;e.currentTarget.style.background="transparent";}}>
+                              <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:6,marginBottom:5}}>
                               {admin&&editingTitle&&editingTitle.id===sec.id?(
                                 <input autoFocus value={editingTitle.value}
-                                  onClick={function(e){e.stopPropagation();}}
-                                  onChange={function(e){setEditingTitle(function(t){return {...t,value:e.target.value};});}}
-                                  onBlur={function(){if(sec._isSubtopic)renameCustomSubtopic(item.id,sec.id,editingTitle.value);else renameCustomTopic(sec.id,editingTitle.value);setEditingTitle(null);}}
-                                  onKeyDown={function(e){if(e.key==="Enter"){if(sec._isSubtopic)renameCustomSubtopic(item.id,sec.id,editingTitle.value);else renameCustomTopic(sec.id,editingTitle.value);setEditingTitle(null);}if(e.key==="Escape")setEditingTitle(null);}}
+                                  onClick={e=>e.stopPropagation()}
+                                  onChange={e=>setEditingTitle(t=>({...t,value:e.target.value}))}
+                                  onBlur={()=>{if(sec._isSubtopic)renameCustomSubtopic(grp._adminTopicId,sec.id,editingTitle.value);else renameCustomTopic(sec.id,editingTitle.value);setEditingTitle(null);}}
+                                  onKeyDown={e=>{if(e.key==="Enter"){if(sec._isSubtopic)renameCustomSubtopic(grp._adminTopicId,sec.id,editingTitle.value);else renameCustomTopic(sec.id,editingTitle.value);setEditingTitle(null);}if(e.key==="Escape")setEditingTitle(null);}}
                                   style={{fontSize:13,fontWeight:600,border:"1.5px solid #6366f1",borderRadius:6,padding:"2px 6px",background:"transparent",color:"inherit",width:"100%"}}/>
                               ):(
                                 <div style={{fontSize:13,fontWeight:600,flex:1,minWidth:0}}>{sec.title}</div>
                               )}
-                              {(function(){var _c=sec.flashcards||[];if(!_c.length)return null;var _m=_c.filter(function(c){var _s=getCardState(fcHist,c.id);return _s&&_s.interval>7;}).length;var _p=Math.round((_m/_c.length)*100);return <div style={{display:"flex",alignItems:"center",gap:3,flexShrink:0}}><MasteryRing pct={_p} size={22} accent="#10b981"/><span style={{fontSize:9,color:"#10b981",fontWeight:700}}>{_p}%</span></div>;})()} 
+                              {(()=>{
+  const cards=sec.flashcards||[];
+  if(!cards.length) return null;
+  const mastered=cards.filter(c=>{const s=getCardState(fcHist,c.id);return s&&s.interval>7;}).length;
+  const pct=Math.round((mastered/cards.length)*100);
+  return <div style={{display:"flex",alignItems:"center",gap:3,flexShrink:0}} title={pct+"% mastered (interval>7d)"}>
+    <MasteryRing pct={pct} size={22} accent="#10b981"/>
+    <span style={{fontSize:9,color:"#10b981",fontWeight:700}}>{pct}%</span>
+  </div>;
+})()}
+                            </div>
+                              <div style={{display:"flex",gap:8}}>
+                                <span style={{fontSize:11,color:mu(D)}}>🃏 {(sec.flashcards||[]).length}</span>
+                                <span style={{fontSize:11,color:mu(D)}}>❓ {(sec.questions||[]).length}</span>
+                              </div>
+                            </div>
+                            {admin&&<div style={{display:"flex",gap:0,borderTop:`1px solid ${bd2}`,background:D?"rgba(0,0,0,.2)":"rgba(0,0,0,.03)"}}>
+                              {!editingTitle&&<button onClick={e=>{e.stopPropagation();setEditingTitle({id:sec.id,parentId:sec._isSubtopic?grp._adminTopicId:null,value:sec.title});}}
+                                style={{flex:1,padding:"5px 0",fontSize:11,background:"none",border:"none",cursor:"pointer",color:"#6366f1",fontWeight:600}}>✏️ Rename</button>}
+                              <button
+                                onClick={e=>{e.stopPropagation();
+                                  if(sec._isSubtopic)deleteSubtopic(grp._adminTopicId,sec.id);
+                                  else deleteCustomSec(sec.id);
+                                }}
+                                style={{flex:1,padding:"5px 0",fontSize:11,background:"none",border:"none",cursor:"pointer",color:"#ef4444",fontWeight:600,borderLeft:`1px solid ${bd2}`}}>🗑 Delete</button>
+                            </div>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ));
+                }
+                return (
+                  <div key={tp.id} style={{...C(D),marginBottom:14,padding:22}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
+                      {tp.number&&<span style={{fontSize:11,fontFamily:"monospace",color:mu(D),background:D?"#1f2937":"#f3f4f6",padding:"3px 8px",borderRadius:6}}>{tp.number}</span>}
+                      <span style={{fontWeight:700,fontSize:15}}>{tp.title}</span>
+                    </div>
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(190px,1fr))",gap:10}}>
+                      {tp.sections.map(sec=>(
+                        <div key={sec.id} style={{position:"relative"}}>
+                          <div role="button" tabIndex={0}
+                            onClick={()=>navToSection(subIdx,ti,sec.id)}
+                            onKeyDown={e=>e.key==="Enter"&&navToSection(subIdx,ti,sec.id)}
+                            style={{width:"100%",textAlign:"left",padding:"12px 14px",borderRadius:12,border:`1.5px solid ${bd2}`,background:"transparent",cursor:"pointer",transition:"all .15s",color:tx(D)}}
+                            onMouseEnter={e=>{e.currentTarget.style.borderColor=subj.accent;e.currentTarget.style.background=subj.light}}
+                            onMouseLeave={e=>{e.currentTarget.style.borderColor=bd2;e.currentTarget.style.background="transparent"}}>
+                            <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:6,marginBottom:5}}>
+                              <div style={{fontSize:13,fontWeight:600}}>{sec.title}</div>
+                              {(()=>{
+  const cards=sec.flashcards||[];
+  if(!cards.length) return null;
+  const mastered=cards.filter(c=>{const s=getCardState(fcHist,c.id);return s&&s.interval>7;}).length;
+  const pct=Math.round((mastered/cards.length)*100);
+  return <div style={{display:"flex",alignItems:"center",gap:3,flexShrink:0}} title={pct+"% mastered (interval>7d)"}>
+    <MasteryRing pct={pct} size={22} accent="#10b981"/>
+    <span style={{fontSize:9,color:"#10b981",fontWeight:700}}>{pct}%</span>
+  </div>;
+})()}
                             </div>
                             <div style={{display:"flex",gap:8}}>
                               <span style={{fontSize:11,color:mu(D)}}>🃏 {(sec.flashcards||[]).length}</span>
                               <span style={{fontSize:11,color:mu(D)}}>❓ {(sec.questions||[]).length}</span>
                             </div>
                           </div>
-                          {admin&&<div style={{display:"flex",gap:0,borderTop:"1px solid "+bd2,background:D?"rgba(0,0,0,.2)":"rgba(0,0,0,.03)"}}>
-                            {!editingTitle&&<button onClick={function(e){e.stopPropagation();setEditingTitle({id:sec.id,parentId:sec._isSubtopic?item.id:null,value:sec.title});}} style={{flex:1,padding:"5px 0",fontSize:11,background:"none",border:"none",cursor:"pointer",color:"#6366f1",fontWeight:600}}>✏️ Rename</button>}
-                            <button onClick={function(e){e.stopPropagation();if(sec._isSubtopic)deleteSubtopic(item.id,sec.id);else deleteCustomSec(sec.id);}} style={{flex:1,padding:"5px 0",fontSize:11,background:"none",border:"none",cursor:"pointer",color:"#ef4444",fontWeight:600,borderLeft:"1px solid "+bd2}}>🗑 Delete</button>
-                          </div>}
                         </div>
-                      );})}
+                      ))}
                     </div>
                   </div>
                 );
               })}
+            </div>
+          )}
+          {subjTab==="papers"&&<PastPapersTab papers={curBData.papers} onAdd={()=>setModal({mode:"paper"})} onDelete={deletePaper} admin={admin} D={D} accent={subj.accent} board={curBoard} subjectName={subj.name}/>}
+        </div>
         {modal?.mode==="section"&&<CreateModal mode="section" D={D} subjects={subjects} onClose={()=>setModal(null)} onSave={addCustomSection}/>}
         {modal?.mode==="subtopic"&&modal._parentTopicId&&<CreateModal mode="subtopic" D={D} subjects={subjects} onClose={()=>setModal(null)} onSave={st=>addSubtopic(modal._parentTopicId,st)}/>}
-        {subjTab==="papers"&&(
-          <PastPapersTab
-            papers={curBData.papers||[]}
-            onAdd={()=>setModal({mode:"paper"})}
-            onDelete={deletePaper}
-            admin={admin}
-            D={D}
-            accent={subjDef?.accent||"#6366f1"}
-            board={curBoard}
-            subjectName={subjDef?.name||""}
-          />
-        )}
         {modal?.mode==="paper"&&<CreateModal mode="paper" D={D} subjects={subjects} onClose={()=>setModal(null)} onSave={addPaper}/>}
-        {modal?.mode==="header"&&(
-          <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,zIndex:200,background:"rgba(0,0,0,.55)",display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
-            <div style={{...C(D),padding:28,maxWidth:420,width:"100%",borderRadius:16}}>
-              <h3 style={{fontSize:16,fontWeight:700,marginBottom:4,color:tx(D)}}>＋ Section Header</h3>
-              <p style={{fontSize:12,color:mu(D),marginBottom:18}}>A visual divider to organise topics — deleting it won't delete the topics beneath it.</p>
-              <label style={{fontSize:11,fontWeight:600,color:mu(D),display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:"0.05em"}}>Header Title</label>
-              <input autoFocus value={modal.title||""} onChange={e=>setModal(m=>({...m,title:e.target.value}))}
-                placeholder="e.g. Unit 1: Cell Biology"
-                onKeyDown={e=>{if(e.key==="Enter"&&(modal.title||"").trim()){addSectionHeader((modal.title||"").trim());setModal(null);}if(e.key==="Escape")setModal(null);}}
-                style={{...I(D),marginBottom:18}}/>
-              <div style={{display:"flex",gap:10}}>
-                <button onClick={()=>{if((modal.title||"").trim()){addSectionHeader((modal.title||"").trim());setModal(null);}}} disabled={!(modal.title||"").trim()}
-                  style={{flex:1,...B("#6366f1",false,{padding:"10px 0",fontSize:13,fontWeight:700,opacity:(modal.title||"").trim()?1:0.5})}}>Add Header</button>
-                <button onClick={()=>setModal(null)} style={{flex:1,...B("transparent",true,{padding:"10px 0",fontSize:13,borderColor:D?"#374151":"#e5e7eb",color:mu(D)})}}>Cancel</button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     );
   }
