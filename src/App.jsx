@@ -65,6 +65,7 @@ const DEFAULT_BOARD = "AQA";
 
 // Personal subjects key — stored in personal (non-shared) storage per user
 const SK_PERSONAL = u => "gcse:ps:"+u.replace(/\W/g,"-");
+const SK_UC = (u,sId) => "gcse:uc:"+u.replace(/\W/g,"-")+":"+sId; // user-created content per subject
 
 const SK = {
   ACCOUNTS:  "gcse:accounts",
@@ -1820,80 +1821,61 @@ function OnboardingWizard({D,onComplete}) {
 
 function Header({user,userDisplayName,D,onDark,onHome,onDash,onTarget,onTimetable,onBlurt,onMock,onTutor,onCoach,onLeaderboards,onAccount,streak,onSearch,globalOverlays,screen}) {
   const [menuOpen,setMenuOpen] = React.useState(false);
-  const isMobile = typeof window!=="undefined" && window.innerWidth<640;
-  const navItems = [
-    {id:"timetable", icon:"📅", label:"Timetable",  fn:onTimetable},
-    {id:"blurting",  icon:"🧠", label:"Blurting",   fn:onBlurt},
-    {id:"mock",      icon:"📝", label:"Mock Exam",  fn:onMock},
-    {id:"tutor",     icon:"🤖", label:"AI Tutor",   fn:onTutor},
-    {id:"coach",     icon:"✍️",  label:"Exam Coach", fn:onCoach},
-    {id:"target",    icon:"🎯", label:"Target",     fn:onTarget},
-    {id:"dashboard", icon:"📊", label:"Progress",   fn:onDash},
-    {id:"friends",   icon:"🏆", label:"Leaderboards",fn:onLeaderboards},
-  ];
-  const mobileExtraItems = [
-    {id:"home",    icon:"🏠", label:"Home",    fn:onHome},
-    {id:"account", icon:"⚙️", label:"Account", fn:onAccount},
+  const allNavItems = [
+    {id:"home",      icon:"\uD83C\uDFE0", label:"Home",         fn:onHome},
+    {id:"timetable", icon:"\uD83D\uDCC5", label:"Timetable",    fn:onTimetable},
+    {id:"blurting",  icon:"\uD83E\uDDE0", label:"Blurting",     fn:onBlurt},
+    {id:"mock",      icon:"\uD83D\uDCDD", label:"Mock Exam",    fn:onMock},
+    {id:"tutor",     icon:"\uD83E\uDD16", label:"AI Tutor",     fn:onTutor},
+    {id:"coach",     icon:"\u270D\uFE0F",  label:"Exam Coach",   fn:onCoach},
+    {id:"target",    icon:"\uD83C\uDFAF", label:"Target",       fn:onTarget},
+    {id:"dashboard", icon:"\uD83D\uDCCA", label:"Progress",     fn:onDash},
+    {id:"friends",   icon:"\uD83C\uDFC6", label:"Leaderboards", fn:onLeaderboards},
+    {id:"account",   icon:"\u2699\uFE0F", label:"Account",      fn:onAccount},
   ];
   const displayName = userDisplayName || getDisplayName(user);
+  const curItem = allNavItems.find(function(n){return n.id===screen;});
+  React.useEffect(function(){
+    if(!menuOpen) return;
+    function handler(e){if(!e.target.closest("[data-riq-hdr]"))setMenuOpen(false);}
+    document.addEventListener("click",handler);
+    return function(){document.removeEventListener("click",handler);};
+  },[menuOpen]);
   return (
-    <header style={{background:D?"#0d1117":"#fff",borderBottom:`1px solid ${D?"#1f2937":"#e5e7eb"}`,position:"sticky",top:0,zIndex:50}}>
+    <header data-riq-hdr="1" style={{background:D?"#0d1117":"#fff",borderBottom:"1px solid "+(D?"#1f2937":"#e5e7eb"),position:"sticky",top:0,zIndex:50}}>
       <div style={{maxWidth:1100,margin:"0 auto",padding:"0 16px",height:54,display:"flex",alignItems:"center",gap:8}}>
-        {/* Logo */}
-        <button onClick={onHome} style={{fontWeight:800,fontSize:15,background:"none",border:"none",cursor:"pointer",color:tx(D),flexShrink:0,letterSpacing:"-0.01em",paddingRight:8}}>🎓 ReviseIQ</button>
-
-        {/* Search */}
-        <button onClick={onSearch} style={{background:D?"#1f2937":"#f3f4f6",border:`1px solid ${D?"#374151":"#e5e7eb"}`,borderRadius:8,padding:"5px 10px",fontSize:12,color:mu(D),cursor:"pointer",display:"flex",alignItems:"center",gap:6,flexShrink:0,transition:"background .15s"}}>
-          <span style={{fontSize:13}}>🔍</span>
-          {!isMobile&&<span style={{color:D?"#9ca3af":"#6b7280"}}>Search</span>}
-          {!isMobile&&<kbd style={{fontSize:10,background:D?"#374151":"#e5e7eb",color:D?"#9ca3af":"#6b7280",padding:"1px 6px",borderRadius:4,fontFamily:"inherit"}}>Ctrl+K</kbd>}
+        <button onClick={onHome} style={{fontWeight:800,fontSize:15,background:"none",border:"none",cursor:"pointer",color:tx(D),flexShrink:0,letterSpacing:"-0.01em",paddingRight:6}}>\uD83C\uDF93 ReviseIQ</button>
+        {curItem&&curItem.id!=="home"&&<span style={{fontSize:12,color:mu(D),fontWeight:500,flexShrink:0}}>{curItem.icon} {curItem.label}</span>}
+        <div style={{flex:1}}/>
+        <button onClick={onSearch} style={{background:D?"#1f2937":"#f3f4f6",border:"1px solid "+(D?"#374151":"#e5e7eb"),borderRadius:8,padding:"5px 10px",fontSize:12,color:mu(D),cursor:"pointer",display:"flex",alignItems:"center",gap:5,flexShrink:0}}>
+          <span>\uD83D\uDD0D</span>
+          <span style={{color:D?"#9ca3af":"#6b7280"}}>Search</span>
         </button>
-
-        {/* Streak pill */}
         {streak>0&&(
-          <div style={{display:"flex",alignItems:"center",gap:4,padding:"4px 10px",borderRadius:20,background:streak>=7?(D?"#431407":"#fff7ed"):(D?"#1c1917":"#f9fafb"),border:`1.5px solid ${streak>=7?"#f97316":"#d1d5db"}`,flexShrink:0}}>
-            <span style={{fontSize:13}}>🔥</span>
+          <div style={{display:"flex",alignItems:"center",gap:4,padding:"4px 10px",borderRadius:20,background:streak>=7?(D?"#431407":"#fff7ed"):(D?"#1c1917":"#f9fafb"),border:"1.5px solid "+(streak>=7?"#f97316":"#d1d5db"),flexShrink:0}}>
+            <span style={{fontSize:13}}>\uD83D\uDD25</span>
             <span style={{fontSize:12,fontWeight:700,color:streak>=7?"#f97316":mu(D)}}>{streak}d</span>
           </div>
         )}
-
-        {/* Desktop nav */}
-        {!isMobile&&<nav style={{display:"flex",alignItems:"center",gap:1,flex:1,overflowX:"auto",scrollbarWidth:"none"}}>
-          {navItems.map(function(item){
+        <button onClick={onDark} style={{fontSize:15,background:"none",border:"none",cursor:"pointer",color:mu(D),padding:"4px",borderRadius:6,flexShrink:0}}>{D?"\u2600\uFE0F":"\uD83C\uDF19"}</button>
+        <div style={{display:"flex",alignItems:"center",gap:6,padding:"4px 10px",borderRadius:20,background:D?"#1f2937":"#f3f4f6",border:"1px solid "+(D?"#374151":"#e5e7eb"),flexShrink:0}}>
+          <span style={{fontSize:12,fontWeight:600,color:tx(D),maxWidth:130,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{displayName}</span>
+          {isAdmin(user)&&<span style={{fontSize:9,fontWeight:700,background:"#6366f1",color:"#fff",padding:"1px 6px",borderRadius:10,flexShrink:0}}>ADMIN</span>}
+        </div>
+        <button onClick={function(e){e.stopPropagation();setMenuOpen(function(o){return !o;});}} style={{fontSize:18,background:"none",border:"none",cursor:"pointer",color:mu(D),padding:"4px 6px",borderRadius:6,lineHeight:1,flexShrink:0}}>\u2630</button>
+      </div>
+      {menuOpen&&(
+        <div style={{position:"absolute",top:54,right:0,minWidth:220,background:D?"#111827":"#fff",border:"1px solid "+(D?"#374151":"#e5e7eb"),borderTop:"none",borderRadius:"0 0 14px 14px",zIndex:49,padding:"8px 10px 12px",boxShadow:"0 8px 32px rgba(0,0,0,.18)"}}>
+          {allNavItems.map(function(item){
             var active=screen===item.id;
             return (
-              <button key={item.id} onClick={item.fn}
-                style={{fontSize:12,padding:"6px 9px",background:active?(D?"rgba(99,102,241,.15)":"#eef2ff"):"none",border:"none",borderRadius:7,cursor:"pointer",color:active?"#6366f1":mu(D),whiteSpace:"nowrap",fontWeight:active?600:400,transition:"all .12s",flexShrink:0}}>
-                {item.icon} {item.label}
+              <button key={item.id} onClick={function(){item.fn();setMenuOpen(false);}}
+                style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"9px 12px",background:active?(D?"rgba(99,102,241,.18)":"#eef2ff"):"transparent",border:"none",borderRadius:8,cursor:"pointer",color:active?"#6366f1":tx(D),fontWeight:active?700:400,fontSize:13,textAlign:"left",marginBottom:2}}>
+                <span style={{fontSize:16,width:22,textAlign:"center",flexShrink:0}}>{item.icon}</span>
+                {item.label}
               </button>
             );
           })}
-        </nav>}
-
-        <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
-          {/* Dark mode */}
-          <button onClick={onDark} style={{fontSize:15,background:"none",border:"none",cursor:"pointer",color:mu(D),padding:"4px",borderRadius:6}}>{D?"☀️":"🌙"}</button>
-          {/* User chip — click to go to account */}
-          <button onClick={onAccount} style={{display:"flex",alignItems:"center",gap:6,padding:"4px 10px",borderRadius:20,background:D?"#1f2937":"#f3f4f6",border:`1px solid ${D?"#374151":"#e5e7eb"}`,cursor:"pointer",transition:"background .15s"}}
-            onMouseEnter={function(e){e.currentTarget.style.background=D?"#374151":"#e5e7eb";}}
-            onMouseLeave={function(e){e.currentTarget.style.background=D?"#1f2937":"#f3f4f6";}}>
-            <span style={{fontSize:12,fontWeight:600,color:tx(D),maxWidth:isMobile?80:140,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{displayName}</span>
-            {isAdmin(user)&&<span style={{fontSize:9,fontWeight:700,background:"#6366f1",color:"#fff",padding:"1px 6px",borderRadius:10,letterSpacing:"0.04em"}}>ADMIN</span>}
-          </button>
-          {/* Mobile hamburger */}
-          {isMobile&&<button onClick={function(){setMenuOpen(function(o){return !o;})}} style={{fontSize:16,background:"none",border:"none",cursor:"pointer",color:mu(D),padding:"4px"}}>☰</button>}
-        </div>
-      </div>
-
-      {/* Mobile dropdown menu */}
-      {isMobile&&menuOpen&&(
-        <div style={{position:"absolute",top:54,left:0,right:0,background:D?"#111827":"#fff",borderBottom:`1px solid ${D?"#1f2937":"#e5e7eb"}`,zIndex:49,padding:"8px 12px",display:"flex",flexWrap:"wrap",gap:4}}>
-          {[...mobileExtraItems,...navItems].map(function(item){return (
-            <button key={item.id} onClick={function(){item.fn();setMenuOpen(false);}}
-              style={{fontSize:12,padding:"7px 12px",background:screen===item.id?(D?"rgba(99,102,241,.2)":"#eef2ff"):(D?"#1f2937":"#f3f4f6"),border:"none",borderRadius:8,cursor:"pointer",color:screen===item.id?"#6366f1":mu(D),whiteSpace:"nowrap",fontWeight:screen===item.id?700:400}}>
-              {item.icon} {item.label}
-            </button>
-          );})}
         </div>
       )}
     {globalOverlays}
@@ -4264,6 +4246,314 @@ function TodayWidget({D,subjects,allSections,fcHist,stats,timetableExams,boardSe
 }
 
 /* ─── FOOTER ────────────────────────────────────────────────────────────── */
+/* ─── USER CONTENT SCREEN ───────────────────────────────────────────────────── */
+// Entirely user-private notes/flashcards/questions per subject.
+// Stored under gcse:uc:all:{user} (shared:false), never visible to other users.
+function UserContentScreen({D,user,subjects,ucData,onSaveSection,onDeleteSection,onBack}) {
+  var [selSubj,setSelSubj] = React.useState(subjects[0]?.id||"");
+  var [view,setView] = React.useState("list"); // "list"|"section"
+  var [curSec,setCurSec] = React.useState(null);
+  var [showNewSec,setShowNewSec] = React.useState(false);
+  var [newSecName,setNewSecName] = React.useState("");
+  var [tab,setTab] = React.useState("notes");
+  var [flip,setFlip] = React.useState(false);
+  var [fcIdx,setFcIdx] = React.useState(0);
+  var [qIdx,setQIdx] = React.useState(0);
+  var [noteText,setNoteText] = React.useState("");
+  var [fcFront,setFcFront] = React.useState("");
+  var [fcBack,setFcBack] = React.useState("");
+  var [qText,setQText] = React.useState("");
+  var [qAnswer,setQAnswer] = React.useState("");
+  var [aiText,setAiText] = React.useState("");
+  var [aiMode,setAiMode] = React.useState("notes"); // notes|flashcards|questions
+  var [aiLoading,setAiLoading] = React.useState(false);
+  var [aiErr,setAiErr] = React.useState("");
+  var [imgLoading,setImgLoading] = React.useState(false);
+  var bd2 = D?"#1f2937":"#e5e7eb";
+  var subj = subjects.find(function(s){return s.id===selSubj;})||subjects[0];
+  var subjUC = ucData[selSubj]||{sections:[]};
+
+  function uid2(){return Math.random().toString(36).slice(2,10);}
+
+  function createSection(){
+    if(!newSecName.trim()) return;
+    var sec={id:uid2(),title:newSecName.trim(),notes:[],flashcards:[],questions:[],created:Date.now()};
+    onSaveSection(selSubj,sec);
+    setCurSec(sec); setView("section"); setNewSecName(""); setShowNewSec(false);
+  }
+
+  // Re-sync curSec from ucData after saves
+  React.useEffect(function(){
+    if(curSec){
+      var fresh=(ucData[selSubj]||{sections:[]}).sections.find(function(s){return s.id===curSec.id;});
+      if(fresh) setCurSec(fresh);
+    }
+  },[ucData,selSubj]);
+
+  function saveNote(){
+    if(!noteText.trim()||!curSec) return;
+    var n={id:uid2(),text:noteText.trim(),created:Date.now()};
+    var updated={...curSec,notes:[...(curSec.notes||[]),n]};
+    onSaveSection(selSubj,updated); setCurSec(updated); setNoteText("");
+  }
+  function deleteNote(id){
+    var updated={...curSec,notes:(curSec.notes||[]).filter(function(n){return n.id!==id;})};
+    onSaveSection(selSubj,updated); setCurSec(updated);
+  }
+  function saveFlashcard(){
+    if(!fcFront.trim()||!fcBack.trim()||!curSec) return;
+    var fc={id:uid2(),front:fcFront.trim(),back:fcBack.trim()};
+    var updated={...curSec,flashcards:[...(curSec.flashcards||[]),fc]};
+    onSaveSection(selSubj,updated); setCurSec(updated); setFcFront(""); setFcBack(""); setFlip(false);
+  }
+  function deleteFlashcard(id){
+    var updated={...curSec,flashcards:(curSec.flashcards||[]).filter(function(f){return f.id!==id;})};
+    onSaveSection(selSubj,updated); setCurSec(updated);
+    setFcIdx(function(i){return Math.max(0,i-1);});
+  }
+  function saveQuestion(){
+    if(!qText.trim()||!curSec) return;
+    var q={id:uid2(),type:"short",text:qText.trim(),markScheme:qAnswer.trim(),marks:1};
+    var updated={...curSec,questions:[...(curSec.questions||[]),q]};
+    onSaveSection(selSubj,updated); setCurSec(updated); setQText(""); setQAnswer("");
+  }
+  function deleteQuestion(id){
+    var updated={...curSec,questions:(curSec.questions||[]).filter(function(q){return q.id!==id;})};
+    onSaveSection(selSubj,updated); setCurSec(updated);
+    setQIdx(function(i){return Math.max(0,i-1);});
+  }
+
+  function handleImageUpload(e){
+    var file=e.target.files&&e.target.files[0];
+    if(!file) return;
+    setImgLoading(true); setAiErr("");
+    var reader=new FileReader();
+    reader.onload=function(ev){
+      var b64=ev.target.result.split(",")[1];
+      var mediaType=file.type||"image/jpeg";
+      var prompt="You are a GCSE study assistant. This image contains revision material. Extract all key information from it and produce clear study notes as a bullet list (one point per line starting with •). Cover every fact, definition, diagram label and concept you can see.";
+      fetch("/api/ai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+        model:"llava-v1.5-7b-4096-preview",
+        messages:[{role:"user",content:[{type:"image_url",image_url:{url:"data:"+mediaType+";base64,"+b64}},{type:"text",text:prompt}]}],
+        max_tokens:1200
+      })}).then(function(r){return r.json();}).then(function(data){
+        var text=data.choices&&data.choices[0]&&data.choices[0].message&&data.choices[0].message.content||"";
+        setAiText(text); setAiMode("notes"); setImgLoading(false);
+      }).catch(function(e){
+        // Fallback: prompt user to paste text
+        setAiErr("Image AI unavailable — paste the text content below instead."); setImgLoading(false);
+      });
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function generateFromText(){
+    if(!aiText.trim()||!curSec) return;
+    setAiLoading(true); setAiErr("");
+    var prompt="";
+    if(aiMode==="notes"){
+      prompt="You are a GCSE study assistant. Extract the key facts from the following text and produce clear bullet-point notes (one fact per line starting with •). Be concise but comprehensive.\n\n"+aiText;
+    } else if(aiMode==="flashcards"){
+      prompt="You are a GCSE study assistant. Create 6-10 flashcard question-answer pairs from the following text. Return ONLY valid JSON (no markdown, no preamble): [{\"front\":\"question\",\"back\":\"answer\"}]\n\n"+aiText;
+    } else {
+      prompt="You are a GCSE examiner. Create 3-5 short-answer exam questions from the following text. Return ONLY valid JSON: [{\"text\":\"question\",\"markScheme\":\"ideal answer\",\"marks\":2}]\n\n"+aiText;
+    }
+    callGeminiSimple(prompt,1400).then(function(raw){
+      if(aiMode==="notes"){
+        var lines=raw.split("\n").filter(function(l){return l.trim();});
+        var newNotes=lines.map(function(l){return {id:uid2(),text:l.replace(/^[•\-\*]\s*/,"").trim(),created:Date.now()};}).filter(function(n){return n.text;});
+        var updated={...curSec,notes:[...(curSec.notes||[]),...newNotes]};
+        onSaveSection(selSubj,updated); setCurSec(updated);
+      } else if(aiMode==="flashcards"){
+        var s=raw.indexOf("["),e2=raw.lastIndexOf("]");
+        var arr=JSON.parse(raw.slice(s,e2+1));
+        var newFCs=arr.map(function(x){return {id:uid2(),front:(x.front||"").trim(),back:(x.back||"").trim()};}).filter(function(f){return f.front;});
+        var updated={...curSec,flashcards:[...(curSec.flashcards||[]),...newFCs]};
+        onSaveSection(selSubj,updated); setCurSec(updated); setTab("flashcards");
+      } else {
+        var s2=raw.indexOf("["),e3=raw.lastIndexOf("]");
+        var arr2=JSON.parse(raw.slice(s2,e3+1));
+        var newQs=arr2.map(function(x){return {id:uid2(),type:"short",text:(x.text||"").trim(),markScheme:(x.markScheme||"").trim(),marks:Number(x.marks)||2};}).filter(function(q){return q.text;});
+        var updated={...curSec,questions:[...(curSec.questions||[]),...newQs]};
+        onSaveSection(selSubj,updated); setCurSec(updated); setTab("questions");
+      }
+      setAiText(""); setAiLoading(false);
+    }).catch(function(err){setAiErr(err.message||"AI error — try again");setAiLoading(false);});
+  }
+
+  var secNotes=curSec?curSec.notes||[]:[];
+  var secFCs=curSec?curSec.flashcards||[]:[];
+  var secQs=curSec?curSec.questions||[]:[];
+  var curFC=secFCs[fcIdx]||null;
+  var curQ=secQs[qIdx]||null;
+
+  if(view==="section"&&curSec) return (
+    <div style={{minHeight:"100vh",background:D?"#030712":"#f9fafb",color:D?"#f9fafb":"#111827"}} className="fade-in">
+      <div style={{maxWidth:760,margin:"0 auto",padding:"32px 24px"}}>
+        <button onClick={function(){setView("list");setCurSec(null);setTab("notes");}} style={{fontSize:13,color:mu(D),background:"none",border:"none",cursor:"pointer",marginBottom:16}}>← My {subj.name} Notes</button>
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20}}>
+          <div style={{width:42,height:42,borderRadius:12,background:subj.accent+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>{subj.icon}</div>
+          <div style={{flex:1,minWidth:0}}>
+            <h2 style={{fontSize:18,fontWeight:700,margin:0,color:D?"#f9fafb":"#111827"}}>{curSec.title}</h2>
+            <span style={{fontSize:11,color:mu(D)}}>{subj.name} · My Notes · Private</span>
+          </div>
+          <button onClick={function(){if(window.confirm("Delete this section and all its content?")){{onDeleteSection(selSubj,curSec.id);setView("list");setCurSec(null);}}}} style={{padding:"5px 10px",borderRadius:8,border:"1.5px solid #ef4444",background:"transparent",cursor:"pointer",fontSize:11,color:"#ef4444",fontWeight:600}}>🗑 Delete</button>
+        </div>
+
+        <div style={{display:"flex",borderBottom:"1px solid "+bd2,marginBottom:20,gap:2}}>
+          {[["notes","📖 Notes ("+secNotes.length+")"],["flashcards","🃏 Cards ("+secFCs.length+")"],["questions","❓ Questions ("+secQs.length+")"],["generate","✨ AI Generate"]].map(function(pair){
+            return <button key={pair[0]} onClick={function(){setTab(pair[0]);setFlip(false);}} style={{padding:"9px 14px",fontSize:12,fontWeight:tab===pair[0]?600:400,color:tab===pair[0]?subj.accent:mu(D),background:"none",border:"none",cursor:"pointer",borderBottom:tab===pair[0]?"2px solid "+subj.accent:"2px solid transparent",marginBottom:-1,whiteSpace:"nowrap"}}>{pair[1]}</button>;
+          })}
+        </div>
+
+        {tab==="notes"&&(
+          <div>
+            <div style={{display:"flex",gap:8,marginBottom:16}}>
+              <textarea value={noteText} onChange={function(e){setNoteText(e.target.value);}} rows={3} placeholder="Type a note…" style={{...I(D,{flex:1,resize:"vertical"})}}/>
+              <button onClick={saveNote} disabled={!noteText.trim()} style={{...B("#6366f1",false,{padding:"0 16px",fontSize:13,fontWeight:700,opacity:noteText.trim()?1:0.4})}}>Save</button>
+            </div>
+            {secNotes.length===0&&<p style={{fontSize:13,color:mu(D),textAlign:"center",padding:"30px 0"}}>No notes yet — add one above or use AI Generate.</p>}
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              {secNotes.map(function(n){return (
+                <div key={n.id} style={{...C(D),padding:"12px 16px",display:"flex",gap:10,alignItems:"flex-start"}}>
+                  <p style={{flex:1,margin:0,fontSize:13,lineHeight:1.65,color:D?"#f9fafb":"#111827"}}>{n.text}</p>
+                  <button onClick={function(){deleteNote(n.id);}} style={{background:"none",border:"none",cursor:"pointer",color:"#ef4444",fontSize:15,flexShrink:0,padding:0}}>×</button>
+                </div>
+              );})}
+            </div>
+          </div>
+        )}
+
+        {tab==="flashcards"&&(
+          <div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
+              <input value={fcFront} onChange={function(e){setFcFront(e.target.value);}} placeholder="Front (question)" style={I(D)}/>
+              <input value={fcBack} onChange={function(e){setFcBack(e.target.value);}} placeholder="Back (answer)" style={I(D)}/>
+            </div>
+            <button onClick={saveFlashcard} disabled={!fcFront.trim()||!fcBack.trim()} style={{...B("#6366f1",false,{width:"100%",padding:"10px 0",fontSize:13,fontWeight:700,marginBottom:20,opacity:fcFront.trim()&&fcBack.trim()?1:0.4})}}>＋ Add Flashcard</button>
+            {secFCs.length===0&&<p style={{fontSize:13,color:mu(D),textAlign:"center",padding:"20px 0"}}>No flashcards yet.</p>}
+            {curFC&&(
+              <div>
+                <div onClick={function(){setFlip(function(f){return !f;});}} style={{...C(D),padding:40,textAlign:"center",cursor:"pointer",minHeight:140,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:12,borderColor:subj.accent,borderWidth:1.5}}>
+                  <div>
+                    <div style={{fontSize:10,fontWeight:700,color:mu(D),marginBottom:8,textTransform:"uppercase"}}>{flip?"Answer":"Question"} — tap to flip</div>
+                    <div style={{fontSize:16,fontWeight:600,lineHeight:1.5}}>{flip?curFC.back:curFC.front}</div>
+                  </div>
+                </div>
+                <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                  <button onClick={function(){setFcIdx(function(i){return (i-1+secFCs.length)%secFCs.length;});setFlip(false);}} style={{...B("transparent",true,{padding:"8px 16px",fontSize:13,borderColor:bd2,color:mu(D)})}}>←</button>
+                  <span style={{flex:1,textAlign:"center",fontSize:12,color:mu(D)}}>{fcIdx+1}/{secFCs.length}</span>
+                  <button onClick={function(){setFcIdx(function(i){return (i+1)%secFCs.length;});setFlip(false);}} style={{...B("transparent",true,{padding:"8px 16px",fontSize:13,borderColor:bd2,color:mu(D)})}}>→</button>
+                  <button onClick={function(){deleteFlashcard(curFC.id);}} style={{...B("transparent",true,{padding:"8px 12px",fontSize:11,borderColor:"#ef4444",color:"#ef4444"})}}>🗑</button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {tab==="questions"&&(
+          <div>
+            <div style={{marginBottom:16}}>
+              <textarea value={qText} onChange={function(e){setQText(e.target.value);}} rows={2} placeholder="Question text…" style={{...I(D,{marginBottom:8,resize:"vertical"})}}/>
+              <textarea value={qAnswer} onChange={function(e){setQAnswer(e.target.value);}} rows={2} placeholder="Mark scheme / ideal answer (optional)…" style={{...I(D,{marginBottom:8,resize:"vertical"})}}/>
+              <button onClick={saveQuestion} disabled={!qText.trim()} style={{...B("#6366f1",false,{width:"100%",padding:"10px 0",fontSize:13,fontWeight:700,opacity:qText.trim()?1:0.4})}}>＋ Add Question</button>
+            </div>
+            {secQs.length===0&&<p style={{fontSize:13,color:mu(D),textAlign:"center",padding:"20px 0"}}>No questions yet.</p>}
+            {curQ&&(
+              <div style={{...C(D),padding:18,marginBottom:10}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,marginBottom:8}}>
+                  <span style={{fontSize:12,color:mu(D)}}>Q{qIdx+1}/{secQs.length}</span>
+                  <button onClick={function(){deleteQuestion(curQ.id);}} style={{background:"none",border:"none",cursor:"pointer",color:"#ef4444",fontSize:13}}>🗑</button>
+                </div>
+                <p style={{fontSize:14,fontWeight:600,marginBottom:12,lineHeight:1.55}}>{curQ.text}</p>
+                {curQ.markScheme&&<div style={{padding:"8px 12px",borderRadius:8,background:D?"rgba(16,185,129,.08)":"#f0fdf4",fontSize:12,color:D?"#6ee7b7":"#15803d",lineHeight:1.6}}><strong>Answer:</strong> {curQ.markScheme}</div>}
+                <div style={{display:"flex",gap:8,marginTop:12}}>
+                  <button onClick={function(){setQIdx(function(i){return (i-1+secQs.length)%secQs.length;});}} style={{...B("transparent",true,{padding:"7px 14px",fontSize:12,borderColor:bd2,color:mu(D)})}}>←</button>
+                  <button onClick={function(){setQIdx(function(i){return (i+1)%secQs.length;});}} style={{...B("transparent",true,{padding:"7px 14px",fontSize:12,borderColor:bd2,color:mu(D)})}}>→</button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {tab==="generate"&&(
+          <div>
+            <div style={{padding:"12px 16px",borderRadius:10,background:D?"rgba(99,102,241,.08)":"#eef2ff",border:"1px solid #6366f1",marginBottom:18,fontSize:12,color:D?"#c7d2fe":"#3730a3",lineHeight:1.6}}>
+              ✨ <strong>AI Generate:</strong> Paste text or notes below (or upload an image), choose what to create, and AI will generate content for you automatically.
+            </div>
+            <div style={{display:"flex",gap:8,marginBottom:12}}>
+              {[["notes","📖 Notes"],["flashcards","🃏 Flashcards"],["questions","❓ Questions"]].map(function(p){return (
+                <button key={p[0]} onClick={function(){setAiMode(p[0]);}} style={{flex:1,padding:"8px 0",borderRadius:8,border:"1.5px solid "+(aiMode===p[0]?"#6366f1":bd2),background:aiMode===p[0]?(D?"rgba(99,102,241,.15)":"#eef2ff"):"transparent",color:aiMode===p[0]?"#6366f1":mu(D),fontSize:12,fontWeight:aiMode===p[0]?600:400,cursor:"pointer"}}>{p[1]}</button>
+              );})}
+            </div>
+            <div style={{display:"flex",gap:8,marginBottom:10}}>
+              <label style={{...B("transparent",true,{padding:"8px 14px",fontSize:12,borderColor:bd2,color:mu(D),cursor:"pointer",flexShrink:0})}}>
+                📷 Upload Image
+                <input type="file" accept="image/*" style={{display:"none"}} onChange={handleImageUpload}/>
+              </label>
+              {imgLoading&&<span style={{fontSize:12,color:mu(D),alignSelf:"center"}}>Reading image…</span>}
+            </div>
+            <textarea value={aiText} onChange={function(e){setAiText(e.target.value);}} rows={6} placeholder="Paste your text, notes, or textbook content here…" style={{...I(D,{resize:"vertical",marginBottom:10})}}/>
+            {aiErr&&<p style={{fontSize:12,color:"#ef4444",marginBottom:8}}>{aiErr}</p>}
+            <button onClick={generateFromText} disabled={!aiText.trim()||aiLoading} style={{...B("#6366f1",false,{width:"100%",padding:"11px 0",fontSize:13,fontWeight:700,opacity:!aiText.trim()||aiLoading?0.4:1})}}>{aiLoading?"⏳ Generating…":"✨ Generate "+aiMode}</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  // List view
+  return (
+    <div style={{minHeight:"100vh",background:D?"#030712":"#f9fafb",color:D?"#f9fafb":"#111827"}} className="fade-in">
+      <div style={{maxWidth:760,margin:"0 auto",padding:"32px 24px"}}>
+        <button onClick={onBack} style={{fontSize:13,color:mu(D),background:"none",border:"none",cursor:"pointer",marginBottom:20}}>← Back</button>
+        <h2 style={{fontSize:22,fontWeight:700,marginBottom:4}}>📓 My Notes &amp; Flashcards</h2>
+        <p style={{fontSize:13,color:mu(D),marginBottom:20}}>Your private notes, flashcards and questions — only visible to you.</p>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:20}}>
+          {subjects.filter(function(s){return !s._politics;}).map(function(s){
+            var cnt=(ucData[s.id]||{sections:[]}).sections.length;
+            return (
+              <button key={s.id} onClick={function(){setSelSubj(s.id);}} style={{padding:"7px 14px",borderRadius:20,border:"1.5px solid "+(selSubj===s.id?s.accent:bd2),background:selSubj===s.id?s.accent:"transparent",color:selSubj===s.id?"#fff":mu(D),fontSize:12,fontWeight:selSubj===s.id?700:400,cursor:"pointer"}}>
+                {s.icon} {s.name}{cnt>0?" ("+cnt+")":""}
+              </button>
+            );
+          })}
+        </div>
+        <div style={{...C(D),padding:20,marginBottom:16}}>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:showNewSec?14:0}}>
+            <span style={{fontSize:18}}>{subj.icon}</span>
+            <span style={{fontWeight:700,fontSize:15,flex:1}}>{subj.name} — My Sections</span>
+            <button onClick={function(){setShowNewSec(function(v){return !v;});setNewSecName("");}} style={{...B("#6366f1",false,{padding:"6px 14px",fontSize:12,fontWeight:600})}}>＋ New Section</button>
+          </div>
+          {showNewSec&&(
+            <div style={{display:"flex",gap:8}}>
+              <input autoFocus value={newSecName} onChange={function(e){setNewSecName(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter")createSection();if(e.key==="Escape")setShowNewSec(false);}} placeholder="Section name e.g. Cell Biology" style={{...I(D,{flex:1})}}/>
+              <button onClick={createSection} disabled={!newSecName.trim()} style={{...B("#6366f1",false,{padding:"8px 16px",fontSize:13,fontWeight:700,opacity:newSecName.trim()?1:0.4})}}>Create</button>
+            </div>
+          )}
+        </div>
+        {subjUC.sections.length===0&&!showNewSec&&<div style={{...C(D),padding:40,textAlign:"center",color:mu(D)}}><p style={{fontSize:28,marginBottom:8}}>{subj.icon}</p><p style={{fontSize:14}}>No sections yet for {subj.name} — create one above to start adding notes.</p></div>}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:10}}>
+          {subjUC.sections.map(function(sec){return (
+            <button key={sec.id} onClick={function(){setCurSec(sec);setView("section");setTab("notes");setFlip(false);setFcIdx(0);setQIdx(0);}}
+              style={{...C(D),padding:"16px 18px",textAlign:"left",cursor:"pointer",border:"1.5px solid "+bd2,transition:"border-color .15s"}}
+              onMouseEnter={function(e){e.currentTarget.style.borderColor=subj.accent;}}
+              onMouseLeave={function(e){e.currentTarget.style.borderColor=bd2;}}>
+              <div style={{fontWeight:700,fontSize:14,marginBottom:6,color:D?"#f9fafb":"#111827"}}>{sec.title}</div>
+              <div style={{display:"flex",gap:10,fontSize:11,color:mu(D)}}>
+                <span>📖 {(sec.notes||[]).length}</span>
+                <span>🃏 {(sec.flashcards||[]).length}</span>
+                <span>❓ {(sec.questions||[]).length}</span>
+              </div>
+            </button>
+          );})}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 function AppFooter({D, onContact}) {
   var bg2 = D ? "#0d1117" : "#f9fafb";
   var border = D ? "#1f2937" : "#e5e7eb";
@@ -4921,6 +5211,8 @@ export default function App() {
   const [blurtSecId2,setBlurtSecId2] = useState(null);
   const [tutorSubjId,setTutorSubjId] = useState(null);
   const [timetableExams,setTimetableExams] = useState([]);
+  const [userContent,setUserContent]   = useState({}); // {subjectId:{sections:[...]}}
+  const [ucScreen,setUCScreen]         = useState(null); // null|{subjId}
 
   const subjects  = ALL_SUBJECTS;
   const admin     = isAdmin(user);
@@ -5059,6 +5351,25 @@ export default function App() {
   },[]);
 
   const saveAccounts = async n => { try{await window.storage.set(SK.ACCOUNTS,JSON.stringify(n),true);}catch(_){} };
+
+  const saveUserContent = (nextUC) => {
+    if(!user) return;
+    setUserContent(nextUC);
+    window.storage.set("gcse:uc:all:"+user.replace(/\W/g,"-"),JSON.stringify(nextUC),false).catch(function(){});
+  };
+  const ucForSubj = (sId) => (userContent[sId]||{sections:[]});
+  const saveUCSection = (sId, sec) => {
+    var prev = ucForSubj(sId);
+    var exists = prev.sections.find(function(s){return s.id===sec.id;});
+    var next = exists
+      ? {...prev,sections:prev.sections.map(function(s){return s.id===sec.id?sec:s;})}
+      : {...prev,sections:[...prev.sections,sec]};
+    saveUserContent({...userContent,[sId]:next});
+  };
+  const deleteUCSection = (sId, secId) => {
+    var prev = ucForSubj(sId);
+    saveUserContent({...userContent,[sId]:{...prev,sections:prev.sections.filter(function(s){return s.id!==secId;})}});
+  };
   const savePersonalSubjects = (ps) => {
     if(!user) return;
     setPersonalSubjects(ps);
@@ -5365,8 +5676,17 @@ export default function App() {
   const bg=D?"#030712":"#f9fafb", bd2=D?"#1f2937":"#e5e7eb";
   const _goEl=<GlobalOverlays D={D} online={online} shortcutModal={shortcutModal} setShortcutModal={setShortcutModal} searchOpen={searchOpen} setSearchOpen={setSearchOpen} onboarding={onboarding} handleOnboardingComplete={handleOnboardingComplete} subjects={subjects} allSections={allSections} boardData={boardData} boardSels={boardSels} handleSearchNavigate={handleSearchNavigate} screen={screen} onHome={()=>setScreen("home")} onMock={()=>setScreen("mock")} onTutor={()=>{setTutorSubjId(null);setScreen("tutor");}} onTimetable={()=>setScreen("timetable")} onDash={()=>setScreen("dashboard")} onLeaderboards={()=>setScreen("friends")} streak={streak}/>;
 const hProps={user,userDisplayName,D,onDark:()=>setD(!D),onHome:()=>setScreen("home"),onDash:()=>setScreen("dashboard"),onTarget:()=>{setTTSubj(null);setScreen("target")},onTimetable:()=>setScreen("timetable"),onBlurt:()=>{setBlurtSubjId(null);setBlurtSecId2(null);setScreen("blurting");},onMock:()=>setScreen("mock"),onTutor:()=>{setTutorSubjId(null);setScreen("tutor");},onCoach:()=>setScreen("coach"),onLeaderboards:()=>setScreen("friends"),onAccount:()=>setScreen("account"),streak,onSearch:()=>setSearchOpen(true),globalOverlays:_goEl,screen};
+const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||null}); };
 
   // Personal subject routing — handled before the main screen router
+  // User content screen (private notes/flashcards/questions)
+  if(ucScreen) return (
+    <div>
+      <Header {...hProps}/>
+      <UserContentScreen D={D} user={user} subjects={subjects.filter(function(s){return !s._politics;})} ucData={userContent} onSaveSection={saveUCSection} onDeleteSection={deleteUCSection} onBack={function(){setUCScreen(null);}}/>
+    </div>
+  );
+
   if(personalScreen&&personalScreen.subjId){
     var _ps = personalSubjects.find(function(s){return s.id===personalScreen.subjId;});
     if(_ps) return <PersonalSubjectScreen D={D} subj={_ps} personalSubjects={personalSubjects} user={user} onBack={function(){setPersonalScreen(null);}} onSaveSubjects={savePersonalSubjects}/>;
@@ -5598,7 +5918,10 @@ const hProps={user,userDisplayName,D,onDark:()=>setD(!D),onHome:()=>setScreen("h
     <div style={{minHeight:"100vh",background:bg,color:tx(D)}} className="fade-in">
       <Header {...hProps}/>
       <div style={{maxWidth:960,margin:"0 auto",padding:"40px 24px"}}>
-        <h2 style={{fontSize:24,fontWeight:700,marginBottom:streak>0?16:4}}>Hey {userDisplayName||getDisplayName(user)} 👋</h2>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10,marginBottom:streak>0?16:14}}>
+          <h2 style={{fontSize:24,fontWeight:700,margin:0}}>Hey {userDisplayName||getDisplayName(user)} 👋</h2>
+          <button onClick={function(){openMyNotes(null);}} style={{display:"flex",alignItems:"center",gap:6,padding:"8px 16px",borderRadius:10,border:"1.5px solid #6366f1",background:D?"rgba(99,102,241,.12)":"#eef2ff",color:"#6366f1",fontSize:13,fontWeight:600,cursor:"pointer"}}>📓 My Notes &amp; Flashcards</button>
+        </div>
         {streak>0&&(
           <div style={{...C(D),padding:"18px 22px",marginBottom:22,background:streak>=7?(D?"#1c0d05":"#fff7ed"):undefined,borderColor:streak>=7?"#f97316":undefined}}>
             <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:12}}>
@@ -5793,10 +6116,11 @@ const hProps={user,userDisplayName,D,onDark:()=>setD(!D),onHome:()=>setScreen("h
               <p style={{fontSize:12,color:D?"#9ca3af":"#6b7280",margin:0}}>This is <strong>not GCSE content</strong> — it's factual, non-biased political awareness for well-rounded world knowledge. Notes only. Use the AI Tutor to explore any topic further.</p>
             </div>
           </div>}
-          <div style={{display:"flex",borderBottom:`1px solid ${bd2}`,marginBottom:24,gap:2}}>
-            {(subj._politics?[["sections","📚 Topics"]]:[["sections","📚 Topics"],["papers","📄 Past Papers"]]).map(([t,label])=>(
-              <button key={t} onClick={()=>setSubjTab(t)} style={{padding:"10px 18px",fontSize:13,fontWeight:subjTab===t?600:400,color:subjTab===t?subj.accent:mu(D),background:"none",border:"none",cursor:"pointer",borderBottom:subjTab===t?`2px solid ${subj.accent}`:"2px solid transparent",marginBottom:-1,transition:"color .15s"}}>{label}</button>
-            ))}
+          <div style={{display:"flex",alignItems:"center",borderBottom:"1px solid "+bd2,marginBottom:24,gap:2,flexWrap:"wrap"}}>
+            {(subj._politics?[["sections","📚 Topics"]]:[["sections","📚 Topics"],["papers","📄 Past Papers"]]).map(function(pair){var t=pair[0],label=pair[1];return(
+              <button key={t} onClick={function(){setSubjTab(t);}} style={{padding:"10px 18px",fontSize:13,fontWeight:subjTab===t?600:400,color:subjTab===t?subj.accent:mu(D),background:"none",border:"none",cursor:"pointer",borderBottom:subjTab===t?"2px solid "+subj.accent:"2px solid transparent",marginBottom:-1,transition:"color .15s"}}>{label}</button>
+            );})}
+            <button onClick={function(){openMyNotes(subj.id);}} style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:5,padding:"6px 14px",borderRadius:8,border:"1.5px solid #6366f1",background:D?"rgba(99,102,241,.1)":"#eef2ff",color:"#6366f1",fontSize:12,fontWeight:600,cursor:"pointer",marginBottom:2}}>📓 My Notes</button>
           </div>
 
           {subjTab==="sections"&&(
@@ -5806,8 +6130,8 @@ const hProps={user,userDisplayName,D,onDark:()=>setD(!D),onHome:()=>setScreen("h
               {curTopics.map((tp,ti)=>{
                 if(tp.id==="_admin"&&tp._adminGroups){
                   return tp._adminGroups.map(grp=>(
-                    <div key={grp._adminTopicId} style={{...C(D),marginBottom:14,padding:22}}>
-                      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,marginBottom:grp.sections.length>0?14:10,flexWrap:"wrap"}}>
+                    <div key={grp._adminTopicId} style={{marginBottom:22}}>
+                      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,marginBottom:12,paddingBottom:8,borderBottom:"2px solid "+subj.accent+"44",flexWrap:"wrap"}}>
                         {admin&&editingTitle&&editingTitle.id===grp._adminTopicId?(
                           <input autoFocus value={editingTitle.value}
                             onChange={e=>setEditingTitle(t=>({...t,value:e.target.value}))}
@@ -5815,7 +6139,7 @@ const hProps={user,userDisplayName,D,onDark:()=>setD(!D),onHome:()=>setScreen("h
                             onKeyDown={e=>{if(e.key==="Enter"){renameCustomTopic(grp._adminTopicId,editingTitle.value);setEditingTitle(null);}if(e.key==="Escape")setEditingTitle(null);}}
                             style={{fontWeight:700,fontSize:15,border:"1.5px solid #6366f1",borderRadius:6,padding:"2px 8px",background:"transparent",color:"inherit",flex:1}}/>
                         ):(
-                          <span style={{fontWeight:700,fontSize:15}}>{grp._adminTopicTitle}</span>
+                          <span style={{fontWeight:800,fontSize:16,color:subj.accent}}>{grp._adminTopicTitle}</span>
                         )}
                         {admin&&<div style={{display:"flex",gap:6,alignItems:"center",flexShrink:0}}>
                           {!editingTitle&&<button onClick={()=>setEditingTitle({id:grp._adminTopicId,value:grp._adminTopicTitle})} style={{padding:"5px 10px",borderRadius:7,border:"1.5px solid #6366f1",background:"transparent",cursor:"pointer",fontSize:11,color:"#6366f1",fontWeight:600}}>✏️ Rename</button>}
@@ -5877,32 +6201,32 @@ const hProps={user,userDisplayName,D,onDark:()=>setD(!D),onHome:()=>setScreen("h
                   ));
                 }
                 return (
-                  <div key={tp.id} style={{...C(D),marginBottom:14,padding:22}}>
-                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
-                      {tp.number&&<span style={{fontSize:11,fontFamily:"monospace",color:mu(D),background:D?"#1f2937":"#f3f4f6",padding:"3px 8px",borderRadius:6}}>{tp.number}</span>}
-                      <span style={{fontWeight:700,fontSize:15}}>{tp.title}</span>
+                  <div key={tp.id} style={{marginBottom:22}}>
+                    {/* Section header */}
+                    <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12,paddingBottom:8,borderBottom:"2px solid "+subj.accent+"44"}}>
+                      {tp.number&&<span style={{fontSize:11,fontFamily:"monospace",fontWeight:700,color:"#fff",background:subj.accent,padding:"2px 9px",borderRadius:6,flexShrink:0}}>{tp.number}</span>}
+                      <span style={{fontWeight:800,fontSize:16,color:subj.accent}}>{tp.title}</span>
+                      <span style={{fontSize:11,color:mu(D),marginLeft:"auto"}}>{tp.sections.length} topic{tp.sections.length!==1?"s":""}</span>
                     </div>
                     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(190px,1fr))",gap:10}}>
-                      {tp.sections.map(sec=>(
+                      {tp.sections.map(function(sec){
+                        var cards=sec.flashcards||[];
+                        var mastered=cards.filter(function(c){var s=getCardState(fcHist,c.id);return s&&s.interval>7;}).length;
+                        var pct=cards.length?Math.round((mastered/cards.length)*100):null;
+                        return (
                         <div key={sec.id} style={{position:"relative"}}>
                           <div role="button" tabIndex={0}
-                            onClick={()=>navToSection(subIdx,ti,sec.id)}
-                            onKeyDown={e=>e.key==="Enter"&&navToSection(subIdx,ti,sec.id)}
-                            style={{width:"100%",textAlign:"left",padding:"12px 14px",borderRadius:12,border:`1.5px solid ${bd2}`,background:"transparent",cursor:"pointer",transition:"all .15s",color:tx(D)}}
-                            onMouseEnter={e=>{e.currentTarget.style.borderColor=subj.accent;e.currentTarget.style.background=subj.light}}
-                            onMouseLeave={e=>{e.currentTarget.style.borderColor=bd2;e.currentTarget.style.background="transparent"}}>
+                            onClick={function(){navToSection(subIdx,ti,sec.id);}}
+                            onKeyDown={function(e){if(e.key==="Enter")navToSection(subIdx,ti,sec.id);}}
+                            style={{width:"100%",textAlign:"left",padding:"12px 14px",borderRadius:12,border:"1.5px solid "+bd2,background:"transparent",cursor:"pointer",transition:"all .15s",color:tx(D)}}
+                            onMouseEnter={function(e){e.currentTarget.style.borderColor=subj.accent;e.currentTarget.style.background=subj.light;}}
+                            onMouseLeave={function(e){e.currentTarget.style.borderColor=bd2;e.currentTarget.style.background="transparent";}}>
                             <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:6,marginBottom:5}}>
                               <div style={{fontSize:13,fontWeight:600}}>{sec.title}</div>
-                              {(()=>{
-  const cards=sec.flashcards||[];
-  if(!cards.length) return null;
-  const mastered=cards.filter(c=>{const s=getCardState(fcHist,c.id);return s&&s.interval>7;}).length;
-  const pct=Math.round((mastered/cards.length)*100);
-  return <div style={{display:"flex",alignItems:"center",gap:3,flexShrink:0}} title={pct+"% mastered (interval>7d)"}>
-    <MasteryRing pct={pct} size={22} accent="#10b981"/>
-    <span style={{fontSize:9,color:"#10b981",fontWeight:700}}>{pct}%</span>
-  </div>;
-})()}
+                              {pct!==null&&<div style={{display:"flex",alignItems:"center",gap:3,flexShrink:0}} title={pct+"% mastered"}>
+                                <MasteryRing pct={pct} size={22} accent="#10b981"/>
+                                <span style={{fontSize:9,color:"#10b981",fontWeight:700}}>{pct}%</span>
+                              </div>}
                             </div>
                             <div style={{display:"flex",gap:8}}>
                               <span style={{fontSize:11,color:mu(D)}}>🃏 {(sec.flashcards||[]).length}</span>
@@ -5910,7 +6234,8 @@ const hProps={user,userDisplayName,D,onDark:()=>setD(!D),onHome:()=>setScreen("h
                             </div>
                           </div>
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 );
