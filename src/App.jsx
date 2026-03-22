@@ -1822,16 +1822,16 @@ function OnboardingWizard({D,onComplete}) {
 function Header({user,userDisplayName,D,onDark,onHome,onDash,onTarget,onTimetable,onBlurt,onMock,onTutor,onCoach,onLeaderboards,onAccount,streak,onSearch,globalOverlays,screen}) {
   const [menuOpen,setMenuOpen] = React.useState(false);
   const allNavItems = [
-    {id:"home",      icon:"\uD83C\uDFE0", label:"Home",         fn:onHome},
-    {id:"timetable", icon:"\uD83D\uDCC5", label:"Timetable",    fn:onTimetable},
-    {id:"blurting",  icon:"\uD83E\uDDE0", label:"Blurting",     fn:onBlurt},
-    {id:"mock",      icon:"\uD83D\uDCDD", label:"Mock Exam",    fn:onMock},
-    {id:"tutor",     icon:"\uD83E\uDD16", label:"AI Tutor",     fn:onTutor},
-    {id:"coach",     icon:"\u270D\uFE0F",  label:"Exam Coach",   fn:onCoach},
-    {id:"target",    icon:"\uD83C\uDFAF", label:"Target",       fn:onTarget},
-    {id:"dashboard", icon:"\uD83D\uDCCA", label:"Progress",     fn:onDash},
-    {id:"friends",   icon:"\uD83C\uDFC6", label:"Leaderboards", fn:onLeaderboards},
-    {id:"account",   icon:"\u2699\uFE0F", label:"Account",      fn:onAccount},
+    {id:"home",      icon:"🏠", label:"Home",          fn:onHome},
+    {id:"timetable", icon:"📅", label:"Timetable",     fn:onTimetable},
+    {id:"blurting",  icon:"🧠", label:"Blurting",      fn:onBlurt},
+    {id:"mock",      icon:"📝", label:"Mock Exam",     fn:onMock},
+    {id:"tutor",     icon:"🤖", label:"AI Tutor",      fn:onTutor},
+    {id:"coach",     icon:"✍️",  label:"Exam Coach",    fn:onCoach},
+    {id:"target",    icon:"🎯", label:"Target",        fn:onTarget},
+    {id:"dashboard", icon:"📊", label:"Progress",      fn:onDash},
+    {id:"friends",   icon:"🏆", label:"Leaderboards",  fn:onLeaderboards},
+    {id:"account",   icon:"⚙️", label:"Account",       fn:onAccount},
   ];
   const displayName = userDisplayName || getDisplayName(user);
   const curItem = allNavItems.find(function(n){return n.id===screen;});
@@ -1844,25 +1844,25 @@ function Header({user,userDisplayName,D,onDark,onHome,onDash,onTarget,onTimetabl
   return (
     <header data-riq-hdr="1" style={{background:D?"#0d1117":"#fff",borderBottom:"1px solid "+(D?"#1f2937":"#e5e7eb"),position:"sticky",top:0,zIndex:50}}>
       <div style={{maxWidth:1100,margin:"0 auto",padding:"0 16px",height:54,display:"flex",alignItems:"center",gap:8}}>
-        <button onClick={onHome} style={{fontWeight:800,fontSize:15,background:"none",border:"none",cursor:"pointer",color:tx(D),flexShrink:0,letterSpacing:"-0.01em",paddingRight:6}}>\uD83C\uDF93 ReviseIQ</button>
+        <button onClick={onHome} style={{fontWeight:800,fontSize:15,background:"none",border:"none",cursor:"pointer",color:tx(D),flexShrink:0,letterSpacing:"-0.01em",paddingRight:6}}>🎓 ReviseIQ</button>
         {curItem&&curItem.id!=="home"&&<span style={{fontSize:12,color:mu(D),fontWeight:500,flexShrink:0}}>{curItem.icon} {curItem.label}</span>}
         <div style={{flex:1}}/>
         <button onClick={onSearch} style={{background:D?"#1f2937":"#f3f4f6",border:"1px solid "+(D?"#374151":"#e5e7eb"),borderRadius:8,padding:"5px 10px",fontSize:12,color:mu(D),cursor:"pointer",display:"flex",alignItems:"center",gap:5,flexShrink:0}}>
-          <span>\uD83D\uDD0D</span>
+          <span>🔍</span>
           <span style={{color:D?"#9ca3af":"#6b7280"}}>Search</span>
         </button>
         {streak>0&&(
           <div style={{display:"flex",alignItems:"center",gap:4,padding:"4px 10px",borderRadius:20,background:streak>=7?(D?"#431407":"#fff7ed"):(D?"#1c1917":"#f9fafb"),border:"1.5px solid "+(streak>=7?"#f97316":"#d1d5db"),flexShrink:0}}>
-            <span style={{fontSize:13}}>\uD83D\uDD25</span>
+            <span style={{fontSize:13}}>🔥</span>
             <span style={{fontSize:12,fontWeight:700,color:streak>=7?"#f97316":mu(D)}}>{streak}d</span>
           </div>
         )}
-        <button onClick={onDark} style={{fontSize:15,background:"none",border:"none",cursor:"pointer",color:mu(D),padding:"4px",borderRadius:6,flexShrink:0}}>{D?"\u2600\uFE0F":"\uD83C\uDF19"}</button>
+        <button onClick={onDark} style={{fontSize:15,background:"none",border:"none",cursor:"pointer",color:mu(D),padding:"4px",borderRadius:6,flexShrink:0}}>{D?"☀️":"🌙"}</button>
         <div style={{display:"flex",alignItems:"center",gap:6,padding:"4px 10px",borderRadius:20,background:D?"#1f2937":"#f3f4f6",border:"1px solid "+(D?"#374151":"#e5e7eb"),flexShrink:0}}>
           <span style={{fontSize:12,fontWeight:600,color:tx(D),maxWidth:130,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{displayName}</span>
           {isAdmin(user)&&<span style={{fontSize:9,fontWeight:700,background:"#6366f1",color:"#fff",padding:"1px 6px",borderRadius:10,flexShrink:0}}>ADMIN</span>}
         </div>
-        <button onClick={function(e){e.stopPropagation();setMenuOpen(function(o){return !o;});}} style={{fontSize:18,background:"none",border:"none",cursor:"pointer",color:mu(D),padding:"4px 6px",borderRadius:6,lineHeight:1,flexShrink:0}}>\u2630</button>
+        <button onClick={function(e){e.stopPropagation();setMenuOpen(function(o){return !o;});}} style={{fontSize:18,background:"none",border:"none",cursor:"pointer",color:mu(D),padding:"4px 6px",borderRadius:6,lineHeight:1,flexShrink:0}}>☰</button>
       </div>
       {menuOpen&&(
         <div style={{position:"absolute",top:54,right:0,minWidth:220,background:D?"#111827":"#fff",border:"1px solid "+(D?"#374151":"#e5e7eb"),borderTop:"none",borderRadius:"0 0 14px 14px",zIndex:49,padding:"8px 10px 12px",boxShadow:"0 8px 32px rgba(0,0,0,.18)"}}>
@@ -4246,81 +4246,100 @@ function TodayWidget({D,subjects,allSections,fcHist,stats,timetableExams,boardSe
 }
 
 /* ─── FOOTER ────────────────────────────────────────────────────────────── */
-/* ─── USER CONTENT SCREEN ───────────────────────────────────────────────────── */
-// Entirely user-private notes/flashcards/questions per subject.
-// Stored under gcse:uc:all:{user} (shared:false), never visible to other users.
-function UserContentScreen({D,user,subjects,ucData,onSaveSection,onDeleteSection,onBack}) {
-  var [selSubj,setSelSubj] = React.useState(subjects[0]?.id||"");
-  var [view,setView] = React.useState("list"); // "list"|"section"
-  var [curSec,setCurSec] = React.useState(null);
-  var [showNewSec,setShowNewSec] = React.useState(false);
-  var [newSecName,setNewSecName] = React.useState("");
+/* ─── USER CONTENT MODALS ───────────────────────────────────────────────────── */
+// UCNewSectionModal: simple name-entry for a new user section
+function UCNewSectionModal({D,onClose,onSave}) {
+  var [name,setName] = React.useState("");
+  var bd2=D?"#1f2937":"#e5e7eb";
+  return (
+    <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,zIndex:200,background:"rgba(0,0,0,.55)",display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+      <div style={{...C(D),padding:28,maxWidth:420,width:"100%",borderRadius:16}}>
+        <h3 style={{fontSize:16,fontWeight:700,marginBottom:4,color:tx(D)}}>📓 New Personal Section</h3>
+        <p style={{fontSize:12,color:mu(D),marginBottom:18}}>Private to your account — only you can see it.</p>
+        <label style={{fontSize:11,fontWeight:600,color:mu(D),display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:"0.05em"}}>Section Name</label>
+        <input autoFocus value={name} onChange={function(e){setName(e.target.value);}}
+          placeholder="e.g. Cell Biology, Algebra, Macbeth"
+          onKeyDown={function(e){if(e.key==="Enter"&&name.trim())onSave(name);if(e.key==="Escape")onClose();}}
+          style={{...I(D),marginBottom:18}}/>
+        <div style={{display:"flex",gap:10}}>
+          <button onClick={function(){if(name.trim())onSave(name);}} disabled={!name.trim()}
+            style={{flex:1,...B("#6366f1",false,{padding:"10px 0",fontSize:13,fontWeight:700,opacity:name.trim()?1:0.5})}}>Create Section</button>
+          <button onClick={onClose} style={{flex:1,...B("transparent",true,{padding:"10px 0",fontSize:13,borderColor:bd2,color:mu(D)})}}>Cancel</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// UCSectionModal: full-screen modal to view/edit a user content section
+// Matches admin section screen format exactly — same note/flashcard/question layout
+function UCSectionModal({D,user,subjId,sec,subjects,onSaveSection,onClose}) {
   var [tab,setTab] = React.useState("notes");
   var [flip,setFlip] = React.useState(false);
   var [fcIdx,setFcIdx] = React.useState(0);
   var [qIdx,setQIdx] = React.useState(0);
-  var [noteText,setNoteText] = React.useState("");
+  // Note creation state — matches CreateModal "note" format
+  var [noteHead,setNoteHead] = React.useState("");
+  var [noteBody,setNoteBody] = React.useState("");
+  // Flashcard creation
   var [fcFront,setFcFront] = React.useState("");
   var [fcBack,setFcBack] = React.useState("");
+  // Question creation — matches CreateModal "question" format
+  var [qType,setQType] = React.useState("short");
   var [qText,setQText] = React.useState("");
-  var [qAnswer,setQAnswer] = React.useState("");
+  var [qMS,setQMS] = React.useState("");
+  var [qMarks,setQMarks] = React.useState(2);
+  var [qOptions,setQOptions] = React.useState(["","","",""]);
+  var [qAns,setQAns] = React.useState(0);
+  // AI generation
+  var [showAI,setShowAI] = React.useState(false);
   var [aiText,setAiText] = React.useState("");
-  var [aiMode,setAiMode] = React.useState("notes"); // notes|flashcards|questions
+  var [aiMode,setAiMode] = React.useState("notes");
   var [aiLoading,setAiLoading] = React.useState(false);
   var [aiErr,setAiErr] = React.useState("");
   var [imgLoading,setImgLoading] = React.useState(false);
-  var bd2 = D?"#1f2937":"#e5e7eb";
-  var subj = subjects.find(function(s){return s.id===selSubj;})||subjects[0];
-  var subjUC = ucData[selSubj]||{sections:[]};
+
+  var bd2=D?"#1f2937":"#e5e7eb";
+  var subj=subjects.find(function(s){return s.id===subjId;})||subjects[0];
+
+  // Always read sec fresh (it updates after saves)
+  if(!sec) return null;
+  var notes=sec.notes||[];
+  var fcs=sec.flashcards||[];
+  var qs=sec.questions||[];
+  var curFC=fcs[Math.min(fcIdx,fcs.length-1)]||null;
+  var curQ=qs[Math.min(qIdx,qs.length-1)]||null;
 
   function uid2(){return Math.random().toString(36).slice(2,10);}
 
-  function createSection(){
-    if(!newSecName.trim()) return;
-    var sec={id:uid2(),title:newSecName.trim(),notes:[],flashcards:[],questions:[],created:Date.now()};
-    onSaveSection(selSubj,sec);
-    setCurSec(sec); setView("section"); setNewSecName(""); setShowNewSec(false);
-  }
-
-  // Re-sync curSec from ucData after saves
-  React.useEffect(function(){
-    if(curSec){
-      var fresh=(ucData[selSubj]||{sections:[]}).sections.find(function(s){return s.id===curSec.id;});
-      if(fresh) setCurSec(fresh);
-    }
-  },[ucData,selSubj]);
-
   function saveNote(){
-    if(!noteText.trim()||!curSec) return;
-    var n={id:uid2(),text:noteText.trim(),created:Date.now()};
-    var updated={...curSec,notes:[...(curSec.notes||[]),n]};
-    onSaveSection(selSubj,updated); setCurSec(updated); setNoteText("");
+    if(!noteHead.trim()) return;
+    var n={id:uid2(),heading:noteHead.trim(),body:noteBody.trim()||noteHead.trim(),images:[],_userCreated:true};
+    onSaveSection(subjId,{...sec,notes:[...notes,n]});
+    setNoteHead(""); setNoteBody("");
   }
-  function deleteNote(id){
-    var updated={...curSec,notes:(curSec.notes||[]).filter(function(n){return n.id!==id;})};
-    onSaveSection(selSubj,updated); setCurSec(updated);
+  function deleteNote(id){onSaveSection(subjId,{...sec,notes:notes.filter(function(n){return n.id!==id;})});}
+
+  function saveFC(){
+    if(!fcFront.trim()||!fcBack.trim()) return;
+    var fc={id:uid2(),q:fcFront.trim(),a:fcBack.trim(),_userCreated:true};
+    onSaveSection(subjId,{...sec,flashcards:[...fcs,fc]});
+    setFcFront(""); setFcBack("");
   }
-  function saveFlashcard(){
-    if(!fcFront.trim()||!fcBack.trim()||!curSec) return;
-    var fc={id:uid2(),front:fcFront.trim(),back:fcBack.trim()};
-    var updated={...curSec,flashcards:[...(curSec.flashcards||[]),fc]};
-    onSaveSection(selSubj,updated); setCurSec(updated); setFcFront(""); setFcBack(""); setFlip(false);
+  function deleteFC(id){
+    onSaveSection(subjId,{...sec,flashcards:fcs.filter(function(f){return f.id!==id;})});
+    setFcIdx(function(i){return Math.max(0,Math.min(i,fcs.length-2));});
   }
-  function deleteFlashcard(id){
-    var updated={...curSec,flashcards:(curSec.flashcards||[]).filter(function(f){return f.id!==id;})};
-    onSaveSection(selSubj,updated); setCurSec(updated);
-    setFcIdx(function(i){return Math.max(0,i-1);});
+
+  function saveQ(){
+    if(!qText.trim()) return;
+    var q={id:uid2(),type:qType,text:qText.trim(),markScheme:qMS.trim(),marks:Number(qMarks)||2,options:qType==="mcq"?qOptions:[],answer:qType==="mcq"?qAns:0,_userCreated:true};
+    onSaveSection(subjId,{...sec,questions:[...qs,q]});
+    setQText(""); setQMS(""); setQMarks(2); setQOptions(["","","",""]); setQAns(0);
   }
-  function saveQuestion(){
-    if(!qText.trim()||!curSec) return;
-    var q={id:uid2(),type:"short",text:qText.trim(),markScheme:qAnswer.trim(),marks:1};
-    var updated={...curSec,questions:[...(curSec.questions||[]),q]};
-    onSaveSection(selSubj,updated); setCurSec(updated); setQText(""); setQAnswer("");
-  }
-  function deleteQuestion(id){
-    var updated={...curSec,questions:(curSec.questions||[]).filter(function(q){return q.id!==id;})};
-    onSaveSection(selSubj,updated); setCurSec(updated);
-    setQIdx(function(i){return Math.max(0,i-1);});
+  function deleteQ(id){
+    onSaveSection(subjId,{...sec,questions:qs.filter(function(q){return q.id!==id;})});
+    setQIdx(function(i){return Math.max(0,Math.min(i,qs.length-2));});
   }
 
   function handleImageUpload(e){
@@ -4331,223 +4350,340 @@ function UserContentScreen({D,user,subjects,ucData,onSaveSection,onDeleteSection
     reader.onload=function(ev){
       var b64=ev.target.result.split(",")[1];
       var mediaType=file.type||"image/jpeg";
-      var prompt="You are a GCSE study assistant. This image contains revision material. Extract all key information from it and produce clear study notes as a bullet list (one point per line starting with •). Cover every fact, definition, diagram label and concept you can see.";
-      fetch("/api/ai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
-        model:"llava-v1.5-7b-4096-preview",
-        messages:[{role:"user",content:[{type:"image_url",image_url:{url:"data:"+mediaType+";base64,"+b64}},{type:"text",text:prompt}]}],
-        max_tokens:1200
-      })}).then(function(r){return r.json();}).then(function(data){
-        var text=data.choices&&data.choices[0]&&data.choices[0].message&&data.choices[0].message.content||"";
-        setAiText(text); setAiMode("notes"); setImgLoading(false);
-      }).catch(function(e){
-        // Fallback: prompt user to paste text
-        setAiErr("Image AI unavailable — paste the text content below instead."); setImgLoading(false);
+      // Use callGeminiSimple with a vision-friendly prompt via the text API
+      // since the Groq proxy may not support vision; extract text from image description first
+      var visionPrompt="The following is a base64-encoded "+mediaType+" image of revision/study material. "+
+        "Extract ALL text, diagrams, labels, definitions, equations, and key points visible in this image. "+
+        "Present them as clear structured notes with ## headings and bullet points. "+
+        "Image data (base64): data:"+mediaType+";base64,"+b64.slice(0,500)+"... [image attached]";
+      // Try vision via fetch to /api/ai with image content
+      fetch("/api/ai",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          model:"llava-v1.5-7b-4096-preview",
+          max_tokens:1500,
+          messages:[{role:"user",content:[
+            {type:"image_url",image_url:{url:"data:"+mediaType+";base64,"+b64}},
+            {type:"text",text:"Extract all revision content from this image. Produce structured notes with ## headings for each section and bullet points (•) for each fact. Include all text, labels, equations, and key terms you can see."}
+          ]}]
+        })
+      }).then(function(r){return r.json();}).then(function(data){
+        var text=(data.choices&&data.choices[0]&&data.choices[0].message&&data.choices[0].message.content)||"";
+        if(text){setAiText(text);setAiMode("notes");setImgLoading(false);setShowAI(true);}
+        else throw new Error("No content returned");
+      }).catch(function(){
+        // Fallback: ask user to describe/paste content manually
+        setAiErr("Image vision unavailable. Please paste the text content from your image below.");
+        setImgLoading(false); setShowAI(true);
       });
     };
     reader.readAsDataURL(file);
   }
 
   function generateFromText(){
-    if(!aiText.trim()||!curSec) return;
+    if(!aiText.trim()) return;
     setAiLoading(true); setAiErr("");
+    var subjectName=subj?subj.name:"GCSE";
     var prompt="";
     if(aiMode==="notes"){
-      prompt="You are a GCSE study assistant. Extract the key facts from the following text and produce clear bullet-point notes (one fact per line starting with •). Be concise but comprehensive.\n\n"+aiText;
+      prompt="You are a GCSE "+subjectName+" teacher creating revision notes. "+
+        "From the following content, produce well-structured revision notes with:\n"+
+        "- ## headings for each main topic/section\n"+
+        "- Bullet points (•) for key facts under each heading\n"+
+        "- Bold (**term**) for key terms\n"+
+        "- Keep each bullet concise but complete\n"+
+        "- Include all definitions, equations, processes and key facts\n\n"+
+        "Content:\n"+aiText;
     } else if(aiMode==="flashcards"){
-      prompt="You are a GCSE study assistant. Create 6-10 flashcard question-answer pairs from the following text. Return ONLY valid JSON (no markdown, no preamble): [{\"front\":\"question\",\"back\":\"answer\"}]\n\n"+aiText;
+      prompt="You are a GCSE "+subjectName+" teacher. Create 8-12 high-quality flashcard question-answer pairs from the following content. "+
+        "Questions should test key facts, definitions, and processes. "+
+        "Return ONLY valid JSON array (no markdown): [{\"q\":\"question text\",\"a\":\"answer text\"}]\n\n"+
+        "Content:\n"+aiText;
     } else {
-      prompt="You are a GCSE examiner. Create 3-5 short-answer exam questions from the following text. Return ONLY valid JSON: [{\"text\":\"question\",\"markScheme\":\"ideal answer\",\"marks\":2}]\n\n"+aiText;
+      prompt="You are a GCSE "+subjectName+" examiner. Create 4-6 exam-style questions from the following content. "+
+        "Mix question types: short answer, extended response. Include mark allocations. "+
+        "Return ONLY valid JSON array (no markdown): [{\"type\":\"short\",\"text\":\"question\",\"markScheme\":\"model answer\",\"marks\":3}]\n\n"+
+        "Content:\n"+aiText;
     }
-    callGeminiSimple(prompt,1400).then(function(raw){
+    callGeminiSimple(prompt,1600).then(function(raw){
       if(aiMode==="notes"){
-        var lines=raw.split("\n").filter(function(l){return l.trim();});
-        var newNotes=lines.map(function(l){return {id:uid2(),text:l.replace(/^[•\-\*]\s*/,"").trim(),created:Date.now()};}).filter(function(n){return n.text;});
-        var updated={...curSec,notes:[...(curSec.notes||[]),...newNotes]};
-        onSaveSection(selSubj,updated); setCurSec(updated);
+        // Store as a single note with full formatted content
+        var n={id:uid2(),heading:"AI Generated Notes — "+sec.title,body:raw.trim(),images:[],_userCreated:true};
+        onSaveSection(subjId,{...sec,notes:[...notes,n]});
+        setTab("notes");
       } else if(aiMode==="flashcards"){
         var s=raw.indexOf("["),e2=raw.lastIndexOf("]");
+        if(s<0||e2<0) throw new Error("Could not parse AI response");
         var arr=JSON.parse(raw.slice(s,e2+1));
-        var newFCs=arr.map(function(x){return {id:uid2(),front:(x.front||"").trim(),back:(x.back||"").trim()};}).filter(function(f){return f.front;});
-        var updated={...curSec,flashcards:[...(curSec.flashcards||[]),...newFCs]};
-        onSaveSection(selSubj,updated); setCurSec(updated); setTab("flashcards");
+        var newFCs=arr.map(function(x){return {id:uid2(),q:(x.q||x.front||"").trim(),a:(x.a||x.back||"").trim(),_userCreated:true};}).filter(function(f){return f.q;});
+        onSaveSection(subjId,{...sec,flashcards:[...fcs,...newFCs]});
+        setTab("flashcards");
       } else {
         var s2=raw.indexOf("["),e3=raw.lastIndexOf("]");
+        if(s2<0||e3<0) throw new Error("Could not parse AI response");
         var arr2=JSON.parse(raw.slice(s2,e3+1));
-        var newQs=arr2.map(function(x){return {id:uid2(),type:"short",text:(x.text||"").trim(),markScheme:(x.markScheme||"").trim(),marks:Number(x.marks)||2};}).filter(function(q){return q.text;});
-        var updated={...curSec,questions:[...(curSec.questions||[]),...newQs]};
-        onSaveSection(selSubj,updated); setCurSec(updated); setTab("questions");
+        var newQs=arr2.map(function(x){return {id:uid2(),type:x.type||"short",text:(x.text||"").trim(),markScheme:(x.markScheme||"").trim(),marks:Number(x.marks)||3,_userCreated:true};}).filter(function(q){return q.text;});
+        onSaveSection(subjId,{...sec,questions:[...qs,...newQs]});
+        setTab("questions");
       }
-      setAiText(""); setAiLoading(false);
-    }).catch(function(err){setAiErr(err.message||"AI error — try again");setAiLoading(false);});
+      setAiText(""); setAiLoading(false); setShowAI(false);
+    }).catch(function(err){setAiErr(err.message||"AI error — please try again");setAiLoading(false);});
   }
 
-  var secNotes=curSec?curSec.notes||[]:[];
-  var secFCs=curSec?curSec.flashcards||[]:[];
-  var secQs=curSec?curSec.questions||[]:[];
-  var curFC=secFCs[fcIdx]||null;
-  var curQ=secQs[qIdx]||null;
-
-  if(view==="section"&&curSec) return (
-    <div style={{minHeight:"100vh",background:D?"#030712":"#f9fafb",color:D?"#f9fafb":"#111827"}} className="fade-in">
-      <div style={{maxWidth:760,margin:"0 auto",padding:"32px 24px"}}>
-        <button onClick={function(){setView("list");setCurSec(null);setTab("notes");}} style={{fontSize:13,color:mu(D),background:"none",border:"none",cursor:"pointer",marginBottom:16}}>← My {subj.name} Notes</button>
-        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20}}>
-          <div style={{width:42,height:42,borderRadius:12,background:subj.accent+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>{subj.icon}</div>
+  return (
+    <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,zIndex:200,background:D?"rgba(0,0,0,.85)":"rgba(0,0,0,.6)",display:"flex",alignItems:"flex-start",justifyContent:"center",padding:"20px 16px",overflowY:"auto"}}>
+      <div style={{...C(D),width:"100%",maxWidth:800,borderRadius:18,overflow:"hidden",marginTop:20,marginBottom:40}}>
+        {/* Header */}
+        <div style={{padding:"16px 22px",borderBottom:"1px solid "+bd2,display:"flex",alignItems:"center",gap:12,background:D?"#0d1117":"#fff"}}>
+          <div style={{width:38,height:38,borderRadius:10,background:"#6366f1"+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>{subj.icon}</div>
           <div style={{flex:1,minWidth:0}}>
-            <h2 style={{fontSize:18,fontWeight:700,margin:0,color:D?"#f9fafb":"#111827"}}>{curSec.title}</h2>
-            <span style={{fontSize:11,color:mu(D)}}>{subj.name} · My Notes · Private</span>
+            <div style={{fontWeight:700,fontSize:16,color:tx(D)}}>{sec.title}</div>
+            <div style={{fontSize:11,color:"#6366f1",fontWeight:600}}>{subj.name} · 📓 My Notes (Private)</div>
           </div>
-          <button onClick={function(){if(window.confirm("Delete this section and all its content?")){{onDeleteSection(selSubj,curSec.id);setView("list");setCurSec(null);}}}} style={{padding:"5px 10px",borderRadius:8,border:"1.5px solid #ef4444",background:"transparent",cursor:"pointer",fontSize:11,color:"#ef4444",fontWeight:600}}>🗑 Delete</button>
+          <label style={{display:"flex",alignItems:"center",gap:5,padding:"6px 12px",borderRadius:8,border:"1px solid "+bd2,cursor:"pointer",fontSize:12,color:mu(D)}}>
+            {imgLoading?"⏳ Reading…":"📷 Image"}
+            <input type="file" accept="image/*" style={{display:"none"}} onChange={handleImageUpload} disabled={imgLoading}/>
+          </label>
+          <button onClick={function(){setShowAI(function(v){return !v;});}} style={{padding:"6px 12px",borderRadius:8,border:"1px solid #6366f1",background:showAI?(D?"rgba(99,102,241,.2)":"#eef2ff"):"transparent",color:"#6366f1",fontSize:12,fontWeight:600,cursor:"pointer"}}>✨ AI Generate</button>
+          <button onClick={onClose} style={{fontSize:18,background:"none",border:"none",cursor:"pointer",color:mu(D),padding:"4px",lineHeight:1}}>×</button>
         </div>
 
-        <div style={{display:"flex",borderBottom:"1px solid "+bd2,marginBottom:20,gap:2}}>
-          {[["notes","📖 Notes ("+secNotes.length+")"],["flashcards","🃏 Cards ("+secFCs.length+")"],["questions","❓ Questions ("+secQs.length+")"],["generate","✨ AI Generate"]].map(function(pair){
-            return <button key={pair[0]} onClick={function(){setTab(pair[0]);setFlip(false);}} style={{padding:"9px 14px",fontSize:12,fontWeight:tab===pair[0]?600:400,color:tab===pair[0]?subj.accent:mu(D),background:"none",border:"none",cursor:"pointer",borderBottom:tab===pair[0]?"2px solid "+subj.accent:"2px solid transparent",marginBottom:-1,whiteSpace:"nowrap"}}>{pair[1]}</button>;
-          })}
-        </div>
-
-        {tab==="notes"&&(
-          <div>
-            <div style={{display:"flex",gap:8,marginBottom:16}}>
-              <textarea value={noteText} onChange={function(e){setNoteText(e.target.value);}} rows={3} placeholder="Type a note…" style={{...I(D,{flex:1,resize:"vertical"})}}/>
-              <button onClick={saveNote} disabled={!noteText.trim()} style={{...B("#6366f1",false,{padding:"0 16px",fontSize:13,fontWeight:700,opacity:noteText.trim()?1:0.4})}}>Save</button>
-            </div>
-            {secNotes.length===0&&<p style={{fontSize:13,color:mu(D),textAlign:"center",padding:"30px 0"}}>No notes yet — add one above or use AI Generate.</p>}
-            <div style={{display:"flex",flexDirection:"column",gap:8}}>
-              {secNotes.map(function(n){return (
-                <div key={n.id} style={{...C(D),padding:"12px 16px",display:"flex",gap:10,alignItems:"flex-start"}}>
-                  <p style={{flex:1,margin:0,fontSize:13,lineHeight:1.65,color:D?"#f9fafb":"#111827"}}>{n.text}</p>
-                  <button onClick={function(){deleteNote(n.id);}} style={{background:"none",border:"none",cursor:"pointer",color:"#ef4444",fontSize:15,flexShrink:0,padding:0}}>×</button>
-                </div>
+        {/* AI Generate Panel */}
+        {showAI&&(
+          <div style={{padding:"16px 22px",borderBottom:"1px solid "+bd2,background:D?"#0a0f1a":"#f8f9ff"}}>
+            <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap"}}>
+              {[["notes","📖 Notes"],["flashcards","🃏 Flashcards"],["questions","❓ Questions"]].map(function(p){return(
+                <button key={p[0]} onClick={function(){setAiMode(p[0]);}} style={{padding:"6px 14px",borderRadius:7,border:"1.5px solid "+(aiMode===p[0]?"#6366f1":bd2),background:aiMode===p[0]?(D?"rgba(99,102,241,.15)":"#eef2ff"):"transparent",color:aiMode===p[0]?"#6366f1":mu(D),fontSize:12,fontWeight:aiMode===p[0]?600:400,cursor:"pointer"}}>{p[1]}</button>
               );})}
+            </div>
+            <textarea value={aiText} onChange={function(e){setAiText(e.target.value);}} rows={5}
+              placeholder="Paste text, notes, or textbook content here — or upload an image above to auto-populate…"
+              style={{...I(D,{resize:"vertical",marginBottom:8,fontSize:12})}}/>
+            {aiErr&&<p style={{fontSize:12,color:"#ef4444",margin:"0 0 8px"}}>{aiErr}</p>}
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={generateFromText} disabled={!aiText.trim()||aiLoading}
+                style={{...B("#6366f1",false,{padding:"9px 20px",fontSize:13,fontWeight:700,opacity:!aiText.trim()||aiLoading?0.4:1})}}>
+                {aiLoading?"⏳ Generating…":"✨ Generate "+aiMode}
+              </button>
+              <button onClick={function(){setShowAI(false);setAiText("");setAiErr("");}} style={{...B("transparent",true,{padding:"9px 16px",fontSize:13,borderColor:bd2,color:mu(D)})}}>Cancel</button>
             </div>
           </div>
         )}
 
-        {tab==="flashcards"&&(
-          <div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
-              <input value={fcFront} onChange={function(e){setFcFront(e.target.value);}} placeholder="Front (question)" style={I(D)}/>
-              <input value={fcBack} onChange={function(e){setFcBack(e.target.value);}} placeholder="Back (answer)" style={I(D)}/>
+        {/* Tabs */}
+        <div style={{display:"flex",borderBottom:"1px solid "+bd2,padding:"0 22px"}}>
+          {[["notes","📖 Notes ("+notes.length+")"],["flashcards","🃏 Flashcards ("+fcs.length+")"],["questions","❓ Questions ("+qs.length+")"],["add","＋ Add"]].map(function(pair){
+            return <button key={pair[0]} onClick={function(){setTab(pair[0]);setFlip(false);}} style={{padding:"11px 14px",fontSize:12,fontWeight:tab===pair[0]?600:400,color:tab===pair[0]?"#6366f1":mu(D),background:"none",border:"none",cursor:"pointer",borderBottom:tab===pair[0]?"2px solid #6366f1":"2px solid transparent",marginBottom:-1,whiteSpace:"nowrap"}}>{pair[1]}</button>;
+          })}
+        </div>
+
+        <div style={{padding:"20px 22px",maxHeight:"55vh",overflowY:"auto"}}>
+          {/* Notes tab */}
+          {tab==="notes"&&(
+            <div>
+              {notes.length===0&&<p style={{fontSize:13,color:mu(D),textAlign:"center",padding:"30px 0"}}>No notes yet — use ＋ Add or ✨ AI Generate.</p>}
+              {notes.map(function(n){return(
+                <div key={n.id} style={{...C(D),padding:"14px 16px",marginBottom:10}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,marginBottom:n.body&&n.body!==n.heading?8:0}}>
+                    <div style={{fontWeight:700,fontSize:14,color:tx(D)}}>{n.heading||n.text||""}</div>
+                    <div style={{display:"flex",gap:4,flexShrink:0}}>
+                      <span style={{fontSize:9,background:"#6366f1",color:"#fff",padding:"2px 6px",borderRadius:4,fontWeight:600}}>MY NOTE</span>
+                      <button onClick={function(){deleteNote(n.id);}} style={{background:"none",border:"none",cursor:"pointer",color:"#ef4444",fontSize:14,padding:0}}>×</button>
+                    </div>
+                  </div>
+                  {n.body&&n.body!==n.heading&&n.body!==n.text&&<div style={{fontSize:13,color:tx(D),lineHeight:1.7,whiteSpace:"pre-wrap"}}>{n.body}</div>}
+                  {n.text&&!n.heading&&<div style={{fontSize:13,color:tx(D),lineHeight:1.65}}>{n.text}</div>}
+                </div>
+              );})}
             </div>
-            <button onClick={saveFlashcard} disabled={!fcFront.trim()||!fcBack.trim()} style={{...B("#6366f1",false,{width:"100%",padding:"10px 0",fontSize:13,fontWeight:700,marginBottom:20,opacity:fcFront.trim()&&fcBack.trim()?1:0.4})}}>＋ Add Flashcard</button>
-            {secFCs.length===0&&<p style={{fontSize:13,color:mu(D),textAlign:"center",padding:"20px 0"}}>No flashcards yet.</p>}
-            {curFC&&(
-              <div>
-                <div onClick={function(){setFlip(function(f){return !f;});}} style={{...C(D),padding:40,textAlign:"center",cursor:"pointer",minHeight:140,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:12,borderColor:subj.accent,borderWidth:1.5}}>
-                  <div>
-                    <div style={{fontSize:10,fontWeight:700,color:mu(D),marginBottom:8,textTransform:"uppercase"}}>{flip?"Answer":"Question"} — tap to flip</div>
-                    <div style={{fontSize:16,fontWeight:600,lineHeight:1.5}}>{flip?curFC.back:curFC.front}</div>
+          )}
+
+          {/* Flashcards tab */}
+          {tab==="flashcards"&&(
+            <div>
+              {fcs.length===0&&<p style={{fontSize:13,color:mu(D),textAlign:"center",padding:"30px 0"}}>No flashcards yet — use ＋ Add or ✨ AI Generate.</p>}
+              {curFC&&(
+                <div>
+                  <div onClick={function(){setFlip(function(f){return !f;});}} style={{...C(D),padding:40,textAlign:"center",cursor:"pointer",minHeight:130,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:12,borderColor:"#6366f1",borderWidth:1.5}}>
+                    <div>
+                      <div style={{fontSize:10,fontWeight:700,color:mu(D),marginBottom:8,textTransform:"uppercase"}}>{flip?"Answer":"Question"} — click to flip</div>
+                      <div style={{fontSize:16,fontWeight:600,lineHeight:1.5}}>{flip?(curFC.a||curFC.back||""):(curFC.q||curFC.front||"")}</div>
+                    </div>
+                  </div>
+                  <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                    <button onClick={function(){setFcIdx(function(i){return (i-1+fcs.length)%fcs.length;});setFlip(false);}} style={{...B("transparent",true,{padding:"8px 16px",fontSize:13,borderColor:bd2,color:mu(D)})}}>←</button>
+                    <span style={{flex:1,textAlign:"center",fontSize:12,color:mu(D)}}>{fcIdx+1} / {fcs.length}</span>
+                    <button onClick={function(){setFcIdx(function(i){return (i+1)%fcs.length;});setFlip(false);}} style={{...B("transparent",true,{padding:"8px 16px",fontSize:13,borderColor:bd2,color:mu(D)})}}>→</button>
+                    <button onClick={function(){deleteFC(curFC.id);}} style={{...B("transparent",true,{padding:"8px 12px",fontSize:11,borderColor:"#ef4444",color:"#ef4444"})}}>🗑</button>
                   </div>
                 </div>
-                <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                  <button onClick={function(){setFcIdx(function(i){return (i-1+secFCs.length)%secFCs.length;});setFlip(false);}} style={{...B("transparent",true,{padding:"8px 16px",fontSize:13,borderColor:bd2,color:mu(D)})}}>←</button>
-                  <span style={{flex:1,textAlign:"center",fontSize:12,color:mu(D)}}>{fcIdx+1}/{secFCs.length}</span>
-                  <button onClick={function(){setFcIdx(function(i){return (i+1)%secFCs.length;});setFlip(false);}} style={{...B("transparent",true,{padding:"8px 16px",fontSize:13,borderColor:bd2,color:mu(D)})}}>→</button>
-                  <button onClick={function(){deleteFlashcard(curFC.id);}} style={{...B("transparent",true,{padding:"8px 12px",fontSize:11,borderColor:"#ef4444",color:"#ef4444"})}}>🗑</button>
+              )}
+            </div>
+          )}
+
+          {/* Questions tab */}
+          {tab==="questions"&&(
+            <div>
+              {qs.length===0&&<p style={{fontSize:13,color:mu(D),textAlign:"center",padding:"30px 0"}}>No questions yet — use ＋ Add or ✨ AI Generate.</p>}
+              {curQ&&(
+                <div style={{...C(D),padding:18,marginBottom:12}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                    <span style={{fontSize:11,color:mu(D)}}>Q{qIdx+1}/{qs.length} · {curQ.type} · {curQ.marks} marks</span>
+                    <div style={{display:"flex",gap:6}}>
+                      <span style={{fontSize:9,background:"#6366f1",color:"#fff",padding:"2px 6px",borderRadius:4,fontWeight:600}}>MY Q</span>
+                      <button onClick={function(){deleteQ(curQ.id);}} style={{background:"none",border:"none",cursor:"pointer",color:"#ef4444",fontSize:14}}>×</button>
+                    </div>
+                  </div>
+                  <p style={{fontSize:14,fontWeight:600,lineHeight:1.55,marginBottom:curQ.markScheme?10:0}}>{curQ.text}</p>
+                  {curQ.markScheme&&<div style={{padding:"8px 12px",borderRadius:8,background:D?"rgba(16,185,129,.08)":"#f0fdf4",fontSize:12,color:D?"#6ee7b7":"#15803d",lineHeight:1.6}}><strong>Mark scheme:</strong> {curQ.markScheme}</div>}
+                  <div style={{display:"flex",gap:8,marginTop:12}}>
+                    <button onClick={function(){setQIdx(function(i){return (i-1+qs.length)%qs.length;});}} style={{...B("transparent",true,{padding:"6px 14px",fontSize:12,borderColor:bd2,color:mu(D)})}}>←</button>
+                    <button onClick={function(){setQIdx(function(i){return (i+1)%qs.length;});}} style={{...B("transparent",true,{padding:"6px 14px",fontSize:12,borderColor:bd2,color:mu(D)})}}>→</button>
+                  </div>
                 </div>
+              )}
+            </div>
+          )}
+
+          {/* Add tab */}
+          {tab==="add"&&(
+            <div style={{display:"flex",flexDirection:"column",gap:20}}>
+              {/* Note */}
+              <div style={{...C(D),padding:18}}>
+                <div style={{fontWeight:700,fontSize:14,marginBottom:12,color:tx(D)}}>📖 Add Note</div>
+                <label style={{fontSize:11,fontWeight:600,color:mu(D),display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:"0.04em"}}>Heading *</label>
+                <input value={noteHead} onChange={function(e){setNoteHead(e.target.value);}} placeholder="e.g. Mitosis" style={{...I(D),marginBottom:8}}/>
+                <label style={{fontSize:11,fontWeight:600,color:mu(D),display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:"0.04em"}}>Content (optional — supports ## headings and • bullets)</label>
+                <textarea value={noteBody} onChange={function(e){setNoteBody(e.target.value);}} rows={4} placeholder={"## Section heading\n• Key fact one\n• Key fact two\n\n## Another section\n• More content…"} style={{...I(D,{resize:"vertical",marginBottom:10,fontSize:12,fontFamily:"inherit"})}}/>
+                <button onClick={saveNote} disabled={!noteHead.trim()} style={{...B("#6366f1",false,{padding:"9px 20px",fontSize:13,fontWeight:600,opacity:noteHead.trim()?1:0.4})}}>Save Note</button>
               </div>
-            )}
-          </div>
-        )}
-
-        {tab==="questions"&&(
-          <div>
-            <div style={{marginBottom:16}}>
-              <textarea value={qText} onChange={function(e){setQText(e.target.value);}} rows={2} placeholder="Question text…" style={{...I(D,{marginBottom:8,resize:"vertical"})}}/>
-              <textarea value={qAnswer} onChange={function(e){setQAnswer(e.target.value);}} rows={2} placeholder="Mark scheme / ideal answer (optional)…" style={{...I(D,{marginBottom:8,resize:"vertical"})}}/>
-              <button onClick={saveQuestion} disabled={!qText.trim()} style={{...B("#6366f1",false,{width:"100%",padding:"10px 0",fontSize:13,fontWeight:700,opacity:qText.trim()?1:0.4})}}>＋ Add Question</button>
-            </div>
-            {secQs.length===0&&<p style={{fontSize:13,color:mu(D),textAlign:"center",padding:"20px 0"}}>No questions yet.</p>}
-            {curQ&&(
-              <div style={{...C(D),padding:18,marginBottom:10}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,marginBottom:8}}>
-                  <span style={{fontSize:12,color:mu(D)}}>Q{qIdx+1}/{secQs.length}</span>
-                  <button onClick={function(){deleteQuestion(curQ.id);}} style={{background:"none",border:"none",cursor:"pointer",color:"#ef4444",fontSize:13}}>🗑</button>
-                </div>
-                <p style={{fontSize:14,fontWeight:600,marginBottom:12,lineHeight:1.55}}>{curQ.text}</p>
-                {curQ.markScheme&&<div style={{padding:"8px 12px",borderRadius:8,background:D?"rgba(16,185,129,.08)":"#f0fdf4",fontSize:12,color:D?"#6ee7b7":"#15803d",lineHeight:1.6}}><strong>Answer:</strong> {curQ.markScheme}</div>}
-                <div style={{display:"flex",gap:8,marginTop:12}}>
-                  <button onClick={function(){setQIdx(function(i){return (i-1+secQs.length)%secQs.length;});}} style={{...B("transparent",true,{padding:"7px 14px",fontSize:12,borderColor:bd2,color:mu(D)})}}>←</button>
-                  <button onClick={function(){setQIdx(function(i){return (i+1)%secQs.length;});}} style={{...B("transparent",true,{padding:"7px 14px",fontSize:12,borderColor:bd2,color:mu(D)})}}>→</button>
-                </div>
+              {/* Flashcard */}
+              <div style={{...C(D),padding:18}}>
+                <div style={{fontWeight:700,fontSize:14,marginBottom:12,color:tx(D)}}>🃏 Add Flashcard</div>
+                <label style={{fontSize:11,fontWeight:600,color:mu(D),display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:"0.04em"}}>Question (front)</label>
+                <input value={fcFront} onChange={function(e){setFcFront(e.target.value);}} placeholder="e.g. What is osmosis?" style={{...I(D),marginBottom:8}}/>
+                <label style={{fontSize:11,fontWeight:600,color:mu(D),display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:"0.04em"}}>Answer (back)</label>
+                <input value={fcBack} onChange={function(e){setFcBack(e.target.value);}} placeholder="e.g. Movement of water molecules from high to low concentration…" style={{...I(D),marginBottom:10}}/>
+                <button onClick={saveFC} disabled={!fcFront.trim()||!fcBack.trim()} style={{...B("#6366f1",false,{padding:"9px 20px",fontSize:13,fontWeight:600,opacity:fcFront.trim()&&fcBack.trim()?1:0.4})}}>Save Flashcard</button>
               </div>
-            )}
-          </div>
-        )}
-
-        {tab==="generate"&&(
-          <div>
-            <div style={{padding:"12px 16px",borderRadius:10,background:D?"rgba(99,102,241,.08)":"#eef2ff",border:"1px solid #6366f1",marginBottom:18,fontSize:12,color:D?"#c7d2fe":"#3730a3",lineHeight:1.6}}>
-              ✨ <strong>AI Generate:</strong> Paste text or notes below (or upload an image), choose what to create, and AI will generate content for you automatically.
-            </div>
-            <div style={{display:"flex",gap:8,marginBottom:12}}>
-              {[["notes","📖 Notes"],["flashcards","🃏 Flashcards"],["questions","❓ Questions"]].map(function(p){return (
-                <button key={p[0]} onClick={function(){setAiMode(p[0]);}} style={{flex:1,padding:"8px 0",borderRadius:8,border:"1.5px solid "+(aiMode===p[0]?"#6366f1":bd2),background:aiMode===p[0]?(D?"rgba(99,102,241,.15)":"#eef2ff"):"transparent",color:aiMode===p[0]?"#6366f1":mu(D),fontSize:12,fontWeight:aiMode===p[0]?600:400,cursor:"pointer"}}>{p[1]}</button>
-              );})}
-            </div>
-            <div style={{display:"flex",gap:8,marginBottom:10}}>
-              <label style={{...B("transparent",true,{padding:"8px 14px",fontSize:12,borderColor:bd2,color:mu(D),cursor:"pointer",flexShrink:0})}}>
-                📷 Upload Image
-                <input type="file" accept="image/*" style={{display:"none"}} onChange={handleImageUpload}/>
-              </label>
-              {imgLoading&&<span style={{fontSize:12,color:mu(D),alignSelf:"center"}}>Reading image…</span>}
-            </div>
-            <textarea value={aiText} onChange={function(e){setAiText(e.target.value);}} rows={6} placeholder="Paste your text, notes, or textbook content here…" style={{...I(D,{resize:"vertical",marginBottom:10})}}/>
-            {aiErr&&<p style={{fontSize:12,color:"#ef4444",marginBottom:8}}>{aiErr}</p>}
-            <button onClick={generateFromText} disabled={!aiText.trim()||aiLoading} style={{...B("#6366f1",false,{width:"100%",padding:"11px 0",fontSize:13,fontWeight:700,opacity:!aiText.trim()||aiLoading?0.4:1})}}>{aiLoading?"⏳ Generating…":"✨ Generate "+aiMode}</button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-
-  // List view
-  return (
-    <div style={{minHeight:"100vh",background:D?"#030712":"#f9fafb",color:D?"#f9fafb":"#111827"}} className="fade-in">
-      <div style={{maxWidth:760,margin:"0 auto",padding:"32px 24px"}}>
-        <button onClick={onBack} style={{fontSize:13,color:mu(D),background:"none",border:"none",cursor:"pointer",marginBottom:20}}>← Back</button>
-        <h2 style={{fontSize:22,fontWeight:700,marginBottom:4}}>📓 My Notes &amp; Flashcards</h2>
-        <p style={{fontSize:13,color:mu(D),marginBottom:20}}>Your private notes, flashcards and questions — only visible to you.</p>
-        <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:20}}>
-          {subjects.filter(function(s){return !s._politics;}).map(function(s){
-            var cnt=(ucData[s.id]||{sections:[]}).sections.length;
-            return (
-              <button key={s.id} onClick={function(){setSelSubj(s.id);}} style={{padding:"7px 14px",borderRadius:20,border:"1.5px solid "+(selSubj===s.id?s.accent:bd2),background:selSubj===s.id?s.accent:"transparent",color:selSubj===s.id?"#fff":mu(D),fontSize:12,fontWeight:selSubj===s.id?700:400,cursor:"pointer"}}>
-                {s.icon} {s.name}{cnt>0?" ("+cnt+")":""}
-              </button>
-            );
-          })}
-        </div>
-        <div style={{...C(D),padding:20,marginBottom:16}}>
-          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:showNewSec?14:0}}>
-            <span style={{fontSize:18}}>{subj.icon}</span>
-            <span style={{fontWeight:700,fontSize:15,flex:1}}>{subj.name} — My Sections</span>
-            <button onClick={function(){setShowNewSec(function(v){return !v;});setNewSecName("");}} style={{...B("#6366f1",false,{padding:"6px 14px",fontSize:12,fontWeight:600})}}>＋ New Section</button>
-          </div>
-          {showNewSec&&(
-            <div style={{display:"flex",gap:8}}>
-              <input autoFocus value={newSecName} onChange={function(e){setNewSecName(e.target.value);}} onKeyDown={function(e){if(e.key==="Enter")createSection();if(e.key==="Escape")setShowNewSec(false);}} placeholder="Section name e.g. Cell Biology" style={{...I(D,{flex:1})}}/>
-              <button onClick={createSection} disabled={!newSecName.trim()} style={{...B("#6366f1",false,{padding:"8px 16px",fontSize:13,fontWeight:700,opacity:newSecName.trim()?1:0.4})}}>Create</button>
+              {/* Question */}
+              <div style={{...C(D),padding:18}}>
+                <div style={{fontWeight:700,fontSize:14,marginBottom:12,color:tx(D)}}>❓ Add Question</div>
+                <label style={{fontSize:11,fontWeight:600,color:mu(D),display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:"0.04em"}}>Type</label>
+                <div style={{display:"flex",gap:6,marginBottom:10}}>
+                  {[["short","Short Answer"],["extended","Extended"]].map(function(p){return(
+                    <button key={p[0]} onClick={function(){setQType(p[0]);}} style={{padding:"6px 14px",borderRadius:7,border:"1.5px solid "+(qType===p[0]?"#6366f1":bd2),background:qType===p[0]?(D?"rgba(99,102,241,.15)":"#eef2ff"):"transparent",color:qType===p[0]?"#6366f1":mu(D),fontSize:12,fontWeight:qType===p[0]?600:400,cursor:"pointer"}}>{p[1]}</button>
+                  );})}
+                </div>
+                <label style={{fontSize:11,fontWeight:600,color:mu(D),display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:"0.04em"}}>Question Text *</label>
+                <textarea value={qText} onChange={function(e){setQText(e.target.value);}} rows={2} placeholder="Enter the question…" style={{...I(D,{resize:"vertical",marginBottom:8})}}/>
+                <label style={{fontSize:11,fontWeight:600,color:mu(D),display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:"0.04em"}}>Mark Scheme</label>
+                <textarea value={qMS} onChange={function(e){setQMS(e.target.value);}} rows={2} placeholder="Model answer / mark scheme…" style={{...I(D,{resize:"vertical",marginBottom:8})}}/>
+                <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+                  <label style={{fontSize:11,fontWeight:600,color:mu(D),textTransform:"uppercase",letterSpacing:"0.04em"}}>Marks</label>
+                  <input type="number" min={1} max={20} value={qMarks} onChange={function(e){setQMarks(Number(e.target.value));}} style={{...I(D,{width:60})}}/>
+                </div>
+                <button onClick={saveQ} disabled={!qText.trim()} style={{...B("#6366f1",false,{padding:"9px 20px",fontSize:13,fontWeight:600,opacity:qText.trim()?1:0.4})}}>Save Question</button>
+              </div>
             </div>
           )}
         </div>
-        {subjUC.sections.length===0&&!showNewSec&&<div style={{...C(D),padding:40,textAlign:"center",color:mu(D)}}><p style={{fontSize:28,marginBottom:8}}>{subj.icon}</p><p style={{fontSize:14}}>No sections yet for {subj.name} — create one above to start adding notes.</p></div>}
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:10}}>
-          {subjUC.sections.map(function(sec){return (
-            <button key={sec.id} onClick={function(){setCurSec(sec);setView("section");setTab("notes");setFlip(false);setFcIdx(0);setQIdx(0);}}
-              style={{...C(D),padding:"16px 18px",textAlign:"left",cursor:"pointer",border:"1.5px solid "+bd2,transition:"border-color .15s"}}
-              onMouseEnter={function(e){e.currentTarget.style.borderColor=subj.accent;}}
-              onMouseLeave={function(e){e.currentTarget.style.borderColor=bd2;}}>
-              <div style={{fontWeight:700,fontSize:14,marginBottom:6,color:D?"#f9fafb":"#111827"}}>{sec.title}</div>
-              <div style={{display:"flex",gap:10,fontSize:11,color:mu(D)}}>
-                <span>📖 {(sec.notes||[]).length}</span>
-                <span>🃏 {(sec.flashcards||[]).length}</span>
-                <span>❓ {(sec.questions||[]).length}</span>
-              </div>
+      </div>
+    </div>
+  );
+}
+
+// Keep UserContentScreen as lightweight standalone wrapper (used by ucScreen route)
+function UserContentScreen({D,user,subjects,ucData,onSaveSection,onDeleteSection,onBack}) {
+  var [selSubj,setSelSubj] = React.useState(subjects[0]?.id||"");
+  var [modal,setModal] = React.useState(null);
+  var bd2=D?"#1f2937":"#e5e7eb";
+  var subj=subjects.find(function(s){return s.id===selSubj;})||subjects[0];
+  var subjUC=ucData[selSubj]||{sections:[]};
+  return (
+    <div style={{maxWidth:800,margin:"0 auto",padding:"32px 24px"}}>
+      <button onClick={onBack} style={{fontSize:13,color:mu(D),background:"none",border:"none",cursor:"pointer",marginBottom:20}}>← Back</button>
+      <h2 style={{fontSize:22,fontWeight:700,marginBottom:4}}>📓 My Notes &amp; Flashcards</h2>
+      <p style={{fontSize:13,color:mu(D),marginBottom:20}}>Private to your account — create sections to organise your notes.</p>
+      <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:20}}>
+        {subjects.filter(function(s){return !s._politics;}).map(function(s){
+          var cnt=(ucData[s.id]||{sections:[]}).sections.length;
+          return <button key={s.id} onClick={function(){setSelSubj(s.id);}} style={{padding:"6px 14px",borderRadius:20,border:"1.5px solid "+(selSubj===s.id?s.accent:bd2),background:selSubj===s.id?s.accent:"transparent",color:selSubj===s.id?"#fff":mu(D),fontSize:12,fontWeight:selSubj===s.id?700:400,cursor:"pointer"}}>{s.icon} {s.name}{cnt?" ("+cnt+")":""}</button>;
+        })}
+      </div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+        <span style={{fontWeight:700,fontSize:15}}>{subj.name}</span>
+        <button onClick={function(){setModal({mode:"new"});}} style={{...B("#6366f1",false,{padding:"7px 16px",fontSize:12,fontWeight:600})}}>＋ New Section</button>
+      </div>
+      {subjUC.sections.length===0&&<div style={{...C(D),padding:40,textAlign:"center",color:mu(D)}}><p style={{fontSize:24,marginBottom:8}}>📓</p><p style={{fontSize:13}}>No sections yet for {subj.name}.</p></div>}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:10}}>
+        {subjUC.sections.map(function(sec){return(
+          <div key={sec.id} style={{border:"1.5px solid #6366f1",borderRadius:12,overflow:"hidden",background:D?"rgba(99,102,241,.04)":"#fafaff"}}>
+            <button onClick={function(){setModal({mode:"section",sec:sec});}} style={{width:"100%",textAlign:"left",padding:"14px 16px",background:"transparent",border:"none",cursor:"pointer",color:tx(D)}}>
+              <div style={{fontWeight:700,fontSize:14,marginBottom:6}}>{sec.title}</div>
+              <div style={{display:"flex",gap:10,fontSize:11,color:mu(D)}}><span>📖 {(sec.notes||[]).length}</span><span>🃏 {(sec.flashcards||[]).length}</span><span>❓ {(sec.questions||[]).length}</span></div>
             </button>
-          );})}
+            <div style={{display:"flex",borderTop:"1px solid "+(D?"#374151":"#e0e7ff")}}>
+              <button onClick={function(){setModal({mode:"section",sec:sec});}} style={{flex:1,padding:"5px 0",fontSize:11,background:"none",border:"none",cursor:"pointer",color:"#6366f1",fontWeight:600}}>✏️ Open</button>
+              <button onClick={function(){if(window.confirm("Delete?"))onDeleteSection(selSubj,sec.id);}} style={{flex:1,padding:"5px 0",fontSize:11,background:"none",border:"none",cursor:"pointer",color:"#ef4444",fontWeight:600,borderLeft:"1px solid "+(D?"#374151":"#e0e7ff")}}>🗑</button>
+            </div>
+          </div>
+        );})}
+      </div>
+      {modal?.mode==="new"&&<UCNewSectionModal D={D} onClose={function(){setModal(null);}} onSave={function(title){var sec={id:Math.random().toString(36).slice(2),title:title.trim(),notes:[],flashcards:[],questions:[],created:Date.now()};onSaveSection(selSubj,sec);setModal({mode:"section",sec:sec});}}/>}
+      {modal?.mode==="section"&&<UCSectionModal D={D} user={user} subjId={selSubj} sec={(ucData[selSubj]||{sections:[]}).sections.find(function(s){return s.id===modal.sec.id;})||modal.sec} subjects={subjects} onSaveSection={onSaveSection} onClose={function(){setModal(null);}}/>}
+    </div>
+  );
+}
+
+
+function SubjMyNotesTab({D,subjId,ucData,setModal,deleteUCSection,tx2,mu2}) {
+  var subjUCData = ucData[subjId]||{sections:[]};
+  var bd2 = D?"#374151":"#e0e7ff";
+  return (
+    <div className="fade-in">
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:10}}>
+        <div>
+          <h3 style={{margin:0,fontSize:16,fontWeight:700}}>📓 My Notes &amp; Flashcards</h3>
+          <p style={{margin:"2px 0 0",fontSize:12,color:mu2}}>Private to you — only you can see this content</p>
         </div>
+        <button onClick={function(){setModal({mode:"uc-new-section",subjId:subjId});}} style={{display:"flex",alignItems:"center",gap:6,padding:"8px 16px",borderRadius:8,border:"none",background:"#6366f1",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>＋ New Section</button>
+      </div>
+      {subjUCData.sections.length===0&&(
+        <div style={{padding:"40px 24px",textAlign:"center",borderRadius:12,border:"1.5px dashed #6366f1",background:D?"rgba(99,102,241,.04)":"#fafaff"}}>
+          <p style={{fontSize:28,margin:"0 0 8px"}}>📓</p>
+          <p style={{fontSize:14,fontWeight:600,margin:"0 0 4px",color:tx2}}>No personal notes yet</p>
+          <p style={{fontSize:12,color:mu2,margin:0}}>Create a section to start adding your own notes, flashcards and questions — or use AI to generate them from text or images.</p>
+        </div>
+      )}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:12}}>
+        {subjUCData.sections.map(function(sec){
+          return (
+            <div key={sec.id} style={{border:"1.5px solid #6366f1",borderRadius:12,overflow:"hidden",background:D?"rgba(99,102,241,.04)":"#fafaff"}}>
+              <div role="button" tabIndex={0}
+                onClick={function(){setModal({mode:"uc-section",subjId:subjId,sec:sec});}}
+                onKeyDown={function(e){if(e.key==="Enter")setModal({mode:"uc-section",subjId:subjId,sec:sec});}}
+                style={{padding:"12px 14px",cursor:"pointer",color:tx2}}
+                onMouseEnter={function(e){e.currentTarget.style.background=D?"rgba(99,102,241,.1)":"#eef2ff";}}
+                onMouseLeave={function(e){e.currentTarget.style.background="transparent";}}>
+                <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:6,marginBottom:6}}>
+                  <div style={{fontSize:13,fontWeight:700,flex:1,minWidth:0}}>{sec.title}</div>
+                  <span style={{fontSize:9,fontWeight:700,background:"#6366f1",color:"#fff",padding:"2px 6px",borderRadius:6,flexShrink:0,whiteSpace:"nowrap"}}>MY NOTES</span>
+                </div>
+                <div style={{display:"flex",gap:10,fontSize:11,color:mu2}}>
+                  <span>📖 {(sec.notes||[]).length}</span>
+                  <span>🃏 {(sec.flashcards||[]).length}</span>
+                  <span>❓ {(sec.questions||[]).length}</span>
+                </div>
+              </div>
+              <div style={{display:"flex",borderTop:"1px solid "+bd2,background:D?"rgba(0,0,0,.15)":"rgba(99,102,241,.06)"}}>
+                <button onClick={function(){setModal({mode:"uc-section",subjId:subjId,sec:sec});}} style={{flex:1,padding:"5px 0",fontSize:11,background:"none",border:"none",cursor:"pointer",color:"#6366f1",fontWeight:600}}>✏️ Open</button>
+                <button onClick={function(){if(window.confirm("Delete this section?"))deleteUCSection(subjId,sec.id);}} style={{flex:1,padding:"5px 0",fontSize:11,background:"none",border:"none",cursor:"pointer",color:"#ef4444",fontWeight:600,borderLeft:"1px solid "+bd2}}>🗑 Delete</button>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -6049,7 +6185,7 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||null}); };
       {createPersonalOpen&&<CreatePersonalSubjectModal D={D} onClose={()=>setCreatePersonalOpen(false)} onSave={function(ns){savePersonalSubjects([...personalSubjects,ns]);setCreatePersonalOpen(false);}}/>}
       <AppFooter D={D} onContact={()=>setScreen("contact")}/>
     </div>
-   );
+  );
   if(screen==="subject"&&subjDef){
     const subj=subjDef;
     return (
@@ -6117,10 +6253,9 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||null}); };
             </div>
           </div>}
           <div style={{display:"flex",alignItems:"center",borderBottom:"1px solid "+bd2,marginBottom:24,gap:2,flexWrap:"wrap"}}>
-            {(subj._politics?[["sections","📚 Topics"]]:[["sections","📚 Topics"],["papers","📄 Past Papers"]]).map(function(pair){var t=pair[0],label=pair[1];return(
+            {(subj._politics?[["sections","📚 Topics"]]:[["sections","📚 Topics"],["mynotes","📓 My Notes"],["papers","📄 Past Papers"]]).map(function(pair){var t=pair[0],label=pair[1];return(
               <button key={t} onClick={function(){setSubjTab(t);}} style={{padding:"10px 18px",fontSize:13,fontWeight:subjTab===t?600:400,color:subjTab===t?subj.accent:mu(D),background:"none",border:"none",cursor:"pointer",borderBottom:subjTab===t?"2px solid "+subj.accent:"2px solid transparent",marginBottom:-1,transition:"color .15s"}}>{label}</button>
             );})}
-            <button onClick={function(){openMyNotes(subj.id);}} style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:5,padding:"6px 14px",borderRadius:8,border:"1.5px solid #6366f1",background:D?"rgba(99,102,241,.1)":"#eef2ff",color:"#6366f1",fontSize:12,fontWeight:600,cursor:"pointer",marginBottom:2}}>📓 My Notes</button>
           </div>
 
           {subjTab==="sections"&&(
@@ -6242,11 +6377,14 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||null}); };
               })}
             </div>
           )}
+          {subjTab==="mynotes"&&<SubjMyNotesTab D={D} subjId={subj.id} ucData={userContent} setModal={setModal} deleteUCSection={deleteUCSection} tx2={tx(D)} mu2={mu(D)}/>}
           {subjTab==="papers"&&<PastPapersTab papers={curBData.papers} onAdd={()=>setModal({mode:"paper"})} onDelete={deletePaper} admin={admin} D={D} accent={subj.accent} board={curBoard} subjectName={subj.name}/>}
         </div>
         {modal?.mode==="section"&&<CreateModal mode="section" D={D} subjects={subjects} onClose={()=>setModal(null)} onSave={addCustomSection}/>}
         {modal?.mode==="subtopic"&&modal._parentTopicId&&<CreateModal mode="subtopic" D={D} subjects={subjects} onClose={()=>setModal(null)} onSave={st=>addSubtopic(modal._parentTopicId,st)}/>}
         {modal?.mode==="paper"&&<CreateModal mode="paper" D={D} subjects={subjects} onClose={()=>setModal(null)} onSave={addPaper}/>}
+        {modal?.mode==="uc-new-section"&&<UCNewSectionModal D={D} onClose={()=>setModal(null)} onSave={function(title){if(!title.trim())return;var sec={id:Math.random().toString(36).slice(2),title:title.trim(),notes:[],flashcards:[],questions:[],created:Date.now()};saveUCSection(modal.subjId,sec);setModal({mode:"uc-section",subjId:modal.subjId,sec});}}/>}
+        {modal?.mode==="uc-section"&&<UCSectionModal D={D} user={user} subjId={modal.subjId} sec={(userContent[modal.subjId]||{sections:[]}).sections.find(function(s){return s.id===(modal.sec?.id||modal.secId);})||modal.sec} subjects={subjects} onSaveSection={saveUCSection} onClose={()=>setModal(null)}/>}
       </div>
     );
   }
@@ -6832,7 +6970,8 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||null}); };
       const merged=mergeTopics(s.topics||[],bdata.custom,bdata.extras);
       return merged.flatMap((t,ti)=>t.sections.map(sec=>({sec,si,ti,subj:s})));
     });
-    const scoredSecs=allSecs.map(({sec,si,ti,subj})=>{
+    const scoredSecs=allSecs.map(function(item){
+      const sec=item.sec,si=item.si,ti=item.ti,subj=item.subj;
       const wq=stats.weakQ?.[sec.id]||{wrong:0,total:0};
       const wf=stats.weakFC?.[sec.id]||{wrong:0,total:0};
       const attempts=wq.total+wf.total;
@@ -6843,9 +6982,9 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||null}); };
     const sorted=[...filtered].sort((a,b)=>b.score-a.score||b.attempts-a.attempts);
     const buildQueue=()=>{
       const items=[];
-      for(const {sec,subj} of sorted){
+      for(var _si=0;_si<sorted.length;_si++){const _it=sorted[_si];const sec=_it.sec,subj=_it.subj;
         const qs=(sec.questions||[]).slice(0,2);
-        qs.forEach(q=>items.push({q,secId:sec.id,secTitle:sec.title,subj}));
+        qs.forEach(function(q){items.push({q,secId:sec.id,secTitle:sec.title,subj});});
       }
       return items.slice(0,15);
     };
@@ -6961,7 +7100,7 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||null}); };
             :<div style={{...C(D),padding:24}}>
               <h3 style={{fontWeight:700,marginBottom:4}}>Weakness Analysis</h3>
               <p style={{fontSize:13,color:mu(D),marginBottom:16}}>Ranked by weakness · Questions weight 2×, flashcards 1×</p>
-              {sorted.slice(0,12).map(({sec,subj,score,wq,wf},i)=>{
+              {sorted.slice(0,12).map(function(itm,i){const sec=itm.sec,subj=itm.subj,score=itm.score,wq=itm.wq,wf=itm.wf;
                 const pct=Math.round(score*100);
                 const col=pct>60?"#dc2626":pct>30?"#d97706":"#16a34a";
                 return (
