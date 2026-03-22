@@ -173,7 +173,7 @@ async function _aiRequest(systemPrompt, messages, maxTokens){
 
   // Use vision-capable model first when images are present, then fall back
   var modelList = hasImages
-    ? ["meta-llama/llama-4-scout-17b-16e-instruct","llama-3.2-11b-vision-preview"].concat(_GROQ_MODELS)
+    ? ["meta-llama/llama-4-scout-17b-16e-instruct","llama-3.2-11b-vision-preview","llama-3.2-90b-vision-preview"].concat(_GROQ_MODELS)
     : _GROQ_MODELS;
 
   var lastErr = new Error("AI unavailable.");
@@ -188,9 +188,13 @@ async function _aiRequest(systemPrompt, messages, maxTokens){
       if(dat.error){
         var errMsg = (typeof dat.error==="string")?dat.error:(dat.error.message||"AI error");
         var el = errMsg.toLowerCase();
-        if(el.indexOf("model")!==-1&&(el.indexOf("not found")!==-1||el.indexOf("does not exist")!==-1)){
-          lastErr=new Error(errMsg); continue; // try next model
-        }
+        // For vision requests, try next model on any model-level or capability error
+        var shouldRetry = el.indexOf("model")!==-1 || el.indexOf("not found")!==-1 ||
+          el.indexOf("does not exist")!==-1 || el.indexOf("vision")!==-1 ||
+          el.indexOf("image")!==-1 || el.indexOf("multimodal")!==-1 ||
+          el.indexOf("unsupported")!==-1 || el.indexOf("429")!==-1 ||
+          el.indexOf("rate")!==-1;
+        if(shouldRetry){ lastErr=new Error(errMsg); continue; }
         throw new Error(errMsg);
       }
       var text = dat.choices&&dat.choices[0]&&dat.choices[0].message&&dat.choices[0].message.content;
@@ -4348,34 +4352,46 @@ function UCSectionModal({D,user,subjId,sec,subjects,onSaveSection,onClose}) {
     setImgLoading(true); setAiErr("");
     var reader=new FileReader();
     reader.onload=function(ev){
-      var b64=ev.target.result.split(",")[1];
+      var dataUrl=ev.target.result;
+      var b64=dataUrl.split(",")[1];
       var mediaType=file.type||"image/jpeg";
-      // Use callGeminiSimple with a vision-friendly prompt via the text API
-      // since the Groq proxy may not support vision; extract text from image description first
-      var visionPrompt="The following is a base64-encoded "+mediaType+" image of revision/study material. "+
-        "Extract ALL text, diagrams, labels, definitions, equations, and key points visible in this image. "+
-        "Present them as clear structured notes with ## headings and bullet points. "+
-        "Image data (base64): data:"+mediaType+";base64,"+b64.slice(0,500)+"... [image attached]";
-      // Try vision via fetch to /api/ai with image content
-      fetch("/api/ai",{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({
-          model:"llava-v1.5-7b-4096-preview",
-          max_tokens:1500,
-          messages:[{role:"user",content:[
-            {type:"image_url",image_url:{url:"data:"+mediaType+";base64,"+b64}},
-            {type:"text",text:"Extract all revision content from this image. Produce structured notes with ## headings for each section and bullet points (•) for each fact. Include all text, labels, equations, and key terms you can see."}
-          ]}]
-        })
-      }).then(function(r){return r.json();}).then(function(data){
-        var text=(data.choices&&data.choices[0]&&data.choices[0].message&&data.choices[0].message.content)||"";
-        if(text){setAiText(text);setAiMode("notes");setImgLoading(false);setShowAI(true);}
-        else throw new Error("No content returned");
+
+      // Use _aiRequest which has the vision model cascade built-in
+      // (tries meta-llama/llama-4-scout, llama-3.2-11b-vision, etc.)
+      _aiRequest(
+        "You are a GCSE revision assistant. The student has uploaded an image of revision material — a textbook page, handwritten notes, a diagram, or a past paper. Extract ALL visible content: headings, key terms, definitions, equations, labels, bullet points, dates, processes. Format your response as structured revision notes using ## headings for each section and • bullet points for each fact. Do not skip anything.",
+        [{
+          role:"user",
+          _d:{
+            text:"Please extract all revision content from this image and format it as structured notes with ## headings and • bullet points.",
+            files:[{isImage:true, data:b64, type:mediaType, name:file.name||"upload.jpg"}]
+          }
+        }],
+        1800
+      ).then(function(text){
+        if(text&&text.trim()){
+          setAiText(text.trim());
+          setAiMode("notes");
+          setImgLoading(false);
+          setShowAI(true);
+          setAiErr("");
+        } else {
+          throw new Error("Empty response");
+        }
       }).catch(function(){
-        // Fallback: ask user to describe/paste content manually
-        setAiErr("Image vision unavailable. Please paste the text content from your image below.");
-        setImgLoading(false); setShowAI(true);
+        // Fallback: save the image directly as a note so it's not lost
+        var imgNote={
+          id:uid2(),
+          heading:"📷 "+(file.name||"Uploaded image"),
+          body:"",
+          images:[{image:dataUrl, annotations:[]}],
+          _userCreated:true
+        };
+        var updatedSec={...sec, notes:[...notes, imgNote]};
+        onSaveSection(subjId, updatedSec);
+        setAiErr("AI text extraction unavailable — image saved directly to your notes instead. You can add notes manually in the ＋ Add tab.");
+        setImgLoading(false);
+        setTab("notes");
       });
     };
     reader.readAsDataURL(file);
@@ -4485,13 +4501,19 @@ function UCSectionModal({D,user,subjId,sec,subjects,onSaveSection,onClose}) {
               {notes.length===0&&<p style={{fontSize:13,color:mu(D),textAlign:"center",padding:"30px 0"}}>No notes yet — use ＋ Add or ✨ AI Generate.</p>}
               {notes.map(function(n){return(
                 <div key={n.id} style={{...C(D),padding:"14px 16px",marginBottom:10}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,marginBottom:n.body&&n.body!==n.heading?8:0}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,marginBottom:(n.body&&n.body!==n.heading)||(n.images&&n.images.length>0)?8:0}}>
                     <div style={{fontWeight:700,fontSize:14,color:tx(D)}}>{n.heading||n.text||""}</div>
                     <div style={{display:"flex",gap:4,flexShrink:0}}>
                       <span style={{fontSize:9,background:"#6366f1",color:"#fff",padding:"2px 6px",borderRadius:4,fontWeight:600}}>MY NOTE</span>
                       <button onClick={function(){deleteNote(n.id);}} style={{background:"none",border:"none",cursor:"pointer",color:"#ef4444",fontSize:14,padding:0}}>×</button>
                     </div>
                   </div>
+                  {(n.images||[]).map(function(img,ii){
+                    return img&&img.image?(
+                      <img key={ii} src={img.image} alt="note image"
+                        style={{maxWidth:"100%",borderRadius:8,display:"block",marginBottom:8,border:"1px solid "+(D?"#374151":"#e5e7eb")}}/>
+                    ):null;
+                  })}
                   {n.body&&n.body!==n.heading&&n.body!==n.text&&<div style={{fontSize:13,color:tx(D),lineHeight:1.7,whiteSpace:"pre-wrap"}}>{n.body}</div>}
                   {n.text&&!n.heading&&<div style={{fontSize:13,color:tx(D),lineHeight:1.65}}>{n.text}</div>}
                 </div>
