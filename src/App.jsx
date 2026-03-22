@@ -23,11 +23,20 @@ _gs.textContent=`
 textarea,input,select{font-family:'IBM Plex Sans',sans-serif!important}
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 @keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-@keyframes flipCard{0%{transform:rotateY(0)}50%{transform:rotateY(90deg)}100%{transform:rotateY(0)}}
 @keyframes streakPop{0%{transform:scale(1)}50%{transform:scale(1.25)}100%{transform:scale(1)}}
+@keyframes toastIn{from{opacity:0;transform:translateY(12px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes toastOut{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(8px)}}
 .fade-in{animation:fadeIn .22s ease forwards}
 .slide-up{animation:slideUp .25s ease forwards}
 .streak-pop{animation:streakPop .35s ease}
+.toast-in{animation:toastIn .2s ease forwards}
+.toast-out{animation:toastOut .2s ease forwards}
+/* Flashcard 3-D flip */
+.fc-scene{perspective:900px}
+.fc-card{width:100%;min-height:170px;position:relative;transform-style:preserve-3d;transition:transform .4s cubic-bezier(.4,0,.2,1)}
+.fc-card.flipped{transform:rotateY(180deg)}
+.fc-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:14px;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:32px 24px;text-align:center;cursor:pointer}
+.fc-back{transform:rotateY(180deg)}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:4px}
 .ann-handle{cursor:move;user-select:none}
 .rich-body{outline:none;min-height:80px;line-height:1.75;font-size:13px}
@@ -1198,11 +1207,34 @@ const I  = (D,x={}) => ({width:"100%",background:D?"#1f2937":"#fff",border:`1.5p
 const B  = (color,outline,extra={}) => ({padding:"9px 16px",borderRadius:10,border:outline?`1.5px solid ${color}`:"none",background:outline?"transparent":color,color:outline?color:"#fff",cursor:"pointer",fontSize:13,fontWeight:600,...extra});
 const mu = D => D?"#6b7280":"#9ca3af";
 const tx = D => D?"#f9fafb":"#111827";
-const uid = () => Math.random().toString(36).slice(2,9);
+const uid = () => (typeof crypto!=="undefined"&&crypto.randomUUID) ? crypto.randomUUID().replace(/-/g,"").slice(0,9) : Math.random().toString(36).slice(2,9);
 const stripHtml = s => (s||"").replace(/<[^>]*>/g,"").trim();
 const GRADES = ["U","1","2","3","4","5","6","7","8","9"];
 const pctToGrade = pct => pct>=90?"9":pct>=80?"8":pct>=70?"7":pct>=60?"6":pct>=50?"5":pct>=40?"4":pct>=30?"3":pct>=20?"2":pct>=10?"1":"U";
 const gradeColor = g => ({9:"#7c3aed",8:"#2563eb",7:"#0891b2",6:"#16a34a",5:"#65a30d",4:"#ca8a04",3:"#d97706",2:"#ea580c",1:"#dc2626",U:"#9ca3af"})[g]||"#9ca3af";
+
+/* ─── TOAST SYSTEM ───────────────────────────────────────────────────────────── */
+let _toastListeners=[];
+function _emitToast(msg,type="success",duration=2200){_toastListeners.forEach(fn=>fn({id:uid(),msg,type,duration}));}
+function showToast(msg,type,duration){_emitToast(msg,type,duration);}
+function ToastContainer(){
+  const [toasts,setToasts]=useState([]);
+  useEffect(()=>{
+    const fn=t=>{setToasts(p=>[...p,{...t,leaving:false}]);setTimeout(()=>{setToasts(p=>p.map(x=>x.id===t.id?{...x,leaving:true}:x));setTimeout(()=>setToasts(p=>p.filter(x=>x.id!==t.id)),220);},t.duration||2200);};
+    _toastListeners.push(fn);return()=>{_toastListeners=_toastListeners.filter(f=>f!==fn);};
+  },[]);
+  if(!toasts.length)return null;
+  return (
+    <div style={{position:"fixed",bottom:24,left:"50%",transform:"translateX(-50%)",zIndex:99999,display:"flex",flexDirection:"column",gap:8,alignItems:"center",pointerEvents:"none"}}>
+      {toasts.map(t=>(
+        <div key={t.id} className={t.leaving?"toast-out":"toast-in"}
+          style={{padding:"10px 20px",borderRadius:12,fontSize:13,fontWeight:600,color:"#fff",background:t.type==="error"?"#ef4444":t.type==="warn"?"#f59e0b":"#10b981",boxShadow:"0 4px 20px rgba(0,0,0,.2)",whiteSpace:"nowrap"}}>
+          {t.msg}
+        </div>
+      ))}
+    </div>
+  );
+}
 
 const ANN_COLORS = ["#ef4444","#3b82f6","#16a34a","#f59e0b","#ffffff","#111827"];
 const ANN_TOOLS  = [{id:"label",icon:"🏷",tip:"Label"},{id:"arrow",icon:"↗",tip:"Arrow"},{id:"text",icon:"T",tip:"Text"}];
@@ -1869,7 +1901,7 @@ function Header({user,userDisplayName,D,onDark,onHome,onDash,onTarget,onTimetabl
         <button onClick={function(e){e.stopPropagation();setMenuOpen(function(o){return !o;});}} style={{fontSize:18,background:"none",border:"none",cursor:"pointer",color:mu(D),padding:"4px 6px",borderRadius:6,lineHeight:1,flexShrink:0}}>☰</button>
       </div>
       {menuOpen&&(
-        <div style={{position:"absolute",top:54,right:0,minWidth:220,background:D?"#111827":"#fff",border:"1px solid "+(D?"#374151":"#e5e7eb"),borderTop:"none",borderRadius:"0 0 14px 14px",zIndex:49,padding:"8px 10px 12px",boxShadow:"0 8px 32px rgba(0,0,0,.18)"}}>
+        <div style={{position:"absolute",top:54,right:0,minWidth:220,background:D?"#111827":"#fff",border:"1px solid "+(D?"#374151":"#e5e7eb"),borderTop:"none",borderRadius:"0 0 14px 14px",zIndex:60,padding:"8px 10px 12px",boxShadow:"0 8px 32px rgba(0,0,0,.18)"}}>
           {allNavItems.map(function(item){
             var active=screen===item.id;
             return (
@@ -2657,15 +2689,17 @@ function MockExamScreen({D,subjects,allSections,boardSels,boardData,user,onBack,
 
   useEffect(()=>{
     if(phase!=="exam")return;
+    let isMounted=true;
     timerRef.current=setInterval(()=>{
+      if(!isMounted)return;
       if(paused) return;
       setTL(function(t){
-        if(t<=1){clearInterval(timerRef.current);setTimeout(function(){if(doSubmitRef.current)doSubmitRef.current();},50);return 0;}
+        if(t<=1){clearInterval(timerRef.current);setTimeout(function(){if(isMounted&&doSubmitRef.current)doSubmitRef.current();},50);return 0;}
         if(t===301 && !warn5shown){ setWarn5shown(true); setWarn5modal(true); }
         return t-1;
       });
     },1000);
-    return function(){ clearInterval(timerRef.current); };
+    return function(){ isMounted=false; clearInterval(timerRef.current); };
   },[phase,paused,warn5shown]);
 
   // Load exam history when viewing results
@@ -3553,7 +3587,15 @@ function AITutorScreen({D,subjects,allSections,boardSels,boardData,user,googleKe
 
   var saveMemory=function(msgs){
     try{
-      var slim=msgs.slice(-20).map(function(m){return{role:m.role,content:typeof m.content==="string"?m.content:(m._d&&m._d.text||""),_d:{text:m._d&&m._d.text||""}};});
+      var slim=msgs.slice(-20).map(function(m){
+        // Strip base64 image data to keep storage lean (fix #58)
+        var files=(m._d&&m._d.files||[]).map(function(f){
+          if(f.isImage) return {name:f.name,type:f.type,isImage:true}; // drop data/preview
+          if(f.isPdf)  return {name:f.name,type:f.type,isPdf:true};
+          return {name:f.name,type:f.type};
+        });
+        return{role:m.role,content:typeof m.content==="string"?m.content:(m._d&&m._d.text||""),_d:{text:m._d&&m._d.text||"",files:files,stag:m._d&&m._d.stag,chips:m._d&&m._d.chips||[]}};
+      });
       window.storage.set(memKey,JSON.stringify(slim)).catch(function(){});
     }catch(e){}
   };
@@ -4433,14 +4475,22 @@ function UCSectionModal({D,user,subjId,sec,subjects,onSaveSection,onClose}) {
         if(s<0||e2<0) throw new Error("Could not parse AI response");
         var arr=JSON.parse(raw.slice(s,e2+1));
         var newFCs=arr.map(function(x){return {id:uid2(),q:(x.q||x.front||"").trim(),a:(x.a||x.back||"").trim(),_userCreated:true};}).filter(function(f){return f.q;});
-        onSaveSection(subjId,{...sec,flashcards:[...fcs,...newFCs]});
+        // Deduplicate: skip cards whose question already exists (fix #57)
+        var existingQs=new Set((fcs||[]).map(function(f){return (f.q||f.front||"").toLowerCase().trim();}));
+        var dedupedFCs=newFCs.filter(function(f){return !existingQs.has(f.q.toLowerCase());});
+        onSaveSection(subjId,{...sec,flashcards:[...fcs,...dedupedFCs]});
+        showToast("✓ Added "+dedupedFCs.length+" flashcard"+(dedupedFCs.length!==1?"s":"")+(newFCs.length>dedupedFCs.length?" ("+( newFCs.length-dedupedFCs.length)+" duplicates skipped)":""));
         setTab("flashcards");
       } else {
         var s2=raw.indexOf("["),e3=raw.lastIndexOf("]");
         if(s2<0||e3<0) throw new Error("Could not parse AI response");
         var arr2=JSON.parse(raw.slice(s2,e3+1));
         var newQs=arr2.map(function(x){return {id:uid2(),type:x.type||"short",text:(x.text||"").trim(),markScheme:(x.markScheme||"").trim(),marks:Number(x.marks)||3,_userCreated:true};}).filter(function(q){return q.text;});
-        onSaveSection(subjId,{...sec,questions:[...qs,...newQs]});
+        // Deduplicate questions (fix #57)
+        var existingTexts=new Set((qs||[]).map(function(q){return (q.text||"").toLowerCase().trim();}));
+        var dedupedQs=newQs.filter(function(q){return !existingTexts.has(q.text.toLowerCase());});
+        onSaveSection(subjId,{...sec,questions:[...qs,...dedupedQs]});
+        showToast("✓ Added "+dedupedQs.length+" question"+(dedupedQs.length!==1?"s":""));
         setTab("questions");
       }
       setAiText(""); setAiLoading(false); setShowAI(false);
@@ -5076,13 +5126,27 @@ function ContactScreen({D, user, isAdmin, onBack}) {
   var [sent, setSent] = useState(false);
   var [sending, setSending] = useState(false);
   var [msgs, setMsgs] = useState([]);
+  var [readIds, setReadIds] = useState(new Set());
   var [replyText, setReplyText] = useState({});
   var [replyingSending, setRS] = useState({});
   var bd = D ? "#1f2937" : "#e5e7eb";
+  var SK_READ = "gcse:contact-read:" + (user||"").replace(/\W/g,"-");
 
   useEffect(function(){
     loadMsgs();
+    // Load read IDs
+    window.storage.get(SK_READ, true).then(function(r){
+      try{ if(r&&r.value){var ids=JSON.parse(r.value);if(Array.isArray(ids))setReadIds(new Set(ids));} }catch(e){}
+    }).catch(function(){});
   },[]);
+
+  // Mark all current msgs as read when opening inbox
+  useEffect(function(){
+    if(tab!=="inbox"||!isAdmin||!msgs.length) return;
+    var ids=new Set(msgs.map(function(m){return m.id;}));
+    setReadIds(ids);
+    window.storage.set(SK_READ, JSON.stringify([...ids]), true).catch(function(){});
+  },[tab, msgs.length]); // eslint-disable-line
 
   function loadMsgs(){
     window.storage.get(SK_MSGS, true).then(function(r){
@@ -5167,7 +5231,7 @@ function ContactScreen({D, user, isAdmin, onBack}) {
             {["send","inbox"].map(function(t){return (
               <button key={t} onClick={function(){setTab(t);}}
                 style={{padding:"7px 18px",borderRadius:8,border:"1.5px solid "+(tab===t?"#6366f1":bd),background:tab===t?"#6366f1":"none",color:tab===t?"#fff":(D?"#d1d5db":"#374151"),fontWeight:600,fontSize:13,cursor:"pointer"}}>
-                {t==="send"?"Send Message":"📥 Inbox ("+msgs.length+")"}
+                {t==="send"?"Send Message":(function(){var unread=msgs.filter(function(m){return !readIds.has(m.id);}).length;return "📥 Inbox"+( unread>0?" ("+unread+" new)":"("+msgs.length+")");}())}
               </button>
             );})}
           </div>
@@ -5198,7 +5262,7 @@ function ContactScreen({D, user, isAdmin, onBack}) {
                     style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid "+bd,background:D?"#111827":"#f9fafb",color:D?"#f9fafb":"#111827",fontSize:13,resize:"vertical"}}/>
                 </div>
                 <button onClick={handleSend} disabled={sending||!msg.trim()}
-                  style={{padding:"10px 24px",borderRadius:8,border:"none",background:!msg.trim()?"#9ca3af":"#6366f1",color:"#fff",fontWeight:700,fontSize:14,cursor:(!msg.trim()||!name.trim())?"not-allowed":"pointer"}}>
+                  style={{padding:"10px 24px",borderRadius:8,border:"none",background:!msg.trim()?"#9ca3af":"#6366f1",color:"#fff",fontWeight:700,fontSize:14,cursor:(!msg.trim()||!user)?"not-allowed":"pointer"}}>
                   {sending?"Sending…":"Send Message"}
                 </button>
               </div>
@@ -5332,6 +5396,10 @@ export default function App() {
   const [fcIdx,setFcIdx]     = useState(0);
   const [flip,setFlip]       = useState(false);
   const [cramMode,setCramMode] = useState(false);
+  // Section screen extras — must be top-level hooks, not inline in render
+  const [noteSearch,setNoteSearch] = useState("");
+  const [shuffledCards,setShuffledCards] = useState(null);
+  const touchStartRef = useRef(null); // for swipe-to-navigate on flashcards
   const [importOpen,setImportOpen] = useState(false);
   const [manageAccountsOpen,setManageAccountsOpen] = useState(false);
   // Personal subjects — private to each user, not shared
@@ -5384,12 +5452,12 @@ export default function App() {
 
   const streak = calcStreak(activityDates);
 
-  const allSections = subjects.flatMap(s => {
+  const allSections = React.useMemo(()=>subjects.flatMap(s => {
     const b = boardSels[s.id]||DEFAULT_BOARD;
     const bd = boardData[`${s.id}:${b}`]||{custom:[],extras:{},papers:[]};
     const merged = mergeTopics(s.topics||[], bd.custom, bd.extras);
     return merged.flatMap(t => t.sections.map(sec => ({...sec, subjectId:s.id})));
-  });
+  }),[subjects,boardSels,boardData]);
 
   const getBD = (sId,b) => boardData[`${sId}:${b}`]||{custom:[],extras:{},papers:[]};
   const boardLoadedRef = useRef({});
@@ -5484,6 +5552,11 @@ export default function App() {
         const pr=await window.storage.get(SK_PERSONAL(user),false);
         if(pr?.value){var ps=JSON.parse(pr.value);if(Array.isArray(ps))setPersonalSubjects(ps);}
       }catch(_){}
+      // Load user content (private notes/flashcards/questions per subject)
+      try{
+        const ucr=await window.storage.get("gcse:uc:all:"+user.replace(/\W/g,"-"),false);
+        if(ucr?.value){var ucParsed=JSON.parse(ucr.value);if(ucParsed&&typeof ucParsed==="object")setUserContent(ucParsed);}
+      }catch(_){}
     })();
   },[user,ready]);
 
@@ -5576,6 +5649,9 @@ export default function App() {
   },[screen,tab,flip,fcIdx,qIdx,secId,subIdx,section,subjects,markTodayActive]);
 
   const saveTimer=useRef(null);
+  const gradeSnapsRef=useRef(gradeSnapshots);
+  useEffect(()=>{gradeSnapsRef.current=gradeSnapshots;},[gradeSnapshots]);
+
   useEffect(()=>{
     if(!user)return;
     clearTimeout(saveTimer.current);
@@ -5588,19 +5664,14 @@ export default function App() {
         if(ss&&ss.qM>0) grades[s.id]=Math.round((ss.qS/ss.qM)*100);
       });
       const hasAnyGrade=Object.keys(grades).length>0;
-      setGS(function(prev){
-        if(!hasAnyGrade) return prev;
-        const filtered=prev.filter(function(s){return s.date!==today;});
-        const next=[...filtered,{date:today,grades:grades}].slice(-30);
-        return next;
-      });
-      // Save — we read gradeSnapshots via functional update so use a ref approach
+      // Use ref to get current snapshots — avoids stale closure (fix #10)
+      const currentSnaps=gradeSnapsRef.current||[];
+      const filteredSnaps=currentSnaps.filter(function(s){return s.date!==today;});
+      const newSnaps=hasAnyGrade?[...filteredSnaps,{date:today,grades:grades}].slice(-30):filteredSnaps;
+      if(hasAnyGrade) setGS(newSnaps);
       try{
         const r=await window.storage.get(SK.PROG(user),true);
         const existing=r?.value?JSON.parse(r.value):{};
-        const existingSnaps=existing.gradeSnapshots||[];
-        const filteredSnaps=existingSnaps.filter(function(s){return s.date!==today;});
-        const newSnaps=hasAnyGrade?[...filteredSnaps,{date:today,grades:grades}].slice(-30):filteredSnaps;
         await window.storage.set(SK.PROG(user),JSON.stringify({
           ...existing,
           fcHist,stats,targetGrades,
@@ -5699,6 +5770,7 @@ export default function App() {
       }
       return{...prev,[`${sId}:${b}`]:next};
     });
+    showToast("✓ Saved"); // fix #19
     setModal(null);
   };
 
@@ -5822,6 +5894,7 @@ export default function App() {
     setSubIdx(si);setTopIdx(ti);setSecId(sId);
     setTab("notes");setFcIdx(0);setFlip(false);
     setQIdx(0);setQRes(null);setSelOpt(null);setTA("");setSmMdl(false);
+    setNoteSearch(""); setShuffledCards(null); // clear section-local state
     setScreen("section");
   };
 
@@ -5834,7 +5907,7 @@ export default function App() {
   const bg=D?"#030712":"#f9fafb", bd2=D?"#1f2937":"#e5e7eb";
   const _goEl=<GlobalOverlays D={D} online={online} shortcutModal={shortcutModal} setShortcutModal={setShortcutModal} searchOpen={searchOpen} setSearchOpen={setSearchOpen} onboarding={onboarding} handleOnboardingComplete={handleOnboardingComplete} subjects={subjects} allSections={allSections} boardData={boardData} boardSels={boardSels} handleSearchNavigate={handleSearchNavigate} screen={screen} onHome={()=>setScreen("home")} onMock={()=>setScreen("mock")} onTutor={()=>{setTutorSubjId(null);setScreen("tutor");}} onTimetable={()=>setScreen("timetable")} onDash={()=>setScreen("dashboard")} onLeaderboards={()=>setScreen("friends")} streak={streak}/>;
 const hProps={user,userDisplayName,D,onDark:()=>setD(!D),onHome:()=>setScreen("home"),onDash:()=>setScreen("dashboard"),onTarget:()=>{setTTSubj(null);setScreen("target")},onTimetable:()=>setScreen("timetable"),onBlurt:()=>{setBlurtSubjId(null);setBlurtSecId2(null);setScreen("blurting");},onMock:()=>setScreen("mock"),onTutor:()=>{setTutorSubjId(null);setScreen("tutor");},onCoach:()=>setScreen("coach"),onLeaderboards:()=>setScreen("friends"),onAccount:()=>setScreen("account"),streak,onSearch:()=>setSearchOpen(true),globalOverlays:_goEl,screen};
-const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||null}); };
+const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=>!s._politics)[0]?.id||null}); };
 
   // Personal subject routing — handled before the main screen router
   // User content screen (private notes/flashcards/questions)
@@ -6250,6 +6323,8 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||null}); };
                       <div style={{display:"flex",gap:3,flexWrap:"wrap"}}>
                         {grades.map(g=>{const sel=target===g;const gc=gradeColor(g);return (
                           <button key={g} onClick={()=>setTargetGrades(p=>({...p,[subj.id]:sel?undefined:g}))}
+                            aria-label={`Set target grade ${g}${sel?" (selected, click to clear)":""}`}
+                            aria-pressed={sel}
                             style={{width:28,height:28,borderRadius:7,border:`2px solid ${sel?gc:(D?"#374151":"#d1d5db")}`,
                               background:sel?gc:(D?"#111827":"#fff"),
                               color:sel?"#fff":(D?"#6b7280":"#9ca3af"),
@@ -6449,15 +6524,18 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||null}); };
         return{...s,fcC:s.fcC+(correct?1:0),fcT:s.fcT+1,weakFC:wfc,subjStats:ss};
       });
       setFlip(false);
-      setFcIdx(i=>{ const next = i < cards.length-1 ? i+1 : 0; return next; });
+      // Use current cards length for safe index advance (fix #6 #12)
+      setFcIdx(i=>{ const len=section.flashcards?.length||0; return len>0?(i<len-1?i+1:0):0; });
     };
 
     const handleDeleteFC=id=>{
       removeExtra(section.id,"flashcards",id);
-      setFcIdx(i=>Math.min(i, Math.max(0, cards.length-2)));
+      // Use functional update with current length at call time (fix #12)
+      setFcIdx(i=>Math.min(i, Math.max(0,(section.flashcards?.length||1)-2)));
       setFlip(false);
+      showToast("Flashcard deleted");
     };
-    const handleDeleteQ=id=>{removeExtra(section.id,"questions",id);setQIdx(0);setQRes(null);setSelOpt(null);setTA("");setSmMdl(false);};
+    const handleDeleteQ=id=>{removeExtra(section.id,"questions",id);setQIdx(0);setQRes(null);setSelOpt(null);setTA("");setSmMdl(false);showToast("Question deleted");};
 
     const SM2_BTNS = [
       {label:"Again",color:"#ef4444",desc:"Forgot completely",q:0},
@@ -6485,67 +6563,157 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||null}); };
           {tab==="notes"&&(
             <div className="fade-in">
               {admin&&<AdminBar D={D} actions={[{label:"＋ Add Note",fn:()=>setModal({mode:"note",sectionId:section.id})}]}/>}
-              {(section.notes||[]).length===0&&<div style={{...C(D),padding:32,textAlign:"center",color:mu(D),fontSize:14}}>No notes yet.{admin?" Add one above.":""}</div>}
-              <div style={{display:"flex",flexDirection:"column",gap:14}}>
-                {(section.notes||[]).map(note=>{
-                  const canEdit=admin&&isAdminItem("notes",note);
-                  const isHtml=(note.body||"").trimStart().startsWith("<");
-                  return (
-                    <div key={note.id} style={{...C(D),padding:24}}>
-                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
-                        <h3 style={{fontWeight:700,fontSize:15,color:subj.accent,flex:1,marginRight:canEdit?8:0}}>{note.heading}</h3>
-                        {canEdit&&<div style={{display:"flex",gap:6,flexShrink:0}}>
-                          <button onClick={()=>setModal({mode:"note",sectionId:section.id,initialItem:note})} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,color:"#6366f1"}}>✏️</button>
-                          <button onClick={()=>removeExtra(section.id,"notes",note.id)} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,color:"#ef4444"}}>🗑</button>
-                        </div>}
-                      </div>
-                      {isHtml?<div dangerouslySetInnerHTML={{__html:note.body}} className="rich-display" style={{color:tx(D)}}/>:<MD text={note.body} D={D}/>}
-                      {(note.images||[]).map((img,ii)=><AnnotatedImage key={ii} img={img} D={D}/>)}
+              {/* #70 Note search */}
+              {(section.notes||[]).length>2&&(()=>{
+                const filtered=(section.notes||[]).filter(n=>!noteSearch||((n.heading||"")+" "+(typeof n.body==="string"?stripHtml(n.body):"")).toLowerCase().includes(noteSearch.toLowerCase()));
+                return (
+                  <div>
+                    <input value={noteSearch} onChange={e=>setNoteSearch(e.target.value)} placeholder="Search notes…"
+                      style={{...I(D,{marginBottom:14,fontSize:12})}}/>
+                    {filtered.length===0&&<p style={{fontSize:13,color:mu(D),textAlign:"center",padding:"20px 0"}}>No notes match "{noteSearch}"</p>}
+                    <div style={{display:"flex",flexDirection:"column",gap:14}}>
+                      {filtered.map(note=>{
+                        const canEdit=admin&&isAdminItem("notes",note);
+                        const isHtml=(note.body||"").trimStart().startsWith("<");
+                        return (
+                          <div key={note.id} style={{...C(D),padding:24}}>
+                            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
+                              <h3 style={{fontWeight:700,fontSize:15,color:subj.accent,flex:1,marginRight:canEdit?8:0}}>{note.heading}</h3>
+                              {canEdit&&<div style={{display:"flex",gap:6,flexShrink:0}}>
+                                <button onClick={()=>setModal({mode:"note",sectionId:section.id,initialItem:note})} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,color:"#6366f1"}}>✏️</button>
+                                <button onClick={()=>{removeExtra(section.id,"notes",note.id);showToast("Note deleted");}} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,color:"#ef4444"}}>🗑</button>
+                              </div>}
+                            </div>
+                            {(note.images||[]).map((img,ii)=>img&&img.image?<img key={ii} src={img.image} alt="note" style={{maxWidth:"100%",borderRadius:8,display:"block",marginBottom:8,border:`1px solid ${D?"#374151":"#e5e7eb"}`}}/>:null)}
+                            {isHtml?<div dangerouslySetInnerHTML={{__html:note.body}} className="rich-display" style={{color:tx(D)}}/>:<MD text={note.body} D={D}/>}
+                          </div>
+                        );
+                      })}
                     </div>
-                  );
-                })}
-              </div>
+                  </div>
+                );
+              })()}
+              {(section.notes||[]).length<=2&&<>
+                {(section.notes||[]).length===0&&<div style={{...C(D),padding:32,textAlign:"center",color:mu(D),fontSize:14}}>No notes yet.{admin?" Add one above.":""}</div>}
+                <div style={{display:"flex",flexDirection:"column",gap:14}}>
+                  {(section.notes||[]).map(note=>{
+                    const canEdit=admin&&isAdminItem("notes",note);
+                    const isHtml=(note.body||"").trimStart().startsWith("<");
+                    return (
+                      <div key={note.id} style={{...C(D),padding:24}}>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
+                          <h3 style={{fontWeight:700,fontSize:15,color:subj.accent,flex:1,marginRight:canEdit?8:0}}>{note.heading}</h3>
+                          {canEdit&&<div style={{display:"flex",gap:6,flexShrink:0}}>
+                            <button onClick={()=>setModal({mode:"note",sectionId:section.id,initialItem:note})} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,color:"#6366f1"}}>✏️</button>
+                            <button onClick={()=>{removeExtra(section.id,"notes",note.id);showToast("Note deleted");}} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,color:"#ef4444"}}>🗑</button>
+                          </div>}
+                        </div>
+                        {(note.images||[]).map((img,ii)=>img&&img.image?<img key={ii} src={img.image} alt="note" style={{maxWidth:"100%",borderRadius:8,display:"block",marginBottom:8,border:`1px solid ${D?"#374151":"#e5e7eb"}`}}/>:null)}
+                        {isHtml?<div dangerouslySetInnerHTML={{__html:note.body}} className="rich-display" style={{color:tx(D)}}/>:<MD text={note.body} D={D}/>}
+                      </div>
+                    );
+                  })}
+                </div>
+              </>}
             </div>
           )}
 
-          {tab==="flashcards"&&(
+          {tab==="flashcards"&&(()=>{
+            // #71 Shuffle mode — uses top-level shuffledCards state (hooks rule compliance)
+            const [shuffled,setShuffled]=[shuffledCards,setShuffledCards];
+            const activeCards=shuffled||cards;
+            const safeFcIdx2=activeCards.length>0?Math.min(fcIdx,activeCards.length-1):0;
+            const fc2=activeCards.length>0?activeCards[safeFcIdx2]:null;
+            const curState2=fc2?getCardState(fcHist,fc2.id):null;
+            const previews2=fc2?previewIntervals(curState2):["today","today","6d","1w"];
+            const dueCards2=cramMode?activeCards:activeCards.filter(c=>isCardDue(fcHist,c.id));
+
+            // #23 touch swipe handler — uses top-level touchStartRef
+            const handleTouchStart=e=>{touchStartRef.current={x:e.touches[0].clientX,y:e.touches[0].clientY};};
+            const handleTouchEnd=e=>{
+              if(!touchStartRef.current)return;
+              const dx=e.changedTouches[0].clientX-touchStartRef.current.x;
+              const dy=Math.abs(e.changedTouches[0].clientY-touchStartRef.current.y);
+              touchStartRef.current=null;
+              if(Math.abs(dx)<40||dy>Math.abs(dx))return; // not a horizontal swipe
+              setFlip(false);
+              if(dx<0) setFcIdx(i=>i<activeCards.length-1?i+1:0); // swipe left = next
+              else     setFcIdx(i=>i>0?i-1:activeCards.length-1);  // swipe right = prev
+            };
+
+            const doSM2local=(btnQuality)=>{
+              if(!fc2)return;
+              const cardId=fc2.id;
+              markTodayActive();
+              if(!cramMode){
+                setFCH(prevHist=>{const prevState=getCardState(prevHist,cardId);const next=sm2Next(prevState,btnQuality);return{...prevHist,[cardId]:next};});
+              }
+              const correct=btnQuality>=2;
+              setStats(s=>{
+                const wfc={...s.weakFC};
+                wfc[section.id]={wrong:(wfc[section.id]?.wrong||0)+(correct?0:1),total:(wfc[section.id]?.total||0)+1};
+                const ss={...s.subjStats};
+                ss[subj.id]={...ss[subj.id],fcC:(ss[subj.id]?.fcC||0)+(correct?1:0),fcT:(ss[subj.id]?.fcT||0)+1};
+                return{...s,fcC:s.fcC+(correct?1:0),fcT:s.fcT+1,weakFC:wfc,subjStats:ss};
+              });
+              setFlip(false);
+              setFcIdx(i=>{const len=activeCards.length;return len>0?(i<len-1?i+1:0):0;});
+            };
+
+            return (
             <div className="fade-in">
               {admin&&<AdminBar D={D} actions={[{label:"＋ Add Flashcard",fn:()=>setModal({mode:"flashcard",sectionId:section.id})}]}/>}
-              {cards.length===0&&<div style={{...C(D),padding:32,textAlign:"center",color:mu(D),fontSize:14}}>No flashcards yet.{admin?" Add one above.":""}</div>}
-              {fc&&<>
+              {activeCards.length===0&&<div style={{...C(D),padding:32,textAlign:"center",color:mu(D),fontSize:14}}>No flashcards yet.{admin?" Add one above.":""}</div>}
+              {fc2&&<>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 14px",borderRadius:10,background:D?"#1f2937":"#f3f4f6",marginBottom:8}}>
-                  <span style={{fontSize:12,color:mu(D)}}><strong style={{color:cramMode?"#6366f1":dueCards.length>0?"#f59e0b":tx(D)}}>{cramMode?"CRAM":dueCards.length}</strong>{cramMode?" mode":" due"} · {cards.filter(c=>{const s=getCardState(fcHist,c.id);return s&&!isCardDue(fcHist,c.id)&&s.lastQ>=2;}).length} scheduled</span>
+                  <span style={{fontSize:12,color:mu(D)}}><strong style={{color:cramMode?"#6366f1":dueCards2.length>0?"#f59e0b":tx(D)}}>{cramMode?"CRAM":dueCards2.length}</strong>{cramMode?" mode":" due"} · {activeCards.filter(c=>{const s=getCardState(fcHist,c.id);return s&&!isCardDue(fcHist,c.id)&&s.lastQ>=2;}).length} scheduled</span>
                   <div style={{display:"flex",alignItems:"center",gap:6}}>
+                    {/* #71 Shuffle button */}
+                    <button onClick={()=>{
+                      if(shuffled){setShuffled(null);setFcIdx(0);setFlip(false);showToast("Shuffle off");}
+                      else{const arr=[...cards].sort(()=>Math.random()-.5);setShuffled(arr);setFcIdx(0);setFlip(false);showToast("🔀 Shuffled!");}
+                    }} style={{fontSize:10,padding:"3px 9px",borderRadius:8,border:`1.5px solid ${shuffled?"#f59e0b":"#d1d5db"}`,background:shuffled?"#f59e0b":"transparent",color:shuffled?"#fff":mu(D),cursor:"pointer",fontWeight:shuffled?700:400}} title="Shuffle cards">🔀</button>
                     <button onClick={()=>{setCramMode(v=>!v);setFcIdx(0);setFlip(false);}} style={{fontSize:10,padding:"3px 9px",borderRadius:8,border:`1.5px solid ${cramMode?"#6366f1":"#d1d5db"}`,background:cramMode?"#6366f1":"transparent",color:cramMode?"#fff":mu(D),cursor:"pointer",fontWeight:cramMode?700:400}} title="Cram mode cycles all cards ignoring SM-2 schedule">🔥 Cram</button>
                     <span style={{fontSize:11,color:mu(D)}}>SM-2</span>
                     <SRInfoTooltip D={D}/>
                   </div>
                 </div>
 
-                <ForecastBar cards={cards} fcHist={fcHist} D={D} accent={subj.accent}/>
+                <ForecastBar cards={activeCards} fcHist={fcHist} D={D} accent={subj.accent}/>
 
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12,marginTop:12}}>
-                  <span style={{fontSize:13,color:mu(D)}}>{safeFcIdx+1} / {cards.length}</span>
-                  <SM2Dots cards={cards} fcHist={fcHist} current={safeFcIdx}/>
-                  <span style={{fontSize:12,color:mu(D)}}>{cramMode?"cram":curState ? (curState.reps>0?`${curState.interval}d interval`:"new card") : "new card"}</span>
+                  <span style={{fontSize:13,color:mu(D)}}>{safeFcIdx2+1} / {activeCards.length}{shuffled?" 🔀":""}</span>
+                  <SM2Dots cards={activeCards} fcHist={fcHist} current={safeFcIdx2}/>
+                  <span style={{fontSize:12,color:mu(D)}}>{cramMode?"cram":curState2?(curState2.reps>0?`${curState2.interval}d interval`:"new card"):"new card"}</span>
                 </div>
 
-                {admin&&isAdminItem("flashcards",fc)&&(
+                {admin&&fc2&&isAdminItem("flashcards",fc2)&&(
                   <div style={{display:"flex",gap:8,justifyContent:"flex-end",marginBottom:8}}>
-                    <button onClick={()=>setModal({mode:"flashcard",sectionId:section.id,initialItem:fc})} style={{...B("#6366f1",true,{fontSize:12,padding:"5px 12px"})}}>✏️ Edit</button>
-                    <button onClick={()=>handleDeleteFC(fc.id)} style={{...B("#ef4444",true,{fontSize:12,padding:"5px 12px"})}}>🗑 Delete</button>
+                    <button onClick={()=>setModal({mode:"flashcard",sectionId:section.id,initialItem:fc2})} style={{...B("#6366f1",true,{fontSize:12,padding:"5px 12px"})}}>✏️ Edit</button>
+                    <button onClick={()=>handleDeleteFC(fc2.id)} style={{...B("#ef4444",true,{fontSize:12,padding:"5px 12px"})}}>🗑 Delete</button>
                   </div>
                 )}
 
-                <div onClick={()=>setFlip(!flip)}
-                  style={{...C(D),padding:32,minHeight:170,display:"flex",flexDirection:"column",justifyContent:"center",cursor:"pointer",textAlign:"center",borderColor:flip?subj.accent:bd2,transition:"border-color .25s",position:"relative"}}>
-                  <div style={{fontSize:11,fontWeight:600,letterSpacing:"0.1em",color:flip?subj.accent:mu(D),textTransform:"uppercase",marginBottom:12}}>
-                    {flip?"Answer":"Question"}
-                    {!flip&&curState&&<span style={{marginLeft:8,fontSize:10,fontWeight:400}}>· EF {curState.ef?.toFixed(1)}</span>}
+                {/* #15 Real 3-D flip animation with touch swipe #23 */}
+                <div className="fc-scene" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+                  <div className={`fc-card${flip?" flipped":""}`} onClick={()=>setFlip(!flip)}
+                    style={{minHeight:170,borderRadius:14,border:`1.5px solid ${flip?subj.accent:bd2}`}}>
+                    {/* Front face */}
+                    <div className="fc-face" style={{background:D?"#111827":"#fff"}}>
+                      <div style={{fontSize:11,fontWeight:600,letterSpacing:"0.1em",color:mu(D),textTransform:"uppercase",marginBottom:12}}>
+                        Question
+                        {curState2&&<span style={{marginLeft:8,fontSize:10,fontWeight:400}}>· EF {curState2.ef?.toFixed(1)}</span>}
+                      </div>
+                      {(fc2.images||[]).length>0&&fc2.images.map((img,ii)=><AnnotatedImage key={ii} img={img} D={D}/>)}
+                      <ContentBlock content={fc2.q} D={D} fontSize={15} style={{color:tx(D),textAlign:"center"}}/>
+                      <p style={{fontSize:11,color:mu(D),marginTop:14}}>Tap to reveal · Swipe to navigate</p>
+                    </div>
+                    {/* Back face */}
+                    <div className="fc-face fc-back" style={{background:D?"#1a1040":"#f5f3ff",borderRadius:14}}>
+                      <div style={{fontSize:11,fontWeight:600,letterSpacing:"0.1em",color:subj.accent,textTransform:"uppercase",marginBottom:12}}>Answer</div>
+                      <ContentBlock content={fc2.a} D={D} fontSize={15} style={{color:subj.accent,fontWeight:500,textAlign:"center"}}/>
+                    </div>
                   </div>
-                  {(fc.images||[]).length>0&&!flip&&fc.images.map((img,ii)=><AnnotatedImage key={ii} img={img} D={D}/>)}
-                  <ContentBlock content={flip?fc.a:fc.q} D={D} fontSize={15} style={{color:flip?subj.accent:tx(D),fontWeight:flip?500:400,textAlign:"center"}}/>
-                  {!flip&&<p style={{fontSize:11,color:mu(D),marginTop:14}}>Tap to reveal answer</p>}
                 </div>
 
                 {flip?(
@@ -6553,32 +6721,34 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||null}); };
                     <p style={{fontSize:11,color:mu(D),textAlign:"center",marginBottom:8}}>How well did you know this?</p>
                     <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8}}>
                       {SM2_BTNS.map(btn=>(
-                        <button key={btn.q} onClick={()=>doSM2(btn.q)}
-                          style={{padding:"10px 4px",borderRadius:12,border:`2px solid ${btn.color}`,background:"transparent",cursor:"pointer",transition:"all .12s",color:btn.color}}
+                        <button key={btn.q} onClick={()=>doSM2local(btn.q)}
+                          aria-label={btn.label}
+                          style={{padding:"12px 4px",borderRadius:12,border:`2px solid ${btn.color}`,background:"transparent",cursor:"pointer",transition:"all .12s",color:btn.color,minHeight:44}}
                           onMouseEnter={e=>{e.currentTarget.style.background=btn.color;e.currentTarget.style.color="#fff";}}
                           onMouseLeave={e=>{e.currentTarget.style.background="transparent";e.currentTarget.style.color=btn.color;}}>
                           <div style={{fontWeight:700,fontSize:13}}>{btn.label}</div>
-                          {!cramMode&&<div style={{fontSize:10,marginTop:2,opacity:0.8}}>{previews[btn.q]}</div>}
+                          {!cramMode&&<div style={{fontSize:10,marginTop:2,opacity:0.8}}>{previews2[btn.q]}</div>}
                         </button>
                       ))}
                     </div>
-                    {!cramMode&&<p style={{fontSize:10,color:mu(D),textAlign:"center",marginTop:6}}>Next review: Again→{previews[0]} · Hard→{previews[1]} · Good→{previews[2]} · Easy→{previews[3]}</p>}
-                    {cramMode&&<p style={{fontSize:10,color:"#6366f1",textAlign:"center",marginTop:6}}>🔥 Cram mode — SM-2 scheduling paused, just marking your recall</p>}
+                    {!cramMode&&<p style={{fontSize:10,color:mu(D),textAlign:"center",marginTop:6}}>Again→{previews2[0]} · Hard→{previews2[1]} · Good→{previews2[2]} · Easy→{previews2[3]}</p>}
+                    {cramMode&&<p style={{fontSize:10,color:"#6366f1",textAlign:"center",marginTop:6}}>🔥 Cram mode — SM-2 scheduling paused</p>}
                   </div>
                 ):(
                   <div style={{display:"flex",gap:12,marginTop:12}}>
-                    <button onClick={()=>{setFlip(false);setFcIdx(i=>i>0?i-1:cards.length-1);}} style={{flex:1,padding:"10px 0",borderRadius:12,background:"transparent",border:`1px solid ${bd2}`,color:mu(D),cursor:"pointer",fontSize:13}}>← Prev</button>
-                    <button onClick={()=>{setFlip(false);setFcIdx(i=>i<cards.length-1?i+1:0);}} style={{flex:1,padding:"10px 0",borderRadius:12,background:"transparent",border:`1px solid ${bd2}`,color:mu(D),cursor:"pointer",fontSize:13}}>Next →</button>
+                    <button onClick={()=>{setFlip(false);setFcIdx(i=>i>0?i-1:activeCards.length-1);}} style={{flex:1,padding:"12px 0",borderRadius:12,background:"transparent",border:`1px solid ${bd2}`,color:mu(D),cursor:"pointer",fontSize:13,minHeight:44}}>← Prev</button>
+                    <button onClick={()=>{setFlip(false);setFcIdx(i=>i<activeCards.length-1?i+1:0);}} style={{flex:1,padding:"12px 0",borderRadius:12,background:"transparent",border:`1px solid ${bd2}`,color:mu(D),cursor:"pointer",fontSize:13,minHeight:44}}>Next →</button>
                   </div>
                 )}
 
-                <button onClick={()=>{const cleared={...fcHist};cards.forEach(c=>delete cleared[c.id]);setFCH(cleared);setFcIdx(0);setFlip(false);}}
+                <button onClick={()=>{const cleared={...fcHist};activeCards.forEach(c=>delete cleared[c.id]);setFCH(cleared);setFcIdx(0);setFlip(false);showToast("Cards reset");}}
                   style={{marginTop:14,display:"block",margin:"14px auto 0",fontSize:11,color:mu(D),background:"none",border:"none",cursor:"pointer",textDecoration:"underline"}}>
                   Reset all cards
                 </button>
               </>}
             </div>
-          )}
+            );
+          })()}
 
           {tab==="questions"&&(
             <div className="fade-in">
@@ -6804,6 +6974,14 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||null}); };
             <div>
               <p style={{fontSize:11,color:mu(D),marginBottom:5,textTransform:"uppercase",letterSpacing:"0.05em",fontWeight:600}}>Activity heatmap — 16 weeks</p>
               <div style={{overflowX:"auto",paddingBottom:4}}>
+                {/* Month labels row */}
+                <div style={{display:"inline-flex",gap:3,minWidth:"max-content",marginBottom:3,paddingLeft:0}}>
+                  {hmWeeks.map(function(wk,wi){
+                    const mo=new Date(wk[0].k+"T12:00:00").toLocaleDateString("en-GB",{month:"short"});
+                    const showLabel=wi===0||(wi>0&&new Date(hmWeeks[wi-1][0].k+"T12:00:00").toLocaleDateString("en-GB",{month:"short"})!==mo);
+                    return <div key={wi} style={{width:16,fontSize:8,color:mu(D),overflow:"hidden",whiteSpace:"nowrap"}}>{showLabel?mo:""}</div>;
+                  })}
+                </div>
                 <div style={{display:"inline-flex",gap:3,minWidth:"max-content"}}>
                   {hmWeeks.map(function(wk,wi){return (
                     <div key={wi} style={{display:"flex",flexDirection:"column",gap:3}}>
@@ -7146,5 +7324,5 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||null}); };
     );
   }
 
-  return null;
+  return <ToastContainer/>;
 }
