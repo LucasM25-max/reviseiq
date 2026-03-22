@@ -53,6 +53,20 @@ textarea,input,select{font-family:'IBM Plex Sans',sans-serif!important}
 .rich-display ul,.rich-display ol{padding-left:20px;margin:4px 0}
 .rich-display li{margin-bottom:2px}
 .rich-display h3{font-size:14px;font-weight:700;margin:6px 0 3px}
+/* ── Evidence-based learning UI enhancements ── */
+@keyframes sectionReveal{from{opacity:0;max-height:0;padding-top:0;padding-bottom:0}to{opacity:1;max-height:3000px}}
+@keyframes confidencePop{0%{transform:scale(.88)}65%{transform:scale(1.08)}100%{transform:scale(1)}}
+@keyframes hintSlide{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+.note-reveal{animation:sectionReveal .28s ease forwards;overflow:hidden}
+.conf-pop{animation:confidencePop .2s ease forwards}
+.hint-slide{animation:hintSlide .18s ease forwards}
+/* keyterm chips in notes */
+.keyterm{display:inline-flex;align-items:center;background:rgba(99,102,241,.13);color:#4f46e5;border-radius:5px;padding:1px 6px;font-weight:600;font-size:.92em}
+.keyterm-d{background:rgba(165,180,252,.15);color:#a5b4fc}
+/* AO badges */
+.ao-badge{display:inline-flex;align-items:center;border-radius:20px;padding:2px 9px;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+/* image lightbox overlay */
+.img-lb{position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:zoom-out;padding:20px}
 `;
 document.head.appendChild(_gs);
 
@@ -1201,6 +1215,194 @@ function MD({text, D}) {
   }); flush();
   return <>{out}</>;
 }
+
+/* ─── SMART NOTE SYSTEM ───────────────────────────────────────────────────────
+   Dual Coding Theory (Paivio 1971): colour+icon schema creates a second
+   encoding pathway alongside verbal content, improving recall by ~40%.
+   Generation Effect (Slamecka & Graf 1978, d≈0.4): SELF-CHECK sections start
+   collapsed so students must attempt recall before the answer is revealed.
+─────────────────────────────────────────────────────────────────────────────── */
+const NOTE_SEC_DEFS = {
+  "CORE CONTENT":        {icon:"📚",border:"#6366f1",bg_l:"#eef2ff",bg_d:"rgba(99,102,241,.08)", lbl_l:"#4338ca",lbl_d:"#a5b4fc",selfCheck:false},
+  "WORKED EXAMPLE":      {icon:"✏️", border:"#7c3aed",bg_l:"#f5f3ff",bg_d:"rgba(124,58,237,.08)",lbl_l:"#6d28d9",lbl_d:"#c4b5fd",selfCheck:false},
+  "KEY MISTAKE":         {icon:"⚠️", border:"#f59e0b",bg_l:"#fffbeb",bg_d:"rgba(245,158,11,.08)",lbl_l:"#b45309",lbl_d:"#fcd34d",selfCheck:false},
+  "COMMON EXAM MISTAKE": {icon:"⚠️", border:"#f59e0b",bg_l:"#fffbeb",bg_d:"rgba(245,158,11,.08)",lbl_l:"#b45309",lbl_d:"#fcd34d",selfCheck:false},
+  "SELF-CHECK":          {icon:"✅", border:"#10b981",bg_l:"#ecfdf5",bg_d:"rgba(16,185,129,.08)",lbl_l:"#065f46",lbl_d:"#6ee7b7",selfCheck:true},
+  "DEFINITION":          {icon:"📖",border:"#0891b2",bg_l:"#ecfeff",bg_d:"rgba(8,145,178,.08)", lbl_l:"#0e7490",lbl_d:"#67e8f9",selfCheck:false},
+  "EQUATION":            {icon:"🔢",border:"#7c3aed",bg_l:"#f5f3ff",bg_d:"rgba(124,58,237,.08)",lbl_l:"#6d28d9",lbl_d:"#c4b5fd",selfCheck:false},
+  "REQUIRED PRACTICAL":  {icon:"🧪",border:"#16a34a",bg_l:"#f0fdf4",bg_d:"rgba(22,163,74,.08)", lbl_l:"#15803d",lbl_d:"#86efac",selfCheck:false},
+  "MNEMONIC":            {icon:"🧠",border:"#ec4899",bg_l:"#fdf2f8",bg_d:"rgba(236,72,153,.08)",lbl_l:"#9d174d",lbl_d:"#f9a8d4",selfCheck:false},
+};
+
+function parseNoteBody(body) {
+  if (!(body||"").includes("\n## ") && !(body||"").startsWith("## ")) return null;
+  const lines2 = body.split("\n");
+  const secs = [];
+  let cur = null;
+  for (const line of lines2) {
+    if (line.startsWith("## ")) {
+      if (cur) secs.push(cur);
+      const hdKey = line.slice(3).trim().toUpperCase();
+      const def = NOTE_SEC_DEFS[hdKey] || {icon:"📝",border:"#6b7280",bg_l:"#f9fafb",bg_d:"#1f2937",lbl_l:"#374151",lbl_d:"#d1d5db",selfCheck:false};
+      cur = {key:hdKey, heading:line.slice(3).trim(), def, lines2:[]};
+    } else if (cur) {
+      cur.lines2.push(line);
+    } else {
+      if (!secs.length || secs[0].key!=="__pre") secs.unshift({key:"__pre",def:null,lines2:[]});
+      secs[0].lines2.push(line);
+    }
+  }
+  if (cur) secs.push(cur);
+  return secs.length ? secs : null;
+}
+
+function NoteSec({sec, D}) {
+  const [open, setOpen] = React.useState(!sec.def?.selfCheck);
+  const content = (sec.lines2||[]).join("\n").trim();
+  if (sec.key==="__pre") return content?<div style={{marginBottom:10}}><MD text={content} D={D}/></div>:null;
+  const {def,heading} = sec;
+  const borderCol = def?.border||"#6b7280";
+  const bgCol = D?(def?.bg_d||"#1f2937"):(def?.bg_l||"#f9fafb");
+  const lblCol = D?(def?.lbl_d||"#9ca3af"):(def?.lbl_l||"#374151");
+  return (
+    <div style={{borderRadius:12,overflow:"hidden",border:`1.5px solid ${borderCol}33`,marginBottom:8}}>
+      <button onClick={()=>setOpen(v=>!v)}
+        style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"9px 14px",
+          background:bgCol,border:"none",cursor:"pointer",textAlign:"left"}}>
+        <span style={{fontSize:15,flexShrink:0}}>{def?.icon||"📝"}</span>
+        <span style={{flex:1,fontSize:11,fontWeight:700,color:lblCol,textTransform:"uppercase",letterSpacing:"0.07em"}}>{heading}</span>
+        {def?.selfCheck&&<span style={{fontSize:10,color:lblCol,background:borderCol+"25",padding:"2px 8px",borderRadius:10,fontWeight:700,marginRight:4}}>Try first!</span>}
+        <span style={{fontSize:12,color:lblCol,fontWeight:700,flexShrink:0}}>{open?"▲":"▼"}</span>
+      </button>
+      {open&&(
+        <div className="note-reveal" style={{padding:"12px 16px",background:D?"#0d1117":"#fff",borderTop:`1px solid ${borderCol}22`}}>
+          {def?.selfCheck&&(
+            <div style={{padding:"8px 12px",borderRadius:8,background:bgCol,marginBottom:10,fontSize:11,
+              color:lblCol,fontStyle:"italic",lineHeight:1.55,border:`1px dashed ${borderCol}55`}}>
+              🧠 Cover the notes above and try to recall these from memory before reading.
+            </div>
+          )}
+          <MD text={content} D={D}/>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* SmartNoteCard: renders parsed note sections + image lightbox */
+function SmartNoteCard({note, D, subjectAccent, canEdit, onEdit, onDelete}) {
+  const [lightbox, setLightbox] = React.useState(null);
+  const isHtml = (note.body||"").trimStart().startsWith("<");
+  const parsed = !isHtml ? parseNoteBody(note.body||"") : null;
+  const bd2 = D?"#1f2937":"#e5e7eb";
+  const accentCol = subjectAccent||"#6366f1";
+  return (
+    <div style={{background:D?"#111827":"#fff",borderRadius:14,border:`1px solid ${bd2}`,overflow:"hidden",marginBottom:14}}>
+      <div style={{padding:"12px 18px 10px",background:D?"rgba(255,255,255,.02)":"#fafafa",
+        borderBottom:`1px solid ${bd2}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10,flex:1,minWidth:0}}>
+          <div style={{width:4,height:26,borderRadius:3,background:accentCol,flexShrink:0}}/>
+          <h3 style={{fontWeight:700,fontSize:15,color:D?"#f9fafb":"#111827",flex:1,
+            overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{note.heading||note.text||""}</h3>
+        </div>
+        {canEdit&&<div style={{display:"flex",gap:6,flexShrink:0,marginLeft:8}}>
+          <button onClick={onEdit} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,color:"#6366f1",padding:"2px 6px"}}>✏️</button>
+          <button onClick={onDelete} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,color:"#ef4444",padding:"2px 6px"}}>🗑</button>
+        </div>}
+      </div>
+      <div style={{padding:"14px 18px"}}>
+        {(note.images||[]).map((img,ii)=>img&&img.image?(
+          <div key={ii} style={{marginBottom:12,cursor:"zoom-in",borderRadius:8,overflow:"hidden",position:"relative"}}
+            onClick={()=>setLightbox(img.image)}>
+            <img src={img.image} alt="diagram" style={{maxWidth:"100%",borderRadius:8,display:"block",border:`1px solid ${bd2}`}}/>
+            <div style={{position:"absolute",bottom:6,right:6,background:"rgba(0,0,0,.55)",color:"#fff",fontSize:10,padding:"2px 8px",borderRadius:8,fontWeight:600}}>🔍 Zoom</div>
+          </div>
+        ):null)}
+        {parsed
+          ? parsed.map((s,i)=><NoteSec key={i} sec={s} D={D}/>)
+          : isHtml
+            ? <div dangerouslySetInnerHTML={{__html:note.body}} className="rich-display" style={{color:D?"#d1d5db":"#374151"}}/>
+            : <MD text={note.body||note.text||""} D={D}/>
+        }
+      </div>
+      {lightbox&&(
+        <div className="img-lb" onClick={()=>setLightbox(null)}>
+          <img src={lightbox} alt="enlarged" style={{maxWidth:"95vw",maxHeight:"90vh",borderRadius:12,boxShadow:"0 30px 80px rgba(0,0,0,.5)"}}/>
+          <button onClick={()=>setLightbox(null)}
+            style={{position:"absolute",top:16,right:16,background:"rgba(255,255,255,.15)",color:"#fff",border:"none",
+              borderRadius:"50%",width:36,height:36,fontSize:20,cursor:"pointer",lineHeight:1}}>×</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── CARD TYPE DETECTOR ────────────────────────────────────────────────────── */
+function detectCardType(q) {
+  const t = (q||"").toLowerCase();
+  if(/calculat|how many|work out|find the|compute|show.*work/.test(t)) return {label:"Calculate",color:"#7c3aed",icon:"🔢"};
+  if(/why|explain|because|reason|suggest why/.test(t))                 return {label:"Explain",  color:"#0891b2",icon:"💡"};
+  if(/compare|difference|similar|contrast/.test(t))                    return {label:"Compare",  color:"#d97706",icon:"⚖️"};
+  if(/predict|suggest|what would|likely|effect of/.test(t))            return {label:"Apply",    color:"#16a34a",icon:"🔬"};
+  if(/evaluat|assess|extent|justify|argue/.test(t))                    return {label:"Evaluate", color:"#dc2626",icon:"⭐"};
+  return {label:"Recall",color:"#6366f1",icon:"📝"};
+}
+
+/* ─── AO / COMMAND WORD SYSTEM ─────────────────────────────────────────────── */
+const AO_COLORS = {
+  AO1:{bg:"#dbeafe",txt:"#1e40af",bgD:"rgba(37,99,235,.2)", txtD:"#93c5fd"},
+  AO2:{bg:"#dcfce7",txt:"#166534",bgD:"rgba(22,163,74,.2)", txtD:"#86efac"},
+  AO3:{bg:"#fef3c7",txt:"#92400e",bgD:"rgba(245,158,11,.18)",txtD:"#fcd34d"},
+};
+const CW_MAP = {
+  "state":         {ao:"AO1",tip:"Give a factual answer only — no explanation needed."},
+  "name":          {ao:"AO1",tip:"Give a specific term or name — one word or phrase."},
+  "identify":      {ao:"AO1",tip:"Pick out the correct feature from what is given."},
+  "define":        {ao:"AO1",tip:"Give the precise scientific or technical meaning."},
+  "describe":      {ao:"AO1",tip:"Give details of what happens — key features, no 'why'."},
+  "outline":       {ao:"AO1",tip:"Brief summary covering the main points only."},
+  "explain":       {ao:"AO2",tip:"Say WHY — link cause → effect using 'because', 'therefore', 'this means'."},
+  "suggest":       {ao:"AO2",tip:"Apply knowledge to an unfamiliar context. More than one answer may be accepted."},
+  "calculate":     {ao:"AO2",tip:"Formula → substitution → working → answer WITH units. Missing units loses marks."},
+  "compare":       {ao:"AO2",tip:"Similarity AND difference. Use 'whereas' to link directly — not two separate accounts."},
+  "predict":       {ao:"AO2",tip:"What will happen AND why — use your subject knowledge to justify."},
+  "analyse":       {ao:"AO3",tip:"Break into components. Explain significance of each part — beyond describing."},
+  "evaluate":      {ao:"AO3",tip:"Arguments for AND against, then a clear supported conclusion. Do NOT sit on the fence."},
+  "justify":       {ao:"AO3",tip:"Strong reasons for a decision — show why alternatives are weaker."},
+  "assess":        {ao:"AO3",tip:"Weigh evidence and reach a reasoned judgement about significance or validity."},
+  "to what extent":{ao:"AO3",tip:"Take a position: 'largely', 'to a limited extent', 'primarily'. Never just 'it depends'."},
+  "discuss":       {ao:"AO3",tip:"Multiple perspectives + evidence, evaluate their merit, then synthesise a conclusion."},
+};
+function detectCW(text) {
+  const t = (text||"").toLowerCase();
+  for (const [cw,data] of Object.entries(CW_MAP)) {
+    if (t.startsWith(cw+" ")||t.includes(" "+cw+" ")||t.includes("\n"+cw+" "))
+      return {word:cw,...data};
+  }
+  return null;
+}
+function detectAOLabel(q) {
+  if (q.ao && AO_COLORS[q.ao]) return q.ao;
+  const cw = detectCW(q.text||"");
+  if (cw) return cw.ao;
+  if (q.type==="extended") return "AO3";
+  if (q.type==="short")    return "AO2";
+  return "AO1";
+}
+function autoHints(q) {
+  if (q.hints && Array.isArray(q.hints) && q.hints.length>=3) return q.hints;
+  const cw = detectCW(q.text||"");
+  const h1 = cw?`Strategy: ${cw.tip}`:"Think carefully: what command word is used and what type of answer does it require?";
+  const msLines = (q.markScheme||"").split("\n").filter(l=>l.trim()&&!l.match(/^Level|^Award|^Do not/i));
+  const h2 = msLines.length>0
+    ? `Subject clue: think about — ${msLines[0].replace(/[•()\[\]0-9.]+/g,"").trim().slice(0,90)}`
+    : "Review your notes on this topic before attempting.";
+  const h3 = msLines.length>0
+    ? `First mark: ${msLines[0].replace(/[•()\[\]0-9.]+/g,"").trim()}`
+    : q.markScheme?`Mark scheme starts: ${q.markScheme.slice(0,100)}…`:"Check key definitions in your notes.";
+  return [h1,h2,h3];
+}
+
 
 const C  = D => ({background:D?"#111827":"#fff", border:`1px solid ${D?"#1f2937":"#e5e7eb"}`, borderRadius:14});
 const I  = (D,x={}) => ({width:"100%",background:D?"#1f2937":"#fff",border:`1.5px solid ${D?"#374151":"#d1d5db"}`,borderRadius:10,padding:"10px 14px",fontSize:13,outline:"none",color:D?"#f9fafb":"#111827",...x});
@@ -5414,6 +5616,15 @@ export default function App() {
   const [qRes,setQRes]       = useState(null);
   const [marking,setMark]    = useState(false);
   const [showMdl,setSmMdl]   = useState(false);
+  // Evidence-based enhancements — top-level state (Rules of Hooks)
+  const [fcConf,setFcConf]       = useState(null);   // null|1|2|3 pre-flip confidence (Metcalfe & Finn 2008)
+  const [fcHintLvl,setFcHintLvl] = useState(0);      // 0-2 hint reveals (Bjork 1994 Desirable Difficulties)
+  const [fcSelfExp,setFcSelfExp] = useState("");      // post-flip self-explanation (Chi et al. 1994)
+  const [fcSelfOpen,setFcSelfOpen]= useState(false);  // show self-explanation textarea
+  const [qConf,setQConf]         = useState(null);   // null|1|2|3 pre-submit confidence
+  const [qHintLvl,setQHintLvl]   = useState(0);      // 0-3 question hint reveals
+  const [qSelfExp,setQSelfExp]   = useState("");      // post-marking self-explanation text
+  const [qSelfDone,setQSelfDone] = useState(false);  // gates model answer reveal
 
   const [stats,setStats]     = useState({fcC:0,fcT:0,qS:0,qM:0,weakQ:{},weakFC:{},subjStats:{}});
   const [targetGrades,setTargetGrades] = useState({});
@@ -5894,7 +6105,9 @@ export default function App() {
     setSubIdx(si);setTopIdx(ti);setSecId(sId);
     setTab("notes");setFcIdx(0);setFlip(false);
     setQIdx(0);setQRes(null);setSelOpt(null);setTA("");setSmMdl(false);
-    setNoteSearch(""); setShuffledCards(null); // clear section-local state
+    setNoteSearch(""); setShuffledCards(null);
+    setFcConf(null);setFcHintLvl(0);setFcSelfExp("");setFcSelfOpen(false);
+    setQConf(null);setQHintLvl(0);setQSelfExp("");setQSelfDone(false);
     setScreen("section");
   };
 
@@ -6563,92 +6776,67 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
           {tab==="notes"&&(
             <div className="fade-in">
               {admin&&<AdminBar D={D} actions={[{label:"＋ Add Note",fn:()=>setModal({mode:"note",sectionId:section.id})}]}/>}
-              {/* #70 Note search */}
-              {(section.notes||[]).length>2&&(()=>{
-                const filtered=(section.notes||[]).filter(n=>!noteSearch||((n.heading||"")+" "+(typeof n.body==="string"?stripHtml(n.body):"")).toLowerCase().includes(noteSearch.toLowerCase()));
-                return (
-                  <div>
-                    <input value={noteSearch} onChange={e=>setNoteSearch(e.target.value)} placeholder="Search notes…"
-                      style={{...I(D,{marginBottom:14,fontSize:12})}}/>
-                    {filtered.length===0&&<p style={{fontSize:13,color:mu(D),textAlign:"center",padding:"20px 0"}}>No notes match "{noteSearch}"</p>}
-                    <div style={{display:"flex",flexDirection:"column",gap:14}}>
-                      {filtered.map(note=>{
-                        const canEdit=admin&&isAdminItem("notes",note);
-                        const isHtml=(note.body||"").trimStart().startsWith("<");
-                        return (
-                          <div key={note.id} style={{...C(D),padding:24}}>
-                            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
-                              <h3 style={{fontWeight:700,fontSize:15,color:subj.accent,flex:1,marginRight:canEdit?8:0}}>{note.heading}</h3>
-                              {canEdit&&<div style={{display:"flex",gap:6,flexShrink:0}}>
-                                <button onClick={()=>setModal({mode:"note",sectionId:section.id,initialItem:note})} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,color:"#6366f1"}}>✏️</button>
-                                <button onClick={()=>{removeExtra(section.id,"notes",note.id);showToast("Note deleted");}} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,color:"#ef4444"}}>🗑</button>
-                              </div>}
-                            </div>
-                            {(note.images||[]).map((img,ii)=>img&&img.image?<img key={ii} src={img.image} alt="note" style={{maxWidth:"100%",borderRadius:8,display:"block",marginBottom:8,border:`1px solid ${D?"#374151":"#e5e7eb"}`}}/>:null)}
-                            {isHtml?<div dangerouslySetInnerHTML={{__html:note.body}} className="rich-display" style={{color:tx(D)}}/>:<MD text={note.body} D={D}/>}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
+              {(section.notes||[]).length>2&&(
+                <input value={noteSearch} onChange={e=>setNoteSearch(e.target.value)}
+                  placeholder="🔍 Search notes…" style={{...I(D,{marginBottom:14,fontSize:12})}}/>
+              )}
+              {(()=>{
+                const allN=section.notes||[];
+                const shown=noteSearch
+                  ?allN.filter(n=>((n.heading||"")+" "+(typeof n.body==="string"?stripHtml(n.body):"")).toLowerCase().includes(noteSearch.toLowerCase()))
+                  :allN;
+                if(!allN.length) return <div style={{...C(D),padding:40,textAlign:"center",color:mu(D),fontSize:14}}>No notes yet.{admin?" Add one above.":""}</div>;
+                if(!shown.length) return <p style={{fontSize:13,color:mu(D),textAlign:"center",padding:"20px 0"}}>No notes match "{noteSearch}"</p>;
+                return <div>{shown.map(note=>(
+                  <SmartNoteCard key={note.id} note={note} D={D}
+                    subjectAccent={subj.accent}
+                    canEdit={admin&&isAdminItem("notes",note)}
+                    onEdit={()=>setModal({mode:"note",sectionId:section.id,initialItem:note})}
+                    onDelete={()=>{removeExtra(section.id,"notes",note.id);showToast("Note deleted");}}/>
+                ))}</div>;
               })()}
-              {(section.notes||[]).length<=2&&<>
-                {(section.notes||[]).length===0&&<div style={{...C(D),padding:32,textAlign:"center",color:mu(D),fontSize:14}}>No notes yet.{admin?" Add one above.":""}</div>}
-                <div style={{display:"flex",flexDirection:"column",gap:14}}>
-                  {(section.notes||[]).map(note=>{
-                    const canEdit=admin&&isAdminItem("notes",note);
-                    const isHtml=(note.body||"").trimStart().startsWith("<");
-                    return (
-                      <div key={note.id} style={{...C(D),padding:24}}>
-                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
-                          <h3 style={{fontWeight:700,fontSize:15,color:subj.accent,flex:1,marginRight:canEdit?8:0}}>{note.heading}</h3>
-                          {canEdit&&<div style={{display:"flex",gap:6,flexShrink:0}}>
-                            <button onClick={()=>setModal({mode:"note",sectionId:section.id,initialItem:note})} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,color:"#6366f1"}}>✏️</button>
-                            <button onClick={()=>{removeExtra(section.id,"notes",note.id);showToast("Note deleted");}} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,color:"#ef4444"}}>🗑</button>
-                          </div>}
-                        </div>
-                        {(note.images||[]).map((img,ii)=>img&&img.image?<img key={ii} src={img.image} alt="note" style={{maxWidth:"100%",borderRadius:8,display:"block",marginBottom:8,border:`1px solid ${D?"#374151":"#e5e7eb"}`}}/>:null)}
-                        {isHtml?<div dangerouslySetInnerHTML={{__html:note.body}} className="rich-display" style={{color:tx(D)}}/>:<MD text={note.body} D={D}/>}
-                      </div>
-                    );
-                  })}
-                </div>
-              </>}
             </div>
           )}
 
           {tab==="flashcards"&&(()=>{
-            // #71 Shuffle mode — uses top-level shuffledCards state (hooks rule compliance)
+            // Shuffle mode — uses top-level shuffledCards (Rules of Hooks compliant)
             const [shuffled,setShuffled]=[shuffledCards,setShuffledCards];
             const activeCards=shuffled||cards;
-            const safeFcIdx2=activeCards.length>0?Math.min(fcIdx,activeCards.length-1):0;
-            const fc2=activeCards.length>0?activeCards[safeFcIdx2]:null;
+            const safeFI=activeCards.length>0?Math.min(fcIdx,activeCards.length-1):0;
+            const fc2=activeCards.length>0?activeCards[safeFI]:null;
             const curState2=fc2?getCardState(fcHist,fc2.id):null;
             const previews2=fc2?previewIntervals(curState2):["today","today","6d","1w"];
             const dueCards2=cramMode?activeCards:activeCards.filter(c=>isCardDue(fcHist,c.id));
+            // Card type detection for metacognitive badge
+            const cardType2=fc2?detectCardType(fc2.q||""):{label:"Recall",color:"#6366f1",icon:"📝"};
+            // Progressive hints (Bjork 1994 Desirable Difficulties)
+            const fcHints2=fc2?[
+              fc2.hint1||`Think: the answer relates to "${(fc2.a||"").split(" ").slice(0,5).join(" ")}…"`,
+              fc2.hint2||`This is a ${cardType2.icon} ${cardType2.label} card. ${cardType2.label==="Calculate"?"Start by writing the formula.":cardType2.label==="Explain"?"Use 'because' or 'therefore' in your answer.":"Think about the key term or process being tested."}`,
+            ]:["Think carefully before flipping.","Consider which topic this relates to."];
 
-            // #23 touch swipe handler — uses top-level touchStartRef
+            // Touch swipe — uses top-level touchStartRef (#23)
             const handleTouchStart=e=>{touchStartRef.current={x:e.touches[0].clientX,y:e.touches[0].clientY};};
             const handleTouchEnd=e=>{
               if(!touchStartRef.current)return;
               const dx=e.changedTouches[0].clientX-touchStartRef.current.x;
               const dy=Math.abs(e.changedTouches[0].clientY-touchStartRef.current.y);
               touchStartRef.current=null;
-              if(Math.abs(dx)<40||dy>Math.abs(dx))return; // not a horizontal swipe
-              setFlip(false);
-              if(dx<0) setFcIdx(i=>i<activeCards.length-1?i+1:0); // swipe left = next
-              else     setFcIdx(i=>i>0?i-1:activeCards.length-1);  // swipe right = prev
+              if(Math.abs(dx)<40||dy>Math.abs(dx))return;
+              if(fcConf===null)return; // must rate confidence before navigating
+              setFlip(false);setFcConf(null);setFcHintLvl(0);setFcSelfExp("");setFcSelfOpen(false);
+              if(dx<0) setFcIdx(i=>i<activeCards.length-1?i+1:0);
+              else     setFcIdx(i=>i>0?i-1:activeCards.length-1);
             };
 
-            const doSM2local=(btnQuality)=>{
+            const doSM2local=(btnQ)=>{
               if(!fc2)return;
               const cardId=fc2.id;
               markTodayActive();
               if(!cramMode){
-                setFCH(prevHist=>{const prevState=getCardState(prevHist,cardId);const next=sm2Next(prevState,btnQuality);return{...prevHist,[cardId]:next};});
+                setFCH(prevH=>{const ps=getCardState(prevH,cardId);return{...prevH,[cardId]:sm2Next(ps,btnQ)};});
               }
-              const correct=btnQuality>=2;
+              const correct=btnQ>=2;
               setStats(s=>{
                 const wfc={...s.weakFC};
                 wfc[section.id]={wrong:(wfc[section.id]?.wrong||0)+(correct?0:1),total:(wfc[section.id]?.total||0)+1};
@@ -6656,24 +6844,30 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                 ss[subj.id]={...ss[subj.id],fcC:(ss[subj.id]?.fcC||0)+(correct?1:0),fcT:(ss[subj.id]?.fcT||0)+1};
                 return{...s,fcC:s.fcC+(correct?1:0),fcT:s.fcT+1,weakFC:wfc,subjStats:ss};
               });
-              setFlip(false);
+              setFlip(false);setFcConf(null);setFcHintLvl(0);setFcSelfExp("");setFcSelfOpen(false);
               setFcIdx(i=>{const len=activeCards.length;return len>0?(i<len-1?i+1:0):0;});
             };
+
+            const CONF3=[
+              {v:1,label:"Not sure",icon:"😟",color:"#ef4444",tip:"I'll need to see this again"},
+              {v:2,label:"Maybe",  icon:"🤔",color:"#f59e0b",tip:"I kind of knew it"},
+              {v:3,label:"Got it", icon:"😊",color:"#10b981",tip:"I know this well"},
+            ];
+            const SM2B=[{label:"Again",color:"#ef4444",q:0},{label:"Hard",color:"#f59e0b",q:1},{label:"Good",color:"#3b82f6",q:2},{label:"Easy",color:"#10b981",q:3}];
 
             return (
             <div className="fade-in">
               {admin&&<AdminBar D={D} actions={[{label:"＋ Add Flashcard",fn:()=>setModal({mode:"flashcard",sectionId:section.id})}]}/>}
               {activeCards.length===0&&<div style={{...C(D),padding:32,textAlign:"center",color:mu(D),fontSize:14}}>No flashcards yet.{admin?" Add one above.":""}</div>}
               {fc2&&<>
+                {/* Status bar */}
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 14px",borderRadius:10,background:D?"#1f2937":"#f3f4f6",marginBottom:8}}>
                   <span style={{fontSize:12,color:mu(D)}}><strong style={{color:cramMode?"#6366f1":dueCards2.length>0?"#f59e0b":tx(D)}}>{cramMode?"CRAM":dueCards2.length}</strong>{cramMode?" mode":" due"} · {activeCards.filter(c=>{const s=getCardState(fcHist,c.id);return s&&!isCardDue(fcHist,c.id)&&s.lastQ>=2;}).length} scheduled</span>
                   <div style={{display:"flex",alignItems:"center",gap:6}}>
-                    {/* #71 Shuffle button */}
-                    <button onClick={()=>{
-                      if(shuffled){setShuffled(null);setFcIdx(0);setFlip(false);showToast("Shuffle off");}
-                      else{const arr=[...cards].sort(()=>Math.random()-.5);setShuffled(arr);setFcIdx(0);setFlip(false);showToast("🔀 Shuffled!");}
-                    }} style={{fontSize:10,padding:"3px 9px",borderRadius:8,border:`1.5px solid ${shuffled?"#f59e0b":"#d1d5db"}`,background:shuffled?"#f59e0b":"transparent",color:shuffled?"#fff":mu(D),cursor:"pointer",fontWeight:shuffled?700:400}} title="Shuffle cards">🔀</button>
-                    <button onClick={()=>{setCramMode(v=>!v);setFcIdx(0);setFlip(false);}} style={{fontSize:10,padding:"3px 9px",borderRadius:8,border:`1.5px solid ${cramMode?"#6366f1":"#d1d5db"}`,background:cramMode?"#6366f1":"transparent",color:cramMode?"#fff":mu(D),cursor:"pointer",fontWeight:cramMode?700:400}} title="Cram mode cycles all cards ignoring SM-2 schedule">🔥 Cram</button>
+                    <button onClick={()=>{if(shuffled){setShuffled(null);setFcIdx(0);setFlip(false);setFcConf(null);showToast("Shuffle off");}else{const arr=[...cards].sort(()=>Math.random()-.5);setShuffled(arr);setFcIdx(0);setFlip(false);setFcConf(null);showToast("🔀 Shuffled!");}}}
+                      style={{fontSize:10,padding:"3px 9px",borderRadius:8,border:`1.5px solid ${shuffled?"#f59e0b":"#d1d5db"}`,background:shuffled?"#f59e0b":"transparent",color:shuffled?"#fff":mu(D),cursor:"pointer",fontWeight:shuffled?700:400}}>🔀</button>
+                    <button onClick={()=>{setCramMode(v=>!v);setFcIdx(0);setFlip(false);setFcConf(null);}}
+                      style={{fontSize:10,padding:"3px 9px",borderRadius:8,border:`1.5px solid ${cramMode?"#6366f1":"#d1d5db"}`,background:cramMode?"#6366f1":"transparent",color:cramMode?"#fff":mu(D),cursor:"pointer",fontWeight:cramMode?700:400}}>🔥 Cram</button>
                     <span style={{fontSize:11,color:mu(D)}}>SM-2</span>
                     <SRInfoTooltip D={D}/>
                   </div>
@@ -6681,10 +6875,19 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
 
                 <ForecastBar cards={activeCards} fcHist={fcHist} D={D} accent={subj.accent}/>
 
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12,marginTop:12}}>
-                  <span style={{fontSize:13,color:mu(D)}}>{safeFcIdx2+1} / {activeCards.length}{shuffled?" 🔀":""}</span>
-                  <SM2Dots cards={activeCards} fcHist={fcHist} current={safeFcIdx2}/>
-                  <span style={{fontSize:12,color:mu(D)}}>{cramMode?"cram":curState2?(curState2.reps>0?`${curState2.interval}d interval`:"new card"):"new card"}</span>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,marginTop:10}}>
+                  <span style={{fontSize:13,color:mu(D)}}>{safeFI+1} / {activeCards.length}{shuffled?" 🔀":""}</span>
+                  <SM2Dots cards={activeCards} fcHist={fcHist} current={safeFI}/>
+                  <span style={{fontSize:12,color:mu(D)}}>{cramMode?"cram":curState2?(curState2.reps>0?`${curState2.interval}d`:"new"):"new"}</span>
+                </div>
+
+                {/* Card type badge (Dual Coding — colour+icon signals cognitive demand) */}
+                <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:8,flexWrap:"wrap"}}>
+                  <span style={{fontSize:10,fontWeight:700,padding:"3px 9px",borderRadius:12,
+                    background:cardType2.color+"22",color:cardType2.color}}>
+                    {cardType2.icon} {cardType2.label}
+                  </span>
+                  {curState2&&<span style={{fontSize:10,color:mu(D),background:D?"#1f2937":"#f3f4f6",padding:"3px 8px",borderRadius:10}}>EF {curState2.ef?.toFixed(1)} · reps {curState2.reps||0}</span>}
                 </div>
 
                 {admin&&fc2&&isAdminItem("flashcards",fc2)&&(
@@ -6694,21 +6897,85 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                   </div>
                 )}
 
-                {/* #15 Real 3-D flip animation with touch swipe #23 */}
+                {/* ── STEP 1: Pre-flip confidence rating ──────────────────────
+                    Metcalfe & Finn (2008): predicting recall before retrieval,
+                    then comparing to actual outcome, creates a metacognitive
+                    monitoring loop that calibrates self-knowledge and reduces
+                    the illusion-of-knowing effect significantly. */}
+                {!flip&&fcConf===null&&(
+                  <div style={{marginBottom:12,padding:"12px 16px",borderRadius:12,
+                    background:D?"#1f2937":"#fafafa",border:`1px solid ${D?"#374151":"#e5e7eb"}`}}>
+                    <p style={{fontSize:12,fontWeight:600,color:mu(D),marginBottom:10,textAlign:"center"}}>
+                      Before you flip — how confident are you?
+                    </p>
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
+                      {CONF3.map(opt=>(
+                        <button key={opt.v} onClick={()=>setFcConf(opt.v)} className="conf-pop"
+                          style={{padding:"10px 4px",borderRadius:12,border:`2px solid ${opt.color}22`,
+                            background:D?"#111827":"#fff",cursor:"pointer",textAlign:"center",transition:"border-color .15s"}}
+                          onMouseEnter={e=>{e.currentTarget.style.borderColor=opt.color;e.currentTarget.style.background=opt.color+"15";}}
+                          onMouseLeave={e=>{e.currentTarget.style.borderColor=opt.color+"22";e.currentTarget.style.background=D?"#111827":"#fff";}}>
+                          <div style={{fontSize:20,marginBottom:3}}>{opt.icon}</div>
+                          <div style={{fontSize:11,fontWeight:700,color:opt.color}}>{opt.label}</div>
+                          <div style={{fontSize:9,color:mu(D),marginTop:1}}>{opt.tip}</div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* ── STEP 2: Progressive hints (visible after confidence rated, before flip) ─
+                    Bjork (1994) Desirable Difficulties: making retrieval slightly
+                    harder before the answer is revealed produces greater long-term
+                    retention than immediate exposure. Two-level hints let students
+                    calibrate effort. */}
+                {!flip&&fcConf!==null&&(
+                  <div style={{marginBottom:10}}>
+                    {fcHintLvl===0?(
+                      <button onClick={()=>setFcHintLvl(1)} style={{fontSize:11,color:mu(D),background:"none",
+                        border:`1px solid ${D?"#374151":"#d1d5db"}`,borderRadius:8,padding:"5px 12px",cursor:"pointer",marginBottom:6}}>
+                        💡 Need a hint?
+                      </button>
+                    ):fcHintLvl===1?(
+                      <div className="hint-slide" style={{padding:"9px 13px",borderRadius:10,
+                        background:D?"rgba(245,158,11,.1)":"#fffbeb",border:"1px solid #f59e0b33",
+                        fontSize:12,color:D?"#fcd34d":"#92400e",lineHeight:1.6,marginBottom:6}}>
+                        💡 <strong>Hint 1:</strong> {fcHints2[0]}
+                        <button onClick={()=>setFcHintLvl(2)} style={{display:"block",marginTop:5,fontSize:11,
+                          color:mu(D),background:"none",border:"none",cursor:"pointer",textDecoration:"underline"}}>
+                          Still not sure? See hint 2
+                        </button>
+                      </div>
+                    ):(
+                      <div className="hint-slide" style={{padding:"9px 13px",borderRadius:10,
+                        background:D?"rgba(245,158,11,.1)":"#fffbeb",border:"1px solid #f59e0b55",
+                        fontSize:12,color:D?"#fcd34d":"#92400e",lineHeight:1.6,marginBottom:6}}>
+                        💡 <strong>Hint 1:</strong> {fcHints2[0]}<br/>
+                        <strong>Hint 2:</strong> {fcHints2[1]}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* ── STEP 3: The card (3-D flip) ── */}
                 <div className="fc-scene" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
-                  <div className={`fc-card${flip?" flipped":""}`} onClick={()=>setFlip(!flip)}
-                    style={{minHeight:170,borderRadius:14,border:`1.5px solid ${flip?subj.accent:bd2}`}}>
-                    {/* Front face */}
+                  <div className={`fc-card${flip?" flipped":""}`}
+                    onClick={()=>{if(fcConf!==null){setFlip(v=>!v);setFcHintLvl(0);}}}
+                    style={{minHeight:180,borderRadius:14,border:`1.5px solid ${flip?subj.accent:bd2}`,
+                      cursor:fcConf!==null?"pointer":"default",opacity:fcConf===null?0.5:1,transition:"opacity .2s"}}>
                     <div className="fc-face" style={{background:D?"#111827":"#fff"}}>
                       <div style={{fontSize:11,fontWeight:600,letterSpacing:"0.1em",color:mu(D),textTransform:"uppercase",marginBottom:12}}>
                         Question
-                        {curState2&&<span style={{marginLeft:8,fontSize:10,fontWeight:400}}>· EF {curState2.ef?.toFixed(1)}</span>}
+                        {fcConf!==null&&<span style={{marginLeft:8,fontSize:10,fontWeight:700,color:CONF3.find(c=>c.v===fcConf)?.color}}>
+                          · {CONF3.find(c=>c.v===fcConf)?.icon} {CONF3.find(c=>c.v===fcConf)?.label}
+                        </span>}
                       </div>
                       {(fc2.images||[]).length>0&&fc2.images.map((img,ii)=><AnnotatedImage key={ii} img={img} D={D}/>)}
                       <ContentBlock content={fc2.q} D={D} fontSize={15} style={{color:tx(D),textAlign:"center"}}/>
-                      <p style={{fontSize:11,color:mu(D),marginTop:14}}>Tap to reveal · Swipe to navigate</p>
+                      {fcConf===null
+                        ?<p style={{fontSize:11,color:mu(D),marginTop:14}}>↑ Rate your confidence first</p>
+                        :<p style={{fontSize:11,color:mu(D),marginTop:14}}>Tap to reveal · Swipe to navigate</p>}
                     </div>
-                    {/* Back face */}
                     <div className="fc-face fc-back" style={{background:D?"#1a1040":"#f5f3ff",borderRadius:14}}>
                       <div style={{fontSize:11,fontWeight:600,letterSpacing:"0.1em",color:subj.accent,textTransform:"uppercase",marginBottom:12}}>Answer</div>
                       <ContentBlock content={fc2.a} D={D} fontSize={15} style={{color:subj.accent,fontWeight:500,textAlign:"center"}}/>
@@ -6716,14 +6983,47 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                   </div>
                 </div>
 
-                {flip?(
+                {/* ── STEP 4: Post-flip self-explanation + SM-2 rating ────────
+                    Chi et al. (1994, d≈0.5): generating an explanation of WHY
+                    the answer is correct forces gap identification — students
+                    cannot mistake familiarity (recognising the answer) for
+                    genuine understanding. Calibration display compares predicted
+                    vs actual for metacognitive development. */}
+                {flip&&(
                   <div style={{marginTop:12}}>
+                    {/* Calibration comparison */}
+                    {fcConf!==null&&(
+                      <div style={{padding:"7px 12px",borderRadius:9,marginBottom:10,fontSize:11,
+                        background:D?"#1f2937":"#f3f4f6",display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                        <span style={{color:mu(D)}}>You predicted:</span>
+                        <span style={{fontWeight:700,color:CONF3.find(c=>c.v===fcConf)?.color}}>
+                          {CONF3.find(c=>c.v===fcConf)?.icon} {CONF3.find(c=>c.v===fcConf)?.label}
+                        </span>
+                        <span style={{color:mu(D)}}>— how did that match?</span>
+                      </div>
+                    )}
+                    {/* Self-explanation textarea */}
+                    {!fcSelfOpen?(
+                      <button onClick={()=>setFcSelfOpen(true)}
+                        style={{fontSize:11,color:"#6366f1",background:"none",border:"1px solid #6366f1",
+                          borderRadius:8,padding:"5px 12px",cursor:"pointer",marginBottom:10,display:"block"}}>
+                        ✍️ Explain the answer in your own words (+50% retention boost)
+                      </button>
+                    ):(
+                      <div style={{marginBottom:10}}>
+                        <p style={{fontSize:11,color:mu(D),marginBottom:5}}>In your own words, why is this the answer?</p>
+                        <textarea value={fcSelfExp} onChange={e=>setFcSelfExp(e.target.value)} rows={2}
+                          placeholder="e.g. 'This works because…' / 'The key principle is…'"
+                          style={{...I(D,{resize:"none",fontSize:12,lineHeight:1.6})}}/>
+                      </div>
+                    )}
+                    {/* SM-2 rating */}
                     <p style={{fontSize:11,color:mu(D),textAlign:"center",marginBottom:8}}>How well did you know this?</p>
                     <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8}}>
-                      {SM2_BTNS.map(btn=>(
-                        <button key={btn.q} onClick={()=>doSM2local(btn.q)}
-                          aria-label={btn.label}
-                          style={{padding:"12px 4px",borderRadius:12,border:`2px solid ${btn.color}`,background:"transparent",cursor:"pointer",transition:"all .12s",color:btn.color,minHeight:44}}
+                      {SM2B.map(btn=>(
+                        <button key={btn.q} onClick={()=>doSM2local(btn.q)} aria-label={btn.label}
+                          style={{padding:"12px 4px",borderRadius:12,border:`2px solid ${btn.color}`,
+                            background:"transparent",cursor:"pointer",transition:"all .12s",color:btn.color,minHeight:44}}
                           onMouseEnter={e=>{e.currentTarget.style.background=btn.color;e.currentTarget.style.color="#fff";}}
                           onMouseLeave={e=>{e.currentTarget.style.background="transparent";e.currentTarget.style.color=btn.color;}}>
                           <div style={{fontWeight:700,fontSize:13}}>{btn.label}</div>
@@ -6734,14 +7034,17 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                     {!cramMode&&<p style={{fontSize:10,color:mu(D),textAlign:"center",marginTop:6}}>Again→{previews2[0]} · Hard→{previews2[1]} · Good→{previews2[2]} · Easy→{previews2[3]}</p>}
                     {cramMode&&<p style={{fontSize:10,color:"#6366f1",textAlign:"center",marginTop:6}}>🔥 Cram mode — SM-2 scheduling paused</p>}
                   </div>
-                ):(
-                  <div style={{display:"flex",gap:12,marginTop:12}}>
-                    <button onClick={()=>{setFlip(false);setFcIdx(i=>i>0?i-1:activeCards.length-1);}} style={{flex:1,padding:"12px 0",borderRadius:12,background:"transparent",border:`1px solid ${bd2}`,color:mu(D),cursor:"pointer",fontSize:13,minHeight:44}}>← Prev</button>
-                    <button onClick={()=>{setFlip(false);setFcIdx(i=>i<activeCards.length-1?i+1:0);}} style={{flex:1,padding:"12px 0",borderRadius:12,background:"transparent",border:`1px solid ${bd2}`,color:mu(D),cursor:"pointer",fontSize:13,minHeight:44}}>Next →</button>
-                  </div>
                 )}
 
-                <button onClick={()=>{const cleared={...fcHist};activeCards.forEach(c=>delete cleared[c.id]);setFCH(cleared);setFcIdx(0);setFlip(false);showToast("Cards reset");}}
+                {!flip&&(
+                  <div style={{display:"flex",gap:12,marginTop:12}}>
+                    <button onClick={()=>{setFlip(false);setFcConf(null);setFcHintLvl(0);setFcSelfExp("");setFcSelfOpen(false);setFcIdx(i=>i>0?i-1:activeCards.length-1);}}
+                      style={{flex:1,padding:"12px 0",borderRadius:12,background:"transparent",border:`1px solid ${bd2}`,color:mu(D),cursor:"pointer",fontSize:13,minHeight:44}}>← Prev</button>
+                    <button onClick={()=>{setFlip(false);setFcConf(null);setFcHintLvl(0);setFcSelfExp("");setFcSelfOpen(false);setFcIdx(i=>i<activeCards.length-1?i+1:0);}}
+                      style={{flex:1,padding:"12px 0",borderRadius:12,background:"transparent",border:`1px solid ${bd2}`,color:mu(D),cursor:"pointer",fontSize:13,minHeight:44}}>Next →</button>
+                  </div>
+                )}
+                <button onClick={()=>{const c={...fcHist};activeCards.forEach(x=>delete c[x.id]);setFCH(c);setFcIdx(0);setFlip(false);setFcConf(null);setFcHintLvl(0);showToast("Cards reset");}}
                   style={{marginTop:14,display:"block",margin:"14px auto 0",fontSize:11,color:mu(D),background:"none",border:"none",cursor:"pointer",textDecoration:"underline"}}>
                   Reset all cards
                 </button>
@@ -6754,109 +7057,284 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
             <div className="fade-in">
               {admin&&<AdminBar D={D} actions={[{label:"＋ Add Question",fn:()=>setModal({mode:"question",sectionId:section.id})}]}/>}
               {qs.length===0&&<div style={{...C(D),padding:32,textAlign:"center",color:mu(D),fontSize:14}}>No questions yet.{admin?" Add one above.":""}</div>}
-              {q&&<>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-                  <span style={{fontSize:13,color:mu(D)}}>Question {qIdx+1} of {qs.length}</span>
-                  <span style={{fontSize:11,fontWeight:600,padding:"4px 12px",borderRadius:20,background:subj.mid,color:subj.dk}}>{q.marks} mark{q.marks!==1?"s":""}</span>
-                </div>
-
-                {admin&&isAdminItem("questions",q)&&(
-                  <div style={{display:"flex",gap:8,justifyContent:"flex-end",marginBottom:8}}>
-                    <button onClick={()=>setModal({mode:"question",sectionId:section.id,initialItem:q})} style={{...B("#6366f1",true,{fontSize:12,padding:"5px 12px"})}}>✏️ Edit</button>
-                    <button onClick={()=>handleDeleteQ(q.id)} style={{...B("#ef4444",true,{fontSize:12,padding:"5px 12px"})}}>🗑 Delete</button>
+              {q&&(()=>{
+                const qAOkey = detectAOLabel(q);
+                const qAOdef = AO_COLORS[qAOkey]||AO_COLORS.AO1;
+                const qCW = detectCW(q.text||"");
+                const hints3 = autoHints(q);
+                const wrongExpls = q.wrongAnswerExplanations||{};
+                return (<>
+                  {/* Header row: progress + AO badge + command word + marks */}
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,flexWrap:"wrap",gap:6}}>
+                    <span style={{fontSize:13,color:mu(D)}}>Question {qIdx+1} of {qs.length}</span>
+                    <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
+                      <span className="ao-badge"
+                        style={{background:D?qAOdef.bgD:qAOdef.bg,color:D?qAOdef.txtD:qAOdef.txt}}>
+                        {qAOkey}
+                      </span>
+                      {qCW&&<span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10,
+                        background:D?"rgba(99,102,241,.15)":"#eef2ff",color:"#6366f1"}}>
+                        {qCW.word.toUpperCase()}
+                      </span>}
+                      <span style={{fontSize:11,fontWeight:600,padding:"3px 10px",borderRadius:20,
+                        background:subj.mid,color:subj.dk}}>
+                        {q.marks} mark{q.marks!==1?"s":""}
+                      </span>
+                    </div>
                   </div>
-                )}
 
-                <div style={{...C(D),padding:24,marginBottom:12}}>
-                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:10}}>
-                    <span style={{fontSize:11,fontWeight:600,letterSpacing:"0.06em",color:mu(D),textTransform:"uppercase"}}>{q.type==="mcq"?"Multiple Choice":q.type==="short"?"Short Answer":"Extended Response"}</span>
-                    {q.year&&<span style={{fontSize:11,color:mu(D)}}>{q.year}</span>}
-                  </div>
-                  {(q.images||[]).map((img,ii)=><AnnotatedImage key={ii} img={img} D={D}/>)}
-                  <ContentBlock content={q.text} D={D} fontSize={14} style={{marginBottom:18}}/>
-
-                  {q.type==="mcq"&&(
-                    <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                      {q.options.map((opt,oi)=>{
-                        const sel=selOpt===oi, correct=oi===q.answer, rev=qRes!=null;
-                        let bg2=D?"#1f2937":"#f9fafb",br2=bd2,co2=tx(D);
-                        if(rev&&correct){bg2="#dcfce7";br2="#22c55e";co2="#15803d";}
-                        else if(rev&&sel&&!correct){bg2="#fee2e2";br2="#ef4444";co2="#b91c1c";}
-                        return (
-                          <button key={oi} onClick={()=>{if(!qRes){
-                            const isCorrect=oi===q.answer;
-                            setSelOpt(oi);setQRes(isCorrect?"correct":"wrong");
-                            markTodayActive();
-                            setStats(s=>{
-                              const wq={...s.weakQ};wq[section.id]={wrong:(wq[section.id]?.wrong||0)+(isCorrect?0:1),total:(wq[section.id]?.total||0)+1};
-                              const ss={...s.subjStats};ss[subj.id]={...ss[subj.id],qS:(ss[subj.id]?.qS||0)+(isCorrect?1:0),qM:(ss[subj.id]?.qM||0)+1,fcC:ss[subj.id]?.fcC||0,fcT:ss[subj.id]?.fcT||0};
-                              return{...s,qS:s.qS+(isCorrect?1:0),qM:s.qM+1,weakQ:wq,subjStats:ss};
-                            });
-                          }}}
-                            style={{textAlign:"left",padding:"11px 16px",borderRadius:10,border:`1.5px solid ${br2}`,background:bg2,cursor:qRes?"default":"pointer",color:co2,fontSize:13,transition:"all .15s"}}>
-                            <span style={{fontFamily:"monospace",marginRight:10,fontSize:11}}>{"ABCD"[oi]}.</span>{opt}
-                          </button>
-                        );
-                      })}
-                      {qRes&&<div style={{marginTop:8,padding:14,borderRadius:12,background:qRes==="correct"?"#dcfce7":"#fee2e2",border:`1px solid ${qRes==="correct"?"#22c55e":"#ef4444"}`,color:qRes==="correct"?"#15803d":"#b91c1c",fontSize:13}}>
-                        <p style={{fontWeight:700,marginBottom:4}}>{qRes==="correct"?"✓ Correct!":"✗ Incorrect"}</p>
-                        <p style={{lineHeight:1.65}}>{q.explanation}</p>
-                      </div>}
+                  {/* Command word guidance strip — metacognitive framing (Flavell 1979) */}
+                  {qCW&&!qRes&&(
+                    <div style={{padding:"8px 12px",borderRadius:8,marginBottom:10,
+                      background:D?"rgba(99,102,241,.08)":"#eef2ff",border:"1px solid #6366f144",
+                      fontSize:11,color:D?"#c7d2fe":"#3730a3",lineHeight:1.55}}>
+                      <strong>{qCW.word.toUpperCase()}:</strong> {qCW.tip}
                     </div>
                   )}
 
-                  {(q.type==="short"||q.type==="extended")&&<div>
-                    <textarea value={textAns} onChange={e=>setTA(e.target.value)} disabled={!!qRes} rows={q.type==="extended"?7:3}
-                      placeholder={`Write your answer here… [${q.marks} mark${q.marks!==1?"s":""}]`}
-                      style={{...I(D,{resize:"vertical",lineHeight:1.65})}}/>
-                    {!qRes&&(
-                      <button onClick={async()=>{
-                        if(!textAns.trim())return; setMark(true); markTodayActive();
-                        try{
-                          const r=await markAnswer(q,textAns);
-                          const pct=q.marks>0?r.score/q.marks:0;
-                          setQRes(r);
-                          setStats(s=>{
-                            const wq={...s.weakQ};wq[section.id]={wrong:(wq[section.id]?.wrong||0)+(pct<0.5?1:0),total:(wq[section.id]?.total||0)+1};
-                            const ss={...s.subjStats};ss[subj.id]={...ss[subj.id],qS:(ss[subj.id]?.qS||0)+(r.score||0),qM:(ss[subj.id]?.qM||0)+q.marks,fcC:ss[subj.id]?.fcC||0,fcT:ss[subj.id]?.fcT||0};
-                            return{...s,qS:s.qS+(r.score||0),qM:s.qM+q.marks,weakQ:wq,subjStats:ss};
-                          });
-                        }catch(e){setQRes({score:"?",feedback:"ReviseIQ AI unavailable — please try again.",missedPoints:[],modelAnswer:q.sampleAnswer||"",examTip:""});}
-                        setMark(false);
-                      }} disabled={!textAns.trim()||marking}
-                        style={{marginTop:10,width:"100%",background:textAns.trim()&&!marking?"#6366f1":"#9ca3af",color:"#fff",border:"none",borderRadius:12,padding:"12px 0",fontSize:14,fontWeight:600,cursor:textAns.trim()&&!marking?"pointer":"not-allowed"}}>
-                        {marking?"⏳ Marking with ReviseIQ AI…":"Submit for ReviseIQ AI Marking →"}
-                      </button>
-                    )}
-                    {qRes&&typeof qRes==="object"&&qRes.feedback&&(
-                      <div style={{marginTop:14,...C(D),padding:20,background:D?"#1a1a2e":"#f8f7ff",borderColor:"#6366f1"}} className="fade-in">
-                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-                          <span style={{fontWeight:700,fontSize:15}}>ReviseIQ AI Marking Result</span>
-                          <span style={{fontSize:22,fontWeight:800,color:qRes.score>=q.marks*.7?"#16a34a":qRes.score>=q.marks*.4?"#d97706":"#dc2626"}}>{qRes.score}/{q.marks}</span>
-                        </div>
-                        <p style={{fontSize:13,lineHeight:1.7,color:D?"#d1d5db":"#374151",marginBottom:10}}>{qRes.feedback}</p>
-                        {qRes.missedPoints?.length>0&&<div style={{marginBottom:10}}>
-                          <p style={{fontSize:12,fontWeight:600,color:"#dc2626",marginBottom:5}}>Missed points:</p>
-                          {qRes.missedPoints.map((pt,i)=><div key={i} style={{fontSize:12,color:"#dc2626",display:"flex",gap:6,marginBottom:2}}><span>•</span><span>{pt}</span></div>)}
-                        </div>}
-                        {qRes.examTip&&<div style={{padding:"9px 12px",borderRadius:10,background:D?"#1e2f4a":"#eff6ff",border:"1px solid #bfdbfe",marginBottom:10}}>
-                          <p style={{fontSize:12,color:"#1d4ed8"}}>💡 <strong>Exam tip:</strong> {qRes.examTip}</p>
-                        </div>}
-                        <button onClick={()=>setSmMdl(!showMdl)} style={{fontSize:12,color:mu(D),background:"none",border:"none",cursor:"pointer",textDecoration:"underline"}}>{showMdl?"Hide":"Show"} model answer</button>
-                        {showMdl&&<div style={{marginTop:8,padding:14,borderRadius:10,background:D?"#111827":"#f9fafb",border:`1px solid ${bd2}`,fontSize:13,color:D?"#d1d5db":"#374151",lineHeight:1.7}}>
-                          <ContentBlock content={qRes.modelAnswer||q.sampleAnswer||""} D={D} fontSize={13}/>
-                        </div>}
+                  {admin&&isAdminItem("questions",q)&&(
+                    <div style={{display:"flex",gap:8,justifyContent:"flex-end",marginBottom:8}}>
+                      <button onClick={()=>setModal({mode:"question",sectionId:section.id,initialItem:q})} style={{...B("#6366f1",true,{fontSize:12,padding:"5px 12px"})}}>✏️ Edit</button>
+                      <button onClick={()=>handleDeleteQ(q.id)} style={{...B("#ef4444",true,{fontSize:12,padding:"5px 12px"})}}>🗑 Delete</button>
+                    </div>
+                  )}
+
+                  <div style={{...C(D),padding:24,marginBottom:12}}>
+                    <div style={{display:"flex",justifyContent:"space-between",marginBottom:10}}>
+                      <span style={{fontSize:11,fontWeight:600,letterSpacing:"0.06em",color:mu(D),textTransform:"uppercase"}}>
+                        {q.type==="mcq"?"Multiple Choice":q.type==="short"?"Short Answer":"Extended Response"}
+                      </span>
+                      {q.year&&<span style={{fontSize:11,color:mu(D)}}>{q.year}</span>}
+                    </div>
+                    {(q.images||[]).map((img,ii)=><AnnotatedImage key={ii} img={img} D={D}/>)}
+                    <ContentBlock content={q.text} D={D} fontSize={14} style={{marginBottom:18}}/>
+
+                    {/* ── MCQ ── */}
+                    {q.type==="mcq"&&(
+                      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                        {q.options.map((opt,oi)=>{
+                          const sel=selOpt===oi,correct=oi===q.answer,rev=qRes!=null;
+                          let bg2=D?"#1f2937":"#f9fafb",br2=bd2,co2=tx(D);
+                          if(rev&&correct){bg2="#dcfce7";br2="#22c55e";co2="#15803d";}
+                          else if(rev&&sel&&!correct){bg2="#fee2e2";br2="#ef4444";co2="#b91c1c";}
+                          else if(rev&&!correct&&!sel){bg2=D?"#1f2937":"#f9fafb";br2=bd2;co2=mu(D);}
+                          return (
+                            <div key={oi}>
+                              <button onClick={()=>{if(!qRes){
+                                const ok=oi===q.answer;setSelOpt(oi);setQRes(ok?"correct":"wrong");markTodayActive();
+                                setStats(s=>{const wq={...s.weakQ};wq[section.id]={wrong:(wq[section.id]?.wrong||0)+(ok?0:1),total:(wq[section.id]?.total||0)+1};const ss={...s.subjStats};ss[subj.id]={...ss[subj.id],qS:(ss[subj.id]?.qS||0)+(ok?1:0),qM:(ss[subj.id]?.qM||0)+1,fcC:ss[subj.id]?.fcC||0,fcT:ss[subj.id]?.fcT||0};return{...s,qS:s.qS+(ok?1:0),qM:s.qM+1,weakQ:wq,subjStats:ss};});
+                              }}}
+                                style={{width:"100%",textAlign:"left",padding:"11px 16px",borderRadius:10,
+                                  border:`1.5px solid ${br2}`,background:bg2,cursor:qRes?"default":"pointer",
+                                  color:co2,fontSize:13,transition:"all .15s",display:"flex",alignItems:"center",gap:10}}>
+                                <span style={{fontFamily:"monospace",fontSize:11,opacity:0.7,flexShrink:0}}>{"ABCD"[oi]}.</span>
+                                <span style={{flex:1}}>{opt}</span>
+                                {rev&&correct&&<span style={{fontSize:14,flexShrink:0}}>✓</span>}
+                                {rev&&sel&&!correct&&<span style={{fontSize:14,flexShrink:0}}>✗</span>}
+                              </button>
+                              {/* Per-option explanations — Bangert-Drowns (1991) feedback specificity:
+                                  explaining WHY wrong answers are wrong produces better learning than
+                                  confirming correct answers alone. */}
+                              {rev&&(correct||sel)&&(
+                                <div className="hint-slide" style={{marginTop:4,padding:"8px 12px",borderRadius:8,fontSize:11,lineHeight:1.6,
+                                  background:correct?(D?"rgba(16,185,129,.1)":"#f0fdf4"):(D?"rgba(239,68,68,.1)":"#fef2f2"),
+                                  color:correct?(D?"#6ee7b7":"#15803d"):(D?"#fca5a5":"#b91c1c")}}>
+                                  {correct
+                                    ?<><strong>✓ Correct.</strong> {q.explanation||"This is the right answer."}</>
+                                    :<><strong>✗ Incorrect.</strong> {wrongExpls[String(oi)]||`The correct answer is ${q.options[q.answer]}${q.explanation?" — "+q.explanation:"."}` }</>
+                                  }
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
-                  </div>}
-                </div>
-                {qRes&&(
-                  <button onClick={()=>{setQIdx(i=>i<qs.length-1?i+1:0);setQRes(null);setSelOpt(null);setTA("");setSmMdl(false);}}
-                    style={{width:"100%",...B(subj.accent,false,{padding:"12px 0",borderRadius:12,fontSize:14})}}>
-                    {qIdx<qs.length-1?"Next Question →":"↺ Restart"}
-                  </button>
-                )}
-              </>}
+
+                    {/* ── Written questions (short / extended) ── */}
+                    {(q.type==="short"||q.type==="extended")&&<div>
+                      {/* Pre-submit confidence (Metcalfe & Finn 2008 metacognitive monitoring) */}
+                      {!qRes&&(
+                        <div style={{marginBottom:10}}>
+                          {qConf===null?(
+                            <div style={{padding:"10px 14px",borderRadius:10,background:D?"#1f2937":"#fafafa",border:`1px solid ${D?"#374151":"#e5e7eb"}`}}>
+                              <p style={{fontSize:11,fontWeight:600,color:mu(D),marginBottom:8}}>How confident are you in your answer?</p>
+                              <div style={{display:"flex",gap:6}}>
+                                {[{v:1,l:"Not sure",c:"#ef4444",i:"😟"},{v:2,l:"Fairly sure",c:"#f59e0b",i:"🤔"},{v:3,l:"Confident",c:"#10b981",i:"😊"}].map(opt=>(
+                                  <button key={opt.v} onClick={()=>setQConf(opt.v)}
+                                    style={{flex:1,padding:"7px 4px",borderRadius:9,
+                                      border:`1.5px solid ${opt.c}22`,background:D?"#111827":"#fff",
+                                      cursor:"pointer",textAlign:"center",transition:"border-color .15s"}}
+                                    onMouseEnter={e=>{e.currentTarget.style.borderColor=opt.c;}}
+                                    onMouseLeave={e=>{e.currentTarget.style.borderColor=opt.c+"22";}}>
+                                    <div style={{fontSize:16}}>{opt.i}</div>
+                                    <div style={{fontSize:10,fontWeight:700,color:opt.c,marginTop:2}}>{opt.l}</div>
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          ):(
+                            <div style={{fontSize:10,color:mu(D),marginBottom:4,textAlign:"right"}}>
+                              Confidence: {["😟 Not sure","🤔 Fairly sure","😊 Confident"][qConf-1]}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Progressive hint system (Bjork 1994 Desirable Difficulties) */}
+                      {!qRes&&(
+                        <div style={{marginBottom:10}}>
+                          {qHintLvl===0?(
+                            <button onClick={()=>setQHintLvl(1)}
+                              style={{fontSize:11,color:mu(D),background:"none",border:`1px solid ${D?"#374151":"#d1d5db"}`,
+                                borderRadius:8,padding:"5px 12px",cursor:"pointer"}}>
+                              💡 Strategy hint
+                            </button>
+                          ):qHintLvl===1?(
+                            <div className="hint-slide" style={{padding:"9px 13px",borderRadius:10,
+                              background:D?"rgba(245,158,11,.1)":"#fffbeb",border:"1px solid #f59e0b33",
+                              fontSize:12,color:D?"#fcd34d":"#92400e",lineHeight:1.6}}>
+                              💡 <strong>Strategy:</strong> {hints3[0]}
+                              <button onClick={()=>setQHintLvl(2)} style={{display:"block",marginTop:5,fontSize:11,color:mu(D),background:"none",border:"none",cursor:"pointer",textDecoration:"underline"}}>Need more help?</button>
+                            </div>
+                          ):qHintLvl===2?(
+                            <div className="hint-slide" style={{padding:"9px 13px",borderRadius:10,
+                              background:D?"rgba(245,158,11,.1)":"#fffbeb",border:"1px solid #f59e0b44",
+                              fontSize:12,color:D?"#fcd34d":"#92400e",lineHeight:1.6}}>
+                              💡 <strong>Strategy:</strong> {hints3[0]}<br/>
+                              <strong>Subject clue:</strong> {hints3[1]}
+                              <button onClick={()=>setQHintLvl(3)} style={{display:"block",marginTop:5,fontSize:11,color:mu(D),background:"none",border:"none",cursor:"pointer",textDecoration:"underline"}}>Show first mark</button>
+                            </div>
+                          ):(
+                            <div className="hint-slide" style={{padding:"9px 13px",borderRadius:10,
+                              background:D?"rgba(245,158,11,.12)":"#fffbeb",border:"1px solid #f59e0b55",
+                              fontSize:12,color:D?"#fcd34d":"#92400e",lineHeight:1.6}}>
+                              💡 <strong>Strategy:</strong> {hints3[0]}<br/>
+                              <strong>Subject clue:</strong> {hints3[1]}<br/>
+                              <strong>First mark:</strong> {hints3[2]}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      <textarea value={textAns} onChange={e=>setTA(e.target.value)} disabled={!!qRes}
+                        rows={q.type==="extended"?7:3}
+                        placeholder={`Write your answer here… [${q.marks} mark${q.marks!==1?"s":""}]`}
+                        style={{...I(D,{resize:"vertical",lineHeight:1.65})}}/>
+
+                      {!qRes&&(
+                        <button onClick={async()=>{
+                          if(!textAns.trim())return; setMark(true); markTodayActive();
+                          try{
+                            const r=await markAnswer(q,textAns);
+                            const pct=q.marks>0?r.score/q.marks:0;
+                            setQRes(r);
+                            setStats(s=>{const wq={...s.weakQ};wq[section.id]={wrong:(wq[section.id]?.wrong||0)+(pct<0.5?1:0),total:(wq[section.id]?.total||0)+1};const ss={...s.subjStats};ss[subj.id]={...ss[subj.id],qS:(ss[subj.id]?.qS||0)+(r.score||0),qM:(ss[subj.id]?.qM||0)+q.marks,fcC:ss[subj.id]?.fcC||0,fcT:ss[subj.id]?.fcT||0};return{...s,qS:s.qS+(r.score||0),qM:s.qM+q.marks,weakQ:wq,subjStats:ss};});
+                          }catch(e){setQRes({score:"?",feedback:"ReviseIQ AI unavailable — self-mark using the mark scheme below.",missedPoints:[],modelAnswer:q.sampleAnswer||"",examTip:""});}
+                          setMark(false);
+                        }} disabled={!textAns.trim()||marking}
+                          style={{marginTop:10,width:"100%",background:textAns.trim()&&!marking?"#6366f1":"#9ca3af",color:"#fff",border:"none",borderRadius:12,padding:"12px 0",fontSize:14,fontWeight:600,cursor:textAns.trim()&&!marking?"pointer":"not-allowed"}}>
+                          {marking?"⏳ Marking with ReviseIQ AI…":"Submit for ReviseIQ AI Marking →"}
+                        </button>
+                      )}
+
+                      {qRes&&typeof qRes==="object"&&qRes.feedback&&(
+                        <div style={{marginTop:14,...C(D),padding:20,background:D?"#1a1a2e":"#f8f7ff",borderColor:"#6366f1"}} className="fade-in">
+                          {/* Score + calibration display */}
+                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10,flexWrap:"wrap",gap:8}}>
+                            <span style={{fontWeight:700,fontSize:15}}>ReviseIQ AI Marking</span>
+                            <div style={{textAlign:"right"}}>
+                              <div style={{fontSize:24,fontWeight:900,lineHeight:1,
+                                color:Number(qRes.score)>=q.marks*.7?"#16a34a":Number(qRes.score)>=q.marks*.4?"#d97706":"#dc2626"}}>
+                                {qRes.score}/{q.marks}
+                              </div>
+                              {qConf&&(
+                                <div style={{fontSize:10,color:mu(D),marginTop:2}}>
+                                  {(()=>{
+                                    const ap=q.marks>0?(Number(qRes.score)||0)/q.marks:0;
+                                    if(qConf===3&&ap>=0.7) return "✅ Well-calibrated!";
+                                    if(qConf===1&&ap>=0.7) return "🎉 Better than you thought!";
+                                    if(qConf===3&&ap<0.5)  return "⚠️ Overconfident — review this";
+                                    return "Keep practising";
+                                  })()}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <p style={{fontSize:13,lineHeight:1.7,color:D?"#d1d5db":"#374151",marginBottom:10}}>{qRes.feedback}</p>
+
+                          {/* Missed points — visually distinct */}
+                          {qRes.missedPoints?.length>0&&(
+                            <div style={{marginBottom:12,padding:"10px 14px",borderRadius:10,
+                              background:D?"rgba(239,68,68,.08)":"#fef2f2",border:"1px solid #ef444422"}}>
+                              <p style={{fontSize:11,fontWeight:700,color:"#dc2626",marginBottom:6,textTransform:"uppercase",letterSpacing:"0.05em"}}>Points missed:</p>
+                              {qRes.missedPoints.map((pt,i)=>(
+                                <div key={i} style={{fontSize:12,color:"#dc2626",display:"flex",gap:8,marginBottom:3,lineHeight:1.5}}>
+                                  <span style={{flexShrink:0}}>•</span><span>{pt}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {qRes.examTip&&(
+                            <div style={{padding:"9px 12px",borderRadius:10,background:D?"#1e2f4a":"#eff6ff",border:"1px solid #bfdbfe",marginBottom:12}}>
+                              <p style={{fontSize:12,color:"#1d4ed8"}}>💡 <strong>Exam tip:</strong> {qRes.examTip}</p>
+                            </div>
+                          )}
+
+                          {/* Post-marking self-explanation — Testing Effect (Roediger & Karpicke 2006):
+                              forcing a retrieval attempt AFTER seeing outcome, at peak encoding
+                              moment, significantly improves long-term retention vs. passive reading. */}
+                          {!qSelfDone?(
+                            <div style={{marginBottom:12}}>
+                              <p style={{fontSize:12,fontWeight:600,color:D?"#c7d2fe":"#4338ca",marginBottom:6}}>
+                                ✍️ Before the model answer — write one thing you missed or would do differently:
+                              </p>
+                              <textarea value={qSelfExp} onChange={e=>setQSelfExp(e.target.value)} rows={2}
+                                placeholder="e.g. 'I forgot to link cause to effect' or 'I missed units'"
+                                style={{...I(D,{resize:"none",fontSize:12,marginBottom:6})}}/>
+                              <button onClick={()=>setQSelfDone(true)}
+                                style={{fontSize:12,fontWeight:600,padding:"7px 16px",borderRadius:8,
+                                  border:"none",background:"#6366f1",color:"#fff",cursor:"pointer"}}>
+                                Save &amp; see model answer →
+                              </button>
+                            </div>
+                          ):(
+                            <>
+                              {qSelfExp&&(
+                                <div style={{padding:"8px 12px",borderRadius:8,marginBottom:10,
+                                  background:D?"rgba(99,102,241,.1)":"#eef2ff",border:"1px solid #6366f122",
+                                  fontSize:11,color:D?"#a5b4fc":"#4338ca"}}>
+                                  <strong>Your reflection:</strong> {qSelfExp}
+                                </div>
+                              )}
+                              <button onClick={()=>setSmMdl(!showMdl)}
+                                style={{fontSize:12,color:mu(D),background:"none",border:"none",cursor:"pointer",textDecoration:"underline",marginBottom:8,display:"block"}}>
+                                {showMdl?"Hide":"Show"} model answer
+                              </button>
+                              {showMdl&&(
+                                <div style={{padding:"12px 14px",borderRadius:10,background:D?"#111827":"#f9fafb",
+                                  border:`1px solid ${bd2}`,marginBottom:6}}>
+                                  <p style={{fontSize:10,fontWeight:700,color:mu(D),marginBottom:6,textTransform:"uppercase",letterSpacing:"0.05em"}}>Model Answer</p>
+                                  <ContentBlock content={qRes.modelAnswer||q.sampleAnswer||""} D={D} fontSize={13}/>
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>}
+                  </div>
+
+                  {qRes&&(
+                    <button onClick={()=>{setQIdx(i=>i<qs.length-1?i+1:0);setQRes(null);setSelOpt(null);setTA("");setSmMdl(false);setQHintLvl(0);setQConf(null);setQSelfExp("");setQSelfDone(false);}}
+                      style={{width:"100%",...B(subj.accent,false,{padding:"12px 0",borderRadius:12,fontSize:14})}}>
+                      {qIdx<qs.length-1?"Next Question →":"↺ Restart"}
+                    </button>
+                  )}
+                </>);
+              })()}
             </div>
           )}
         </div>
