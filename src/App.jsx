@@ -267,6 +267,17 @@ const ALL_SUBJECTS = [
 ];
 
 const SM2_QUALITY_MAP = [0, 3, 4, 5];
+const SEMANTIC_COLORS = {
+  definition:  { bg_l:"#f0f9ff", bg_d:"rgba(8,145,178,.1)",  border:"#0891B2", label_l:"#0e7490", label_d:"#67e8f9", icon:"📖" },
+  process:     { bg_l:"#ecfdf5", bg_d:"rgba(5,150,105,.1)",  border:"#059669", label_l:"#065f46", label_d:"#6ee7b7", icon:"🔄" },
+  equation:    { bg_l:"#f5f3ff", bg_d:"rgba(124,58,237,.1)", border:"#7C3AED", label_l:"#6d28d9", label_d:"#c4b5fd", icon:"🔢" },
+  mistake:     { bg_l:"#fffbeb", bg_d:"rgba(217,119,6,.1)",  border:"#D97706", label_l:"#b45309", label_d:"#fcd34d", icon:"⚠️" },
+  evaluation:  { bg_l:"#fff1f2", bg_d:"rgba(225,29,72,.1)",  border:"#E11D48", label_l:"#be123c", label_d:"#fda4af", icon:"⚖️" },
+  practical:   { bg_l:"#f0fdf4", bg_d:"rgba(22,163,74,.1)",  border:"#16A34A", label_l:"#15803d", label_d:"#86efac", icon:"🧪" },
+  example:     { bg_l:"#faf5ff", bg_d:"rgba(147,51,234,.1)", border:"#9333EA", label_l:"#7e22ce", label_d:"#d8b4fe", icon:"💡" },
+};
+
+
 function sm2Next(prev, btnQuality) {
   const q = SM2_QUALITY_MAP[btnQuality] ?? 0;
   let { ef = 2.5, interval = 0, reps = 0 } = (prev && typeof prev === "object") ? prev : {};
@@ -358,18 +369,18 @@ function useSchoolLeaderboard(user, school) {
 function SchoolLeaderboard({ user, school, D }) {
   const { entries, loading } = useSchoolLeaderboard(user, school);
   if (!school) return (
-    <div style={{marginTop:14,padding:"10px 14px",borderRadius:10,background:D?"#1f2937":"#f3f4f6",fontSize:12,color:D?"#9ca3af":"#6b7280"}}>
+    <div style={{marginTop:14,padding:"10px 14px",borderRadius:10,background:D?"#1e2537":"#f3f4f6",fontSize:12,color:D?"#9ca3af":"#6b7280"}}>
       🏫 Add your school during sign-up to see how you rank among classmates.
     </div>
   );
-  if (loading) return <div style={{marginTop:14,fontSize:12,color:D?"#6b7280":"#9ca3af"}}>Loading school leaderboard…</div>;
+  if (loading) return <div style={{marginTop:14,fontSize:12,color:D?"#8896b3":"#9ca3af"}}>Loading school leaderboard…</div>;
   if (!entries.length) return (
-    <div style={{marginTop:14,padding:"10px 14px",borderRadius:10,background:D?"#1f2937":"#f3f4f6",fontSize:12,color:D?"#9ca3af":"#6b7280"}}>
+    <div style={{marginTop:14,padding:"10px 14px",borderRadius:10,background:D?"#1e2537":"#f3f4f6",fontSize:12,color:D?"#9ca3af":"#6b7280"}}>
       🏆 No other students from <strong>{school}</strong> yet — invite your classmates!
     </div>
   );
-  const mu2 = D ? "#6b7280" : "#9ca3af";
-  const tx2 = D ? "#f9fafb" : "#111827";
+  const mu2 = D ? "#8896b3" : "#9ca3af";
+  const tx2 = D ? "#e8ecf4" : "#111827";
   return (
     <div style={{marginTop:14}}>
       <p style={{fontSize:11,fontWeight:600,color:mu2,textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:8}}>🏫 {school} Leaderboard</p>
@@ -924,7 +935,7 @@ function FriendsPanel({user,D}){
   const [busy,setBusy]=useState(false);
   const FRKEY=u=>`gcse:fr:${u.replace(/\W/g,"-")}`;
   const FQKEY=u=>`gcse:frq:${u.replace(/\W/g,"-")}`;
-  const bd2=D?"#1f2937":"#e5e7eb";
+  const bd2=D?"#2a3347":"#e5e7eb";
 
   const loadFD=async()=>{
     let base={friends:[],incoming:[],sent:[]};
@@ -1087,7 +1098,7 @@ function FriendsPanel({user,D}){
         <div>
           {!fd.incoming.length&&<p style={{fontSize:12,color:mu(D),fontStyle:"italic"}}>No pending friend requests.</p>}
           {fd.incoming.map(req=>(
-            <div key={req} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",borderRadius:8,background:D?"#1f2937":"#f9fafb",marginBottom:6}}>
+            <div key={req} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",borderRadius:8,background:D?"#1e2537":"#f9fafb",marginBottom:6}}>
               <span style={{flex:1,fontSize:13,fontWeight:600,color:tx(D)}}>{req}</span>
               <button onClick={()=>acceptReq(req)} style={{...B("#16a34a",false,{fontSize:11,padding:"4px 10px"})}}>✓ Accept</button>
               <button onClick={()=>declineReq(req)} style={{...B("#ef4444",true,{fontSize:11,padding:"4px 10px"})}}>✕</button>
@@ -1133,7 +1144,7 @@ function parseLatex(s, mathReady) {
   return out.length===0 ? "" : out.length===1 && typeof out[0]==="string" ? out[0] : out;
 }
 
-function ContentBlock({content, D, style={}, fontSize=13}) {
+function ContentBlock({content, D, style={}, fontSize=15}) {
   const mathReady = useMathReady();
   const isHtml = (content||"").trimStart().startsWith("<");
   if (isHtml) return <div className="rich-display" dangerouslySetInnerHTML={{__html:content||""}} style={{fontSize,lineHeight:1.75,color:tx(D),...style}}/>;
@@ -1159,7 +1170,7 @@ function RichEditor({value, onChange, D, placeholder, minHeight=110}) {
   const bs={background:"transparent",border:"none",cursor:"pointer",borderRadius:5,padding:"3px 8px",fontSize:13,fontWeight:600,color:tx(D)};
   return (
     <div style={{border:`1.5px solid ${brd}`,borderRadius:10,overflow:"hidden"}}>
-      <div style={{display:"flex",gap:2,padding:"5px 8px",background:D?"#1f2937":"#f3f4f6",borderBottom:`1px solid ${brd}`,flexWrap:"wrap",alignItems:"center"}}>
+      <div style={{display:"flex",gap:2,padding:"5px 8px",background:D?"#1e2537":"#f3f4f6",borderBottom:`1px solid ${brd}`,flexWrap:"wrap",alignItems:"center"}}>
         {[["bold",<b>B</b>],["italic",<i>I</i>],["underline",<u>U</u>]].map(([cmd,lbl])=>(
           <button key={cmd} onMouseDown={e=>{e.preventDefault();exec(cmd);}} style={bs}>{lbl}</button>
         ))}
@@ -1174,7 +1185,7 @@ function RichEditor({value, onChange, D, placeholder, minHeight=110}) {
       <div ref={ref} contentEditable suppressContentEditableWarning className="rich-body"
         onInput={()=>{if(ref.current)onChange(ref.current.innerHTML);}}
         data-placeholder={placeholder||"Write here…"}
-        style={{padding:"12px 14px",background:D?"#1f2937":"#fff",color:tx(D),minHeight,outline:"none",lineHeight:1.75,fontSize:13}}/>
+        style={{padding:"12px 14px",background:D?"#1e2537":"#fff",color:tx(D),minHeight,outline:"none",lineHeight:1.75,fontSize:13}}/>
     </div>
   );
 }
@@ -1207,11 +1218,11 @@ function MD({text, D}) {
     if(l.match(/^-{3,}$|^\*{3,}$/)){out.push(<hr key={i} style={{border:"none",borderTop:`1px solid ${D?"#374151":"#e5e7eb"}`,margin:"10px 0"}}/>);return;}
     if(l.startsWith("### ")){out.push(<h3 key={i} style={{fontSize:14,fontWeight:700,color:D?"#e5e7eb":"#111827",margin:"14px 0 5px",letterSpacing:"0.01em"}}>{pb(l.slice(4))}</h3>);return;}
     if(l.startsWith("## ")){out.push(<h2 key={i} style={{fontSize:16,fontWeight:700,color:D?"#f3f4f6":"#111827",margin:"16px 0 6px",paddingBottom:4,borderBottom:`1px solid ${D?"#374151":"#e5e7eb"}`}}>{pb(l.slice(3))}</h2>);return;}
-    if(l.startsWith("# ")){out.push(<h1 key={i} style={{fontSize:18,fontWeight:800,color:D?"#f9fafb":"#111827",margin:"18px 0 8px"}}>{pb(l.slice(2))}</h1>);return;}
+    if(l.startsWith("# ")){out.push(<h1 key={i} style={{fontSize:18,fontWeight:800,color:D?"#e8ecf4":"#111827",margin:"18px 0 8px"}}>{pb(l.slice(2))}</h1>);return;}
     if(l.startsWith("• ")||l.startsWith("- ")){const txt=l.startsWith("• ")?l.slice(2):l.slice(2);out.push(<div key={i} style={{display:"flex",gap:8,fontSize:13,lineHeight:1.7,marginBottom:2,color:D?"#d1d5db":"#374151"}}><span style={{marginTop:7,width:4,height:4,borderRadius:"50%",background:"currentColor",flexShrink:0,opacity:0.5}}/><span>{pb(txt)}</span></div>);return;}
     if(l.startsWith("⚠️")){out.push(<div key={i} style={{margin:"8px 0",padding:"10px 14px",borderRadius:8,border:`1px solid ${D?"#92400e":"#fde68a"}`,background:D?"rgba(120,53,15,.25)":"#fffbeb",fontSize:13,color:D?"#fcd34d":"#92400e"}}>{pb(l)}</div>);return;}
     if(l.match(/^\d+\.\s/)){out.push(<div key={i} style={{display:"flex",gap:8,fontSize:13,lineHeight:1.7,marginBottom:2,color:D?"#d1d5db":"#374151"}}><span style={{flexShrink:0,fontFamily:"monospace",fontSize:11,marginTop:2,color:D?"#9ca3af":"#6b7280"}}>{l.match(/^\d+/)[0]}.</span><span>{pb(l.replace(/^\d+\.\s*/,""))}</span></div>);return;}
-    out.push(<p key={i} style={{fontSize:13,lineHeight:1.75,marginBottom:4,color:D?"#d1d5db":"#374151"}}>{pb(l)}</p>);
+    out.push(<p key={i} style={{fontSize:15,lineHeight:1.8,marginBottom:4,color:D?"#d1d5db":"#374151"}}>{pb(l)}</p>);
   }); flush();
   return <>{out}</>;
 }
@@ -1224,13 +1235,13 @@ function MD({text, D}) {
 ─────────────────────────────────────────────────────────────────────────────── */
 const NOTE_SEC_DEFS = {
   "CORE CONTENT":        {icon:"📚",border:"#6366f1",bg_l:"#eef2ff",bg_d:"rgba(99,102,241,.08)", lbl_l:"#4338ca",lbl_d:"#a5b4fc",selfCheck:false},
-  "WORKED EXAMPLE":      {icon:"✏️", border:"#7c3aed",bg_l:"#f5f3ff",bg_d:"rgba(124,58,237,.08)",lbl_l:"#6d28d9",lbl_d:"#c4b5fd",selfCheck:false},
-  "KEY MISTAKE":         {icon:"⚠️", border:"#f59e0b",bg_l:"#fffbeb",bg_d:"rgba(245,158,11,.08)",lbl_l:"#b45309",lbl_d:"#fcd34d",selfCheck:false},
-  "COMMON EXAM MISTAKE": {icon:"⚠️", border:"#f59e0b",bg_l:"#fffbeb",bg_d:"rgba(245,158,11,.08)",lbl_l:"#b45309",lbl_d:"#fcd34d",selfCheck:false},
+  "WORKED EXAMPLE":      {icon:SEMANTIC_COLORS.process.icon,    border:SEMANTIC_COLORS.process.border,    bg_l:SEMANTIC_COLORS.process.bg_l,    bg_d:SEMANTIC_COLORS.process.bg_d,    lbl_l:SEMANTIC_COLORS.process.label_l,    lbl_d:SEMANTIC_COLORS.process.label_d,    selfCheck:false},
+  "KEY MISTAKE":         {icon:SEMANTIC_COLORS.mistake.icon,    border:SEMANTIC_COLORS.mistake.border,    bg_l:SEMANTIC_COLORS.mistake.bg_l,    bg_d:SEMANTIC_COLORS.mistake.bg_d,    lbl_l:SEMANTIC_COLORS.mistake.label_l,    lbl_d:SEMANTIC_COLORS.mistake.label_d,    selfCheck:false},
+  "COMMON EXAM MISTAKE": {icon:SEMANTIC_COLORS.mistake.icon,    border:SEMANTIC_COLORS.mistake.border,    bg_l:SEMANTIC_COLORS.mistake.bg_l,    bg_d:SEMANTIC_COLORS.mistake.bg_d,    lbl_l:SEMANTIC_COLORS.mistake.label_l,    lbl_d:SEMANTIC_COLORS.mistake.label_d,    selfCheck:false},
   "SELF-CHECK":          {icon:"✅", border:"#10b981",bg_l:"#ecfdf5",bg_d:"rgba(16,185,129,.08)",lbl_l:"#065f46",lbl_d:"#6ee7b7",selfCheck:true},
-  "DEFINITION":          {icon:"📖",border:"#0891b2",bg_l:"#ecfeff",bg_d:"rgba(8,145,178,.08)", lbl_l:"#0e7490",lbl_d:"#67e8f9",selfCheck:false},
-  "EQUATION":            {icon:"🔢",border:"#7c3aed",bg_l:"#f5f3ff",bg_d:"rgba(124,58,237,.08)",lbl_l:"#6d28d9",lbl_d:"#c4b5fd",selfCheck:false},
-  "REQUIRED PRACTICAL":  {icon:"🧪",border:"#16a34a",bg_l:"#f0fdf4",bg_d:"rgba(22,163,74,.08)", lbl_l:"#15803d",lbl_d:"#86efac",selfCheck:false},
+  "DEFINITION":          {icon:SEMANTIC_COLORS.definition.icon, border:SEMANTIC_COLORS.definition.border, bg_l:SEMANTIC_COLORS.definition.bg_l, bg_d:SEMANTIC_COLORS.definition.bg_d, lbl_l:SEMANTIC_COLORS.definition.label_l, lbl_d:SEMANTIC_COLORS.definition.label_d, selfCheck:false},
+  "EQUATION":            {icon:SEMANTIC_COLORS.equation.icon,   border:SEMANTIC_COLORS.equation.border,   bg_l:SEMANTIC_COLORS.equation.bg_l,   bg_d:SEMANTIC_COLORS.equation.bg_d,   lbl_l:SEMANTIC_COLORS.equation.label_l,   lbl_d:SEMANTIC_COLORS.equation.label_d,   selfCheck:false},
+  "REQUIRED PRACTICAL":  {icon:SEMANTIC_COLORS.practical.icon,  border:SEMANTIC_COLORS.practical.border,  bg_l:SEMANTIC_COLORS.practical.bg_l,  bg_d:SEMANTIC_COLORS.practical.bg_d,  lbl_l:SEMANTIC_COLORS.practical.label_l,  lbl_d:SEMANTIC_COLORS.practical.label_d,  selfCheck:false},
   "MNEMONIC":            {icon:"🧠",border:"#ec4899",bg_l:"#fdf2f8",bg_d:"rgba(236,72,153,.08)",lbl_l:"#9d174d",lbl_d:"#f9a8d4",selfCheck:false},
 };
 
@@ -1294,15 +1305,15 @@ function SmartNoteCard({note, D, subjectAccent, canEdit, onEdit, onDelete}) {
   const [lightbox, setLightbox] = React.useState(null);
   const isHtml = (note.body||"").trimStart().startsWith("<");
   const parsed = !isHtml ? parseNoteBody(note.body||"") : null;
-  const bd2 = D?"#1f2937":"#e5e7eb";
+  const bd2 = D?"#2a3347":"#e5e7eb";
   const accentCol = subjectAccent||"#6366f1";
   return (
-    <div style={{background:D?"#111827":"#fff",borderRadius:14,border:`1px solid ${bd2}`,overflow:"hidden",marginBottom:14}}>
+    <div style={{background:D?"#161b27":"#fff",borderRadius:14,border:`1px solid ${bd2}`,overflow:"hidden",marginBottom:14}}>
       <div style={{padding:"12px 18px 10px",background:D?"rgba(255,255,255,.02)":"#fafafa",
         borderBottom:`1px solid ${bd2}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <div style={{display:"flex",alignItems:"center",gap:10,flex:1,minWidth:0}}>
           <div style={{width:4,height:26,borderRadius:3,background:accentCol,flexShrink:0}}/>
-          <h3 style={{fontWeight:700,fontSize:15,color:D?"#f9fafb":"#111827",flex:1,
+          <h3 style={{fontWeight:700,fontSize:15,color:D?"#e8ecf4":"#111827",flex:1,
             overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{note.heading||note.text||""}</h3>
         </div>
         {canEdit&&<div style={{display:"flex",gap:6,flexShrink:0,marginLeft:8}}>
@@ -1404,11 +1415,11 @@ function autoHints(q) {
 }
 
 
-const C  = D => ({background:D?"#111827":"#fff", border:`1px solid ${D?"#1f2937":"#e5e7eb"}`, borderRadius:14});
-const I  = (D,x={}) => ({width:"100%",background:D?"#1f2937":"#fff",border:`1.5px solid ${D?"#374151":"#d1d5db"}`,borderRadius:10,padding:"10px 14px",fontSize:13,outline:"none",color:D?"#f9fafb":"#111827",...x});
+const C  = D => ({background:D?"#161b27":"#fff", border:`1px solid ${D?"#2a3347":"#e5e7eb"}`, borderRadius:14});
+const I  = (D,x={}) => ({width:"100%",background:D?"#1e2537":"#fff",border:`1.5px solid ${D?"#374151":"#d1d5db"}`,borderRadius:10,padding:"10px 14px",fontSize:13,outline:"none",color:D?"#e8ecf4":"#111827",...x});
 const B  = (color,outline,extra={}) => ({padding:"9px 16px",borderRadius:10,border:outline?`1.5px solid ${color}`:"none",background:outline?"transparent":color,color:outline?color:"#fff",cursor:"pointer",fontSize:13,fontWeight:600,...extra});
-const mu = D => D?"#6b7280":"#9ca3af";
-const tx = D => D?"#f9fafb":"#111827";
+const mu = D => D?"#8896b3":"#9ca3af";
+const tx = D => D?"#e8ecf4":"#111827";
 const uid = () => (typeof crypto!=="undefined"&&crypto.randomUUID) ? crypto.randomUUID().replace(/-/g,"").slice(0,9) : Math.random().toString(36).slice(2,9);
 const stripHtml = s => (s||"").replace(/<[^>]*>/g,"").trim();
 const GRADES = ["U","1","2","3","4","5","6","7","8","9"];
@@ -1419,6 +1430,38 @@ const gradeColor = g => ({9:"#7c3aed",8:"#2563eb",7:"#0891b2",6:"#16a34a",5:"#65
 let _toastListeners=[];
 function _emitToast(msg,type="success",duration=2200){_toastListeners.forEach(fn=>fn({id:uid(),msg,type,duration}));}
 function showToast(msg,type,duration){_emitToast(msg,type,duration);}
+
+function MobileBottomNav({screen, onHome, onStudy, onProgress, onTutor, D}) {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 640);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
+  if (!isMobile) return null;
+  const items = [
+    {id:"home",    icon:"🏠", label:"Home",     fn:onHome},
+    {id:"study",   icon:"📚", label:"Study",    fn:onStudy},
+    {id:"progress",icon:"📊", label:"Progress", fn:onProgress},
+    {id:"tutor",   icon:"🤖", label:"Tutor",    fn:onTutor},
+  ];
+  return (
+    <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:60,background:D?"#161b27":"#fff",borderTop:`1px solid ${D?"#2a3347":"#e5e7eb"}`,display:"flex",paddingBottom:"env(safe-area-inset-bottom)",boxShadow:"0 -4px 20px rgba(0,0,0,.08)"}}>
+      {items.map(item => {
+        const active = screen === item.id;
+        return (
+          <button key={item.id} onClick={item.fn}
+            style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"10px 0 8px",background:"none",border:"none",cursor:"pointer",gap:3}}>
+            <span style={{fontSize:20}}>{item.icon}</span>
+            <span style={{fontSize:10,fontWeight:active?700:400,color:active?"#6366f1":D?"#8896b3":"#9ca3af"}}>{item.label}</span>
+            {active && <div style={{width:4,height:4,borderRadius:"50%",background:"#6366f1",marginTop:1}}/>}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function ToastContainer(){
   const [toasts,setToasts]=useState([]);
   useEffect(()=>{
@@ -1658,7 +1701,7 @@ function CreateModal({mode, D, subjects, onClose, onSave, initialItem}) {
 }
 
 function PastPapersTab({papers=[], onAdd, onDelete, admin, D, accent, board, subjectName}) {
-  const bd=D?"#1f2937":"#e5e7eb";
+  const bd=D?"#2a3347":"#e5e7eb";
   return (
     <div className="fade-in">
       {admin&&<div style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderRadius:12,background:D?"#1a1a2e":"#f5f3ff",border:"1.5px solid #6366f1",marginBottom:18}}>
@@ -1669,7 +1712,7 @@ function PastPapersTab({papers=[], onAdd, onDelete, admin, D, accent, board, sub
         ?<div style={{...C(D),padding:48,textAlign:"center"}}><p style={{fontSize:28,marginBottom:10}}>📄</p><p style={{fontWeight:700,fontSize:15,marginBottom:4}}>{subjectName} · {board}</p><p style={{fontSize:13,color:mu(D)}}>No past papers added yet.{admin?" Add one above.":""}</p></div>
         :<div style={{...C(D),overflow:"hidden"}}><div style={{overflowX:"auto"}}>
           <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
-            <thead><tr style={{background:D?"#1f2937":"#f9fafb"}}>{["Year / Paper","Past Paper","Mark Scheme","Examiner Report",...(admin?[""]:[])].map((h,i)=><th key={i} style={{padding:"12px 16px",textAlign:"left",fontWeight:600,color:mu(D),fontSize:11,textTransform:"uppercase",letterSpacing:"0.04em",borderBottom:`1px solid ${bd}`,whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead>
+            <thead><tr style={{background:D?"#1e2537":"#f9fafb"}}>{["Year / Paper","Past Paper","Mark Scheme","Examiner Report",...(admin?[""]:[])].map((h,i)=><th key={i} style={{padding:"12px 16px",textAlign:"left",fontWeight:600,color:mu(D),fontSize:11,textTransform:"uppercase",letterSpacing:"0.04em",borderBottom:`1px solid ${bd}`,whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead>
             <tbody>{papers.map(row=>(
               <tr key={row.id} style={{borderBottom:`1px solid ${bd}`}} onMouseEnter={e=>e.currentTarget.style.background=D?"#1f2937":"#f9fafb"} onMouseLeave={e=>e.currentTarget.style.background=""}>
                 <td style={{padding:"12px 16px",fontWeight:600,color:tx(D),whiteSpace:"nowrap"}}>{row.year}{row.title&&<><br/><span style={{fontSize:11,color:mu(D),fontWeight:400}}>{row.title}</span></>}</td>
@@ -1706,7 +1749,7 @@ function SRInfoTooltip({D}) {
     <span style={{position:"relative",display:"inline-block"}}>
       <button onClick={()=>setShow(v=>!v)} style={{background:"none",border:"none",cursor:"pointer",fontSize:12,color:"#6366f1",padding:"0 2px",lineHeight:1}} title="About spaced repetition">ℹ️</button>
       {show&&<div onClick={()=>setShow(false)} style={{position:"fixed",inset:0,zIndex:8000}}/>}
-      {show&&<div style={{position:"absolute",bottom:"calc(100% + 6px)",left:"50%",transform:"translateX(-50%)",zIndex:8001,background:D?"#1f2937":"#fff",border:`1px solid ${D?"#374151":"#e5e7eb"}`,borderRadius:10,padding:"12px 14px",width:260,boxShadow:"0 8px 32px rgba(0,0,0,.18)",fontSize:12,lineHeight:1.6,color:D?"#e5e7eb":"#374151"}}>
+      {show&&<div style={{position:"absolute",bottom:"calc(100% + 6px)",left:"50%",transform:"translateX(-50%)",zIndex:8001,background:D?"#1e2537":"#fff",border:`1px solid ${D?"#374151":"#e5e7eb"}`,borderRadius:10,padding:"12px 14px",width:260,boxShadow:"0 8px 32px rgba(0,0,0,.18)",fontSize:12,lineHeight:1.6,color:D?"#e5e7eb":"#374151"}}>
         <div style={{fontWeight:700,marginBottom:6,color:"#6366f1"}}>⚡ Spaced Repetition</div>
         <p style={{margin:0}}>The <strong>Ebbinghaus forgetting curve</strong> shows memory fades rapidly without review — SR schedules each card just before you forget it, compounding retention with every correct recall.</p>
         <div style={{marginTop:8,fontSize:11,color:D?"#9ca3af":"#6b7280"}}>Rate <em>Again</em> to see it soon · <em>Easy</em> to push it weeks away.</div>
@@ -1735,14 +1778,14 @@ function ForecastBar({cards,fcHist,D,accent}) {
   },[cards,fcHist]);
   const max = Math.max(1,...days.map(d=>d.count));
   return (
-    <div style={{marginTop:10,padding:"10px 14px",borderRadius:10,background:D?"#111827":"#f9fafb",border:`1px solid ${D?"#1f2937":"#e5e7eb"}`}}>
+    <div style={{marginTop:10,padding:"10px 14px",borderRadius:10,background:D?"#161b27":"#f9fafb",border:`1px solid ${D?"#2a3347":"#e5e7eb"}`}}>
       <div style={{fontSize:11,fontWeight:600,color:D?"#9ca3af":"#6b7280",marginBottom:8}}>📅 14-day review forecast</div>
       <div style={{display:"flex",gap:4,alignItems:"flex-end",height:40,overflowX:"auto"}}>
         {days.map(({i,label,count})=>(
           <div key={i} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2,minWidth:28,flex:1}}>
             <div style={{fontSize:9,color:count>0?(accent||"#6366f1"):D?"#4b5563":"#d1d5db",fontWeight:count>0?700:400}}>{count||""}</div>
-            <div style={{width:"100%",borderRadius:3,background:count>0?(accent||"#6366f1"):D?"#1f2937":"#e5e7eb",height:Math.max(4,Math.round((count/max)*28)),transition:"height .2s",opacity:i===0?1:0.7}}/>
-            <div style={{fontSize:8,color:D?"#6b7280":"#9ca3af",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",maxWidth:28,textAlign:"center"}}>{label}</div>
+            <div style={{width:"100%",borderRadius:3,background:count>0?(accent||"#6366f1"):D?"#2a3347":"#e5e7eb",height:Math.max(4,Math.round((count/max)*28)),transition:"height .2s",opacity:i===0?1:0.7}}/>
+            <div style={{fontSize:8,color:D?"#8896b3":"#9ca3af",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",maxWidth:28,textAlign:"center"}}>{label}</div>
           </div>
         ))}
       </div>
@@ -1756,7 +1799,7 @@ function ManageAccountsModal({D, accounts, adminUser, onClose, onDelete}) {
   var bd = D?"#374151":"#e5e7eb";
   return (
     <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:9500,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
-      <div onClick={function(e){e.stopPropagation();}} style={{background:D?"#1f2937":"#fff",borderRadius:16,width:500,maxWidth:"96vw",maxHeight:"80vh",display:"flex",flexDirection:"column",boxShadow:"0 30px 80px rgba(0,0,0,.3)"}}>
+      <div onClick={function(e){e.stopPropagation();}} style={{background:D?"#1e2537":"#fff",borderRadius:16,width:500,maxWidth:"96vw",maxHeight:"80vh",display:"flex",flexDirection:"column",boxShadow:"0 30px 80px rgba(0,0,0,.3)"}}>
         <div style={{padding:"18px 22px",borderBottom:"1px solid "+bd,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <h2 style={{fontSize:17,fontWeight:700,margin:0}}>👥 Manage Accounts</h2>
           <button onClick={onClose} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",color:D?"#9ca3af":"#6b7280"}}>✕</button>
@@ -1764,9 +1807,9 @@ function ManageAccountsModal({D, accounts, adminUser, onClose, onDelete}) {
         <div style={{padding:"14px 22px",flex:1,overflowY:"auto"}}>
           {users.length===0 && <p style={{color:D?"#9ca3af":"#6b7280",fontSize:13}}>No user accounts yet.</p>}
           {users.map(function(u){ return (
-            <div key={u} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",borderRadius:10,border:"1px solid "+bd,marginBottom:8,background:D?"#111827":"#f9fafb"}}>
+            <div key={u} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",borderRadius:10,border:"1px solid "+bd,marginBottom:8,background:D?"#161b27":"#f9fafb"}}>
               <div>
-                <div style={{fontWeight:600,fontSize:13,color:D?"#f9fafb":"#111827"}}>{getDisplayName(u)}</div>
+                <div style={{fontWeight:600,fontSize:13,color:D?"#e8ecf4":"#111827"}}>{getDisplayName(u)}</div>
                 <div style={{fontSize:11,color:D?"#9ca3af":"#6b7280"}}>{u}</div>
               </div>
               <button onClick={function(){if(window.confirm("Delete account for "+u+"? This cannot be undone."))onDelete(u);}}
@@ -1852,7 +1895,7 @@ function ImportModal({D,subjects,onClose,onDone}) {
 
   return (
     <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:9500,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
-      <div onClick={e=>e.stopPropagation()} style={{background:D?"#1f2937":"#fff",borderRadius:16,width:600,maxWidth:"96vw",maxHeight:"85vh",display:"flex",flexDirection:"column",boxShadow:"0 30px 80px rgba(0,0,0,.3)"}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:D?"#1e2537":"#fff",borderRadius:16,width:600,maxWidth:"96vw",maxHeight:"85vh",display:"flex",flexDirection:"column",boxShadow:"0 30px 80px rgba(0,0,0,.3)"}}>
         <div style={{padding:"18px 22px",borderBottom:`1px solid ${D?"#374151":"#e5e7eb"}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <div>
             <h2 style={{fontSize:17,fontWeight:700,margin:0}}>📥 Import Revision Data</h2>
@@ -1863,12 +1906,12 @@ function ImportModal({D,subjects,onClose,onDone}) {
         <div style={{padding:"16px 22px",flex:1,overflowY:"auto"}}>
           <div style={{marginBottom:10,fontSize:12,color:D?"#9ca3af":"#6b7280",lineHeight:1.6}}>
             <strong>Expected format:</strong>
-            <pre style={{marginTop:4,padding:"8px 12px",borderRadius:8,background:D?"#111827":"#f3f4f6",fontSize:11,overflow:"auto"}}>{`{ "id":"maths", "board":"AQA",\n  "custom": [...],  "extras": {...},  "papers": [...] }`}</pre>
+            <pre style={{marginTop:4,padding:"8px 12px",borderRadius:8,background:D?"#161b27":"#f3f4f6",fontSize:11,overflow:"auto"}}>{`{ "id":"maths", "board":"AQA",\n  "custom": [...],  "extras": {...},  "papers": [...] }`}</pre>
             Or wrap multiple subjects: <code>{"{ \"subjects\": [...] }"}</code>
           </div>
           <textarea value={raw} onChange={e=>setRaw(e.target.value)}
             placeholder="Paste JSON here…"
-            style={{width:"100%",minHeight:200,borderRadius:10,border:`1px solid ${D?"#374151":"#d1d5db"}`,background:D?"#111827":"#f9fafb",color:D?"#f9fafb":"#111827",padding:"10px 14px",fontSize:12,fontFamily:"monospace",resize:"vertical",boxSizing:"border-box"}}/>
+            style={{width:"100%",minHeight:200,borderRadius:10,border:`1px solid ${D?"#374151":"#d1d5db"}`,background:D?"#161b27":"#f9fafb",color:D?"#e8ecf4":"#111827",padding:"10px 14px",fontSize:12,fontFamily:"monospace",resize:"vertical",boxSizing:"border-box"}}/>
           {status&&<div style={{marginTop:10,padding:"10px 14px",borderRadius:8,background:status==="ok"?"#dcfce7":"#fee2e2",color:status==="ok"?"#15803d":"#b91c1c",fontSize:13}}>{msg}</div>}
         </div>
         <div style={{padding:"14px 22px",borderTop:`1px solid ${D?"#374151":"#e5e7eb"}`,display:"flex",gap:10,justifyContent:"flex-end"}}>
@@ -1912,20 +1955,20 @@ function ShortcutModal({D,onClose}) {
   ];
   return (
     <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:9000,display:"flex",alignItems:"center",justifyContent:"center"}}>
-      <div onClick={e=>e.stopPropagation()} style={{background:D?"#1f2937":"#fff",borderRadius:16,padding:28,width:320,maxWidth:"90vw",boxShadow:"0 25px 60px rgba(0,0,0,.25)"}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:D?"#1e2537":"#fff",borderRadius:16,padding:28,width:320,maxWidth:"90vw",boxShadow:"0 25px 60px rgba(0,0,0,.25)"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}>
-          <h3 style={{fontWeight:700,fontSize:16,color:D?"#f9fafb":"#111827"}}>⌨️ Keyboard Shortcuts</h3>
+          <h3 style={{fontWeight:700,fontSize:16,color:D?"#e8ecf4":"#111827"}}>⌨️ Keyboard Shortcuts</h3>
           <button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",fontSize:18,color:D?"#9ca3af":"#6b7280"}}>×</button>
         </div>
         {shortcuts.map(([key,desc],i)=>!desc?(
           <div key={i} style={{fontSize:10,fontWeight:700,letterSpacing:"0.08em",color:"#6366f1",textTransform:"uppercase",marginTop:i>0?14:0,marginBottom:4}}>{key}</div>
         ):(
           <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:`1px solid ${D?"#374151":"#f3f4f6"}`}}>
-            <kbd style={{background:D?"#374151":"#f3f4f6",padding:"2px 8px",borderRadius:6,fontSize:12,fontFamily:"monospace",color:D?"#f9fafb":"#1f2937",minWidth:28,textAlign:"center"}}>{key}</kbd>
+            <kbd style={{background:D?"#374151":"#f3f4f6",padding:"2px 8px",borderRadius:6,fontSize:12,fontFamily:"monospace",color:D?"#e8ecf4":"#1f2937",minWidth:28,textAlign:"center"}}>{key}</kbd>
             <span style={{fontSize:13,color:D?"#d1d5db":"#374151"}}>{desc}</span>
           </div>
         ))}
-        <p style={{fontSize:11,color:D?"#6b7280":"#9ca3af",marginTop:14,textAlign:"center"}}>Press ? to close</p>
+        <p style={{fontSize:11,color:D?"#8896b3":"#9ca3af",marginTop:14,textAlign:"center"}}>Press ? to close</p>
       </div>
     </div>
   );
@@ -1969,17 +2012,17 @@ function SearchModal({D,subjects,allSections,boardData,boardSels,onNavigate,onCl
 
   return (
     <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:9000,display:"flex",alignItems:"flex-start",justifyContent:"center",paddingTop:80}}>
-      <div onClick={e=>e.stopPropagation()} style={{background:D?"#1f2937":"#fff",borderRadius:14,width:520,maxWidth:"92vw",boxShadow:"0 30px 80px rgba(0,0,0,.3)",overflow:"hidden"}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:D?"#1e2537":"#fff",borderRadius:14,width:520,maxWidth:"92vw",boxShadow:"0 30px 80px rgba(0,0,0,.3)",overflow:"hidden"}}>
         <div style={{display:"flex",alignItems:"center",gap:10,padding:"14px 16px",borderBottom:`1px solid ${D?"#374151":"#e5e7eb"}`}}>
           <span style={{fontSize:16}}>🔍</span>
           <input ref={inputRef} value={q} onChange={e=>setQ(e.target.value)}
             onKeyDown={e=>{if(e.key==="Escape")onClose();}}
             placeholder="Search notes, flashcards, sections…"
-            style={{flex:1,background:"none",border:"none",outline:"none",fontSize:15,color:D?"#f9fafb":"#111827"}}/>
-          <span style={{fontSize:11,color:D?"#6b7280":"#9ca3af",background:D?"#374151":"#f3f4f6",padding:"2px 7px",borderRadius:6}}>Esc</span>
+            style={{flex:1,background:"none",border:"none",outline:"none",fontSize:15,color:D?"#e8ecf4":"#111827"}}/>
+          <span style={{fontSize:11,color:D?"#8896b3":"#9ca3af",background:D?"#374151":"#f3f4f6",padding:"2px 7px",borderRadius:6}}>Esc</span>
         </div>
-        {!q&&<div style={{padding:"32px 16px",textAlign:"center",color:D?"#6b7280":"#9ca3af",fontSize:13}}>Start typing to search…</div>}
-        {q&&results.length===0&&<div style={{padding:"32px 16px",textAlign:"center",color:D?"#6b7280":"#9ca3af",fontSize:13}}>No results for "{q}"</div>}
+        {!q&&<div style={{padding:"32px 16px",textAlign:"center",color:D?"#8896b3":"#9ca3af",fontSize:13}}>Start typing to search…</div>}
+        {q&&results.length===0&&<div style={{padding:"32px 16px",textAlign:"center",color:D?"#8896b3":"#9ca3af",fontSize:13}}>No results for "{q}"</div>}
         {results.map((r,i)=>(
           <button key={i} onClick={()=>{onNavigate(r);onClose();}}
             style={{display:"flex",alignItems:"flex-start",gap:10,width:"100%",padding:"12px 16px",background:"none",border:"none",cursor:"pointer",textAlign:"left",borderBottom:`1px solid ${D?"#374151":"#f3f4f6"}`,transition:"background .1s"}}
@@ -1987,7 +2030,7 @@ function SearchModal({D,subjects,allSections,boardData,boardSels,onNavigate,onCl
             onMouseLeave={e=>e.currentTarget.style.background="none"}>
             <span style={{fontSize:18,flexShrink:0,marginTop:1}}>{r.icon}</span>
             <div style={{flex:1,minWidth:0}}>
-              <div style={{fontSize:13,fontWeight:600,color:D?"#f9fafb":"#111827",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.label}</div>
+              <div style={{fontSize:13,fontWeight:600,color:D?"#e8ecf4":"#111827",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.label}</div>
               <div style={{fontSize:11,color:D?"#9ca3af":"#6b7280"}}>{r.sub}</div>
             </div>
             <span style={{fontSize:10,color:"#6366f1",fontWeight:600,background:D?"#312e81":"#eef2ff",padding:"2px 7px",borderRadius:8,flexShrink:0,alignSelf:"center"}}>{r.type}</span>
@@ -2004,6 +2047,229 @@ function SearchModal({D,subjects,allSections,boardData,boardSels,onNavigate,onCl
 // MobileNav removed — hamburger dropdown in Header handles all navigation
 
 /* ─── ONBOARDING WIZARD ──────────────────────────────────────────────────── */
+
+/* ─── SUBJECT SELECTION SCREEN ───────────────────────────────────────────────
+   Shown to new users on signup and to existing users who haven't set subjects.
+   Also accessible from AccountScreen to change selections at any time.
+   Politics is always included and cannot be removed.
+─────────────────────────────────────────────────────────────────────────────── */
+function SubjectSelectionScreen({D, initialSelected, initialBoardSels, onComplete, isEditing}) {
+  const GCSE_SUBJECTS = ALL_SUBJECTS.filter(s => !s._politics);
+  const POLITICS = ALL_SUBJECTS.find(s => s._politics);
+
+  // Pre-populate with initial values if editing
+  const [selected, setSelected] = React.useState(() => {
+    if(initialSelected && initialSelected.length > 0) return new Set(initialSelected);
+    return new Set();
+  });
+  const [boardPerSubj, setBoardPerSubj] = React.useState(() => {
+    return initialBoardSels || {};
+  });
+  const [step, setStep] = React.useState("subjects"); // "subjects" | "boards"
+  const [err, setErr] = React.useState("");
+
+  const bd2 = D ? "#2a3347" : "#e5e7eb";
+  const BOARDS = ["AQA","Edexcel","Eduqas","OCR","WJEC"];
+
+  const toggleSubject = (id) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if(next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+    setErr("");
+  };
+
+  const setBoard = (sId, board) => {
+    setBoardPerSubj(prev => ({...prev, [sId]: board}));
+  };
+
+  const handleSubjectsDone = () => {
+    if(selected.size === 0) { setErr("Please select at least one subject."); return; }
+    // Pre-fill boards with AQA for any subject that doesn't have one set
+    const filled = {...boardPerSubj};
+    for(const id of selected) { if(!filled[id]) filled[id] = "AQA"; }
+    // Politics always gets a board
+    if(POLITICS && !filled[POLITICS.id]) filled[POLITICS.id] = "AQA";
+    setBoardPerSubj(filled);
+    setStep("boards");
+  };
+
+  const handleComplete = () => {
+    const selArray = [...selected];
+    const finalBoards = {...boardPerSubj};
+    for(const id of selArray) { if(!finalBoards[id]) finalBoards[id] = "AQA"; }
+    if(POLITICS) finalBoards[POLITICS.id] = finalBoards[POLITICS.id] || "AQA";
+    onComplete(selArray, finalBoards);
+  };
+
+  // Group subjects by category for easier scanning
+  const SCIENCE_IDS = ["bio","chem","phys","combined-sci"];
+  const LANG_IDS    = ["french","spanish","german"];
+  const HUMANITIES  = ["history","geography","business","politics"];
+  const CREATIVE    = ["drama","music","dt","computing"];
+  const CORE        = ["maths","eng-lang","eng-lit"];
+
+  const groups = [
+    {label:"Core", ids: CORE},
+    {label:"Sciences", ids: SCIENCE_IDS},
+    {label:"Humanities", ids: HUMANITIES},
+    {label:"Languages", ids: LANG_IDS},
+    {label:"Creative & Technical", ids: CREATIVE},
+  ];
+
+  if(step === "subjects") return (
+    <div style={{minHeight:"100vh",background:D?"#0f1117":"#f0f4ff",display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+      <div style={{width:"100%",maxWidth:680,background:D?"#161b27":"#fff",borderRadius:20,boxShadow:"0 30px 80px rgba(0,0,0,.15)",overflow:"hidden"}}>
+        {/* Header */}
+        <div style={{background:"linear-gradient(135deg,#6366f1,#8b5cf6)",padding:"32px 32px 24px"}}>
+          <div style={{fontSize:36,marginBottom:10}}>📚</div>
+          <h1 style={{fontSize:22,fontWeight:800,color:"#fff",marginBottom:6}}>
+            {isEditing ? "Edit Your Subjects" : "Welcome to ReviseIQ!"}
+          </h1>
+          <p style={{fontSize:14,color:"rgba(255,255,255,.8)",lineHeight:1.5}}>
+            {isEditing
+              ? "Update which subjects you're studying. Only these will appear throughout the app."
+              : "Select the subjects you're studying for GCSE. You can change this anytime in Account Settings."}
+          </p>
+        </div>
+
+        <div style={{padding:"24px 28px",maxHeight:"60vh",overflowY:"auto"}}>
+          {/* Politics — always on */}
+          {POLITICS && (
+            <div style={{marginBottom:20,padding:"12px 16px",borderRadius:12,background:D?"rgba(15,118,110,.12)":"#f0fdfa",border:"1.5px solid #0f766e",display:"flex",alignItems:"center",gap:12}}>
+              <span style={{fontSize:22}}>{POLITICS.icon}</span>
+              <div style={{flex:1}}>
+                <div style={{fontSize:14,fontWeight:700,color:D?"#5eead4":"#0f766e"}}>{POLITICS.name}</div>
+                <div style={{fontSize:11,color:D?"#9ca3af":"#6b7280"}}>Always included — general political awareness</div>
+              </div>
+              <span style={{fontSize:11,fontWeight:700,background:"#0f766e",color:"#fff",padding:"3px 10px",borderRadius:20}}>Always On</span>
+            </div>
+          )}
+
+          {/* Subject groups */}
+          {groups.map(group => {
+            const groupSubjects = GCSE_SUBJECTS.filter(s => group.ids.includes(s.id));
+            if(!groupSubjects.length) return null;
+            return (
+              <div key={group.label} style={{marginBottom:20}}>
+                <div style={{fontSize:11,fontWeight:700,color:D?"#8896b3":"#9ca3af",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:10}}>{group.label}</div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))",gap:8}}>
+                  {groupSubjects.map(s => {
+                    const on = selected.has(s.id);
+                    return (
+                      <button key={s.id} onClick={() => toggleSubject(s.id)}
+                        style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderRadius:12,
+                          border:`2px solid ${on ? s.accent : bd2}`,
+                          background:on ? s.accent+"18" : "transparent",
+                          cursor:"pointer",textAlign:"left",transition:"all .15s",
+                          boxShadow:on?`0 0 0 1px ${s.accent}44`:"none"}}>
+                        <span style={{fontSize:20,flexShrink:0}}>{s.icon}</span>
+                        <div style={{minWidth:0}}>
+                          <div style={{fontSize:13,fontWeight:on?700:500,color:on?s.accent:D?"#e8ecf4":"#374151",
+                            overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",lineHeight:1.3}}>
+                            {s.name}
+                          </div>
+                          {on && <div style={{fontSize:9,color:s.accent,fontWeight:700,marginTop:1}}>✓ Selected</div>}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div style={{padding:"20px 28px",borderTop:`1px solid ${bd2}`,background:D?"#0f1117":"#f9fafb"}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
+            <div style={{fontSize:13,color:D?"#8896b3":"#9ca3af"}}>
+              {selected.size === 0
+                ? "No subjects selected yet"
+                : <><strong style={{color:"#6366f1"}}>{selected.size}</strong> subject{selected.size!==1?"s":""} selected</>}
+            </div>
+            <div style={{display:"flex",gap:10,alignItems:"center"}}>
+              {err && <span style={{fontSize:12,color:"#ef4444"}}>{err}</span>}
+              {isEditing && <button onClick={() => onComplete(null,null)} style={{fontSize:13,color:D?"#8896b3":"#9ca3af",background:"none",border:`1px solid ${bd2}`,borderRadius:10,padding:"10px 18px",cursor:"pointer"}}>Cancel</button>}
+              <button onClick={handleSubjectsDone}
+                disabled={selected.size === 0}
+                style={{padding:"11px 28px",borderRadius:12,border:"none",
+                  background:selected.size>0?"#6366f1":"#9ca3af",
+                  color:"#fff",fontWeight:700,fontSize:14,cursor:selected.size>0?"pointer":"not-allowed"}}>
+                Next: Set Exam Boards →
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Step 2: Board selection per subject
+  const selSubjects = GCSE_SUBJECTS.filter(s => selected.has(s.id));
+
+  return (
+    <div style={{minHeight:"100vh",background:D?"#0f1117":"#f0f4ff",display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+      <div style={{width:"100%",maxWidth:580,background:D?"#161b27":"#fff",borderRadius:20,boxShadow:"0 30px 80px rgba(0,0,0,.15)",overflow:"hidden"}}>
+        <div style={{background:"linear-gradient(135deg,#6366f1,#8b5cf6)",padding:"28px 32px 22px"}}>
+          <button onClick={() => setStep("subjects")} style={{fontSize:13,color:"rgba(255,255,255,.7)",background:"none",border:"none",cursor:"pointer",marginBottom:12,display:"flex",alignItems:"center",gap:4}}>
+            ← Back
+          </button>
+          <h1 style={{fontSize:20,fontWeight:800,color:"#fff",marginBottom:4}}>Choose Your Exam Boards</h1>
+          <p style={{fontSize:13,color:"rgba(255,255,255,.8)"}}>Set the exam board for each subject. You can change these later.</p>
+        </div>
+
+        <div style={{padding:"20px 28px",maxHeight:"60vh",overflowY:"auto",display:"flex",flexDirection:"column",gap:10}}>
+          {/* Quick-set all */}
+          <div style={{padding:"10px 14px",borderRadius:10,background:D?"#1e2537":"#f3f4f6",display:"flex",alignItems:"center",gap:10,flexWrap:"wrap",marginBottom:4}}>
+            <span style={{fontSize:12,fontWeight:600,color:D?"#8896b3":"#6b7280",flexShrink:0}}>Set all to:</span>
+            {["AQA","Edexcel","Eduqas","OCR","WJEC"].map(b => (
+              <button key={b} onClick={() => {
+                const next = {};
+                for(const s of selSubjects) next[s.id] = b;
+                if(POLITICS) next[POLITICS.id] = b;
+                setBoardPerSubj(next);
+              }} style={{fontSize:12,padding:"4px 12px",borderRadius:8,border:`1px solid ${D?"#374151":"#d1d5db"}`,background:"transparent",color:D?"#e8ecf4":"#374151",cursor:"pointer",fontWeight:500}}>
+                {b}
+              </button>
+            ))}
+          </div>
+
+          {selSubjects.map(s => {
+            const curB = boardPerSubj[s.id] || "AQA";
+            return (
+              <div key={s.id} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",borderRadius:12,border:`1px solid ${bd2}`,background:D?"#1e2537":"#f9fafb"}}>
+                <span style={{fontSize:20,flexShrink:0}}>{s.icon}</span>
+                <span style={{flex:1,fontSize:14,fontWeight:600,color:D?"#e8ecf4":"#111827"}}>{s.name}</span>
+                <div style={{display:"flex",gap:4,flexWrap:"wrap",justifyContent:"flex-end"}}>
+                  {BOARDS.map(b => (
+                    <button key={b} onClick={() => setBoard(s.id, b)}
+                      style={{fontSize:11,padding:"4px 10px",borderRadius:8,
+                        border:`1.5px solid ${curB===b?s.accent:bd2}`,
+                        background:curB===b?s.accent:"transparent",
+                        color:curB===b?"#fff":D?"#8896b3":"#6b7280",
+                        cursor:"pointer",fontWeight:curB===b?700:400,transition:"all .12s"}}>
+                      {b}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div style={{padding:"20px 28px",borderTop:`1px solid ${bd2}`,background:D?"#0f1117":"#f9fafb",display:"flex",gap:12,justifyContent:"flex-end",flexWrap:"wrap",alignItems:"center"}}>
+          {isEditing && <button onClick={() => onComplete(null,null)} style={{fontSize:13,color:D?"#8896b3":"#9ca3af",background:"none",border:`1px solid ${bd2}`,borderRadius:10,padding:"10px 18px",cursor:"pointer"}}>Cancel</button>}
+          <button onClick={handleComplete}
+            style={{padding:"12px 32px",borderRadius:12,border:"none",background:"#6366f1",color:"#fff",fontWeight:700,fontSize:14,cursor:"pointer"}}>
+            {isEditing ? "Save Changes ✓" : "Get Started 🚀"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function OnboardingWizard({D,onComplete}) {
   const [step,setStep] = React.useState(1);
   const [board,setBoard] = React.useState("AQA");
@@ -2013,11 +2279,11 @@ function OnboardingWizard({D,onComplete}) {
 
   if(step===1) return (
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.65)",zIndex:8000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
-      <div style={{background:D?"#1f2937":"#fff",borderRadius:20,padding:32,width:400,maxWidth:"100%",textAlign:"center"}}>
+      <div style={{background:D?"#1e2537":"#fff",borderRadius:20,padding:32,width:400,maxWidth:"100%",textAlign:"center"}}>
         <div style={{fontSize:40,marginBottom:12}}>🎓</div>
-        <h2 style={{fontSize:20,fontWeight:700,marginBottom:6,color:D?"#f9fafb":"#111827"}}>Welcome to ReviseIQ!</h2>
+        <h2 style={{fontSize:20,fontWeight:700,marginBottom:6,color:D?"#e8ecf4":"#111827"}}>Welcome to ReviseIQ!</h2>
         <p style={{fontSize:14,color:D?"#9ca3af":"#6b7280",marginBottom:24}}>Let's set you up in 2 quick steps.</p>
-        <p style={{fontSize:13,fontWeight:600,color:D?"#f9fafb":"#374151",marginBottom:10}}>Step 1 of 2: Which exam board do you mainly use?</p>
+        <p style={{fontSize:13,fontWeight:600,color:D?"#e8ecf4":"#374151",marginBottom:10}}>Step 1 of 2: Which exam board do you mainly use?</p>
         <div style={{display:"flex",flexWrap:"wrap",gap:8,justifyContent:"center",marginBottom:24}}>
           {boardOpts.map(b=>(
             <button key={b} onClick={()=>setBoard(b)}
@@ -2035,12 +2301,12 @@ function OnboardingWizard({D,onComplete}) {
 
   if(step===2) return (
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.65)",zIndex:8000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
-      <div style={{background:D?"#1f2937":"#fff",borderRadius:20,padding:32,width:400,maxWidth:"100%",textAlign:"center"}}>
+      <div style={{background:D?"#1e2537":"#fff",borderRadius:20,padding:32,width:400,maxWidth:"100%",textAlign:"center"}}>
         <div style={{fontSize:40,marginBottom:12}}>📅</div>
-        <h2 style={{fontSize:20,fontWeight:700,marginBottom:6,color:D?"#f9fafb":"#111827"}}>When are your exams?</h2>
+        <h2 style={{fontSize:20,fontWeight:700,marginBottom:6,color:D?"#e8ecf4":"#111827"}}>When are your exams?</h2>
         <p style={{fontSize:14,color:D?"#9ca3af":"#6b7280",marginBottom:24}}>Step 2 of 2: Add your main exam date (optional — you can skip this).</p>
         <input type="date" value={examDate} onChange={e=>setExamDate(e.target.value)}
-          style={{width:"100%",padding:"12px 14px",borderRadius:10,border:`1.5px solid ${D?"#374151":"#e5e7eb"}`,background:D?"#374151":"#f9fafb",color:D?"#f9fafb":"#111827",fontSize:14,marginBottom:20,outline:"none"}}/>
+          style={{width:"100%",padding:"12px 14px",borderRadius:10,border:`1.5px solid ${D?"#374151":"#e5e7eb"}`,background:D?"#374151":"#f9fafb",color:D?"#e8ecf4":"#111827",fontSize:14,marginBottom:20,outline:"none"}}/>
         <div style={{display:"flex",gap:10}}>
           <button onClick={()=>onComplete(board,null)} style={{flex:1,background:"none",color:"#6b7280",border:`1.5px solid ${D?"#374151":"#e5e7eb"}`,borderRadius:12,padding:"12px",fontSize:14,cursor:"pointer"}}>
             Skip
@@ -2080,12 +2346,12 @@ function Header({user,userDisplayName,D,onDark,onHome,onDash,onTarget,onTimetabl
     return function(){document.removeEventListener("click",handler);};
   },[menuOpen]);
   return (
-    <header data-riq-hdr="1" style={{background:D?"#0d1117":"#fff",borderBottom:"1px solid "+(D?"#1f2937":"#e5e7eb"),position:"sticky",top:0,zIndex:50}}>
+    <header data-riq-hdr="1" style={{background:D?"#0d1117":"#fff",borderBottom:"1px solid "+(D?"#2a3347":"#e5e7eb"),position:"sticky",top:0,zIndex:50}}>
       <div style={{maxWidth:1100,margin:"0 auto",padding:"0 16px",height:54,display:"flex",alignItems:"center",gap:8}}>
         <button onClick={onHome} style={{fontWeight:800,fontSize:15,background:"none",border:"none",cursor:"pointer",color:tx(D),flexShrink:0,letterSpacing:"-0.01em",paddingRight:6}}>🎓 ReviseIQ</button>
         {curItem&&curItem.id!=="home"&&<span style={{fontSize:12,color:mu(D),fontWeight:500,flexShrink:0}}>{curItem.icon} {curItem.label}</span>}
         <div style={{flex:1}}/>
-        <button onClick={onSearch} style={{background:D?"#1f2937":"#f3f4f6",border:"1px solid "+(D?"#374151":"#e5e7eb"),borderRadius:8,padding:"5px 10px",fontSize:12,color:mu(D),cursor:"pointer",display:"flex",alignItems:"center",gap:5,flexShrink:0}}>
+        <button onClick={onSearch} style={{background:D?"#1e2537":"#f3f4f6",border:"1px solid "+(D?"#374151":"#e5e7eb"),borderRadius:8,padding:"5px 10px",fontSize:12,color:mu(D),cursor:"pointer",display:"flex",alignItems:"center",gap:5,flexShrink:0}}>
           <span>🔍</span>
           <span style={{color:D?"#9ca3af":"#6b7280"}}>Search</span>
         </button>
@@ -2096,14 +2362,14 @@ function Header({user,userDisplayName,D,onDark,onHome,onDash,onTarget,onTimetabl
           </div>
         )}
         <button onClick={onDark} style={{fontSize:15,background:"none",border:"none",cursor:"pointer",color:mu(D),padding:"4px",borderRadius:6,flexShrink:0}}>{D?"☀️":"🌙"}</button>
-        <div style={{display:"flex",alignItems:"center",gap:6,padding:"4px 10px",borderRadius:20,background:D?"#1f2937":"#f3f4f6",border:"1px solid "+(D?"#374151":"#e5e7eb"),flexShrink:0}}>
+        <div style={{display:"flex",alignItems:"center",gap:6,padding:"4px 10px",borderRadius:20,background:D?"#1e2537":"#f3f4f6",border:"1px solid "+(D?"#374151":"#e5e7eb"),flexShrink:0}}>
           <span style={{fontSize:12,fontWeight:600,color:tx(D),maxWidth:130,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{displayName}</span>
           {isAdmin(user)&&<span style={{fontSize:9,fontWeight:700,background:"#6366f1",color:"#fff",padding:"1px 6px",borderRadius:10,flexShrink:0}}>ADMIN</span>}
         </div>
         <button onClick={function(e){e.stopPropagation();setMenuOpen(function(o){return !o;});}} style={{fontSize:18,background:"none",border:"none",cursor:"pointer",color:mu(D),padding:"4px 6px",borderRadius:6,lineHeight:1,flexShrink:0}}>☰</button>
       </div>
       {menuOpen&&(
-        <div style={{position:"absolute",top:54,right:0,minWidth:220,background:D?"#111827":"#fff",border:"1px solid "+(D?"#374151":"#e5e7eb"),borderTop:"none",borderRadius:"0 0 14px 14px",zIndex:60,padding:"8px 10px 12px",boxShadow:"0 8px 32px rgba(0,0,0,.18)"}}>
+        <div style={{position:"absolute",top:54,right:0,minWidth:220,background:D?"#161b27":"#fff",border:"1px solid "+(D?"#374151":"#e5e7eb"),borderTop:"none",borderRadius:"0 0 14px 14px",zIndex:60,padding:"8px 10px 12px",boxShadow:"0 8px 32px rgba(0,0,0,.18)"}}>
           {allNavItems.map(function(item){
             var active=screen===item.id;
             return (
@@ -2122,7 +2388,7 @@ function Header({user,userDisplayName,D,onDark,onHome,onDash,onTarget,onTimetabl
 }
 
 /* ─── ACCOUNT SETTINGS SCREEN ───────────────────────────────────────────────── */
-function AccountScreen({D,user,userDisplayName,userSchool,accounts,onBack,onSave}) {
+function AccountScreen({D,user,userDisplayName,userSchool,accounts,selectedSubjectIds,boardSels,onBack,onSave,onEditSubjects}) {
   var [dnIn, setDNIn] = React.useState(userDisplayName||"");
   var [schIn, setSchIn] = React.useState(userSchool||"");
   var [pwIn, setPwIn] = React.useState("");
@@ -2131,7 +2397,7 @@ function AccountScreen({D,user,userDisplayName,userSchool,accounts,onBack,onSave
 
   var isAdmin = user && user.toLowerCase().indexOf("admin")!==-1;
   var isEmail = user && user.indexOf("@")!==-1;
-  var bd2=D?"#1f2937":"#e5e7eb";
+  var bd2=D?"#2a3347":"#e5e7eb";
 
   var handleSave = function(){
     if(pwIn&&(pwIn.length<4||pwIn.length>30)){setPwErr("Password must be 4-30 characters.");return;}
@@ -2145,50 +2411,89 @@ function AccountScreen({D,user,userDisplayName,userSchool,accounts,onBack,onSave
     setTimeout(function(){setSaved(false);},1800);
   };
 
+  // Build display list of selected subjects with boards
+  var selSubjList = ALL_SUBJECTS.filter(function(s){ return !s._politics && selectedSubjectIds && selectedSubjectIds.includes(s.id); });
+  var politicsSub = ALL_SUBJECTS.find(function(s){ return s._politics; });
+
   return (
-    <div style={{minHeight:"100vh",background:D?"#030712":"#f0f4ff",display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
-      <div style={{...C(D),width:"100%",maxWidth:440,padding:36,boxShadow:"0 20px 60px rgba(0,0,0,.1)"}}>
+    <div style={{minHeight:"100vh",background:D?"#0f1117":"#f0f4ff",padding:24,overflowY:"auto"}}>
+      <div style={{maxWidth:520,margin:"0 auto"}}>
         <button onClick={onBack} style={{fontSize:13,color:mu(D),background:"none",border:"none",cursor:"pointer",marginBottom:20}}>← Back</button>
         <h2 style={{fontSize:20,fontWeight:700,marginBottom:4,color:tx(D)}}>⚙️ Account Settings</h2>
         <p style={{fontSize:12,color:mu(D),marginBottom:24}}>Update your profile and leaderboard details</p>
 
-        <div style={{padding:"12px 16px",borderRadius:10,background:D?"#1f2937":"#f3f4f6",marginBottom:24,display:"flex",alignItems:"center",gap:10}}>
-          <div style={{width:36,height:36,borderRadius:"50%",background:"linear-gradient(135deg,#6366f1,#8b5cf6)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:700,fontSize:15,flexShrink:0}}>
-            {(userDisplayName||user||"?")[0].toUpperCase()}
+        {/* Profile card */}
+        <div style={{...C(D),padding:22,marginBottom:18}}>
+          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:18}}>
+            <div style={{width:44,height:44,borderRadius:"50%",background:"linear-gradient(135deg,#6366f1,#8b5cf6)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:700,fontSize:18,flexShrink:0}}>
+              {(userDisplayName||user||"?")[0].toUpperCase()}
+            </div>
+            <div>
+              <div style={{fontSize:15,fontWeight:700,color:tx(D)}}>{userDisplayName||user}</div>
+              <div style={{fontSize:11,color:mu(D)}}>{isEmail?"Email account":"Username account"}{userSchool?" · "+userSchool:""}</div>
+            </div>
           </div>
-          <div>
-            <div style={{fontSize:14,fontWeight:700,color:tx(D)}}>{userDisplayName||user}</div>
-            <div style={{fontSize:11,color:mu(D)}}>{isEmail?"Email account":"Username account"}{userSchool?" · "+userSchool:""}</div>
+          <div style={{display:"flex",flexDirection:"column",gap:14}}>
+            <div>
+              <label style={{fontSize:11,fontWeight:700,color:mu(D),display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:"0.06em"}}>Display Name</label>
+              <input style={I(D)} value={dnIn} onChange={function(e){setDNIn(e.target.value);setSaved(false);}}
+                placeholder="Name shown on leaderboard" maxLength={40}/>
+              <p style={{fontSize:11,color:mu(D),marginTop:4}}>Shown on leaderboards instead of your username/email</p>
+            </div>
+            <div>
+              <label style={{fontSize:11,fontWeight:700,color:mu(D),display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:"0.06em"}}>School</label>
+              <input style={I(D)} value={schIn} onChange={function(e){setSchIn(e.target.value);setSaved(false);}}
+                placeholder="Your school name (for leaderboard)" maxLength={60}/>
+            </div>
+            <div>
+              <label style={{fontSize:11,fontWeight:700,color:mu(D),display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:"0.06em"}}>New Password <span style={{fontWeight:400,color:mu(D),textTransform:"none"}}>(leave blank to keep current)</span></label>
+              <input type="password" style={I(D)} value={pwIn} onChange={function(e){setPwIn(e.target.value);setSaved(false);setPwErr("");}}
+                placeholder="Enter new password" maxLength={30}/>
+              {pwErr&&<p style={{fontSize:11,color:"#ef4444",marginTop:4}}>{pwErr}</p>}
+            </div>
+          </div>
+          <button onClick={handleSave}
+            style={{width:"100%",background:saved?"#16a34a":"#6366f1",color:"#fff",border:"none",borderRadius:12,padding:"12px 0",fontSize:14,fontWeight:700,cursor:"pointer",transition:"all .2s",marginTop:20}}>
+            {saved?"✓ Saved!":"Save Changes"}
+          </button>
+        </div>
+
+        {/* My Subjects card */}
+        <div style={{...C(D),padding:22,marginBottom:18}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14,flexWrap:"wrap",gap:8}}>
+            <div>
+              <h3 style={{fontSize:15,fontWeight:700,color:tx(D),marginBottom:2}}>📚 My Subjects</h3>
+              <p style={{fontSize:12,color:mu(D)}}>{selSubjList.length} subject{selSubjList.length!==1?"s":""} selected + Politics</p>
+            </div>
+            <button onClick={onEditSubjects}
+              style={{padding:"8px 18px",borderRadius:10,border:"1.5px solid #6366f1",background:"transparent",color:"#6366f1",fontWeight:600,fontSize:13,cursor:"pointer"}}>
+              ✏️ Edit Subjects
+            </button>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:6}}>
+            {selSubjList.map(function(s){
+              var b = boardSels[s.id] || "AQA";
+              return (
+                <div key={s.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",borderRadius:9,background:D?"#1e2537":"#f9fafb",border:"1px solid "+bd2}}>
+                  <span style={{fontSize:18,flexShrink:0}}>{s.icon}</span>
+                  <span style={{flex:1,fontSize:13,fontWeight:500,color:tx(D)}}>{s.name}</span>
+                  <span style={{fontSize:11,fontWeight:700,padding:"2px 9px",borderRadius:8,background:s.accent+"22",color:s.accent}}>{b}</span>
+                </div>
+              );
+            })}
+            {politicsSub && (
+              <div style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",borderRadius:9,background:D?"rgba(15,118,110,.08)":"#f0fdfa",border:"1px solid #0f766e22"}}>
+                <span style={{fontSize:18,flexShrink:0}}>{politicsSub.icon}</span>
+                <span style={{flex:1,fontSize:13,fontWeight:500,color:D?"#5eead4":"#0f766e"}}>{politicsSub.name}</span>
+                <span style={{fontSize:11,fontWeight:700,color:"#0f766e"}}>Always On</span>
+              </div>
+            )}
           </div>
         </div>
 
-        <div style={{display:"flex",flexDirection:"column",gap:14,marginBottom:20}}>
-          <div>
-            <label style={{fontSize:11,fontWeight:700,color:mu(D),display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:"0.06em"}}>Display Name</label>
-            <input style={I(D)} value={dnIn} onChange={function(e){setDNIn(e.target.value);setSaved(false);}}
-              placeholder="Name shown on leaderboard" maxLength={40}/>
-            <p style={{fontSize:11,color:mu(D),marginTop:4}}>Shown on leaderboards instead of your username/email</p>
-          </div>
-          <div>
-            <label style={{fontSize:11,fontWeight:700,color:mu(D),display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:"0.06em"}}>School</label>
-            <input style={I(D)} value={schIn} onChange={function(e){setSchIn(e.target.value);setSaved(false);}}
-              placeholder="Your school name (for leaderboard)" maxLength={60}/>
-          </div>
-          <div>
-            <label style={{fontSize:11,fontWeight:700,color:mu(D),display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:"0.06em"}}>New Password <span style={{fontWeight:400,color:mu(D),textTransform:"none"}}>(leave blank to keep current)</span></label>
-            <input type="password" style={I(D)} value={pwIn} onChange={function(e){setPwIn(e.target.value);setSaved(false);setPwErr("");}}
-              placeholder="Enter new password" maxLength={30}/>
-            {pwErr&&<p style={{fontSize:11,color:"#ef4444",marginTop:4}}>{pwErr}</p>}
-          </div>
-        </div>
-
-        <button onClick={handleSave}
-          style={{width:"100%",background:saved?"#16a34a":"#6366f1",color:"#fff",border:"none",borderRadius:12,padding:"12px 0",fontSize:14,fontWeight:700,cursor:"pointer",transition:"all .2s",marginBottom:10}}>
-          {saved?"✓ Saved!":"Save Changes"}
-        </button>
         <button onClick={onBack}
           style={{width:"100%",background:"transparent",color:mu(D),border:"1.5px solid "+bd2,borderRadius:12,padding:"10px 0",fontSize:13,cursor:"pointer"}}>
-          Cancel
+          ← Back to Home
         </button>
       </div>
     </div>
@@ -2247,7 +2552,7 @@ function BlurtingScreen({D,subjects,allSections,initSubjId,initSecId,onBack}) {
   };
   const reset=()=>{setBlurt("");setRes(null);setErr("");};
   return (
-    <div style={{minHeight:"100vh",background:D?"#030712":"#f9fafb",color:tx(D)}} className="fade-in">
+    <div style={{minHeight:"100vh",background:D?"#0f1117":"#f9fafb",color:tx(D)}} className="fade-in">
       <div style={{maxWidth:760,margin:"0 auto",padding:"32px 24px"}}>
         <button onClick={onBack} style={{fontSize:13,color:mu(D),background:"none",border:"none",cursor:"pointer",marginBottom:20}}>← Back</button>
         <div style={{marginBottom:22}}>
@@ -2267,7 +2572,7 @@ function BlurtingScreen({D,subjects,allSections,initSubjId,initSecId,onBack}) {
               {secList.map(s=><option key={s.id} value={s.id}>{s.title}</option>)}
             </select></div>
           </div>
-          {bSec&&sec&&!(sec.notes||[]).length&&<div style={{padding:"9px 13px",borderRadius:9,background:D?"#1f2937":"#fffbeb",border:`1px solid ${D?"#374151":"#fde68a"}`,fontSize:12,color:D?"#fcd34d":"#92400e"}}>⚠️ No notes in this section — AI will still assess your recall but with less accuracy.</div>}
+          {bSec&&sec&&!(sec.notes||[]).length&&<div style={{padding:"9px 13px",borderRadius:9,background:D?"#1e2537":"#fffbeb",border:`1px solid ${D?"#374151":"#fde68a"}`,fontSize:12,color:D?"#fcd34d":"#92400e"}}>⚠️ No notes in this section — AI will still assess your recall but with less accuracy.</div>}
           <div>
             {Lbl("Your blurt — write everything from memory")}
             <textarea value={blurt} onChange={e=>setBlurt(e.target.value)} rows={13}
@@ -2293,11 +2598,11 @@ function BlurtingScreen({D,subjects,allSections,initSubjId,initSecId,onBack}) {
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
             {res.remembered?.length>0&&<div style={{...C(D),padding:16}}>
               <p style={{fontWeight:700,color:"#16a34a",marginBottom:10,fontSize:13}}>✓ Remembered ({res.remembered.length})</p>
-              {res.remembered.map((p,i)=><div key={i} style={{fontSize:12,lineHeight:1.6,padding:"3px 0",borderBottom:`1px solid ${D?"#1f2937":"#f3f4f6"}`,color:tx(D)}}>{p}</div>)}
+              {res.remembered.map((p,i)=><div key={i} style={{fontSize:12,lineHeight:1.6,padding:"3px 0",borderBottom:`1px solid ${D?"#1e2537":"#f3f4f6"}`,color:tx(D)}}>{p}</div>)}
             </div>}
             {res.missed?.length>0&&<div style={{...C(D),padding:16}}>
               <p style={{fontWeight:700,color:"#ef4444",marginBottom:10,fontSize:13}}>✗ Missed ({res.missed.length})</p>
-              {res.missed.map((p,i)=><div key={i} style={{fontSize:12,lineHeight:1.6,padding:"3px 0",borderBottom:`1px solid ${D?"#1f2937":"#f3f4f6"}`,color:tx(D)}}>{p}</div>)}
+              {res.missed.map((p,i)=><div key={i} style={{fontSize:12,lineHeight:1.6,padding:"3px 0",borderBottom:`1px solid ${D?"#1e2537":"#f3f4f6"}`,color:tx(D)}}>{p}</div>)}
             </div>}
           </div>
           {res.partial?.length>0&&<div style={{...C(D),padding:16}}>
@@ -2346,7 +2651,7 @@ function TimetableScreen({D, subjects, allSections, user, stats, onNav, onBack})
   const [newEvEnd,setNewEvEnd]         = useState("10:00");
   const saveRef=useRef(null);
   const Lbl=t=><label style={{fontSize:11,fontWeight:600,color:mu(D),display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:"0.05em"}}>{t}</label>;
-  const bd2=D?"#1f2937":"#e5e7eb";
+  const bd2=D?"#2a3347":"#e5e7eb";
   const today=new Date().toISOString().slice(0,10);
   const secList=allSections.filter(s=>s.subjectId===eSubj);
   const DAY_NAMES=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
@@ -2524,7 +2829,7 @@ function TimetableScreen({D, subjects, allSections, user, stats, onNav, onBack})
   const totalS=sessions.length, doneS=sessions.filter(s=>sessionDone(s)).length;
 
   return (
-    <div style={{minHeight:"100vh",background:D?"#030712":"#f9fafb",color:tx(D)}} className="fade-in">
+    <div style={{minHeight:"100vh",background:D?"#0f1117":"#f9fafb",color:tx(D)}} className="fade-in">
       <div style={{maxWidth:900,margin:"0 auto",padding:"32px 24px"}}>
         <button onClick={onBack} style={{fontSize:13,color:mu(D),background:"none",border:"none",cursor:"pointer",marginBottom:20}}>← Back</button>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:12,marginBottom:20}}>
@@ -2578,7 +2883,7 @@ function TimetableScreen({D, subjects, allSections, user, stats, onNav, onBack})
             {(schoolTT.events||[]).length>0&&(
               <div style={{display:"flex",flexDirection:"column",gap:6}}>
                 {schoolTT.events.map(ev=>(
-                  <div key={ev.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",borderRadius:8,background:D?"#1f2937":"#f3f4f6"}}>
+                  <div key={ev.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",borderRadius:8,background:D?"#1e2537":"#f3f4f6"}}>
                     <span style={{fontSize:12,fontWeight:600,color:tx(D),flex:1}}>{ev.title}</span>
                     <span style={{fontSize:11,color:mu(D)}}>{DAY_NAMES[ev.day]} {ev.startTime}–{ev.endTime}</span>
                     <button onClick={()=>setSchoolTT(p=>({...p,events:p.events.filter(e=>e.id!==ev.id)}))} style={{background:"none",border:"none",cursor:"pointer",color:"#ef4444",fontSize:14}}>×</button>
@@ -2656,7 +2961,7 @@ function TimetableScreen({D, subjects, allSections, user, stats, onNav, onBack})
                   const eDone=eSessions.filter(s=>sessionDone(s)).length;
                   const dDiff=Math.ceil((new Date(ex.date+"T12:00:00")-new Date())/86400000);
                   return (
-                    <div key={ex.id} style={{display:"flex",alignItems:"center",gap:6,padding:"4px 12px",borderRadius:20,background:D?"#1f2937":"#f3f4f6",border:`1.5px solid ${subj?.accent||"#6366f1"}`}}>
+                    <div key={ex.id} style={{display:"flex",alignItems:"center",gap:6,padding:"4px 12px",borderRadius:20,background:D?"#1e2537":"#f3f4f6",border:`1.5px solid ${subj?.accent||"#6366f1"}`}}>
                       <span style={{fontSize:12}}>{subj?.icon}</span>
                       <span style={{fontSize:12,fontWeight:600,color:subj?.accent}}>{ex.label}</span>
                       <span style={{fontSize:10,color:mu(D)}}>{eDone}/{eSessions.length}</span>
@@ -2703,7 +3008,7 @@ function TimetableScreen({D, subjects, allSections, user, stats, onNav, onBack})
                                 const gKey=`${sess.id}_${ai}`;
                                 const gDone=!!goalMet[gKey];
                                 return (
-                                  <div key={ai} style={{padding:"12px 14px",borderRadius:10,background:D?"#1f2937":"#f9fafb",border:`1.5px solid ${gDone?"#16a34a":(D?"#374151":"#e5e7eb")}`}}>
+                                  <div key={ai} style={{padding:"12px 14px",borderRadius:10,background:D?"#1e2537":"#f9fafb",border:`1.5px solid ${gDone?"#16a34a":(D?"#374151":"#e5e7eb")}`}}>
                                     <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
                                       <span style={{fontSize:20,flexShrink:0,marginTop:1}}>{act.icon}</span>
                                       <div style={{flex:1,minWidth:0}}>
@@ -2728,7 +3033,7 @@ function TimetableScreen({D, subjects, allSections, user, stats, onNav, onBack})
                   </div>
                 );
               })}
-              <div style={{marginTop:8,padding:"11px 16px",borderRadius:12,background:D?"#1f2937":"#f3f4f6",fontSize:12,color:mu(D)}}>
+              <div style={{marginTop:8,padding:"11px 16px",borderRadius:12,background:D?"#1e2537":"#f3f4f6",fontSize:12,color:mu(D)}}>
                 💡 Sessions use spaced intervals and prioritise your weakest topics. Times are placed outside your school day automatically.
               </div>
             </>}
@@ -2789,7 +3094,7 @@ function NumberedExtract({text, D}) {
         var num = isBlank ? null : lineNum;
         return (
           <div key={i} style={{display:"flex",gap:0,minHeight:"1.9em"}}>
-            <span style={{width:32,flexShrink:0,fontSize:10,color:D?"#6b7280":"#9ca3af",userSelect:"none",paddingTop:2,textAlign:"right",paddingRight:8,fontFamily:"monospace"}}>
+            <span style={{width:32,flexShrink:0,fontSize:10,color:D?"#8896b3":"#9ca3af",userSelect:"none",paddingTop:2,textAlign:"right",paddingRight:8,fontFamily:"monospace"}}>
               {num || ""}
             </span>
             <span style={{flex:1}}>{line || " "}</span>
@@ -2887,7 +3192,7 @@ function MockExamScreen({D,subjects,allSections,boardSels,boardData,user,onBack,
   const fmtTime=s=>`${String(Math.floor(s/60)).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`;
   const pctTime=paper?.d>0?Math.round((timeLeft/(paper.d*60))*100):0;
   const timeCritical=timeLeft>0&&timeLeft<300;
-  const bd2=D?"#1f2937":"#e5e7eb";
+  const bd2=D?"#2a3347":"#e5e7eb";
 
   useEffect(()=>{
     if(phase!=="exam")return;
@@ -3113,7 +3418,7 @@ function MockExamScreen({D,subjects,allSections,boardSels,boardData,user,onBack,
 
   /* ── SETUP PHASE ── */
   if(phase==="setup")return (
-    <div style={{minHeight:"100vh",background:D?"#030712":"#f9fafb"}} className="fade-in">
+    <div style={{minHeight:"100vh",background:D?"#0f1117":"#f9fafb"}} className="fade-in">
       <div style={{maxWidth:700,margin:"0 auto",padding:"32px 24px"}}>
         <button onClick={onBack} style={{fontSize:13,color:mu(D),background:"none",border:"none",cursor:"pointer",marginBottom:20}}>← Back</button>
         <h2 style={{fontSize:22,fontWeight:700,marginBottom:4,color:tx(D)}}>📝 Mock Exam</h2>
@@ -3172,9 +3477,9 @@ function MockExamScreen({D,subjects,allSections,boardSels,boardData,user,onBack,
           </div>
           {genErr&&<div style={{padding:"10px 14px",borderRadius:8,background:"#fee2e2",border:"1px solid #ef4444",fontSize:12,color:"#b91c1c",marginBottom:12}}>{genErr}</div>}
           {paper.paperType==="comingSoon"
-            ?<div style={{padding:"14px 16px",borderRadius:10,background:D?"#1f2937":"#f3f4f6",textAlign:"center",fontSize:13,color:mu(D)}}>🚧 This paper is coming soon to ReviseIQ</div>
+            ?<div style={{padding:"14px 16px",borderRadius:10,background:D?"#1e2537":"#f3f4f6",textAlign:"center",fontSize:13,color:mu(D)}}>🚧 This paper is coming soon to ReviseIQ</div>
             :["maths","bio","chem","phys"].includes(selSubj)&&!tier
-              ?<div style={{padding:"12px 14px",borderRadius:10,background:D?"#1f2937":"#f3f4f6",textAlign:"center",fontSize:13,color:mu(D)}}>← Please select a tier above to continue</div>
+              ?<div style={{padding:"12px 14px",borderRadius:10,background:D?"#1e2537":"#f3f4f6",textAlign:"center",fontSize:13,color:mu(D)}}>← Please select a tier above to continue</div>
               :<button onClick={()=>{
                   const cfg={tier};
                   if(paper.configFields?.length){
@@ -3194,7 +3499,7 @@ function MockExamScreen({D,subjects,allSections,boardSels,boardData,user,onBack,
 
   /* ── CONFIGURE PHASE ── */
   if(phase==="configure")return (
-    <div style={{minHeight:"100vh",background:D?"#030712":"#f9fafb"}} className="fade-in">
+    <div style={{minHeight:"100vh",background:D?"#0f1117":"#f9fafb"}} className="fade-in">
       <div style={{maxWidth:600,margin:"0 auto",padding:"32px 24px"}}>
         <button onClick={()=>setPhase("setup")} style={{fontSize:13,color:mu(D),background:"none",border:"none",cursor:"pointer",marginBottom:20}}>← Back</button>
         <h2 style={{fontSize:20,fontWeight:700,marginBottom:4,color:tx(D)}}>📋 Configure Paper</h2>
@@ -3223,7 +3528,7 @@ function MockExamScreen({D,subjects,allSections,boardSels,boardData,user,onBack,
 
   /* ── GENERATING PHASE ── */
   if(phase==="generating")return (
-    <div style={{minHeight:"100vh",background:D?"#030712":"#f9fafb",display:"flex",alignItems:"center",justifyContent:"center"}}>
+    <div style={{minHeight:"100vh",background:D?"#0f1117":"#f9fafb",display:"flex",alignItems:"center",justifyContent:"center"}}>
       <div style={{textAlign:"center",padding:40}}>
         <div style={{fontSize:48,marginBottom:16}}>⚙️</div>
         <h3 style={{fontSize:18,fontWeight:700,marginBottom:8,color:tx(D)}}>Generating your mock exam…</h3>
@@ -3234,7 +3539,7 @@ function MockExamScreen({D,subjects,allSections,boardSels,boardData,user,onBack,
 
   /* ── MARKING PHASE ── */
   if(phase==="marking")return (
-    <div style={{minHeight:"100vh",background:D?"#030712":"#f9fafb",display:"flex",alignItems:"center",justifyContent:"center"}}>
+    <div style={{minHeight:"100vh",background:D?"#0f1117":"#f9fafb",display:"flex",alignItems:"center",justifyContent:"center"}}>
       <div style={{textAlign:"center",padding:40}}>
         <div style={{fontSize:48,marginBottom:16}}>📊</div>
         <h3 style={{fontSize:18,fontWeight:700,marginBottom:8,color:tx(D)}}>Marking your answers…</h3>
@@ -3270,7 +3575,7 @@ function MockExamScreen({D,subjects,allSections,boardSels,boardData,user,onBack,
   };
 
   if(phase==="results"&&results)return (
-    <div style={{minHeight:"100vh",background:D?"#030712":"#f9fafb"}} className="fade-in">
+    <div style={{minHeight:"100vh",background:D?"#0f1117":"#f9fafb"}} className="fade-in">
       <div style={{maxWidth:760,margin:"0 auto",padding:"32px 24px"}}>
         <h2 style={{fontSize:22,fontWeight:700,marginBottom:20,color:tx(D)}}>Results</h2>
         <div style={{...C(D),padding:28,textAlign:"center",marginBottom:16,border:"2px solid "+gradeColor(results.grade)}}>
@@ -3288,7 +3593,7 @@ function MockExamScreen({D,subjects,allSections,boardSels,boardData,user,onBack,
             {examHistory.map(function(h,hi){return(
               <div key={hi} style={{display:"flex",alignItems:"center",gap:8,marginBottom:5}}>
                 <span style={{fontSize:10,color:mu(D),width:60,flexShrink:0}}>{h.date}</span>
-                <div style={{flex:1,height:14,borderRadius:4,background:D?"#1f2937":"#e5e7eb",overflow:"hidden"}}>
+                <div style={{flex:1,height:14,borderRadius:4,background:D?"#2a3347":"#e5e7eb",overflow:"hidden"}}>
                   <div style={{height:"100%",width:h.pct+"%",background:gradeColor(h.grade),borderRadius:4,transition:"width .4s"}}/>
                 </div>
                 <span style={{fontSize:11,fontWeight:700,color:gradeColor(h.grade),width:32,textAlign:"right",flexShrink:0}}>{h.grade}</span>
@@ -3330,7 +3635,7 @@ function MockExamScreen({D,subjects,allSections,boardSels,boardData,user,onBack,
                       </div>
                       <span style={{fontSize:14,fontWeight:800,color:qScCol}}>{scoredQ}/{totalQ}</span>
                     </div>
-                    {q.context&&q.context.trim()&&<div style={{padding:"10px 12px",borderRadius:8,background:D?"#1f2937":"#fffbeb",fontSize:12,color:tx(D),lineHeight:1.7,marginBottom:10,whiteSpace:"pre-line"}}>{q.context}</div>}
+                    {q.context&&q.context.trim()&&<div style={{padding:"10px 12px",borderRadius:8,background:D?"#1e2537":"#fffbeb",fontSize:12,color:tx(D),lineHeight:1.7,marginBottom:10,whiteSpace:"pre-line"}}>{q.context}</div>}
                     <div style={{display:"flex",flexDirection:"column",gap:10}}>
                       {(q.parts||[]).map(function(part,pi){
                         var pAns=sParts[pi]||{};
@@ -3351,7 +3656,7 @@ function MockExamScreen({D,subjects,allSections,boardSels,boardData,user,onBack,
                               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
                                 <div>
                                   <div style={{fontSize:9,fontWeight:700,color:mu(D),marginBottom:3,textTransform:"uppercase"}}>Your Answer</div>
-                                  <div style={{padding:"8px 10px",borderRadius:7,background:D?"#1f2937":"#f3f4f6",fontSize:11,color:tx(D),lineHeight:1.6,whiteSpace:"pre-line",minHeight:40}}>{pAns.textAns||"Not attempted"}</div>
+                                  <div style={{padding:"8px 10px",borderRadius:7,background:D?"#1e2537":"#f3f4f6",fontSize:11,color:tx(D),lineHeight:1.6,whiteSpace:"pre-line",minHeight:40}}>{pAns.textAns||"Not attempted"}</div>
                                   {pAns.result?.feedback&&<div style={{marginTop:5,padding:"6px 9px",borderRadius:7,background:D?"rgba(99,102,241,.1)":"#eef2ff",fontSize:10,color:tx(D),lineHeight:1.5}}>{pAns.result.feedback}</div>}
                                 </div>
                                 <div>
@@ -3387,7 +3692,7 @@ function MockExamScreen({D,subjects,allSections,boardSels,boardData,user,onBack,
                     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
                       <div>
                         <div style={{fontSize:10,fontWeight:700,color:mu(D),marginBottom:4,textTransform:"uppercase"}}>Your Answer</div>
-                        <div style={{padding:"10px 12px",borderRadius:8,background:D?"#1f2937":"#f3f4f6",fontSize:12,color:tx(D),lineHeight:1.65,whiteSpace:"pre-line",minHeight:60}}>{(a&&a.textAns)||"Not attempted"}</div>
+                        <div style={{padding:"10px 12px",borderRadius:8,background:D?"#1e2537":"#f3f4f6",fontSize:12,color:tx(D),lineHeight:1.65,whiteSpace:"pre-line",minHeight:60}}>{(a&&a.textAns)||"Not attempted"}</div>
                         {a&&a.result&&a.result.feedback&&<div style={{marginTop:6,padding:"8px 10px",borderRadius:8,background:D?"rgba(99,102,241,.1)":"#eef2ff",fontSize:11,color:tx(D),lineHeight:1.6}}>{a.result.feedback}</div>}
                       </div>
                       <div>
@@ -3437,7 +3742,7 @@ function MockExamScreen({D,subjects,allSections,boardSels,boardData,user,onBack,
                     <div style={{fontSize:11,color:isCorr?"#15803d":"#b91c1c"}}>{isCorr?"✓ Correct":"✗ Incorrect — correct: "+(q.options&&q.options[q.answer])}</div>
                   )}
                   {q.type!=="mcq"&&a&&a.result&&a.result.feedback&&(
-                    <div style={{marginTop:6,padding:"6px 10px",borderRadius:6,background:D?"#1f2937":"#f3f4f6",fontSize:11,color:tx(D),lineHeight:1.6}}>{a.result.feedback}</div>
+                    <div style={{marginTop:6,padding:"6px 10px",borderRadius:6,background:D?"#1e2537":"#f3f4f6",fontSize:11,color:tx(D),lineHeight:1.6}}>{a.result.feedback}</div>
                   )}
                 </div>
               );
@@ -3463,7 +3768,7 @@ function MockExamScreen({D,subjects,allSections,boardSels,boardData,user,onBack,
   const qIsParted=isParted(q);
 
   return (
-    <div style={{minHeight:"100vh",background:D?"#030712":"#f9fafb",color:tx(D)}} className="fade-in">
+    <div style={{minHeight:"100vh",background:D?"#0f1117":"#f9fafb",color:tx(D)}} className="fade-in">
       {/* 5-minute warning modal */}
       {warn5modal&&(
         <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,zIndex:200,background:"rgba(0,0,0,.65)",display:"flex",alignItems:"center",justifyContent:"center"}}>
@@ -3491,7 +3796,7 @@ function MockExamScreen({D,subjects,allSections,boardSels,boardData,user,onBack,
         <div style={{maxWidth:760,margin:"0 auto",display:"flex",alignItems:"center",gap:12}}>
           <div style={{flex:1,minWidth:0}}>
             <div style={{fontSize:11,color:mu(D),marginBottom:3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{subj&&subj.icon} {subj&&subj.name} · {paper.n}</div>
-            <div style={{height:4,borderRadius:4,background:D?"#1f2937":"#e5e7eb"}}>
+            <div style={{height:4,borderRadius:4,background:D?"#2a3347":"#e5e7eb"}}>
               <div style={{height:"100%",borderRadius:4,background:timeCritical?"#ef4444":"#6366f1",width:pctTime+"%",transition:"width 1s linear"}}/>
             </div>
           </div>
@@ -3525,7 +3830,7 @@ function MockExamScreen({D,subjects,allSections,boardSels,boardData,user,onBack,
 
       {/* Extract panels */}
       {showExtract&&extract&&(
-        <div style={{background:D?"#1f2937":"#fffbeb",borderBottom:`1px solid ${D?"#374151":"#fde68a"}`,padding:"14px 20px",maxHeight:320,overflowY:"auto"}}>
+        <div style={{background:D?"#1e2537":"#fffbeb",borderBottom:`1px solid ${D?"#374151":"#fde68a"}`,padding:"14px 20px",maxHeight:320,overflowY:"auto"}}>
           <div style={{maxWidth:760,margin:"0 auto"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
               <div>
@@ -3542,7 +3847,7 @@ function MockExamScreen({D,subjects,allSections,boardSels,boardData,user,onBack,
         </div>
       )}
       {showExtract2&&extract2&&(
-        <div style={{background:D?"#1f2937":"#fdf2f8",borderBottom:`1px solid ${D?"#374151":"#fbcfe8"}`,padding:"14px 20px",maxHeight:320,overflowY:"auto"}}>
+        <div style={{background:D?"#1e2537":"#fdf2f8",borderBottom:`1px solid ${D?"#374151":"#fbcfe8"}`,padding:"14px 20px",maxHeight:320,overflowY:"auto"}}>
           <div style={{maxWidth:760,margin:"0 auto"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
               <div>
@@ -3606,7 +3911,7 @@ function MockExamScreen({D,subjects,allSections,boardSels,boardData,user,onBack,
             </div>
             {/* Shared context / stimulus */}
             {q.context&&q.context.trim()&&(
-              <div style={{padding:"14px 16px",borderRadius:10,background:D?"#1f2937":"#fffbeb",border:`1px solid ${D?"#374151":"#fde68a"}`,fontSize:13,color:tx(D),lineHeight:1.75,whiteSpace:"pre-line"}}>
+              <div style={{padding:"14px 16px",borderRadius:10,background:D?"#1e2537":"#fffbeb",border:`1px solid ${D?"#374151":"#fde68a"}`,fontSize:13,color:tx(D),lineHeight:1.75,whiteSpace:"pre-line"}}>
                 {parseQuestionText(q.context,D,13)}
               </div>
             )}
@@ -3687,7 +3992,7 @@ function MockExamScreen({D,subjects,allSections,boardSels,boardData,user,onBack,
                   e.target.value="";
                 }}/>
               {curAns.fileAns?(
-                <div style={{marginBottom:10,padding:"10px 12px",borderRadius:10,background:D?"#1f2937":"#f0fdf4",border:`1px solid ${D?"#374151":"#86efac"}`,display:"flex",alignItems:"center",gap:10}}>
+                <div style={{marginBottom:10,padding:"10px 12px",borderRadius:10,background:D?"#1e2537":"#f0fdf4",border:`1px solid ${D?"#374151":"#86efac"}`,display:"flex",alignItems:"center",gap:10}}>
                   {curAns.fileAns.type?.startsWith("image/")
                     ?<img src={curAns.fileAns.preview} alt="" style={{height:60,width:60,objectFit:"cover",borderRadius:6,flexShrink:0}}/>
                     :<span style={{fontSize:20}}>📄</span>
@@ -3774,7 +4079,7 @@ function AITutorScreen({D,subjects,allSections,boardSels,boardData,user,googleKe
   const fileRef=useRef(null);
   const subj=subjects.find(function(s){return s.id===selSubj;});
   const secList=allSections.filter(function(s){return s.subjectId===selSubj;});
-  const bd2=D?"#1f2937":"#e5e7eb";
+  const bd2=D?"#2a3347":"#e5e7eb";
   var memKey="gcse:tutor-mem:"+(user||"anon")+":"+selSubj+":"+selBoard;
 
   // Load conversation memory on subject/board change
@@ -3981,7 +4286,7 @@ Style: warm, encouraging, clear. Use ## headings and bullet points to organise l
   const fileIcon=f=>f.isImage?"🖼️":f.isPdf?"📄":f.isText?"📝":f.name?.endsWith(".pptx")||f.name?.endsWith(".ppt")?"📊":f.name?.endsWith(".docx")||f.name?.endsWith(".doc")?"📝":"📎";
 
   return (
-    <div style={{minHeight:"100vh",background:D?"#030712":"#f9fafb",display:"flex",flexDirection:"column",color:tx(D)}} className="fade-in">
+    <div style={{minHeight:"100vh",background:D?"#0f1117":"#f9fafb",display:"flex",flexDirection:"column",color:tx(D)}} className="fade-in">
       {/* Header controls */}
       <div style={{borderBottom:`1px solid ${bd2}`,background:D?"#0d1117":"#fff",padding:"10px 16px",flexShrink:0}}>
         <div style={{maxWidth:800,margin:"0 auto"}}>
@@ -4036,7 +4341,7 @@ Style: warm, encouraging, clear. Use ## headings and bullet points to organise l
                 {!isU&&<div style={{width:30,height:30,borderRadius:"50%",background:"#6366f1",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,flexShrink:0,marginTop:2}}>🤖</div>}
                 <div style={{maxWidth:"80%",padding:"10px 14px",
                   borderRadius:isU?"16px 16px 4px 16px":"16px 16px 16px 4px",
-                  background:isU?"#6366f1":(D?"#1f2937":"#f3f4f6"),
+                  background:isU?"#6366f1":(D?"#1e2537":"#f3f4f6"),
                   color:isU?"#fff":tx(D),fontSize:13,lineHeight:1.7}}>
                   {m._d&&m._d.files&&m._d.files.map(function(f,fi){
                     return f.isImage
@@ -4063,7 +4368,7 @@ Style: warm, encouraging, clear. Use ## headings and bullet points to organise l
                 <div style={{paddingLeft:38,display:"flex",gap:5,flexWrap:"wrap"}}>
                   {chips.map(function(q,qi){return(
                     <button key={qi} onClick={function(){setInput(q);}}
-                      style={{fontSize:11,padding:"3px 10px",borderRadius:14,border:"1px solid "+(D?"#374151":"#d1d5db"),background:D?"#1f2937":"#fff",color:mu(D),cursor:"pointer"}}>
+                      style={{fontSize:11,padding:"3px 10px",borderRadius:14,border:"1px solid "+(D?"#374151":"#d1d5db"),background:D?"#1e2537":"#fff",color:mu(D),cursor:"pointer"}}>
                       {q}
                     </button>
                   );})}
@@ -4075,7 +4380,7 @@ Style: warm, encouraging, clear. Use ## headings and bullet points to organise l
         {sending&&(
           <div style={{display:"flex",gap:8,justifyContent:"flex-start"}}>
             <div style={{width:30,height:30,borderRadius:"50%",background:"#6366f1",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,flexShrink:0}}>🤖</div>
-            <div style={{padding:"10px 14px",borderRadius:"16px 16px 16px 4px",background:D?"#1f2937":"#f3f4f6",fontSize:13,color:mu(D)}}>
+            <div style={{padding:"10px 14px",borderRadius:"16px 16px 16px 4px",background:D?"#1e2537":"#f3f4f6",fontSize:13,color:mu(D)}}>
               <span>Thinking</span><span style={{animation:"none"}}>…</span>
             </div>
           </div>
@@ -4089,7 +4394,7 @@ Style: warm, encouraging, clear. Use ## headings and bullet points to organise l
           {files.length>0&&(
             <div style={{display:"flex",gap:6,marginBottom:8,flexWrap:"wrap"}}>
               {files.map((f,fi)=>(
-                <div key={fi} style={{position:"relative",display:"flex",alignItems:"center",gap:5,padding:"4px 8px",borderRadius:8,background:D?"#1f2937":"#f3f4f6",border:`1px solid ${bd2}`,maxWidth:160}}>
+                <div key={fi} style={{position:"relative",display:"flex",alignItems:"center",gap:5,padding:"4px 8px",borderRadius:8,background:D?"#1e2537":"#f3f4f6",border:`1px solid ${bd2}`,maxWidth:160}}>
                   {f.isImage&&<img src={f.preview} alt="" style={{height:28,width:28,objectFit:"cover",borderRadius:4,flexShrink:0}}/>}
                   {!f.isImage&&<span style={{fontSize:14,flexShrink:0}}>{fileIcon(f)}</span>}
                   <span style={{fontSize:10,color:mu(D),overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.name}</span>
@@ -4146,8 +4451,8 @@ const COMMAND_WORDS = [
 ];
 
 function ExamCoachScreen({D,subjects,allSections,boardSels,boardData,onBack}) {
-  const bg=D?"#030712":"#f9fafb", tx2=D?"#f9fafb":"#111827", mu2=D?"#9ca3af":"#6b7280";
-  const C2=D?{background:"#111827",border:"1px solid #1f2937",borderRadius:14}:{background:"#fff",border:"1px solid #e5e7eb",borderRadius:14};
+  const bg=D?"#0f1117":"#f9fafb", tx2=D?"#e8ecf4":"#111827", mu2=D?"#9ca3af":"#6b7280";
+  const C2=D?{background:"#161b27",border:"1px solid #2a3347",borderRadius:14}:{background:"#fff",border:"1px solid #e5e7eb",borderRadius:14};
 
   const [selSubj, setSelSubj] = React.useState(subjects[0]?.id||"");
   const [selCW, setSelCW] = React.useState(COMMAND_WORDS[0].word);
@@ -4242,7 +4547,7 @@ function ExamCoachScreen({D,subjects,allSections,boardSels,boardData,onBack}) {
             <div style={{flex:1,minWidth:140}}>
               <label style={{fontSize:11,fontWeight:600,color:mu2,display:"block",marginBottom:6}}>SUBJECT</label>
               <select value={selSubj} onChange={function(e){setSelSubj(e.target.value);reset();}}
-                style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+(D?"#374151":"#d1d5db"),background:D?"#1f2937":"#fff",color:tx2,fontSize:13}}>
+                style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+(D?"#374151":"#d1d5db"),background:D?"#1e2537":"#fff",color:tx2,fontSize:13}}>
                 {subjects.map(function(s){return <option key={s.id} value={s.id}>{s.icon} {s.name}</option>;})}
               </select>
             </div>
@@ -4289,7 +4594,7 @@ function ExamCoachScreen({D,subjects,allSections,boardSels,boardData,onBack}) {
                         <label style={{fontSize:12,fontWeight:600,color:"#6366f1",display:"block",marginBottom:4}}>{i+1}. {label}</label>
                         <textarea value={scaffold[i]||""} onChange={function(e){setScaffold(function(p){var n=Object.assign({},p);n[i]=e.target.value;return n;});}}
                           placeholder={"Write your "+label.toLowerCase()+" here…"}
-                          style={{width:"100%",minHeight:72,padding:"10px 12px",borderRadius:8,border:"1px solid "+(D?"#374151":"#d1d5db"),background:D?"#1f2937":"#f9fafb",color:tx2,fontSize:13,resize:"vertical",boxSizing:"border-box",fontFamily:"inherit"}}/>
+                          style={{width:"100%",minHeight:72,padding:"10px 12px",borderRadius:8,border:"1px solid "+(D?"#374151":"#d1d5db"),background:D?"#1e2537":"#f9fafb",color:tx2,fontSize:13,resize:"vertical",boxSizing:"border-box",fontFamily:"inherit"}}/>
                       </div>
                     );
                   })}
@@ -4307,7 +4612,7 @@ function ExamCoachScreen({D,subjects,allSections,boardSels,boardData,onBack}) {
 
             {phase==="feedback"&&feedback&&(
               <div className="fade-in">
-                <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20,padding:"14px 18px",borderRadius:12,background:D?"#111827":"#f8fafc",border:"1.5px solid "+bandColor}}>
+                <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20,padding:"14px 18px",borderRadius:12,background:D?"#161b27":"#f8fafc",border:"1.5px solid "+bandColor}}>
                   <div style={{textAlign:"center"}}>
                     <div style={{fontSize:22,fontWeight:800,color:bandColor}}>{feedback.score}</div>
                     <div style={{fontSize:10,color:mu2,fontWeight:600}}>{feedback.overallBand}</div>
@@ -4471,15 +4776,15 @@ function TodayWidget({D,subjects,allSections,fcHist,stats,timetableExams,boardSe
           return (
             <button key={i} onClick={item.action}
               style={{display:"flex",alignItems:"center",gap:12,padding:"12px 16px",borderRadius:12,
-                background:D?"#111827":"#fff",border:"1.5px solid "+(D?"#1f2937":"#e5e7eb"),
+                background:D?"#161b27":"#fff",border:"1.5px solid "+(D?"#2a3347":"#e5e7eb"),
                 cursor:"pointer",textAlign:"left",width:"100%",transition:"border-color .15s,transform .1s"}}
               onMouseEnter={function(e){e.currentTarget.style.borderColor=item.color;e.currentTarget.style.transform="translateY(-1px)";}}
-              onMouseLeave={function(e){e.currentTarget.style.borderColor=D?"#1f2937":"#e5e7eb";e.currentTarget.style.transform="";}}>
+              onMouseLeave={function(e){e.currentTarget.style.borderColor=D?"#2a3347":"#e5e7eb";e.currentTarget.style.transform="";}}>
               <div style={{width:32,height:32,borderRadius:8,background:item.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>
                 {item.emoji}
               </div>
               <div style={{flex:1,minWidth:0}}>
-                <div style={{fontSize:13,fontWeight:600,color:D?"#f9fafb":"#111827",marginBottom:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                <div style={{fontSize:13,fontWeight:600,color:D?"#e8ecf4":"#111827",marginBottom:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
                   <span style={{color:item.color,marginRight:5,fontWeight:700}}>{i+1}.</span>{item.text}
                 </div>
                 <div style={{fontSize:11,color:D?"#9ca3af":"#6b7280",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{item.sub}</div>
@@ -4498,7 +4803,7 @@ function TodayWidget({D,subjects,allSections,fcHist,stats,timetableExams,boardSe
 // UCNewSectionModal: simple name-entry for a new user section
 function UCNewSectionModal({D,onClose,onSave}) {
   var [name,setName] = React.useState("");
-  var bd2=D?"#1f2937":"#e5e7eb";
+  var bd2=D?"#2a3347":"#e5e7eb";
   return (
     <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,zIndex:200,background:"rgba(0,0,0,.55)",display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
       <div style={{...C(D),padding:28,maxWidth:420,width:"100%",borderRadius:16}}>
@@ -4547,7 +4852,7 @@ function UCSectionModal({D,user,subjId,sec,subjects,onSaveSection,onClose}) {
   var [aiErr,setAiErr] = React.useState("");
   var [imgLoading,setImgLoading] = React.useState(false);
 
-  var bd2=D?"#1f2937":"#e5e7eb";
+  var bd2=D?"#2a3347":"#e5e7eb";
   var subj=subjects.find(function(s){return s.id===subjId;})||subjects[0];
 
   // Always read sec fresh (it updates after saves)
@@ -4872,7 +5177,7 @@ function UCSectionModal({D,user,subjId,sec,subjects,onSaveSection,onClose}) {
 function UserContentScreen({D,user,subjects,ucData,onSaveSection,onDeleteSection,onBack}) {
   var [selSubj,setSelSubj] = React.useState(subjects[0]?.id||"");
   var [modal,setModal] = React.useState(null);
-  var bd2=D?"#1f2937":"#e5e7eb";
+  var bd2=D?"#2a3347":"#e5e7eb";
   var subj=subjects.find(function(s){return s.id===selSubj;})||subjects[0];
   var subjUC=ucData[selSubj]||{sections:[]};
   return (
@@ -4970,7 +5275,7 @@ function AppFooter({D, onContact}) {
   return (
     <footer style={{borderTop:"1px solid "+border,background:bg2,padding:"20px 24px",marginTop:40}}>
       <div style={{maxWidth:960,margin:"0 auto",display:"flex",flexWrap:"wrap",alignItems:"center",justifyContent:"space-between",gap:12}}>
-        <div style={{fontSize:12,color:D?"#6b7280":"#9ca3af",lineHeight:1.6}}>
+        <div style={{fontSize:12,color:D?"#8896b3":"#9ca3af",lineHeight:1.6}}>
           <span style={{fontWeight:600,color:D?"#9ca3af":"#6b7280"}}>🎓 ReviseIQ</span>
           {" · "}Built with the help of{" "}
           <span style={{color:"#f97316"}}>Claude</span>
@@ -5003,12 +5308,12 @@ function CreatePersonalSubjectModal({D, onSave, onClose}) {
   var bd = D?"#374151":"#e5e7eb";
   return (
     <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:9500,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
-      <div onClick={function(e){e.stopPropagation();}} style={{background:D?"#1f2937":"#fff",borderRadius:16,width:440,maxWidth:"96vw",boxShadow:"0 30px 80px rgba(0,0,0,.3)",padding:28}}>
+      <div onClick={function(e){e.stopPropagation();}} style={{background:D?"#1e2537":"#fff",borderRadius:16,width:440,maxWidth:"96vw",boxShadow:"0 30px 80px rgba(0,0,0,.3)",padding:28}}>
         <h2 style={{fontSize:17,fontWeight:700,marginBottom:18}}>✨ New Personal Subject</h2>
         <div style={{marginBottom:14}}>
           <label style={{fontSize:11,fontWeight:700,color:D?"#9ca3af":"#6b7280",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:"0.05em"}}>Subject Name *</label>
           <input value={name} onChange={function(e){setName(e.target.value);}} placeholder="e.g. Spanish Vocabulary, Piano Theory…"
-            style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid "+bd,background:D?"#111827":"#f9fafb",color:D?"#f9fafb":"#111827",fontSize:13}}/>
+            style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid "+bd,background:D?"#161b27":"#f9fafb",color:D?"#e8ecf4":"#111827",fontSize:13}}/>
         </div>
         <div style={{marginBottom:14}}>
           <label style={{fontSize:11,fontWeight:700,color:D?"#9ca3af":"#6b7280",display:"block",marginBottom:8,textTransform:"uppercase",letterSpacing:"0.05em"}}>Icon</label>
@@ -5048,12 +5353,12 @@ function AddPersonalTopicModal({D, onSave, onClose}) {
   var bd = D?"#374151":"#e5e7eb";
   return (
     <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:9500,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
-      <div onClick={function(e){e.stopPropagation();}} style={{background:D?"#1f2937":"#fff",borderRadius:16,width:380,maxWidth:"96vw",boxShadow:"0 30px 80px rgba(0,0,0,.3)",padding:28}}>
+      <div onClick={function(e){e.stopPropagation();}} style={{background:D?"#1e2537":"#fff",borderRadius:16,width:380,maxWidth:"96vw",boxShadow:"0 30px 80px rgba(0,0,0,.3)",padding:28}}>
         <h2 style={{fontSize:16,fontWeight:700,marginBottom:16}}>＋ Add Topic</h2>
         <input autoFocus value={title} onChange={function(e){setTitle(e.target.value);}}
           onKeyDown={function(e){if(e.key==="Enter"&&title.trim())onSave({id:_psId(title),title:title.trim(),notes:[],flashcards:[]});}}
           placeholder="Topic title…"
-          style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid "+bd,background:D?"#111827":"#f9fafb",color:D?"#f9fafb":"#111827",fontSize:13,marginBottom:16}}/>
+          style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid "+bd,background:D?"#161b27":"#f9fafb",color:D?"#e8ecf4":"#111827",fontSize:13,marginBottom:16}}/>
         <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
           <button onClick={onClose} style={{padding:"8px 16px",borderRadius:9,border:"1px solid "+bd,background:"transparent",color:D?"#e5e7eb":"#374151",cursor:"pointer",fontSize:13}}>Cancel</button>
           <button disabled={!title.trim()} onClick={function(){if(title.trim())onSave({id:_psId(title),title:title.trim(),notes:[],flashcards:[]});}}
@@ -5078,8 +5383,8 @@ function PersonalSectionScreen({D, subj, topic, user, onBack, onSave}) {
   const [flip,setFlip] = React.useState(false);
   const [fcIdx,setFcIdx] = React.useState(0);
   var bd = D?"#374151":"#e5e7eb";
-  var tx2 = D?"#f9fafb":"#111827";
-  var bg = D?"#111827":"#f9fafb";
+  var tx2 = D?"#e8ecf4":"#111827";
+  var bg = D?"#161b27":"#f9fafb";
 
   var notes = topic.notes||[];
   var flashcards = topic.flashcards||[];
@@ -5161,11 +5466,11 @@ function PersonalSectionScreen({D, subj, topic, user, onBack, onSave}) {
         </div>
 
         {/* AI Generate from text */}
-        <div style={{background:D?"#1f2937":"#fff",border:"1px solid "+bd,borderRadius:12,padding:16,marginBottom:20}}>
+        <div style={{background:D?"#1e2537":"#fff",border:"1px solid "+bd,borderRadius:12,padding:16,marginBottom:20}}>
           <div style={{fontSize:12,fontWeight:700,color:D?"#9ca3af":"#6b7280",marginBottom:8}}>🤖 AI Generate {tab==="notes"?"Notes":"Flashcards"} from Text</div>
           <textarea value={aiText} onChange={function(e){setAiText(e.target.value);}}
             placeholder={"Paste any text, paragraphs or notes here and AI will generate "+( tab==="notes"?"bullet-point notes":"flashcard pairs")+" from it…"}
-            rows={3} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+bd,background:D?"#111827":"#f9fafb",color:tx2,fontSize:12,resize:"vertical",boxSizing:"border-box"}}/>
+            rows={3} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid "+bd,background:D?"#161b27":"#f9fafb",color:tx2,fontSize:12,resize:"vertical",boxSizing:"border-box"}}/>
           {aiErr&&<p style={{fontSize:12,color:"#ef4444",margin:"6px 0 0"}}>{aiErr}</p>}
           <button disabled={!aiText.trim()||aiLoading} onClick={generateFromText}
             style={{marginTop:8,padding:"7px 16px",borderRadius:8,border:"none",background:aiText.trim()&&!aiLoading?subj.accent:"#d1d5db",color:"#fff",fontWeight:600,fontSize:12,cursor:aiText.trim()&&!aiLoading?"pointer":"not-allowed"}}>
@@ -5179,13 +5484,13 @@ function PersonalSectionScreen({D, subj, topic, user, onBack, onSave}) {
               <input value={noteText} onChange={function(e){setNoteText(e.target.value);}}
                 onKeyDown={function(e){if(e.key==="Enter")addNote();}}
                 placeholder="Add a note…"
-                style={{flex:1,padding:"9px 12px",borderRadius:8,border:"1px solid "+bd,background:D?"#111827":"#f9fafb",color:tx2,fontSize:13}}/>
+                style={{flex:1,padding:"9px 12px",borderRadius:8,border:"1px solid "+bd,background:D?"#161b27":"#f9fafb",color:tx2,fontSize:13}}/>
               <button disabled={!noteText.trim()} onClick={addNote}
                 style={{padding:"9px 16px",borderRadius:8,border:"none",background:noteText.trim()?subj.accent:"#d1d5db",color:"#fff",fontWeight:600,fontSize:13,cursor:noteText.trim()?"pointer":"not-allowed"}}>Add</button>
             </div>
             {notes.length===0&&<p style={{fontSize:13,color:D?"#9ca3af":"#6b7280",textAlign:"center",padding:"32px 0"}}>No notes yet. Add one above or use AI to generate from text.</p>}
             {notes.map(function(n){return (
-              <div key={n.id} style={{background:D?"#1f2937":"#fff",border:"1px solid "+bd,borderRadius:10,padding:"12px 14px",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10}}>
+              <div key={n.id} style={{background:D?"#1e2537":"#fff",border:"1px solid "+bd,borderRadius:10,padding:"12px 14px",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10}}>
                 <p style={{fontSize:13,lineHeight:1.7,margin:0,flex:1,whiteSpace:"pre-wrap"}}>{n.text}</p>
                 <button onClick={function(){deleteNote(n.id);}} style={{background:"none",border:"none",color:"#ef4444",cursor:"pointer",fontSize:14,flexShrink:0,padding:"0 4px"}}>✕</button>
               </div>
@@ -5198,10 +5503,10 @@ function PersonalSectionScreen({D, subj, topic, user, onBack, onSave}) {
             {curFc?(
               <div style={{marginBottom:20}}>
                 <div onClick={function(){setFlip(function(f){return !f;});}}
-                  style={{cursor:"pointer",background:D?"#1f2937":"#fff",border:"2px solid "+subj.accent,borderRadius:16,padding:"32px 24px",textAlign:"center",minHeight:140,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",marginBottom:12,userSelect:"none"}}>
+                  style={{cursor:"pointer",background:D?"#1e2537":"#fff",border:"2px solid "+subj.accent,borderRadius:16,padding:"32px 24px",textAlign:"center",minHeight:140,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",marginBottom:12,userSelect:"none"}}>
                   <div style={{fontSize:10,fontWeight:700,color:subj.accent,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:8}}>{flip?"Answer":"Question"}</div>
                   <div style={{fontSize:16,fontWeight:600}}>{flip?curFc.back:curFc.front}</div>
-                  <div style={{fontSize:11,color:D?"#6b7280":"#9ca3af",marginTop:10}}>Tap to flip</div>
+                  <div style={{fontSize:11,color:D?"#8896b3":"#9ca3af",marginTop:10}}>Tap to flip</div>
                 </div>
                 <div style={{display:"flex",gap:10,justifyContent:"space-between",alignItems:"center"}}>
                   <button disabled={fcIdx===0} onClick={function(){setFcIdx(function(i){return i-1;});setFlip(false);}}
@@ -5217,12 +5522,12 @@ function PersonalSectionScreen({D, subj, topic, user, onBack, onSave}) {
             ):(
               <p style={{fontSize:13,color:D?"#9ca3af":"#6b7280",textAlign:"center",padding:"24px 0"}}>No flashcards yet. Add some below or use AI to generate from text.</p>
             )}
-            <div style={{background:D?"#1f2937":"#fff",border:"1px solid "+bd,borderRadius:12,padding:16}}>
+            <div style={{background:D?"#1e2537":"#fff",border:"1px solid "+bd,borderRadius:12,padding:16}}>
               <div style={{fontSize:12,fontWeight:700,color:D?"#9ca3af":"#6b7280",marginBottom:10}}>＋ Add Flashcard</div>
               <input value={fcFront} onChange={function(e){setFcFront(e.target.value);}} placeholder="Front (question / term)"
-                style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid "+bd,background:D?"#111827":"#f9fafb",color:tx2,fontSize:13,marginBottom:8,boxSizing:"border-box"}}/>
+                style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid "+bd,background:D?"#161b27":"#f9fafb",color:tx2,fontSize:13,marginBottom:8,boxSizing:"border-box"}}/>
               <input value={fcBack} onChange={function(e){setFcBack(e.target.value);}} placeholder="Back (answer / definition)"
-                style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid "+bd,background:D?"#111827":"#f9fafb",color:tx2,fontSize:13,marginBottom:10,boxSizing:"border-box"}}/>
+                style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1px solid "+bd,background:D?"#161b27":"#f9fafb",color:tx2,fontSize:13,marginBottom:10,boxSizing:"border-box"}}/>
               <button disabled={!fcFront.trim()||!fcBack.trim()} onClick={addFlashcard}
                 style={{padding:"8px 16px",borderRadius:8,border:"none",background:fcFront.trim()&&fcBack.trim()?subj.accent:"#d1d5db",color:"#fff",fontWeight:600,fontSize:12,cursor:fcFront.trim()&&fcBack.trim()?"pointer":"not-allowed"}}>
                 Add Flashcard
@@ -5242,8 +5547,8 @@ function PersonalSubjectScreen({D, subj, personalSubjects, onBack, onSaveSubject
   const [editingName,setEditingName] = React.useState(false);
   const [newName,setNewName] = React.useState(subj.name);
   var bd = D?"#374151":"#e5e7eb";
-  var bg = D?"#111827":"#f9fafb";
-  var tx2 = D?"#f9fafb":"#111827";
+  var bg = D?"#161b27":"#f9fafb";
+  var tx2 = D?"#e8ecf4":"#111827";
 
   if(activeTopic){
     function saveTopicData(updated){
@@ -5422,7 +5727,7 @@ function ContactScreen({D, user, isAdmin, onBack}) {
   var bg = D ? "#111827" : "#f9fafb";
 
   return (
-    <div style={{minHeight:"100vh",background:bg,color:D?"#f9fafb":"#111827"}} className="fade-in">
+    <div style={{minHeight:"100vh",background:bg,color:D?"#e8ecf4":"#111827"}} className="fade-in">
       <div style={{maxWidth:700,margin:"0 auto",padding:"32px 24px"}}>
         <button onClick={onBack} style={{fontSize:13,color:D?"#9ca3af":"#6b7280",background:"none",border:"none",cursor:"pointer",marginBottom:20}}>← Back</button>
         <h2 style={{fontSize:22,fontWeight:700,marginBottom:6}}>✉️ Contact Us</h2>
@@ -5440,7 +5745,7 @@ function ContactScreen({D, user, isAdmin, onBack}) {
         )}
 
         {tab==="send" && (
-          <div style={{background:D?"#1f2937":"#fff",border:"1px solid "+bd,borderRadius:14,padding:24}}>
+          <div style={{background:D?"#1e2537":"#fff",border:"1px solid "+bd,borderRadius:14,padding:24}}>
             {sent ? (
               <div style={{textAlign:"center",padding:"32px 0"}}>
                 <div style={{fontSize:40,marginBottom:12}}>✅</div>
@@ -5455,13 +5760,13 @@ function ContactScreen({D, user, isAdmin, onBack}) {
                   <label style={{fontSize:11,fontWeight:700,color:D?"#9ca3af":"#6b7280",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:"0.05em"}}>Year group <span style={{fontWeight:400,textTransform:"none"}}>(optional)</span></label>
                   <input value={year} onChange={function(e){setYear(e.target.value);}}
                     placeholder="e.g. Year 11"
-                    style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid "+bd,background:D?"#111827":"#f9fafb",color:D?"#f9fafb":"#111827",fontSize:13}}/>
+                    style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid "+bd,background:D?"#161b27":"#f9fafb",color:D?"#e8ecf4":"#111827",fontSize:13}}/>
                 </div>
                 <div style={{marginBottom:18}}>
                   <label style={{fontSize:11,fontWeight:700,color:D?"#9ca3af":"#6b7280",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:"0.05em"}}>Message *</label>
                   <textarea value={msg} onChange={function(e){setMsg(e.target.value);}}
                     rows={5} placeholder="Write your message here..."
-                    style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid "+bd,background:D?"#111827":"#f9fafb",color:D?"#f9fafb":"#111827",fontSize:13,resize:"vertical"}}/>
+                    style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1px solid "+bd,background:D?"#161b27":"#f9fafb",color:D?"#e8ecf4":"#111827",fontSize:13,resize:"vertical"}}/>
                 </div>
                 <button onClick={handleSend} disabled={sending||!msg.trim()}
                   style={{padding:"10px 24px",borderRadius:8,border:"none",background:!msg.trim()?"#9ca3af":"#6366f1",color:"#fff",fontWeight:700,fontSize:14,cursor:(!msg.trim()||!user)?"not-allowed":"pointer"}}>
@@ -5476,14 +5781,14 @@ function ContactScreen({D, user, isAdmin, onBack}) {
           <div>
             {msgs.length===0 && <p style={{color:D?"#9ca3af":"#6b7280",fontSize:13}}>No messages yet.</p>}
             {msgs.map(function(m){return (
-              <div key={m.id} style={{background:D?"#1f2937":"#fff",border:"1px solid "+bd,borderRadius:14,padding:20,marginBottom:14}}>
+              <div key={m.id} style={{background:D?"#1e2537":"#fff",border:"1px solid "+bd,borderRadius:14,padding:20,marginBottom:14}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
                   <div>
                     <span style={{fontWeight:700,fontSize:14}}>{m.name}</span>
                     {m.yearGroup&&<span style={{fontSize:12,color:D?"#9ca3af":"#6b7280",marginLeft:8}}>{m.yearGroup}</span>}
-                    <span style={{fontSize:11,color:D?"#6b7280":"#9ca3af",marginLeft:8}}>@{m.from}</span>
+                    <span style={{fontSize:11,color:D?"#8896b3":"#9ca3af",marginLeft:8}}>@{m.from}</span>
                   </div>
-                  <span style={{fontSize:11,color:D?"#6b7280":"#9ca3af"}}>{new Date(m.timestamp).toLocaleDateString("en-GB",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}</span>
+                  <span style={{fontSize:11,color:D?"#8896b3":"#9ca3af"}}>{new Date(m.timestamp).toLocaleDateString("en-GB",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}</span>
                 </div>
                 <p style={{fontSize:13,lineHeight:1.6,marginBottom:12,whiteSpace:"pre-wrap"}}>{m.message}</p>
                 {(m.thread||[]).map(function(r,ri){return (
@@ -5495,7 +5800,7 @@ function ContactScreen({D, user, isAdmin, onBack}) {
                 <div style={{display:"flex",gap:8,marginTop:8}}>
                   <textarea value={replyText[m.id]||""} onChange={function(e){var v=e.target.value;setReplyText(function(p){return Object.assign({},p,{[m.id]:v});});}}
                     rows={2} placeholder="Reply…"
-                    style={{flex:1,padding:"7px 10px",borderRadius:8,border:"1px solid "+bd,background:D?"#111827":"#f9fafb",color:D?"#f9fafb":"#111827",fontSize:12,resize:"none"}}/>
+                    style={{flex:1,padding:"7px 10px",borderRadius:8,border:"1px solid "+bd,background:D?"#161b27":"#f9fafb",color:D?"#e8ecf4":"#111827",fontSize:12,resize:"none"}}/>
                   <button onClick={function(){handleReply(m.id);}} disabled={!!(replyingSending[m.id]||!(replyText[m.id]||"").trim())}
                     style={{padding:"0 16px",borderRadius:8,border:"none",background:"#6366f1",color:"#fff",fontWeight:600,fontSize:12,cursor:"pointer",alignSelf:"flex-end",height:36}}>
                     {replyingSending[m.id]?"…":"Reply"}
@@ -5514,7 +5819,7 @@ function ContactScreen({D, user, isAdmin, onBack}) {
           <div style={{marginTop:28}}>
             <h3 style={{fontSize:15,fontWeight:700,marginBottom:14}}>Your messages</h3>
             {myMsgs.map(function(m){return (
-              <div key={m.id} style={{background:D?"#1f2937":"#fff",border:"1px solid "+bd,borderRadius:12,padding:18,marginBottom:12}}>
+              <div key={m.id} style={{background:D?"#1e2537":"#fff",border:"1px solid "+bd,borderRadius:12,padding:18,marginBottom:12}}>
                 <p style={{fontSize:13,lineHeight:1.6,marginBottom:m.thread&&m.thread.length?10:0,whiteSpace:"pre-wrap"}}>{m.message}</p>
                 {(m.thread||[]).map(function(r,ri){return (
                   <div key={ri} style={{borderLeft:"3px solid #10b981",paddingLeft:12,marginTop:8}}>
@@ -5650,8 +5955,16 @@ export default function App() {
   const [timetableExams,setTimetableExams] = useState([]);
   const [userContent,setUserContent]   = useState({}); // {subjectId:{sections:[...]}}
   const [ucScreen,setUCScreen]         = useState(null); // null|{subjId}
+  const [selectedSubjectIds,setSelectedSubjectIds] = useState(null); // null = not yet loaded; [] = none chosen; [id,...] = chosen
+  const [showSubjectSelection,setShowSubjectSelection] = useState(false); // for editing from account screen
 
-  const subjects  = ALL_SUBJECTS;
+  // Derive subjects: filter ALL_SUBJECTS to only those the user has selected, plus always include politics.
+  // While selectedSubjectIds is null (not yet loaded from storage), show all subjects so nothing breaks during load.
+  const subjects = React.useMemo(() => {
+    if(selectedSubjectIds === null) return ALL_SUBJECTS; // still loading
+    if(selectedSubjectIds.length === 0) return ALL_SUBJECTS.filter(s => s._politics); // edge case
+    return ALL_SUBJECTS.filter(s => s._politics || selectedSubjectIds.includes(s.id));
+  }, [selectedSubjectIds]);
   const admin     = isAdmin(user);
   const subjDef   = subIdx!=null ? subjects[subIdx] : null;
   const curBoard  = subjDef ? (boardSels[subjDef.id]||DEFAULT_BOARD) : DEFAULT_BOARD;
@@ -5689,9 +6002,10 @@ export default function App() {
     }}));
   },[]);
 
-  const ensureAllBoardsLoaded = useCallback(async(savedBoardSels={}) => {
-    // Load default board for all subjects + any non-default saved board selections
-    const toLoad = subjects.flatMap(s => {
+  const ensureAllBoardsLoaded = useCallback(async(savedBoardSels={}, subjectList) => {
+    // Load board data for selected subjects only (or all if no selection)
+    const list = subjectList || ALL_SUBJECTS;
+    const toLoad = list.flatMap(s => {
       const boards = new Set([DEFAULT_BOARD]);
       const saved = savedBoardSels[s.id];
       if(saved) boards.add(saved);
@@ -5747,9 +6061,17 @@ export default function App() {
           if(p.activityCounts) setAC(p.activityCounts);
           if(p.gradeSnapshots) setGS(p.gradeSnapshots);
           if(p.boardSels){setBoardSels(p.boardSels);savedSels=p.boardSels;}
+          if(p.selectedSubjectIds && Array.isArray(p.selectedSubjectIds)){
+            setSelectedSubjectIds(isAdmin(user) ? null : p.selectedSubjectIds);
+          } else {
+            // Existing user who hasn't set subjects yet — show selection screen
+            if(!isAdmin(user)) setShowSubjectSelection(true);
+            setSelectedSubjectIds(isAdmin(user) ? null : []); // null=all for admin
+          }
         } else {
-          // New user — trigger onboarding
-          if(!isAdmin(user)) setOnboarding({step:1,board:"AQA"});
+          // New user — show subject selection instead of old onboarding
+          if(!isAdmin(user)) setShowSubjectSelection(true);
+          setSelectedSubjectIds(isAdmin(user) ? null : []);
         }
       }catch(_){}
       // Also load timetable exams for the Today widget
@@ -5757,7 +6079,7 @@ export default function App() {
         const tr=await window.storage.get(SK.TIMETABLE(user));
         if(tr?.value){const td=JSON.parse(tr.value);if(td.exams&&Array.isArray(td.exams))setTimetableExams(td.exams);}
       }catch(_){}
-      await ensureAllBoardsLoaded(savedSels);
+      await ensureAllBoardsLoaded(savedSels, ALL_SUBJECTS);
       // Load personal subjects (private to this user)
       try{
         const pr=await window.storage.get(SK_PERSONAL(user),false);
@@ -5889,6 +6211,7 @@ export default function App() {
           activityDates:[...activityDates],
           activityCounts,
           boardSels,
+          selectedSubjectIds:selectedSubjectIds||[],
           gradeSnapshots:newSnaps
         }),true);
       }catch(_){}
@@ -5929,6 +6252,31 @@ export default function App() {
       }catch(_){}
     }
   },[user,subjects,ensureBoardLoaded]);
+
+  const handleSubjectSelectionComplete = useCallback(async(selIds, boardMap) => {
+    setShowSubjectSelection(false);
+    if(selIds === null) return; // user cancelled edit
+    setSelectedSubjectIds(selIds);
+    // Merge boardMap into boardSels (per-subject board)
+    if(boardMap && Object.keys(boardMap).length > 0){
+      setBoardSels(prev => ({...prev,...boardMap}));
+      // Load board data for all selected subject+board combos
+      await Promise.all(
+        Object.entries(boardMap).map(([sId, b]) => ensureBoardLoaded(sId, b))
+      );
+    }
+    // Persist immediately
+    try{
+      const r = await window.storage.get(SK.PROG(user), true);
+      const existing = r?.value ? JSON.parse(r.value) : {};
+      const mergedBoards = {...(existing.boardSels||{}),...(boardMap||{})};
+      await window.storage.set(SK.PROG(user), JSON.stringify({
+        ...existing,
+        selectedSubjectIds: selIds,
+        boardSels: mergedBoards,
+      }), true);
+    }catch(_){}
+  }, [user, ensureBoardLoaded]);
 
   const handleSearchNavigate = useCallback((result) => {
     const {subj, sec, tab:secTab} = result;
@@ -6117,7 +6465,7 @@ export default function App() {
     await ensureBoardLoaded(subjDef.id,b);
   };
 
-  const bg=D?"#030712":"#f9fafb", bd2=D?"#1f2937":"#e5e7eb";
+  const bg=D?"#0f1117":"#f9fafb", bd2=D?"#2a3347":"#e5e7eb";
   const _goEl=<GlobalOverlays D={D} online={online} shortcutModal={shortcutModal} setShortcutModal={setShortcutModal} searchOpen={searchOpen} setSearchOpen={setSearchOpen} onboarding={onboarding} handleOnboardingComplete={handleOnboardingComplete} subjects={subjects} allSections={allSections} boardData={boardData} boardSels={boardSels} handleSearchNavigate={handleSearchNavigate} screen={screen} onHome={()=>setScreen("home")} onMock={()=>setScreen("mock")} onTutor={()=>{setTutorSubjId(null);setScreen("tutor");}} onTimetable={()=>setScreen("timetable")} onDash={()=>setScreen("dashboard")} onLeaderboards={()=>setScreen("friends")} streak={streak}/>;
 const hProps={user,userDisplayName,D,onDark:()=>setD(!D),onHome:()=>setScreen("home"),onDash:()=>setScreen("dashboard"),onTarget:()=>{setTTSubj(null);setScreen("target")},onTimetable:()=>setScreen("timetable"),onBlurt:()=>{setBlurtSubjId(null);setBlurtSecId2(null);setScreen("blurting");},onMock:()=>setScreen("mock"),onTutor:()=>{setTutorSubjId(null);setScreen("tutor");},onCoach:()=>setScreen("coach"),onLeaderboards:()=>setScreen("friends"),onAccount:()=>setScreen("account"),streak,onSearch:()=>setSearchOpen(true),globalOverlays:_goEl,screen};
 const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=>!s._politics)[0]?.id||null}); };
@@ -6129,6 +6477,17 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
       <Header {...hProps}/>
       <UserContentScreen D={D} user={user} subjects={subjects.filter(function(s){return !s._politics;})} ucData={userContent} onSaveSection={saveUCSection} onDeleteSection={deleteUCSection} onBack={function(){setUCScreen(null);}}/>
     </div>
+  );
+
+  // Show subject selection for new users or when user requests edit
+  if(showSubjectSelection && user && screen !== "login") return (
+    <SubjectSelectionScreen
+      D={D}
+      initialSelected={selectedSubjectIds||[]}
+      initialBoardSels={boardSels}
+      isEditing={!!(selectedSubjectIds && selectedSubjectIds.length > 0)}
+      onComplete={handleSubjectSelectionComplete}
+    />
   );
 
   if(personalScreen&&personalScreen.subjId){
@@ -6214,14 +6573,14 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
       :"";
 
     return (
-      <div style={{minHeight:"100vh",background:D?"#030712":"#f0f4ff",display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
+      <div style={{minHeight:"100vh",background:D?"#0f1117":"#f0f4ff",display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
         <div style={{...C(D),width:"100%",maxWidth:400,padding:40,boxShadow:"0 25px 60px rgba(0,0,0,.12)"}}>
           <div style={{textAlign:"center",marginBottom:28}}>
             <div style={{fontSize:48,marginBottom:12}}>🎓</div>
             <h1 style={{fontSize:22,fontWeight:700,color:tx(D),marginBottom:4}}>ReviseIQ</h1>
             <p style={{fontSize:12,color:mu(D)}}>{ALL_SUBJECTS.length} subjects · AI-powered revision</p>
           </div>
-          <div style={{display:"flex",background:D?"#1f2937":"#f3f4f6",borderRadius:10,padding:3,marginBottom:22,gap:3}}>
+          <div style={{display:"flex",background:D?"#1e2537":"#f3f4f6",borderRadius:10,padding:3,marginBottom:22,gap:3}}>
             {["login","signup"].map(function(m){return (
               <button key={m} onClick={function(){setAM(m);setAuthE("");}} style={{flex:1,padding:"9px 0",borderRadius:8,border:"none",background:authMode===m?(D?"#374151":"#fff"):"transparent",fontWeight:authMode===m?600:400,fontSize:13,cursor:"pointer",color:authMode===m?tx(D):mu(D),transition:"all .15s",boxShadow:authMode===m?"0 1px 4px rgba(0,0,0,.08)":"none"}}>
                 {m==="login"?"Log In":"Sign Up"}
@@ -6248,7 +6607,7 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
           </button>
           {authMode==="login"&&<p style={{fontSize:11,color:mu(D),textAlign:"center",marginTop:10}}>No account? Switch to Sign Up above.</p>}
           <div style={{marginTop:16,display:"flex",gap:5,justifyContent:"center",flexWrap:"wrap"}}>
-            {ALL_SUBJECTS.map(function(s){return <span key={s.id} style={{fontSize:11,color:mu(D),background:D?"#1f2937":"#f3f4f6",padding:"2px 8px",borderRadius:20}}>{s.icon}</span>;})}
+            {ALL_SUBJECTS.map(function(s){return <span key={s.id} style={{fontSize:11,color:mu(D),background:D?"#1e2537":"#f3f4f6",padding:"2px 8px",borderRadius:20}}>{s.icon}</span>;})}
           </div>
         </div>
       </div>
@@ -6308,7 +6667,10 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
     <AccountScreen
       D={D} user={user} userDisplayName={userDisplayName} userSchool={userSchool}
       accounts={accounts}
+      selectedSubjectIds={selectedSubjectIds||[]}
+      boardSels={boardSels}
       onBack={()=>setScreen("home")}
+      onEditSubjects={()=>setShowSubjectSelection(true)}
       onSave={function(changes){
         var updatedDN = changes.displayName || userDisplayName;
         var updatedSchool = changes.school;
@@ -6387,7 +6749,7 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
             <div style={{display:"flex",gap:3,overflowX:"auto",paddingBottom:2,marginBottom:14}}>
               {(()=>{const weeks=[];const t=new Date();t.setHours(0,0,0,0);const dow=t.getDay()===0?6:t.getDay()-1;const start=new Date(t);start.setDate(start.getDate()-dow-14);for(let w=0;w<3;w++){const week=[];for(let d=0;d<7;d++){const dt=new Date(start);dt.setDate(dt.getDate()+w*7+d);const k=dt.toISOString().slice(0,10);week.push({k,a:activityDates.has(k),t:k===todayStr()});}weeks.push(week);}return weeks.map((wk,wi)=>(
                 <div key={wi} style={{display:"flex",flexDirection:"column",gap:3}}>
-                  {wk.map(c=><div key={c.k} title={c.k} style={{width:12,height:12,borderRadius:2,background:c.a?(D?"#f97316":"#fb923c"):c.t?(D?"#374151":"#e5e7eb"):(D?"#1f2937":"#f3f4f6"),border:c.t?"2px solid #6366f1":"2px solid transparent"}}/>)}
+                  {wk.map(c=><div key={c.k} title={c.k} style={{width:12,height:12,borderRadius:2,background:c.a?(D?"#f97316":"#fb923c"):c.t?(D?"#374151":"#e5e7eb"):(D?"#1e2537":"#f3f4f6"),border:c.t?"2px solid #6366f1":"2px solid transparent"}}/>)}
                 </div>
               ));})()}
             </div>
@@ -6451,7 +6813,7 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                 <div style={{width:44,height:44,borderRadius:12,background:`linear-gradient(135deg,${s.accent},${s.accent}88)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,marginBottom:12}}>{s.icon}</div>
                 <div style={{fontWeight:700,fontSize:15,marginBottom:4,paddingRight:predicted?70:0}}>{s.name}</div>
                 <div style={{display:"flex",gap:7,flexWrap:"wrap",alignItems:"center"}}>
-                  <span style={{fontSize:11,color:mu(D),background:D?"#1f2937":"#f3f4f6",padding:"2px 7px",borderRadius:10}}>{selBoard}</span>
+                  <span style={{fontSize:11,color:mu(D),background:D?"#1e2537":"#f3f4f6",padding:"2px 7px",borderRadius:10}}>{selBoard}</span>
                   {customCount>0&&<span style={{fontSize:11,color:"#6366f1",fontWeight:600}}>+{customCount}</span>}
                   {qPct!=null&&<span style={{fontSize:11,color:mu(D)}}>{qPct}%</span>}
                 </div>
@@ -6464,14 +6826,14 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
       <div style={{maxWidth:960,margin:"0 auto",padding:"0 24px 32px"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,marginTop:8}}>
           <div>
-            <h3 style={{fontSize:16,fontWeight:700,margin:0,color:D?"#f9fafb":"#111827"}}>📚 My Subjects</h3>
-            <p style={{fontSize:11,color:D?"#6b7280":"#9ca3af",margin:"2px 0 0"}}>Personal content — only visible to you</p>
+            <h3 style={{fontSize:16,fontWeight:700,margin:0,color:D?"#e8ecf4":"#111827"}}>📚 My Subjects</h3>
+            <p style={{fontSize:11,color:D?"#8896b3":"#9ca3af",margin:"2px 0 0"}}>Personal content — only visible to you</p>
           </div>
           <button onClick={()=>setCreatePersonalOpen(true)}
             style={{padding:"7px 16px",borderRadius:9,border:"none",background:"#6366f1",color:"#fff",fontWeight:600,fontSize:13,cursor:"pointer"}}>＋ New Subject</button>
         </div>
         {personalSubjects.length===0&&(
-          <div style={{padding:"20px 16px",borderRadius:12,border:"1.5px dashed "+(D?"#374151":"#d1d5db"),textAlign:"center",color:D?"#6b7280":"#9ca3af",fontSize:13}}>
+          <div style={{padding:"20px 16px",borderRadius:12,border:"1.5px dashed "+(D?"#374151":"#d1d5db"),textAlign:"center",color:D?"#8896b3":"#9ca3af",fontSize:13}}>
             Create personal subjects for anything you want to learn — Spanish vocab, music theory, anything. Only you can see them.
           </div>
         )}
@@ -6484,7 +6846,7 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                 onMouseLeave={e=>{e.currentTarget.style.transform="";}}>
                 <div style={{width:40,height:40,borderRadius:10,background:ps.accent+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,marginBottom:10}}>{ps.icon}</div>
                 <div style={{fontWeight:700,fontSize:14,marginBottom:4}}>{ps.name}</div>
-                <span style={{fontSize:11,color:mu(D),background:D?"#1f2937":"#f3f4f6",padding:"2px 7px",borderRadius:10}}>{(ps.topics||[]).length} topics</span>
+                <span style={{fontSize:11,color:mu(D),background:D?"#1e2537":"#f3f4f6",padding:"2px 7px",borderRadius:10}}>{(ps.topics||[]).length} topics</span>
               </button>
             );})}
           </div>
@@ -6499,7 +6861,7 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
     return (
       <div style={{minHeight:"100vh",background:bg,color:tx(D)}} className="fade-in">
         <Header {...hProps}/>
-        <div style={{maxWidth:960,margin:"0 auto",padding:"32px 24px"}}>
+        <div style={{maxWidth:960,margin:"0 auto",padding:"32px 24px",paddingBottom:window.innerWidth<640?70:0}}>
           <button onClick={()=>setScreen("home")} style={{fontSize:13,color:mu(D),background:"none",border:"none",cursor:"pointer",marginBottom:20}}>← All subjects</button>
           <div style={{display:"flex",alignItems:"flex-start",gap:16,marginBottom:20,flexWrap:"wrap"}}>
             <div style={{width:56,height:56,borderRadius:16,background:`linear-gradient(135deg,${subj.accent},${subj.accent}88)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,flexShrink:0}}>{subj.icon}</div>
@@ -6539,8 +6901,8 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                             aria-label={`Set target grade ${g}${sel?" (selected, click to clear)":""}`}
                             aria-pressed={sel}
                             style={{width:28,height:28,borderRadius:7,border:`2px solid ${sel?gc:(D?"#374151":"#d1d5db")}`,
-                              background:sel?gc:(D?"#111827":"#fff"),
-                              color:sel?"#fff":(D?"#6b7280":"#9ca3af"),
+                              background:sel?gc:(D?"#161b27":"#fff"),
+                              color:sel?"#fff":(D?"#8896b3":"#9ca3af"),
                               fontWeight:sel?800:500,fontSize:12,cursor:"pointer",
                               transition:"all .15s",boxShadow:sel?`0 0 0 3px ${gc}33`:""}}>{g}</button>
                         );})}
@@ -6562,8 +6924,30 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
               <p style={{fontSize:12,color:D?"#9ca3af":"#6b7280",margin:0}}>This is <strong>not GCSE content</strong> — it's factual, non-biased political awareness for well-rounded world knowledge. Notes only. Use the AI Tutor to explore any topic further.</p>
             </div>
           </div>}
+          {subjTab === "sections" && (()=>{
+            const allSecsDue = curTopics.flatMap(t => t.sections).filter(s => (s.flashcards||[]).some(c => isCardDue(fcHist, c.id)));
+            const allSecsNew = curTopics.flatMap(t => t.sections).filter(s => (s.questions||[]).length > 0 || (s.flashcards||[]).length > 0);
+            const ctaSection = allSecsDue[0] || allSecsNew[0];
+            const dueCount = curTopics.flatMap(t => t.sections).reduce((acc, s) => acc + (s.flashcards||[]).filter(c => isCardDue(fcHist, c.id)).length, 0);
+            if (!ctaSection) return null;
+            const ti = curTopics.findIndex(t => t.sections.some(s => s.id === ctaSection.id));
+            return (
+              <div style={{marginBottom:20,padding:"16px 20px",borderRadius:14,background:D?"rgba(99,102,241,.08)":"#eef2ff",border:"1.5px solid #6366f1",display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
+                <div>
+                  <div style={{fontSize:13,fontWeight:700,color:"#6366f1",marginBottom:2}}>
+                    {dueCount > 0 ? `${dueCount} flashcard${dueCount!==1?"s":""} due for review` : "Continue revision"}
+                  </div>
+                  <div style={{fontSize:12,color:D?"#8896b3":"#9ca3af"}}>{ctaSection.title}</div>
+                </div>
+                <button onClick={() => navToSection(subIdx, ti >= 0 ? ti : 0, ctaSection.id)}
+                  style={{padding:"10px 22px",borderRadius:10,border:"none",background:"#6366f1",color:"#fff",fontWeight:700,fontSize:14,cursor:"pointer",flexShrink:0,whiteSpace:"nowrap"}}>
+                  {dueCount > 0 ? "Review Now →" : "Continue →"}
+                </button>
+              </div>
+            );
+          })()}
           <div style={{display:"flex",alignItems:"center",borderBottom:"1px solid "+bd2,marginBottom:24,gap:2,flexWrap:"wrap"}}>
-            {(subj._politics?[["sections","📚 Topics"]]:[["sections","📚 Topics"],["mynotes","📓 My Notes"],["papers","📄 Past Papers"]]).map(function(pair){var t=pair[0],label=pair[1];return(
+            {(subj._politics?[["sections","📚 Topics"]]:[["sections","📚 Topics"],["mynotes","📓 My Notes"],["papers","📄 Papers"]]).map(function(pair){var t=pair[0],label=pair[1];return(
               <button key={t} onClick={function(){setSubjTab(t);}} style={{padding:"10px 18px",fontSize:13,fontWeight:subjTab===t?600:400,color:subjTab===t?subj.accent:mu(D),background:"none",border:"none",cursor:"pointer",borderBottom:subjTab===t?"2px solid "+subj.accent:"2px solid transparent",marginBottom:-1,transition:"color .15s"}}>{label}</button>
             );})}
           </div>
@@ -6700,6 +7084,7 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
   }
 
   if(screen==="section"&&section){
+    const inFocusMode = tab === "flashcards" || tab === "questions";
     const subj=subjDef;
     const cards=section.flashcards||[], qs=section.questions||[];
     const safeFcIdx = cards.length > 0 ? Math.min(fcIdx, cards.length-1) : 0;
@@ -6759,13 +7144,25 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
 
     return (
       <div style={{minHeight:"100vh",background:bg,color:tx(D)}} className="fade-in">
-        <Header {...hProps}/>
-        <div style={{maxWidth:760,margin:"0 auto",padding:"28px 24px"}}>
-          <button onClick={()=>setScreen("subject")} style={{fontSize:13,color:mu(D),background:"none",border:"none",cursor:"pointer",marginBottom:16}}>← {subj.name}</button>
-          <div style={{marginBottom:20}}>
+        {!inFocusMode && <Header {...hProps}/>}
+        {inFocusMode && (
+          <div style={{position:"sticky",top:0,zIndex:50,background:D?"#161b27":"#fff",borderBottom:`1px solid ${D?"#2a3347":"#e5e7eb"}`,padding:"10px 20px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+            <button onClick={()=>setTab("notes")} style={{fontSize:13,color:D?"#8896b3":"#9ca3af",background:"none",border:"none",cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>
+              ← {section?.title || "Back"}
+            </button>
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={()=>setTab("flashcards")} style={{fontSize:12,padding:"4px 12px",borderRadius:20,border:"none",background:tab==="flashcards"?"#6366f1":"transparent",color:tab==="flashcards"?"#fff":D?"#8896b3":"#9ca3af",cursor:"pointer",fontWeight:tab==="flashcards"?600:400}}>🃏 Cards</button>
+              <button onClick={()=>setTab("questions")} style={{fontSize:12,padding:"4px 12px",borderRadius:20,border:"none",background:tab==="questions"?"#6366f1":"transparent",color:tab==="questions"?"#fff":D?"#8896b3":"#9ca3af",cursor:"pointer",fontWeight:tab==="questions"?600:400}}>✏️ Questions</button>
+            </div>
+            <button onClick={()=>setD(!D)} style={{fontSize:15,background:"none",border:"none",cursor:"pointer",color:D?"#8896b3":"#9ca3af"}}>{D?"☀️":"🌙"}</button>
+          </div>
+        )}
+        <div style={{maxWidth:inFocusMode?680:760,margin:"0 auto",padding:inFocusMode?"16px 24px":"28px 24px",paddingBottom:100}}>
+          {!inFocusMode && <button onClick={()=>setScreen("subject")} style={{fontSize:13,color:mu(D),background:"none",border:"none",cursor:"pointer",marginBottom:16}}>← {subj.name}</button>}
+          {!inFocusMode && <div style={{marginBottom:20}}>
             <h2 style={{fontSize:18,fontWeight:700,marginBottom:4}}>{section.title}</h2>
             <p style={{fontSize:12,color:mu(D)}}>{subj.name} · {curBoard}</p>
-          </div>
+          </div>}
 
           <div style={{display:"flex",borderBottom:`1px solid ${bd2}`,marginBottom:24,gap:2}}>
             {(subj._politics?[["notes","📖 Notes"]]:[["notes","📖 Notes"],["flashcards","🃏 Flashcards"],["questions","❓ Questions"]]).map(([t,label])=>(
@@ -6861,7 +7258,7 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
               {activeCards.length===0&&<div style={{...C(D),padding:32,textAlign:"center",color:mu(D),fontSize:14}}>No flashcards yet.{admin?" Add one above.":""}</div>}
               {fc2&&<>
                 {/* Status bar */}
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 14px",borderRadius:10,background:D?"#1f2937":"#f3f4f6",marginBottom:8}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 14px",borderRadius:10,background:D?"#1e2537":"#f3f4f6",marginBottom:8}}>
                   <span style={{fontSize:12,color:mu(D)}}><strong style={{color:cramMode?"#6366f1":dueCards2.length>0?"#f59e0b":tx(D)}}>{cramMode?"CRAM":dueCards2.length}</strong>{cramMode?" mode":" due"} · {activeCards.filter(c=>{const s=getCardState(fcHist,c.id);return s&&!isCardDue(fcHist,c.id)&&s.lastQ>=2;}).length} scheduled</span>
                   <div style={{display:"flex",alignItems:"center",gap:6}}>
                     <button onClick={()=>{if(shuffled){setShuffled(null);setFcIdx(0);setFlip(false);setFcConf(null);showToast("Shuffle off");}else{const arr=[...cards].sort(()=>Math.random()-.5);setShuffled(arr);setFcIdx(0);setFlip(false);setFcConf(null);showToast("🔀 Shuffled!");}}}
@@ -6887,7 +7284,7 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                     background:cardType2.color+"22",color:cardType2.color}}>
                     {cardType2.icon} {cardType2.label}
                   </span>
-                  {curState2&&<span style={{fontSize:10,color:mu(D),background:D?"#1f2937":"#f3f4f6",padding:"3px 8px",borderRadius:10}}>EF {curState2.ef?.toFixed(1)} · reps {curState2.reps||0}</span>}
+                  {curState2&&<span style={{fontSize:10,color:mu(D),background:D?"#1e2537":"#f3f4f6",padding:"3px 8px",borderRadius:10}}>EF {curState2.ef?.toFixed(1)} · reps {curState2.reps||0}</span>}
                 </div>
 
                 {admin&&fc2&&isAdminItem("flashcards",fc2)&&(
@@ -6904,7 +7301,7 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                     the illusion-of-knowing effect significantly. */}
                 {!flip&&fcConf===null&&(
                   <div style={{marginBottom:12,padding:"12px 16px",borderRadius:12,
-                    background:D?"#1f2937":"#fafafa",border:`1px solid ${D?"#374151":"#e5e7eb"}`}}>
+                    background:D?"#1e2537":"#fafafa",border:`1px solid ${D?"#374151":"#e5e7eb"}`}}>
                     <p style={{fontSize:12,fontWeight:600,color:mu(D),marginBottom:10,textAlign:"center"}}>
                       Before you flip — how confident are you?
                     </p>
@@ -6912,9 +7309,9 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                       {CONF3.map(opt=>(
                         <button key={opt.v} onClick={()=>setFcConf(opt.v)} className="conf-pop"
                           style={{padding:"10px 4px",borderRadius:12,border:`2px solid ${opt.color}22`,
-                            background:D?"#111827":"#fff",cursor:"pointer",textAlign:"center",transition:"border-color .15s"}}
+                            background:D?"#161b27":"#fff",cursor:"pointer",textAlign:"center",transition:"border-color .15s"}}
                           onMouseEnter={e=>{e.currentTarget.style.borderColor=opt.color;e.currentTarget.style.background=opt.color+"15";}}
-                          onMouseLeave={e=>{e.currentTarget.style.borderColor=opt.color+"22";e.currentTarget.style.background=D?"#111827":"#fff";}}>
+                          onMouseLeave={e=>{e.currentTarget.style.borderColor=opt.color+"22";e.currentTarget.style.background=D?"#161b27":"#fff";}}>
                           <div style={{fontSize:20,marginBottom:3}}>{opt.icon}</div>
                           <div style={{fontSize:11,fontWeight:700,color:opt.color}}>{opt.label}</div>
                           <div style={{fontSize:9,color:mu(D),marginTop:1}}>{opt.tip}</div>
@@ -6963,7 +7360,7 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                     onClick={()=>{if(fcConf!==null){setFlip(v=>!v);setFcHintLvl(0);}}}
                     style={{minHeight:180,borderRadius:14,border:`1.5px solid ${flip?subj.accent:bd2}`,
                       cursor:fcConf!==null?"pointer":"default",opacity:fcConf===null?0.5:1,transition:"opacity .2s"}}>
-                    <div className="fc-face" style={{background:D?"#111827":"#fff"}}>
+                    <div className="fc-face" style={{background:D?"#161b27":"#fff"}}>
                       <div style={{fontSize:11,fontWeight:600,letterSpacing:"0.1em",color:mu(D),textTransform:"uppercase",marginBottom:12}}>
                         Question
                         {fcConf!==null&&<span style={{marginLeft:8,fontSize:10,fontWeight:700,color:CONF3.find(c=>c.v===fcConf)?.color}}>
@@ -6994,7 +7391,7 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                     {/* Calibration comparison */}
                     {fcConf!==null&&(
                       <div style={{padding:"7px 12px",borderRadius:9,marginBottom:10,fontSize:11,
-                        background:D?"#1f2937":"#f3f4f6",display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                        background:D?"#1e2537":"#f3f4f6",display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
                         <span style={{color:mu(D)}}>You predicted:</span>
                         <span style={{fontWeight:700,color:CONF3.find(c=>c.v===fcConf)?.color}}>
                           {CONF3.find(c=>c.v===fcConf)?.icon} {CONF3.find(c=>c.v===fcConf)?.label}
@@ -7018,12 +7415,14 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                       </div>
                     )}
                     {/* SM-2 rating */}
+                    <div style={{position:"sticky",bottom:window.innerWidth<640?78:16,zIndex:10,background:D?"#0f1117":"#f9fafb",padding:"10px 0",margin:"0 -4px"}}>
                     <p style={{fontSize:11,color:mu(D),textAlign:"center",marginBottom:8}}>How well did you know this?</p>
                     <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8}}>
                       {SM2B.map(btn=>(
                         <button key={btn.q} onClick={()=>doSM2local(btn.q)} aria-label={btn.label}
                           style={{padding:"12px 4px",borderRadius:12,border:`2px solid ${btn.color}`,
-                            background:"transparent",cursor:"pointer",transition:"all .12s",color:btn.color,minHeight:44}}
+                            background:"transparent",cursor:"pointer",transition:"all .12s",color:btn.color,
+                            minHeight:window.innerWidth<640?52:44}}
                           onMouseEnter={e=>{e.currentTarget.style.background=btn.color;e.currentTarget.style.color="#fff";}}
                           onMouseLeave={e=>{e.currentTarget.style.background="transparent";e.currentTarget.style.color=btn.color;}}>
                           <div style={{fontWeight:700,fontSize:13}}>{btn.label}</div>
@@ -7033,6 +7432,7 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                     </div>
                     {!cramMode&&<p style={{fontSize:10,color:mu(D),textAlign:"center",marginTop:6}}>Again→{previews2[0]} · Hard→{previews2[1]} · Good→{previews2[2]} · Easy→{previews2[3]}</p>}
                     {cramMode&&<p style={{fontSize:10,color:"#6366f1",textAlign:"center",marginTop:6}}>🔥 Cram mode — SM-2 scheduling paused</p>}
+                    </div>
                   </div>
                 )}
 
@@ -7107,7 +7507,7 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                       {q.year&&<span style={{fontSize:11,color:mu(D)}}>{q.year}</span>}
                     </div>
                     {(q.images||[]).map((img,ii)=><AnnotatedImage key={ii} img={img} D={D}/>)}
-                    <ContentBlock content={q.text} D={D} fontSize={14} style={{marginBottom:18}}/>
+                    <ContentBlock content={q.text} D={D} fontSize={15} style={{marginBottom:18}}/>
 
                     {/* ── MCQ ── */}
                     {q.type==="mcq"&&(
@@ -7157,13 +7557,13 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                       {!qRes&&(
                         <div style={{marginBottom:10}}>
                           {qConf===null?(
-                            <div style={{padding:"10px 14px",borderRadius:10,background:D?"#1f2937":"#fafafa",border:`1px solid ${D?"#374151":"#e5e7eb"}`}}>
+                            <div style={{padding:"10px 14px",borderRadius:10,background:D?"#1e2537":"#fafafa",border:`1px solid ${D?"#374151":"#e5e7eb"}`}}>
                               <p style={{fontSize:11,fontWeight:600,color:mu(D),marginBottom:8}}>How confident are you in your answer?</p>
                               <div style={{display:"flex",gap:6}}>
                                 {[{v:1,l:"Not sure",c:"#ef4444",i:"😟"},{v:2,l:"Fairly sure",c:"#f59e0b",i:"🤔"},{v:3,l:"Confident",c:"#10b981",i:"😊"}].map(opt=>(
                                   <button key={opt.v} onClick={()=>setQConf(opt.v)}
                                     style={{flex:1,padding:"7px 4px",borderRadius:9,
-                                      border:`1.5px solid ${opt.c}22`,background:D?"#111827":"#fff",
+                                      border:`1.5px solid ${opt.c}22`,background:D?"#161b27":"#fff",
                                       cursor:"pointer",textAlign:"center",transition:"border-color .15s"}}
                                     onMouseEnter={e=>{e.currentTarget.style.borderColor=opt.c;}}
                                     onMouseLeave={e=>{e.currentTarget.style.borderColor=opt.c+"22";}}>
@@ -7314,7 +7714,7 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                                 {showMdl?"Hide":"Show"} model answer
                               </button>
                               {showMdl&&(
-                                <div style={{padding:"12px 14px",borderRadius:10,background:D?"#111827":"#f9fafb",
+                                <div style={{padding:"12px 14px",borderRadius:10,background:D?"#161b27":"#f9fafb",
                                   border:`1px solid ${bd2}`,marginBottom:6}}>
                                   <p style={{fontSize:10,fontWeight:700,color:mu(D),marginBottom:6,textTransform:"uppercase",letterSpacing:"0.05em"}}>Model Answer</p>
                                   <ContentBlock content={qRes.modelAnswer||q.sampleAnswer||""} D={D} fontSize={13}/>
@@ -7369,11 +7769,11 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
       hmWeeks.push(wk);
     }
     function hmColor(cnt,D){
-      if(cnt===0) return D?"#1f2937":"#f3f4f6";
+      if(cnt===0) return D?"#1e2537":"#f3f4f6";
       if(cnt===1) return D?"#7c3aed":"#c4b5fd";
       if(cnt===2) return D?"#6d28d9":"#a78bfa";
       if(cnt>=3)  return D?"#4c1d95":"#7c3aed";
-      return D?"#1f2937":"#f3f4f6";
+      return D?"#1e2537":"#f3f4f6";
     }
     // Day-month labels for heatmap x-axis
     const hmMonthLabels=[];
@@ -7512,7 +7912,7 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                   <XAxis dataKey="date" tick={{fontSize:10,fill:mu(D)}} tickLine={false} axisLine={false}/>
                   <YAxis domain={[0,9]} ticks={[1,2,3,4,5,6,7,8,9]} tick={{fontSize:10,fill:mu(D)}} tickLine={false} axisLine={false}/>
                   <Tooltip
-                    contentStyle={{background:D?"#1f2937":"#fff",border:"1px solid "+(D?"#374151":"#e5e7eb"),borderRadius:8,fontSize:11}}
+                    contentStyle={{background:D?"#1e2537":"#fff",border:"1px solid "+(D?"#374151":"#e5e7eb"),borderRadius:8,fontSize:11}}
                     formatter={function(val,name){
                       var s=ALL_SUBJECTS.find(function(s){return s.id===name;});
                       return [val?"Grade "+val:"—", s?s.name:name];
@@ -7551,7 +7951,7 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                   <PolarAngleAxis dataKey="subject" tick={{fontSize:10,fill:tx(D)}}/>
                   <Radar name="Score" dataKey="pct" stroke="#6366f1" fill="#6366f1" fillOpacity={0.25} strokeWidth={2}/>
                   <Tooltip
-                    contentStyle={{background:D?"#1f2937":"#fff",border:"1px solid "+(D?"#374151":"#e5e7eb"),borderRadius:8,fontSize:11}}
+                    contentStyle={{background:D?"#1e2537":"#fff",border:"1px solid "+(D?"#374151":"#e5e7eb"),borderRadius:8,fontSize:11}}
                     formatter={function(val,_,props){
                       return [val+"%", props&&props.payload&&props.payload.fullName||"Score"];
                     }}
@@ -7587,7 +7987,7 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                     </div>
                     {qPct2!=null?(
                       <div>
-                        <div style={{height:5,borderRadius:5,background:D?"#1f2937":"#e5e7eb",marginBottom:4}}>
+                        <div style={{height:5,borderRadius:5,background:D?"#2a3347":"#e5e7eb",marginBottom:4}}>
                           <div style={{height:"100%",borderRadius:5,background:gradeColor(predicted||"U"),width:qPct2+"%",transition:"width .6s"}}/>
                         </div>
                         <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
@@ -7599,7 +7999,7 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                     <div style={{display:"flex",gap:3,flexWrap:"wrap"}}>
                       {gradeOpts.map(function(g){const sel=target===g;const gc=gradeColor(g);return (
                         <button key={g} onClick={function(){setTargetGrades(function(p){return Object.assign({},p,{[s.id]:sel?undefined:g});});}}
-                          style={{width:26,height:26,borderRadius:6,border:"2px solid "+(sel?gc:"transparent"),background:sel?gc:(D?"#1f2937":"#f3f4f6"),color:sel?"#fff":(D?"#9ca3af":"#6b7280"),fontWeight:sel?800:500,fontSize:11,cursor:"pointer",transition:"all .15s"}}>{g}</button>
+                          style={{width:26,height:26,borderRadius:6,border:"2px solid "+(sel?gc:"transparent"),background:sel?gc:(D?"#1e2537":"#f3f4f6"),color:sel?"#fff":(D?"#9ca3af":"#6b7280"),fontWeight:sel?800:500,fontSize:11,cursor:"pointer",transition:"all .15s"}}>{g}</button>
                       );})}
                     </div>
                   </div>
@@ -7625,7 +8025,7 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                   <button onClick={function(){setTTSubj(null);setScreen("target");}} style={{...B("#ef4444",false,{fontSize:12,padding:"7px 14px"})}}>Start Target Test</button>
                 </div>
                 {scored.map(function(x){return (
-                  <div key={x.sid} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 12px",borderRadius:10,background:D?"#1f2937":"#fef2f2",marginBottom:5}}>
+                  <div key={x.sid} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 12px",borderRadius:10,background:D?"#1e2537":"#fef2f2",marginBottom:5}}>
                     <span style={{fontSize:13}}>{x.sid}</span>
                     <div style={{display:"flex",gap:12}}>
                       {x.wq.total>0&&<span style={{fontSize:11,color:"#dc2626"}}>Q: {x.wq.wrong}/{x.wq.total}</span>}
@@ -7685,7 +8085,7 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
               </div>
               <button onClick={finishTT} style={{fontSize:12,color:mu(D),background:"none",border:`1px solid ${bd2}`,borderRadius:8,padding:"6px 12px",cursor:"pointer"}}>End Test</button>
             </div>
-            <div style={{height:4,borderRadius:4,background:D?"#1f2937":"#e5e7eb",marginBottom:22}}>
+            <div style={{height:4,borderRadius:4,background:D?"#2a3347":"#e5e7eb",marginBottom:22}}>
               <div style={{height:"100%",borderRadius:4,background:"#ef4444",width:`${(ttIdx/ttItems.length)*100}%`,transition:"width .4s"}}/>
             </div>
             <div style={{...C(D),padding:24,marginBottom:12}}>
@@ -7694,7 +8094,7 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                 <span style={{fontSize:11,fontWeight:600,padding:"3px 10px",borderRadius:20,background:item.subj.mid,color:item.subj.dk}}>{q.marks} mark{q.marks!==1?"s":""}</span>
               </div>
               {(q.images||[]).map((img,ii)=><AnnotatedImage key={ii} img={img} D={D}/>)}
-              <ContentBlock content={q.text} D={D} fontSize={14} style={{marginBottom:16}}/>
+              <ContentBlock content={q.text} D={D} fontSize={15} style={{marginBottom:16}}/>
               {q.type==="mcq"&&(
                 <div style={{display:"flex",flexDirection:"column",gap:8}}>
                   {q.options.map((opt,oi)=>{
@@ -7802,5 +8202,15 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
     );
   }
 
-  return <ToastContainer/>;
+  return (<>
+    <MobileBottomNav
+      screen={screen}
+      onHome={()=>setScreen("home")}
+      onStudy={()=>{setBlurtSubjId(null);setBlurtSecId2(null);setScreen("blurting");}}
+      onProgress={()=>setScreen("dashboard")}
+      onTutor={()=>{setTutorSubjId(null);setScreen("tutor");}}
+      D={D}
+    />
+    <ToastContainer/>
+  </>);
 }
