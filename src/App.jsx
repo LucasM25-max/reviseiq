@@ -93,6 +93,7 @@ const SK_UC = (u,sId) => "gcse:uc:"+u.replace(/\W/g,"-")+":"+sId; // user-create
 const SK = {
   ACCOUNTS:  "gcse:accounts",
   PROG:      u => `gcse:prog:${u.replace(/\W/g,"-")}`,
+  PREFS:     u => `gcse:prefs:${u.replace(/\W/g,"-")}`,
   CUSTOM:    (sId,b) => `gcse:c:${sId}:${b}`,
   EXTRAS:    (sId,b) => `gcse:e:${sId}:${b}`,
   PAPERS:    (sId,b) => `gcse:p:${sId}:${b}`,
@@ -6057,22 +6058,43 @@ export default function App() {
           const p=JSON.parse(r.value);
           if(p.fcHist)  setFCH(p.fcHist);
           if(p.stats)   setStats({fcC:0,fcT:0,qS:0,qM:0,weakQ:{},weakFC:{},subjStats:{},...p.stats});
-          if(p.targetGrades) setTargetGrades(p.targetGrades);
           if(p.activityDates) setAD(new Set(p.activityDates));
           if(p.activityCounts) setAC(p.activityCounts);
           if(p.gradeSnapshots) setGS(p.gradeSnapshots);
-          if(p.boardSels){setBoardSels(p.boardSels);savedSels=p.boardSels;}
+        }
+      }catch(_){}
+      // Load critical prefs (targetGrades, selectedSubjectIds, boardSels) from
+      // dedicated PREFS key — saved immediately on change, never debounced.
+      // Fall back to PROG key for users who have never written PREFS yet.
+      try{
+        const pr=await window.storage.get(SK.PREFS(user),true);
+        if(pr?.value){
+          const p=JSON.parse(pr.value);
+          if(p.targetGrades)      setTargetGrades(p.targetGrades);
+          if(p.boardSels){        setBoardSels(p.boardSels); savedSels=p.boardSels; }
           if(p.selectedSubjectIds && Array.isArray(p.selectedSubjectIds)){
-            setSelectedSubjectIds(isAdmin(user) ? null : p.selectedSubjectIds);
+            setSelectedSubjectIds(isAdmin(user)?null:p.selectedSubjectIds);
           } else {
-            // Existing user who hasn't set subjects yet — show selection screen
             if(!isAdmin(user)) setShowSubjectSelection(true);
-            setSelectedSubjectIds(isAdmin(user) ? null : []); // null=all for admin
+            setSelectedSubjectIds(isAdmin(user)?null:[]);
           }
         } else {
-          // New user — show subject selection instead of old onboarding
-          if(!isAdmin(user)) setShowSubjectSelection(true);
-          setSelectedSubjectIds(isAdmin(user) ? null : []);
+          // No PREFS key yet — try migrating from PROG (legacy users)
+          const r2=await window.storage.get(SK.PROG(user),true);
+          if(r2?.value){
+            const p2=JSON.parse(r2.value);
+            if(p2.targetGrades)      setTargetGrades(p2.targetGrades);
+            if(p2.boardSels){        setBoardSels(p2.boardSels); savedSels=p2.boardSels; }
+            if(p2.selectedSubjectIds && Array.isArray(p2.selectedSubjectIds)){
+              setSelectedSubjectIds(isAdmin(user)?null:p2.selectedSubjectIds);
+            } else {
+              if(!isAdmin(user)) setShowSubjectSelection(true);
+              setSelectedSubjectIds(isAdmin(user)?null:[]);
+            }
+          } else {
+            if(!isAdmin(user)) setShowSubjectSelection(true);
+            setSelectedSubjectIds(isAdmin(user)?null:[]);
+          }
         }
       }catch(_){}
       progLoaded.current = true;
@@ -6188,6 +6210,25 @@ export default function App() {
   const gradeSnapsRef=useRef(gradeSnapshots);
   useEffect(()=>{gradeSnapsRef.current=gradeSnapshots;},[gradeSnapshots]);
 
+  // ── Immediate saves for critical prefs — no debounce, independent of fcHist ──
+  // targetGrades: save the moment it changes
+  useEffect(()=>{
+    if(!user||!progLoaded.current)return;
+    window.storage.get(SK.PREFS(user),true).then(r=>{
+      const existing=r?.value?JSON.parse(r.value):{};
+      return window.storage.set(SK.PREFS(user),JSON.stringify({...existing,targetGrades}),true);
+    }).catch(()=>{});
+  },[user,targetGrades]);
+
+  // selectedSubjectIds + boardSels: save together immediately whenever either changes
+  useEffect(()=>{
+    if(!user||!progLoaded.current)return;
+    window.storage.get(SK.PREFS(user),true).then(r=>{
+      const existing=r?.value?JSON.parse(r.value):{};
+      return window.storage.set(SK.PREFS(user),JSON.stringify({...existing,selectedSubjectIds:selectedSubjectIds||[],boardSels}),true);
+    }).catch(()=>{});
+  },[user,selectedSubjectIds,boardSels]);
+
   useEffect(()=>{
     if(!user)return;
     if(!progLoaded.current)return;
@@ -6211,11 +6252,9 @@ export default function App() {
         const existing=r?.value?JSON.parse(r.value):{};
         await window.storage.set(SK.PROG(user),JSON.stringify({
           ...existing,
-          fcHist,stats,targetGrades,
+          fcHist,stats,
           activityDates:[...activityDates],
           activityCounts,
-          boardSels,
-          selectedSubjectIds:selectedSubjectIds||[],
           gradeSnapshots:newSnaps
         }),true);
       }catch(_){}
@@ -6231,7 +6270,7 @@ export default function App() {
       }
     },600);
     return ()=>clearTimeout(saveTimer.current);
-  },[user,userDisplayName,fcHist,stats,targetGrades,activityDates,activityCounts,boardSels,selectedSubjectIds]);
+  },[user,userDisplayName,fcHist,stats,activityDates,activityCounts]);
 
   const handleOnboardingComplete = useCallback(async(board, examDate) => {
     setOnboarding(null);
@@ -6269,12 +6308,12 @@ export default function App() {
         Object.entries(boardMap).map(([sId, b]) => ensureBoardLoaded(sId, b))
       );
     }
-    // Persist immediately
+    // Persist immediately to dedicated PREFS key
     try{
-      const r = await window.storage.get(SK.PROG(user), true);
+      const r = await window.storage.get(SK.PREFS(user), true);
       const existing = r?.value ? JSON.parse(r.value) : {};
       const mergedBoards = {...(existing.boardSels||{}),...(boardMap||{})};
-      await window.storage.set(SK.PROG(user), JSON.stringify({
+      await window.storage.set(SK.PREFS(user), JSON.stringify({
         ...existing,
         selectedSubjectIds: selIds,
         boardSels: mergedBoards,
