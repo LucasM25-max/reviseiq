@@ -267,7 +267,132 @@ const ALL_SUBJECTS = [
   { id:"politics",     name:"Politics",             icon:"🏛️", accent:"#0f766e", light:"#f0fdfa", mid:"#ccfbf1", dk:"#134e4a", _politics:true },
 ];
 
-const SM2_QUALITY_MAP = [0, 3, 4, 5];
+// ── FSRS 4.5 ─────────────────────────────────────────────────────────────────
+// Based on the FSRS-4.5 algorithm by Jarrett Ye (open-weight, 2023).
+// Four rating buttons map to FSRS grades 1–4 (Again/Hard/Good/Easy).
+// Per-card state: { stability, difficulty, due, lastReview, reps, lapses, state }
+// state: 0=New, 1=Learning, 2=Review, 3=Relearning
+
+const FSRS_PARAMS = {
+  w: [0.4072,1.1829,3.1262,15.4722,7.2102,0.5316,1.0651,0.0589,1.5330,
+      0.1544,1.0070,1.9395,0.1100,0.2900,2.2700,0.1500,2.9898,0.5100,0.1400],
+  requestRetention: 0.90,
+  maximumInterval: 36500,
+};
+
+function fsrsInitialStability(g) {
+  return Math.max(FSRS_PARAMS.w[g - 1], 0.1);
+}
+
+function fsrsInitialDifficulty(g) {
+  return Math.min(Math.max(
+    FSRS_PARAMS.w[4] - Math.exp(FSRS_PARAMS.w[5] * (g - 1)) + 1,
+    1), 10);
+}
+
+function fsrsRetrievability(stability, elapsedDays) {
+  if (!stability || stability <= 0) return 0;
+  return Math.pow(1 + elapsedDays / (9 * stability), -1);
+}
+
+function fsrsNextInterval(stability) {
+  const { requestRetention, maximumInterval } = FSRS_PARAMS;
+  const interval = (stability / Math.log(requestRetention)) * Math.log(0.9);
+  return Math.min(Math.max(Math.round(Math.abs(interval)), 1), maximumInterval);
+}
+
+function fsrsNextDifficulty(d, g) {
+  const w = FSRS_PARAMS.w;
+  const delta = -w[6] * (g - 3);
+  return Math.min(Math.max(
+    d + delta * ((10 - d) / 9),
+    1), 10);
+}
+
+function fsrsNextStabilityAfterRecall(d, s, r, g) {
+  const w = FSRS_PARAMS.w;
+  return s * (
+    Math.exp(w[8]) *
+    (11 - d) *
+    Math.pow(s, -w[9]) *
+    (Math.exp(w[10] * (1 - r)) - 1) *
+    (g === 2 ? w[15] : 1) *
+    (g === 4 ? w[16] : 1) + 1
+  );
+}
+
+function fsrsNextStabilityAfterForgetting(d, s, r) {
+  const w = FSRS_PARAMS.w;
+  return w[11] *
+    Math.pow(d, -w[12]) *
+    (Math.pow(s + 1, w[13]) - 1) *
+    Math.exp(w[14] * (1 - r));
+}
+
+function fsrsNext(prevState, rating) {
+  const now = Date.now();
+  if (!prevState || !prevState.stability) {
+    const s = fsrsInitialStability(rating);
+    const d = fsrsInitialDifficulty(rating);
+    const interval = rating === 1 ? 1 : rating === 2 ? 1 : fsrsNextInterval(s);
+    return {
+      stability: s, difficulty: d, reps: 1, lapses: 0,
+      state: rating === 1 ? 1 : 2,
+      lastReview: now, due: now + interval * 86400000, interval, lastRating: rating,
+    };
+  }
+  const { stability, difficulty, reps, lapses, lastReview } = prevState;
+  const elapsedDays = Math.max(0, (now - (lastReview || now)) / 86400000);
+  const r = fsrsRetrievability(stability, elapsedDays);
+  const d = fsrsNextDifficulty(difficulty || 5, rating);
+  let nextStability, nextInterval, nextState, nextLapses;
+  if (rating === 1) {
+    nextStability = fsrsNextStabilityAfterForgetting(d, stability, r);
+    nextInterval = 1; nextState = 3; nextLapses = (lapses || 0) + 1;
+  } else {
+    nextStability = fsrsNextStabilityAfterRecall(d, stability, r, rating);
+    nextInterval = fsrsNextInterval(nextStability);
+    nextState = 2; nextLapses = lapses || 0;
+  }
+  return {
+    stability: Math.max(nextStability, 0.1), difficulty: d,
+    reps: (reps || 0) + 1, lapses: nextLapses, state: nextState,
+    lastReview: now, due: now + nextInterval * 86400000,
+    interval: nextInterval, lastRating: rating,
+  };
+}
+
+function getCardState(fcHist, cardId) {
+  const v = fcHist[cardId];
+  if (v === undefined || v === null) return null;
+  if (typeof v === 'boolean') return null;
+  return v;
+}
+
+function isCardDue(fcHist, cardId) {
+  const s = getCardState(fcHist, cardId);
+  if (!s) return true;
+  return Date.now() >= s.due;
+}
+
+function previewIntervals(state) {
+  return [1, 2, 3, 4].map(rating => {
+    const next = fsrsNext(state, rating);
+    const d = next.interval;
+    if (d <= 1) return 'today';
+    if (d < 7) return `${d}d`;
+    if (d < 30) return `${Math.round(d / 7)}w`;
+    return `${Math.round(d / 30)}mo`;
+  });
+}
+
+function getRetrievability(fcHist, cardId) {
+  const s = getCardState(fcHist, cardId);
+  if (!s || !s.stability) return null;
+  const elapsedDays = (Date.now() - (s.lastReview || Date.now())) / 86400000;
+  return Math.round(fsrsRetrievability(s.stability, elapsedDays) * 100);
+}
+
 const SEMANTIC_COLORS = {
   definition:  { bg_l:"#f0f9ff", bg_d:"rgba(8,145,178,.1)",  border:"#0891B2", label_l:"#0e7490", label_d:"#67e8f9", icon:"📖" },
   process:     { bg_l:"#ecfdf5", bg_d:"rgba(5,150,105,.1)",  border:"#059669", label_l:"#065f46", label_d:"#6ee7b7", icon:"🔄" },
@@ -278,41 +403,6 @@ const SEMANTIC_COLORS = {
   example:     { bg_l:"#faf5ff", bg_d:"rgba(147,51,234,.1)", border:"#9333EA", label_l:"#7e22ce", label_d:"#d8b4fe", icon:"💡" },
 };
 
-
-function sm2Next(prev, btnQuality) {
-  const q = SM2_QUALITY_MAP[btnQuality] ?? 0;
-  let { ef = 2.5, interval = 0, reps = 0 } = (prev && typeof prev === "object") ? prev : {};
-  if (q < 3) { reps = 0; interval = 1; }
-  else {
-    if (reps === 0) interval = 1;
-    else if (reps === 1) interval = 6;
-    else interval = Math.round(interval * ef);
-    reps += 1;
-  }
-  ef = Math.max(1.3, ef + 0.1 - (5 - q) * (0.08 + (5 - q) * 0.02));
-  const due = Date.now() + interval * 86400000;
-  return { ef, interval, reps, due, lastQ: btnQuality };
-}
-function getCardState(fcHist, cardId) {
-  const v = fcHist[cardId];
-  if (v === undefined || v === null) return null;
-  if (typeof v === "boolean") return { ef: 2.5, interval: v ? 1 : 1, reps: v ? 1 : 0, due: 0, lastQ: v ? 2 : 0 };
-  return v;
-}
-function isCardDue(fcHist, cardId) {
-  const s = getCardState(fcHist, cardId);
-  if (!s) return true;
-  return Date.now() >= s.due;
-}
-function previewIntervals(state) {
-  return [0,1,2,3].map(q => {
-    const n = sm2Next(state, q);
-    if (n.interval <= 1) return "today";
-    if (n.interval < 7) return `${n.interval}d`;
-    if (n.interval < 30) return `${Math.round(n.interval/7)}w`;
-    return `${Math.round(n.interval/30)}mo`;
-  });
-}
 
 function todayStr() { return new Date().toISOString().slice(0,10); }
 function calcStreak(activityDates) {
@@ -1423,6 +1513,46 @@ const mu = D => D?"#8896b3":"#9ca3af";
 const tx = D => D?"#e8ecf4":"#111827";
 const uid = () => (typeof crypto!=="undefined"&&crypto.randomUUID) ? crypto.randomUUID().replace(/-/g,"").slice(0,9) : Math.random().toString(36).slice(2,9);
 const stripHtml = s => (s||"").replace(/<[^>]*>/g,"").trim();
+
+// ── ANALYTICS ────────────────────────────────────────────────────────────────
+// Lightweight event logging to shared storage.
+// Events are bucketed by day. No PII — user key is hashed.
+// Schema: { event, screen, subjectId, sectionId, value, ts }
+
+const _analyticsQueue = [];
+let _analyticsFlushing = false;
+
+async function _flushAnalytics() {
+  if (_analyticsFlushing || !_analyticsQueue.length) return;
+  _analyticsFlushing = true;
+  const batch = _analyticsQueue.splice(0, 20);
+  try {
+    const dayKey = 'gcse:analytics:' + new Date().toISOString().slice(0, 10);
+    let existing = [];
+    try {
+      const r = await window.storage.get(dayKey, true);
+      if (r?.value) existing = JSON.parse(r.value);
+    } catch (_) {}
+    await window.storage.set(dayKey, JSON.stringify([...existing, ...batch]), true);
+  } catch (_) {}
+  _analyticsFlushing = false;
+  if (_analyticsQueue.length) setTimeout(_flushAnalytics, 500);
+}
+
+function trackEvent(event, props = {}) {
+  _analyticsQueue.push({
+    event,
+    ts: Date.now(),
+    screen: props.screen || null,
+    subjectId: props.subjectId || null,
+    sectionId: props.sectionId || null,
+    tab: props.tab || null,
+    value: props.value !== undefined ? props.value : null,
+  });
+  setTimeout(_flushAnalytics, 1000);
+}
+
+
 const GRADES = ["U","1","2","3","4","5","6","7","8","9"];
 const pctToGrade = pct => pct>=90?"9":pct>=80?"8":pct>=70?"7":pct>=60?"6":pct>=50?"5":pct>=40?"4":pct>=30?"3":pct>=20?"2":pct>=10?"1":"U";
 const gradeColor = g => ({9:"#7c3aed",8:"#2563eb",7:"#0891b2",6:"#16a34a",5:"#65a30d",4:"#ca8a04",3:"#d97706",2:"#ea580c",1:"#dc2626",U:"#9ca3af"})[g]||"#9ca3af";
@@ -2518,20 +2648,6 @@ function AdminBar({D, actions}) {
   );
 }
 
-function SM2Dots({cards, fcHist, current}) {
-  return (
-    <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-      {cards.map((c,i)=>{
-        const s=getCardState(fcHist,c.id);
-        let bg="#d1d5db";
-        if(i===current) bg="#6366f1";
-        else if(s){ if(s.lastQ===0) bg="#ef4444"; else if(isCardDue(fcHist,c.id)) bg="#f59e0b"; else bg="#10b981"; }
-        return <div key={c.id} style={{width:7,height:7,borderRadius:"50%",background:bg,transition:"background .3s"}}/>;
-      })}
-    </div>
-  );
-}
-
 function BlurtingScreen({D,subjects,allSections,initSubjId,initSecId,onBack}) {
   const [bSubj,setBSubj] = useState(initSubjId||subjects[0]?.id||"");
   const [bSec, setBSec]  = useState(initSecId||"");
@@ -2547,6 +2663,7 @@ function BlurtingScreen({D,subjects,allSections,initSubjId,initSecId,onBack}) {
   const submit=async()=>{
     if(!canSubmit||busy)return;
     setBusy(true);setErr("");setRes(null);
+    trackEvent('blurt_submitted', { subjectId: bSubj, sectionId: bSec });
     try{setRes(await blurtAnalyse(notesText,blurt));}
     catch(e){setErr("AI analysis unavailable — please try again.");}
     setBusy(false);
@@ -3336,6 +3453,7 @@ function MockExamScreen({D,subjects,allSections,boardSels,boardData,user,onBack,
 
   const doSubmit=async()=>{
     clearInterval(timerRef.current);setPhase("marking");
+    trackEvent('mock_exam_submitted', { subjectId: selSubj, value: answeredCount });
     var fa={...answers};
     // Mark non-parted written questions
     var writtenQs=questions.filter(function(q){return !isParted(q)&&q.type!=="mcq";});
@@ -4196,6 +4314,7 @@ Style: warm, encouraging, clear. Use ## headings and bullet points to organise l
     if((!input.trim()&&!files.length)||sending)return;
     setSending(true);setErr("");
     try{
+    trackEvent('tutor_message_sent', { subjectId: selSubj });
     const userText = input || "Please help me with the uploaded file(s).";
     const newMsg={role:"user",content:userText,_d:{text:userText,files:[...files]}};
     const hist=[...messages,newMsg];
@@ -5909,6 +6028,7 @@ export default function App() {
   const [shuffledCards,setShuffledCards] = useState(null);
   const touchStartRef = useRef(null); // for swipe-to-navigate on flashcards
   const [importOpen,setImportOpen] = useState(false);
+  const [analyticsData,setAnalyticsData] = useState(null);
   const [manageAccountsOpen,setManageAccountsOpen] = useState(false);
   // Personal subjects — private to each user, not shared
   const [personalSubjects,setPersonalSubjects] = useState([]);
@@ -5971,7 +6091,10 @@ export default function App() {
   const curBoard  = subjDef ? (boardSels[subjDef.id]||DEFAULT_BOARD) : DEFAULT_BOARD;
   const curBKey   = subjDef ? `${subjDef.id}:${curBoard}` : null;
   const curBData  = (curBKey&&boardData[curBKey])||{custom:[],extras:{},papers:[]};
-  const curTopics = subjDef ? mergeTopics(subjDef.topics||[], curBData.custom, curBData.extras) : [];
+  const curTopics = React.useMemo(
+    () => subjDef ? mergeTopics(subjDef.topics || [], curBData.custom, curBData.extras) : [],
+    [subjDef?.id, curBData.custom, curBData.extras]
+  );
   const curTopic  = topIdx!=null ? curTopics[topIdx] : null;
   const section   = curTopic ? curTopic.sections.find(s=>s.id===secId) : null;
 
@@ -6134,11 +6257,26 @@ export default function App() {
       setStreakPop(true); setTimeout(()=>setStreakPop(false),400);
       return next;
     });
-    // Always increment count (for heatmap intensity)
     setAC(prev=>({...prev,[today]:(prev[today]||0)+1}));
+    trackEvent('session_active', { screen });
   },[]);
 
   const saveAccounts = async n => { try{await window.storage.set(SK.ACCOUNTS,JSON.stringify(n),true);}catch(_){} };
+
+  const viewAnalytics = async () => {
+    try {
+      const keys = await window.storage.list('gcse:analytics:', true);
+      if (!keys?.keys?.length) { showToast('No analytics data yet.', 'warn'); return; }
+      const recent = keys.keys.slice(-7);
+      const results = await Promise.allSettled(recent.map(k => window.storage.get(k, true)));
+      const allEvents = results
+        .filter(r => r.status === 'fulfilled' && r.value?.value)
+        .flatMap(r => { try { return JSON.parse(r.value.value); } catch(_){ return []; }});
+      const summary = {};
+      allEvents.forEach(e => { summary[e.event] = (summary[e.event] || 0) + 1; });
+      setAnalyticsData({ total: allEvents.length, summary, days: recent.length });
+    } catch(e) { showToast('Analytics error: ' + e.message, 'error'); }
+  };
 
   const saveUserContent = (nextUC) => {
     if(!user) return;
@@ -6179,15 +6317,15 @@ export default function App() {
           if(e.key==="f"||e.key==="F"){e.preventDefault();setFlip(v=>!v);return;}
           if(e.key==="ArrowRight"||e.key==="n"||e.key==="N"){e.preventDefault();setFlip(false);setFcIdx(i=>{const cards=section?.flashcards||[];return cards.length>0?(i<cards.length-1?i+1:0):0;});return;}
           if(e.key==="ArrowLeft"||e.key==="p"||e.key==="P"){e.preventDefault();setFlip(false);setFcIdx(i=>{const cards=section?.flashcards||[];return cards.length>0?(i>0?i-1:cards.length-1):0;});return;}
-          // 1-4 for SM2 rating (only after flip)
+          // 1-4 for FSRS rating (only after flip)
           if(flip&&["1","2","3","4"].includes(e.key)){
             e.preventDefault();
-            const q=[0,1,2,3][parseInt(e.key)-1];
+            const rating=parseInt(e.key); // 1=Again,2=Hard,3=Good,4=Easy
             if(section?.flashcards?.length>0){
               const cardId=section.flashcards[Math.min(fcIdx,section.flashcards.length-1)]?.id;
               if(cardId){
-                setFCH(prevHist=>{const prevState=getCardState(prevHist,cardId);const next=sm2Next(prevState,q);return{...prevHist,[cardId]:next};});
-                const correct=q>=2;
+                setFCH(prevHist=>{const prevState=getCardState(prevHist,cardId);const next=fsrsNext(prevState,rating);return{...prevHist,[cardId]:next};});
+                const correct=rating>=3;
                 setStats(s=>{const wfc={...s.weakFC};wfc[secId]={wrong:(wfc[secId]?.wrong||0)+(correct?0:1),total:(wfc[secId]?.total||0)+1};const ss={...s.subjStats};const si=subIdx;const sId=si!=null?subjects[si]?.id:null;if(sId)ss[sId]={...ss[sId],fcC:(ss[sId]?.fcC||0)+(correct?1:0),fcT:(ss[sId]?.fcT||0)+1};return{...s,fcC:s.fcC+(correct?1:0),fcT:s.fcT+1,weakFC:wfc,subjStats:ss};});
                 markTodayActive();setFlip(false);setFcIdx(i=>{const cards=section.flashcards||[];return i<cards.length-1?i+1:0;});
               }
@@ -6300,6 +6438,7 @@ export default function App() {
     setShowSubjectSelection(false);
     if(selIds === null) return; // user cancelled edit
     setSelectedSubjectIds(selIds);
+    trackEvent('subjects_selected', { value: selIds?.length });
     // Merge boardMap into boardSels (per-subject board)
     if(boardMap && Object.keys(boardMap).length > 0){
       setBoardSels(prev => ({...prev,...boardMap}));
@@ -6339,6 +6478,7 @@ export default function App() {
       setFcIdx(0); setFlip(false); setQIdx(0); setQRes(null); setSelOpt(null); setTA("");
       setSubjTab("sections");
       setScreen("section");
+      trackEvent('screen_view',{screen:'section'});
     });
   },[subjects,boardSels,boardData,ensureBoardLoaded]);
 
@@ -6510,7 +6650,7 @@ export default function App() {
 
   const bg=D?"#0f1117":"#f9fafb", bd2=D?"#2a3347":"#e5e7eb";
   const _goEl=<GlobalOverlays D={D} online={online} shortcutModal={shortcutModal} setShortcutModal={setShortcutModal} searchOpen={searchOpen} setSearchOpen={setSearchOpen} onboarding={onboarding} handleOnboardingComplete={handleOnboardingComplete} subjects={subjects} allSections={allSections} boardData={boardData} boardSels={boardSels} handleSearchNavigate={handleSearchNavigate} screen={screen} onHome={()=>setScreen("home")} onMock={()=>setScreen("mock")} onTutor={()=>{setTutorSubjId(null);setScreen("tutor");}} onTimetable={()=>setScreen("timetable")} onDash={()=>setScreen("dashboard")} onLeaderboards={()=>setScreen("friends")} streak={streak}/>;
-const hProps={user,userDisplayName,D,onDark:()=>setD(!D),onHome:()=>setScreen("home"),onDash:()=>setScreen("dashboard"),onTarget:()=>{setTTSubj(null);setScreen("target")},onTimetable:()=>setScreen("timetable"),onBlurt:()=>{setBlurtSubjId(null);setBlurtSecId2(null);setScreen("blurting");},onMock:()=>setScreen("mock"),onTutor:()=>{setTutorSubjId(null);setScreen("tutor");},onCoach:()=>setScreen("coach"),onLeaderboards:()=>setScreen("friends"),onAccount:()=>setScreen("account"),streak,onSearch:()=>setSearchOpen(true),globalOverlays:_goEl,screen};
+const hProps={user,userDisplayName,D,onDark:()=>setD(!D),onHome:()=>setScreen("home"),onDash:()=>{setScreen("dashboard");trackEvent('screen_view',{screen:'dashboard'});},onTarget:()=>{setTTSubj(null);setScreen("target");trackEvent('screen_view',{screen:'target'});},onTimetable:()=>setScreen("timetable"),onBlurt:()=>{setBlurtSubjId(null);setBlurtSecId2(null);setScreen("blurting");trackEvent('screen_view',{screen:'blurting'});},onMock:()=>{setScreen("mock");trackEvent('screen_view',{screen:'mock'});},onTutor:()=>{setTutorSubjId(null);setScreen("tutor");trackEvent('screen_view',{screen:'tutor'});},onCoach:()=>setScreen("coach"),onLeaderboards:()=>setScreen("friends"),onAccount:()=>setScreen("account"),streak,onSearch:()=>setSearchOpen(true),globalOverlays:_goEl,screen};
 const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=>!s._politics)[0]?.id||null}); };
 
   // Personal subject routing — handled before the main screen router
@@ -6807,6 +6947,7 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
           <div style={{padding:"10px 16px",display:"flex",gap:8,flexWrap:"wrap"}}>
             <button onClick={()=>setImportOpen(true)} style={{fontSize:12,padding:"6px 14px",borderRadius:7,border:"1.5px solid #6366f1",background:"#6366f1",color:"#fff",fontWeight:600,cursor:"pointer"}}>📥 Import Data</button>
             <button onClick={()=>setManageAccountsOpen(true)} style={{fontSize:12,padding:"6px 14px",borderRadius:7,border:"1.5px solid #6366f1",background:"transparent",color:"#6366f1",fontWeight:600,cursor:"pointer"}}>👥 Manage Accounts</button>
+            <button onClick={viewAnalytics} style={{fontSize:12,padding:"6px 14px",borderRadius:7,border:"1.5px solid #6366f1",background:"transparent",color:"#6366f1",fontWeight:600,cursor:"pointer"}}>📊 View Analytics</button>
           </div>
         </div>}
         {importOpen&&<ImportModal D={D} subjects={subjects} onClose={()=>setImportOpen(false)} onDone={()=>{ensureAllBoardsLoaded(boardSels);}}/>}
@@ -7141,18 +7282,18 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
     const curState = fc ? getCardState(fcHist,fc.id) : null;
     const previews = fc ? previewIntervals(curState) : ["today","today","6d","1w"];
 
-    const doSM2 = (btnQuality) => {
+    const doSM2 = (rating) => {
       if(!fc)return;
       const cardId = fc.id;
       markTodayActive();
       if(!cramMode){
         setFCH(prevHist => {
           const prevState = getCardState(prevHist, cardId);
-          const next = sm2Next(prevState, btnQuality);
+          const next = fsrsNext(prevState, rating);
           return {...prevHist, [cardId]: next};
         });
       }
-      const correct=btnQuality>=2;
+      const correct=rating>=3;
       setStats(s=>{
         const wfc={...s.weakFC};
         wfc[section.id]={wrong:(wfc[section.id]?.wrong||0)+(correct?0:1),total:(wfc[section.id]?.total||0)+1};
@@ -7161,7 +7302,6 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
         return{...s,fcC:s.fcC+(correct?1:0),fcT:s.fcT+1,weakFC:wfc,subjStats:ss};
       });
       setFlip(false);
-      // Use current cards length for safe index advance (fix #6 #12)
       setFcIdx(i=>{ const len=section.flashcards?.length||0; return len>0?(i<len-1?i+1:0):0; });
     };
 
@@ -7265,14 +7405,14 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
               else     setFcIdx(i=>i>0?i-1:activeCards.length-1);
             };
 
-            const doSM2local=(btnQ)=>{
+            const doSM2local=(rating)=>{
               if(!fc2)return;
               const cardId=fc2.id;
               markTodayActive();
               if(!cramMode){
-                setFCH(prevH=>{const ps=getCardState(prevH,cardId);return{...prevH,[cardId]:sm2Next(ps,btnQ)};});
+                setFCH(prevH=>{const ps=getCardState(prevH,cardId);return{...prevH,[cardId]:fsrsNext(ps,rating)};});
               }
-              const correct=btnQ>=2;
+              const correct=rating>=3;
               setStats(s=>{
                 const wfc={...s.weakFC};
                 wfc[section.id]={wrong:(wfc[section.id]?.wrong||0)+(correct?0:1),total:(wfc[section.id]?.total||0)+1};
@@ -7280,6 +7420,7 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                 ss[subj.id]={...ss[subj.id],fcC:(ss[subj.id]?.fcC||0)+(correct?1:0),fcT:(ss[subj.id]?.fcT||0)+1};
                 return{...s,fcC:s.fcC+(correct?1:0),fcT:s.fcT+1,weakFC:wfc,subjStats:ss};
               });
+              trackEvent('card_rated', { sectionId: section?.id, subjectId: subjDef?.id, value: rating });
               setFlip(false);setFcConf(null);setFcHintLvl(0);setFcSelfExp("");setFcSelfOpen(false);
               setFcIdx(i=>{const len=activeCards.length;return len>0?(i<len-1?i+1:0):0;});
             };
@@ -7289,7 +7430,7 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
               {v:2,label:"Maybe",  icon:"🤔",color:"#f59e0b",tip:"I kind of knew it"},
               {v:3,label:"Got it", icon:"😊",color:"#10b981",tip:"I know this well"},
             ];
-            const SM2B=[{label:"Again",color:"#ef4444",q:0},{label:"Hard",color:"#f59e0b",q:1},{label:"Good",color:"#3b82f6",q:2},{label:"Easy",color:"#10b981",q:3}];
+            const SM2B=[{label:"Again",color:"#ef4444",rating:1},{label:"Hard",color:"#f59e0b",rating:2},{label:"Good",color:"#3b82f6",rating:3},{label:"Easy",color:"#10b981",rating:4}];
 
             return (
             <div className="fade-in">
@@ -7298,13 +7439,13 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
               {fc2&&<>
                 {/* Status bar */}
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 14px",borderRadius:10,background:D?"#1e2537":"#f3f4f6",marginBottom:8}}>
-                  <span style={{fontSize:12,color:mu(D)}}><strong style={{color:cramMode?"#6366f1":dueCards2.length>0?"#f59e0b":tx(D)}}>{cramMode?"CRAM":dueCards2.length}</strong>{cramMode?" mode":" due"} · {activeCards.filter(c=>{const s=getCardState(fcHist,c.id);return s&&!isCardDue(fcHist,c.id)&&s.lastQ>=2;}).length} scheduled</span>
+                  <span style={{fontSize:12,color:mu(D)}}><strong style={{color:cramMode?"#6366f1":dueCards2.length>0?"#f59e0b":tx(D)}}>{cramMode?"CRAM":dueCards2.length}</strong>{cramMode?" mode":" due"} · {activeCards.filter(c=>{const s=getCardState(fcHist,c.id);return s&&!isCardDue(fcHist,c.id);}).length} scheduled</span>
                   <div style={{display:"flex",alignItems:"center",gap:6}}>
                     <button onClick={()=>{if(shuffled){setShuffled(null);setFcIdx(0);setFlip(false);setFcConf(null);showToast("Shuffle off");}else{const arr=[...cards].sort(()=>Math.random()-.5);setShuffled(arr);setFcIdx(0);setFlip(false);setFcConf(null);showToast("🔀 Shuffled!");}}}
                       style={{fontSize:10,padding:"3px 9px",borderRadius:8,border:`1.5px solid ${shuffled?"#f59e0b":"#d1d5db"}`,background:shuffled?"#f59e0b":"transparent",color:shuffled?"#fff":mu(D),cursor:"pointer",fontWeight:shuffled?700:400}}>🔀</button>
                     <button onClick={()=>{setCramMode(v=>!v);setFcIdx(0);setFlip(false);setFcConf(null);}}
                       style={{fontSize:10,padding:"3px 9px",borderRadius:8,border:`1.5px solid ${cramMode?"#6366f1":"#d1d5db"}`,background:cramMode?"#6366f1":"transparent",color:cramMode?"#fff":mu(D),cursor:"pointer",fontWeight:cramMode?700:400}}>🔥 Cram</button>
-                    <span style={{fontSize:11,color:mu(D)}}>SM-2</span>
+                    <span style={{fontSize:11,color:mu(D)}}>FSRS</span>
                     <SRInfoTooltip D={D}/>
                   </div>
                 </div>
@@ -7313,7 +7454,7 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
 
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,marginTop:10}}>
                   <span style={{fontSize:13,color:mu(D)}}>{safeFI+1} / {activeCards.length}{shuffled?" 🔀":""}</span>
-                  <SM2Dots cards={activeCards} fcHist={fcHist} current={safeFI}/>
+
                   <span style={{fontSize:12,color:mu(D)}}>{cramMode?"cram":curState2?(curState2.reps>0?`${curState2.interval}d`:"new"):"new"}</span>
                 </div>
 
@@ -7323,7 +7464,7 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                     background:cardType2.color+"22",color:cardType2.color}}>
                     {cardType2.icon} {cardType2.label}
                   </span>
-                  {curState2&&<span style={{fontSize:10,color:mu(D),background:D?"#1e2537":"#f3f4f6",padding:"3px 8px",borderRadius:10}}>EF {curState2.ef?.toFixed(1)} · reps {curState2.reps||0}</span>}
+                  {curState2&&<span style={{fontSize:10,color:mu(D),background:D?"#1e2537":"#f3f4f6",padding:"3px 8px",borderRadius:10}}>{`Stability: ${curState2.stability?.toFixed(1)}d · ${getRetrievability(fcHist,fc2.id)??'—'}% recall`}</span>}
                 </div>
 
                 {admin&&fc2&&isAdminItem("flashcards",fc2)&&(
@@ -7458,19 +7599,19 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                     <p style={{fontSize:11,color:mu(D),textAlign:"center",marginBottom:8}}>How well did you know this?</p>
                     <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8}}>
                       {SM2B.map(btn=>(
-                        <button key={btn.q} onClick={()=>doSM2local(btn.q)} aria-label={btn.label}
+                        <button key={btn.rating} onClick={()=>doSM2local(btn.rating)} aria-label={btn.label}
                           style={{padding:"12px 4px",borderRadius:12,border:`2px solid ${btn.color}`,
                             background:"transparent",cursor:"pointer",transition:"all .12s",color:btn.color,
                             minHeight:window.innerWidth<640?52:44}}
                           onMouseEnter={e=>{e.currentTarget.style.background=btn.color;e.currentTarget.style.color="#fff";}}
                           onMouseLeave={e=>{e.currentTarget.style.background="transparent";e.currentTarget.style.color=btn.color;}}>
                           <div style={{fontWeight:700,fontSize:13}}>{btn.label}</div>
-                          {!cramMode&&<div style={{fontSize:10,marginTop:2,opacity:0.8}}>{previews2[btn.q]}</div>}
+                          {!cramMode&&<div style={{fontSize:10,marginTop:2,opacity:0.8}}>{previews2[btn.rating-1]}</div>}
                         </button>
                       ))}
                     </div>
                     {!cramMode&&<p style={{fontSize:10,color:mu(D),textAlign:"center",marginTop:6}}>Again→{previews2[0]} · Hard→{previews2[1]} · Good→{previews2[2]} · Easy→{previews2[3]}</p>}
-                    {cramMode&&<p style={{fontSize:10,color:"#6366f1",textAlign:"center",marginTop:6}}>🔥 Cram mode — SM-2 scheduling paused</p>}
+                    {cramMode&&<p style={{fontSize:10,color:"#6366f1",textAlign:"center",marginTop:6}}>🔥 Cram mode — FSRS scheduling paused</p>}
                     </div>
                   </div>
                 )}
@@ -7663,7 +7804,7 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
 
                       {!qRes&&(
                         <button onClick={async()=>{
-                          if(!textAns.trim())return; setMark(true); markTodayActive();
+                          if(!textAns.trim())return; setMark(true); markTodayActive(); trackEvent('question_submitted', { sectionId: section?.id, subjectId: subjDef?.id, tab: 'questions' });
                           try{
                             const r=await markAnswer(q,textAns);
                             const pct=q.marks>0?r.score/q.marks:0;
@@ -8241,6 +8382,28 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
     );
   }
 
+      {analyticsData&&(
+        <div onClick={()=>setAnalyticsData(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:9500,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+          <div onClick={e=>e.stopPropagation()} style={{background:D?"#1e2537":"#fff",borderRadius:16,width:480,maxWidth:"96vw",maxHeight:"80vh",display:"flex",flexDirection:"column",boxShadow:"0 30px 80px rgba(0,0,0,.3)"}}>
+            <div style={{padding:"18px 22px",borderBottom:"1px solid "+(D?"#374151":"#e5e7eb"),display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <h2 style={{fontSize:17,fontWeight:700,margin:0,color:tx(D)}}>📊 Analytics — Last {analyticsData.days} day{analyticsData.days!==1?"s":""}</h2>
+              <button onClick={()=>setAnalyticsData(null)} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",color:mu(D)}}>✕</button>
+            </div>
+            <div style={{padding:"16px 22px",flex:1,overflowY:"auto"}}>
+              <p style={{fontSize:13,color:mu(D),marginBottom:14}}>{analyticsData.total} total events</p>
+              {Object.entries(analyticsData.summary).sort((a,b)=>b[1]-a[1]).map(([event,count])=>(
+                <div key={event} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 12px",borderRadius:8,background:D?"#161b27":"#f9fafb",marginBottom:6}}>
+                  <span style={{fontSize:13,fontFamily:"monospace",color:tx(D)}}>{event}</span>
+                  <span style={{fontSize:13,fontWeight:700,color:"#6366f1"}}>{count}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{padding:"12px 22px",borderTop:"1px solid "+(D?"#374151":"#e5e7eb")}}>
+              <button onClick={()=>setAnalyticsData(null)} style={{width:"100%",padding:"9px 0",borderRadius:10,border:"1px solid "+(D?"#374151":"#e5e7eb"),background:"transparent",color:mu(D),cursor:"pointer",fontSize:13}}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
   return (<>
     <MobileBottomNav
       screen={screen}
