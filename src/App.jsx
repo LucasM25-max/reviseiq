@@ -67,6 +67,8 @@ textarea,input,select{font-family:'IBM Plex Sans',sans-serif!important}
 .ao-badge{display:inline-flex;align-items:center;border-radius:20px;padding:2px 9px;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
 /* image lightbox overlay */
 .img-lb{position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:zoom-out;padding:20px}
+@keyframes diagramPulse{0%{transform:scale(1)}50%{transform:scale(1.18)}100%{transform:scale(1)}}
+.diagram-pulse{animation:diagramPulse .3s ease}
 `;
 document.head.appendChild(_gs);
 
@@ -279,6 +281,371 @@ const FSRS_PARAMS = {
   requestRetention: 0.90,
   maximumInterval: 36500,
 };
+
+// ── SVG DIAGRAM TEMPLATES ────────────────────────────────────────────────────
+
+function useAttentionLayer() {
+  const [activeId, setActiveId] = React.useState(null);
+  const [pulsing, setPulsing] = React.useState(null);
+  const props = (id) => ({
+    onMouseEnter: () => { setActiveId(id); setPulsing(id); setTimeout(()=>setPulsing(null),300); },
+    onMouseLeave: () => setActiveId(null),
+    onClick: () => { setActiveId(v=>v===id?null:id); setPulsing(id); setTimeout(()=>setPulsing(null),300); },
+    style: { opacity: activeId===null||activeId===id?1:0.45, transition:"opacity .18s ease", cursor:"pointer" },
+  });
+  const isActive = (id) => activeId === id;
+  const isPulsing = (id) => pulsing === id;
+  return { activeId, props, isActive, isPulsing };
+}
+
+function ProcessFlowDiagram({ steps=[], accent="#059669", D=false, width=600 }) {
+  const { props: attn, isActive, isPulsing } = useAttentionLayer();
+  const stepW=110, stepH=54, arrowW=28, gap=arrowW;
+  const perRow=Math.max(1,Math.floor((width)/(stepW+gap)));
+  const rows=[];
+  for(let i=0;i<steps.length;i+=perRow) rows.push(steps.slice(i,i+perRow));
+  const svgH=rows.length*(stepH+40)+20;
+  const bg=D?"#161b27":"#fff";
+  const textCol=D?"#e8ecf4":"#111827";
+  const subCol=D?"#8896b3":"#6b7280";
+  return (
+    <svg viewBox={`0 0 ${width} ${svgH}`} width="100%" style={{display:"block",maxWidth:width}}
+      xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Process flow diagram">
+      <rect width={width} height={svgH} fill={bg} rx="8"/>
+      <defs>
+        <marker id="arrow-proc" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill={accent}/>
+        </marker>
+      </defs>
+      {rows.map((row,ri)=>{
+        const rowY=ri*(stepH+40)+20;
+        const reversed=ri%2===1;
+        const displayRow=reversed?[...row].reverse():row;
+        const totalRowW=displayRow.length*stepW+(displayRow.length-1)*gap;
+        const startX=(width-totalRowW)/2;
+        return (
+          <g key={ri}>
+            {displayRow.map((step,si)=>{
+              const x=startX+si*(stepW+gap);
+              const stepAccent=step.color||accent;
+              const sid=step.id||String(ri*100+si);
+              const active=isActive(sid);
+              const pulse=isPulsing(sid);
+              return (
+                <g key={sid} {...attn(sid)}>
+                  <rect x={x} y={rowY} width={stepW} height={stepH} rx="8"
+                    fill={active?(stepAccent+"55"):(stepAccent+(D?"22":"18"))}
+                    stroke={stepAccent} strokeWidth="1.5"
+                    style={{transform:pulse?"scale(1.04)":"scale(1)",transition:"transform .15s ease",transformOrigin:`${x+stepW/2}px ${rowY+stepH/2}px`}}/>
+                  <text x={x+stepW/2} y={rowY+(step.sublabel?stepH/2-4:stepH/2+5)}
+                    textAnchor="middle" fontSize="11" fontWeight="600" fill={textCol}
+                    fontFamily="Arial,sans-serif" style={{userSelect:"none"}}>{step.label}</text>
+                  {step.sublabel&&<text x={x+stepW/2} y={rowY+stepH/2+12}
+                    textAnchor="middle" fontSize="9" fill={subCol}
+                    fontFamily="Arial,sans-serif" style={{userSelect:"none"}}>{step.sublabel}</text>}
+                  {si<displayRow.length-1&&<line x1={x+stepW+2} y1={rowY+stepH/2}
+                    x2={x+stepW+gap-2} y2={rowY+stepH/2}
+                    stroke={accent} strokeWidth="1.5" markerEnd="url(#arrow-proc)"/>}
+                </g>
+              );
+            })}
+            {ri<rows.length-1&&<line
+              x1={reversed?startX+stepW/2:startX+(row.length-1)*(stepW+gap)+stepW/2} y1={rowY+stepH}
+              x2={reversed?startX+stepW/2:startX+(row.length-1)*(stepW+gap)+stepW/2} y2={rowY+stepH+30}
+              stroke={accent} strokeWidth="1.5" markerEnd="url(#arrow-proc)"/>}
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+function CycleDiagram({ steps=[], accent="#059669", D=false, size=320 }) {
+  const { props: attn, isActive, isPulsing } = useAttentionLayer();
+  const cx=size/2, cy=size/2, r=size*0.33, nodeR=size*0.095, n=steps.length;
+  const bg=D?"#161b27":"#fff";
+  const textCol=D?"#e8ecf4":"#111827";
+  const subCol=D?"#8896b3":"#6b7280";
+  const positions=steps.map((_,i)=>{
+    const angle=(2*Math.PI*i/n)-Math.PI/2;
+    return {x:cx+r*Math.cos(angle),y:cy+r*Math.sin(angle),angle};
+  });
+  return (
+    <svg viewBox={`0 0 ${size} ${size}`} width="100%" style={{display:"block",maxWidth:size}}
+      xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Cycle diagram">
+      <rect width={size} height={size} fill={bg} rx="8"/>
+      <defs>
+        <marker id="arrow-cyc" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto">
+          <polygon points="0 0, 7 2.5, 0 5" fill={accent}/>
+        </marker>
+      </defs>
+      {positions.map((pos,i)=>{
+        const next=positions[(i+1)%n];
+        const stepAccent=steps[i].color||accent;
+        const sid=steps[i].id||String(i);
+        const active=isActive(sid);
+        const pulse=isPulsing(sid);
+        const dx=next.x-pos.x, dy=next.y-pos.y;
+        const dist=Math.sqrt(dx*dx+dy*dy);
+        const ux=dx/dist, uy=dy/dist;
+        const x1=pos.x+ux*(nodeR+2), y1=pos.y+uy*(nodeR+2);
+        const x2=next.x-ux*(nodeR+8), y2=next.y-uy*(nodeR+8);
+        const midX=(x1+x2)/2-uy*18, midY=(y1+y2)/2+ux*18;
+        return (
+          <g key={sid}>
+            <path d={`M ${x1} ${y1} Q ${midX} ${midY} ${x2} ${y2}`}
+              fill="none" stroke={accent} strokeWidth="1.5" markerEnd="url(#arrow-cyc)"/>
+            <g {...attn(sid)}>
+              <circle cx={pos.x} cy={pos.y} r={active?nodeR*1.12:nodeR}
+                fill={stepAccent+(D?"28":"20")} stroke={stepAccent} strokeWidth="1.5"
+                style={{transition:"r .15s ease"}}/>
+              <text x={pos.x} y={pos.y+(steps[i].sublabel?-3:4)}
+                textAnchor="middle" fontSize="9" fontWeight="600" fill={textCol}
+                fontFamily="Arial,sans-serif" style={{userSelect:"none"}}>{steps[i].label}</text>
+              {steps[i].sublabel&&<text x={pos.x} y={pos.y+11}
+                textAnchor="middle" fontSize="8" fill={subCol}
+                fontFamily="Arial,sans-serif" style={{userSelect:"none"}}>{steps[i].sublabel}</text>}
+            </g>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+function HierarchyTree({ root=null, accent="#0891B2", D=false, width=560 }) {
+  const { props: attn, isActive } = useAttentionLayer();
+  if(!root) return null;
+  const bg=D?"#161b27":"#fff";
+  const textCol=D?"#e8ecf4":"#111827";
+  const nodeW=100, nodeH=36, levelGap=60;
+  function countLeaves(node){if(!node.children||!node.children.length)return 1;return node.children.reduce((s,c)=>s+countLeaves(c),0);}
+  function buildLayout(node,depth,xOffset){
+    const leaves=countLeaves(node);
+    const nodeX=xOffset+(leaves*nodeW+(leaves-1)*12)/2-nodeW/2;
+    const nodeY=depth*(nodeH+levelGap)+20;
+    const result=[{node,x:nodeX,y:nodeY,depth}];
+    if(node.children){let childX=xOffset;node.children.forEach(child=>{const childLeaves=countLeaves(child);result.push(...buildLayout(child,depth+1,childX));childX+=childLeaves*nodeW+(childLeaves-1)*12+16;});}
+    return result;
+  }
+  const allNodes=buildLayout(root,0,0);
+  const maxX=Math.max(...allNodes.map(n=>n.x+nodeW));
+  const svgH=(Math.max(...allNodes.map(n=>n.depth))+1)*(nodeH+levelGap)+40;
+  const scale=maxX>width-20?(width-20)/maxX:1;
+  return (
+    <svg viewBox={`0 0 ${width} ${svgH*scale}`} width="100%" style={{display:"block",maxWidth:width}}
+      xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Hierarchy diagram">
+      <rect width={width} height={svgH*scale} fill={bg} rx="8"/>
+      <defs>
+        <filter id="node-shadow"><feDropShadow dx="0" dy="2" stdDeviation="3" floodOpacity="0.2"/></filter>
+      </defs>
+      <g transform={`scale(${scale})`}>
+        {allNodes.map(({node,x,y,depth},i)=>{
+          const nodeAccent=node.color||accent;
+          const sid=node.label+String(i);
+          const active=isActive(sid);
+          const parentNode=allNodes.find(p=>p.node.children&&p.node.children.includes(node)&&p.depth===depth-1);
+          return (
+            <g key={i}>
+              {parentNode&&<line x1={parentNode.x+nodeW/2} y1={parentNode.y+nodeH} x2={x+nodeW/2} y2={y}
+                stroke={nodeAccent} strokeWidth="1.2" strokeDasharray={depth>1?"4,2":""} opacity="0.7"/>}
+              <g {...attn(sid)}>
+                <rect x={x} y={y} width={nodeW} height={nodeH} rx="6"
+                  fill={active?(nodeAccent+"44"):(nodeAccent+(D?"22":"18"))}
+                  stroke={nodeAccent} strokeWidth="1.5"
+                  filter={active?"url(#node-shadow)":undefined}/>
+                <text x={x+nodeW/2} y={y+nodeH/2+4}
+                  textAnchor="middle" fontSize="10" fontWeight="600" fill={textCol}
+                  fontFamily="Arial,sans-serif" style={{userSelect:"none"}}>{node.label}</text>
+              </g>
+            </g>
+          );
+        })}
+      </g>
+    </svg>
+  );
+}
+
+function ComparisonGrid({ rows=[], columns=[], data={}, accent="#7C3AED", D=false }) {
+  const cellW=90, cellH=38, labelW=120, headerH=42;
+  const gridW=labelW+columns.length*cellW+2;
+  const gridH=headerH+rows.length*cellH+2;
+  const bg=D?"#161b27":"#fff";
+  const hdrBg=D?accent+"33":accent+"18";
+  const textCol=D?"#e8ecf4":"#111827";
+  const subCol=D?"#8896b3":"#6b7280";
+  const borderCol=D?"#2a3347":"#e2e8f0";
+  return (
+    <svg viewBox={`0 0 ${gridW} ${gridH}`} width="100%" style={{display:"block",maxWidth:gridW}}
+      xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Comparison grid">
+      <rect width={gridW} height={gridH} fill={bg} rx="8" stroke={borderCol} strokeWidth="1"/>
+      <rect x={0} y={0} width={labelW} height={headerH} fill={hdrBg}/>
+      {columns.map((col,ci)=>(
+        <g key={col.id}>
+          <rect x={labelW+ci*cellW} y={0} width={cellW} height={headerH} fill={hdrBg}/>
+          <line x1={labelW+ci*cellW} y1={0} x2={labelW+ci*cellW} y2={gridH} stroke={borderCol} strokeWidth="1"/>
+          <text x={labelW+ci*cellW+cellW/2} y={headerH/2+4}
+            textAnchor="middle" fontSize="10" fontWeight="700" fill={textCol}
+            fontFamily="Arial,sans-serif" style={{userSelect:"none"}}>{col.label}</text>
+        </g>
+      ))}
+      {rows.map((row,ri)=>{
+        const y=headerH+ri*cellH;
+        return (
+          <g key={row.id}>
+            <line x1={0} y1={y} x2={gridW} y2={y} stroke={borderCol} strokeWidth="1"/>
+            <rect x={0} y={y} width={labelW} height={cellH} fill={ri%2===0?bg:(D?"rgba(255,255,255,.02)":"rgba(0,0,0,.015)")}/>
+            <text x={8} y={y+cellH/2+4} fontSize="10" fontWeight="600" fill={textCol}
+              fontFamily="Arial,sans-serif" style={{userSelect:"none"}}>{row.label}</text>
+            {columns.map((col,ci)=>{
+              const val=data[`${row.id}:${col.id}`];
+              let symbol="—", symCol=subCol;
+              if(val===true||val==="yes"){symbol="✓";symCol="#059669";}
+              else if(val===false||val==="no"){symbol="✗";symCol="#DC2626";}
+              else if(val==="partial"){symbol="◑";symCol="#D97706";}
+              else if(typeof val==="string"&&val){symbol=val;symCol=textCol;}
+              return (
+                <g key={col.id}>
+                  <rect x={labelW+ci*cellW} y={y} width={cellW} height={cellH} fill={ri%2===0?bg:(D?"rgba(255,255,255,.02)":"rgba(0,0,0,.015)")}/>
+                  <text x={labelW+ci*cellW+cellW/2} y={y+cellH/2+4}
+                    textAnchor="middle" fontSize={typeof val==="string"&&val.length>2?"9":"12"}
+                    fontWeight="600" fill={symCol}
+                    fontFamily="Arial,sans-serif" style={{userSelect:"none"}}>{symbol}</text>
+                </g>
+              );
+            })}
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+function LabelledStructure({ imageUrl=null, labels=[], accent="#0891B2", D=false, width=520, selfTestMode=false, onAllCorrect=null }) {
+  const [revealed, setRevealed] = React.useState({});
+  const [inputs, setInputs] = React.useState({});
+  const [hoveredId, setHoveredId] = React.useState(null);
+  const imgH=width*0.65;
+  const handleInput=(id,value)=>{
+    const next={...inputs,[id]:value};
+    setInputs(next);
+    const correct=labels.find(l=>l.id===id);
+    if(correct&&value.trim().toLowerCase()===correct.label.toLowerCase())
+      setRevealed(r=>({...r,[id]:true}));
+    if(onAllCorrect&&labels.every(l=>next[l.id]?.trim().toLowerCase()===l.label.toLowerCase()))
+      onAllCorrect();
+  };
+  if(!imageUrl&&!labels.length) return null;
+  return (
+    <div style={{position:"relative",width:"100%",maxWidth:width,userSelect:"none"}}>
+      {imageUrl
+        ?<img src={imageUrl} alt="diagram" style={{width:"100%",display:"block",borderRadius:8,border:`1px solid ${D?"#2a3347":"#e5e7eb"}`}}/>
+        :<div style={{width:"100%",height:imgH,borderRadius:8,background:D?"#1e2537":"#f3f4f6",border:`1.5px dashed ${D?"#374151":"#d1d5db"}`,display:"flex",alignItems:"center",justifyContent:"center"}}>
+          <span style={{fontSize:12,color:D?"#8896b3":"#9ca3af"}}>Diagram placeholder</span>
+        </div>
+      }
+      {labels.map(label=>{
+        const isHovered=hoveredId===label.id;
+        const isCorrect=revealed[label.id];
+        const labelAccent=isCorrect?"#059669":(isHovered?accent:(D?"#8896b3":"#6b7280"));
+        return (
+          <div key={label.id}
+            style={{position:"absolute",left:`${label.x}%`,top:`${label.y}%`,transform:"translate(-50%,-50%)",zIndex:10}}
+            onMouseEnter={()=>setHoveredId(label.id)}
+            onMouseLeave={()=>setHoveredId(null)}>
+            {selfTestMode&&!isCorrect
+              ?<input value={inputs[label.id]||""} onChange={e=>handleInput(label.id,e.target.value)}
+                  placeholder="?" style={{width:80,fontSize:10,fontWeight:700,textAlign:"center",padding:"2px 4px",borderRadius:4,border:`1.5px solid ${labelAccent}`,background:D?"#161b27":"#fff",color:D?"#e8ecf4":"#111827",outline:"none"}}/>
+              :<div style={{background:isCorrect?"#059669":(isHovered?accent:(D?accent+"44":accent+"22")),
+                  color:isCorrect||isHovered?"#fff":(D?"#e8ecf4":"#111827"),
+                  border:`1.5px solid ${labelAccent}`,borderRadius:4,padding:"2px 8px",fontSize:10,fontWeight:700,
+                  whiteSpace:"nowrap",boxShadow:isHovered?"0 2px 8px rgba(0,0,0,.25)":"none",
+                  transition:"all .15s",cursor:"default",
+                  transform:isHovered?"scale(1.4)":"scale(1)",
+                  opacity:selfTestMode&&!isCorrect?0:1}}>{label.label}</div>
+            }
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function TimelineDiagram({ events=[], accent="#D97706", D=false, width=580 }) {
+  const { props: attn, isActive, isPulsing } = useAttentionLayer();
+  if(!events.length) return null;
+  const bg=D?"#161b27":"#fff";
+  const textCol=D?"#e8ecf4":"#111827";
+  const subCol=D?"#8896b3":"#6b7280";
+  const lineY=80, svgH=170, padX=28;
+  const lineX1=padX, lineX2=width-padX, lineLen=lineX2-lineX1, n=events.length;
+  return (
+    <svg viewBox={`0 0 ${width} ${svgH}`} width="100%"
+      style={{display:"block",maxWidth:width,overflow:"visible"}}
+      xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Timeline diagram">
+      <rect width={width} height={svgH} fill={bg} rx="8"/>
+      <line x1={lineX1} y1={lineY} x2={lineX2} y2={lineY} stroke={accent} strokeWidth="2" opacity="0.4"/>
+      <polygon points={`${lineX2},${lineY-5} ${lineX2+10},${lineY} ${lineX2},${lineY+5}`} fill={accent} opacity="0.6"/>
+      {events.map((ev,i)=>{
+        const x=lineX1+(i/Math.max(n-1,1))*lineLen;
+        const above=i%2===0;
+        const evAccent=ev.color||accent;
+        const dotR=ev.important?7:5;
+        const sid=ev.id||String(i);
+        const active=isActive(sid);
+        const pulse=isPulsing(sid);
+        return (
+          <g key={sid} {...attn(sid)}>
+            <line x1={x} y1={lineY-dotR} x2={x} y2={above?lineY-dotR-32:lineY+dotR+32}
+              stroke={evAccent} strokeWidth="1.2" opacity="0.6"/>
+            <circle cx={x} cy={lineY} r={active?dotR*1.3:dotR}
+              fill={evAccent+(D?"cc":"dd")} stroke={evAccent} strokeWidth={ev.important?2:1}
+              style={{transition:"r .15s ease"}}/>
+            <text x={x} y={above?lineY-dotR-38:lineY+dotR+46}
+              textAnchor="middle" fontSize="9" fontWeight="700" fill={textCol}
+              fontFamily="Arial,sans-serif" style={{userSelect:"none"}}>{ev.label}</text>
+            {ev.date&&<text x={x} y={above?lineY-dotR-26:lineY+dotR+34}
+              textAnchor="middle" fontSize="8" fill={evAccent}
+              fontFamily="Arial,sans-serif" style={{userSelect:"none"}}>{ev.date}</text>}
+            {ev.sublabel&&<text x={x} y={above?lineY-dotR-14:lineY+dotR+22}
+              textAnchor="middle" fontSize="8" fill={subCol}
+              fontFamily="Arial,sans-serif" style={{userSelect:"none"}}>{ev.sublabel}</text>}
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+function DiagramRenderer({ diagram, D=false, width=560 }) {
+  if(!diagram||!diagram.type) return null;
+  const {type,data,accent}=diagram;
+  const itemCount = data ? (
+    (data.steps||data.events||[]).length ||
+    (data.root ? 1 : 0) ||
+    ((data.rows||[]).length)
+  ) : 0;
+  const rendered =
+    type==="process"    ? <ProcessFlowDiagram steps={data?.steps||[]} accent={accent} D={D} width={width}/> :
+    type==="cycle"      ? <CycleDiagram steps={data?.steps||[]} accent={accent} D={D}/> :
+    type==="hierarchy"  ? <HierarchyTree root={data?.root||null} accent={accent} D={D} width={width}/> :
+    type==="comparison" ? <ComparisonGrid rows={data?.rows||[]} columns={data?.columns||[]} data={data?.cells||{}} accent={accent} D={D}/> :
+    type==="structure"  ? <LabelledStructure imageUrl={data?.imageUrl||null} labels={data?.labels||[]} accent={accent} D={D} width={width}/> :
+    type==="timeline"   ? <TimelineDiagram events={data?.events||[]} accent={accent} D={D} width={width}/> :
+    null;
+  if(!rendered) return null;
+  return (
+    <div>
+      {rendered}
+      {itemCount > 2 && (
+        <p style={{fontSize:10,color:D?"#8896b3":"#9ca3af",textAlign:"center",marginTop:4,fontStyle:"italic"}}>
+          Tap or hover elements to highlight
+        </p>
+      )}
+    </div>
+  );
+}
+
 
 function fsrsInitialStability(g) {
   return Math.max(FSRS_PARAMS.w[g - 1], 0.1);
@@ -1346,7 +1713,7 @@ function parseNoteBody(body) {
       if (cur) secs.push(cur);
       const hdKey = line.slice(3).trim().toUpperCase();
       const def = NOTE_SEC_DEFS[hdKey] || {icon:"📝",border:"#6b7280",bg_l:"#f9fafb",bg_d:"#1f2937",lbl_l:"#374151",lbl_d:"#d1d5db",selfCheck:false};
-      cur = {key:hdKey, heading:line.slice(3).trim(), def, lines2:[]};
+      cur = {key:hdKey, heading:line.slice(3).trim(), def, lines2:[], images:[]};
     } else if (cur) {
       cur.lines2.push(line);
     } else {
@@ -1358,14 +1725,16 @@ function parseNoteBody(body) {
   return secs.length ? secs : null;
 }
 
-function NoteSec({sec, D}) {
+function NoteSec({sec, D, images=[]}) {
   const [open, setOpen] = React.useState(!sec.def?.selfCheck);
+  const [lightbox, setLightbox] = React.useState(null);
   const content = (sec.lines2||[]).join("\n").trim();
   if (sec.key==="__pre") return content?<div style={{marginBottom:10}}><MD text={content} D={D}/></div>:null;
   const {def,heading} = sec;
   const borderCol = def?.border||"#6b7280";
   const bgCol = D?(def?.bg_d||"#1f2937"):(def?.bg_l||"#f9fafb");
   const lblCol = D?(def?.lbl_d||"#9ca3af"):(def?.lbl_l||"#374151");
+  const bd2 = D?"#2a3347":"#e5e7eb";
   return (
     <div style={{borderRadius:12,overflow:"hidden",border:`1.5px solid ${borderCol}33`,marginBottom:8}}>
       <button onClick={()=>setOpen(v=>!v)}
@@ -1377,27 +1746,63 @@ function NoteSec({sec, D}) {
         <span style={{fontSize:12,color:lblCol,fontWeight:700,flexShrink:0}}>{open?"▲":"▼"}</span>
       </button>
       {open&&(
-        <div className="note-reveal" style={{padding:"12px 16px",background:D?"#0d1117":"#fff",borderTop:`1px solid ${borderCol}22`}}>
-          {def?.selfCheck&&(
-            <div style={{padding:"8px 12px",borderRadius:8,background:bgCol,marginBottom:10,fontSize:11,
-              color:lblCol,fontStyle:"italic",lineHeight:1.55,border:`1px dashed ${borderCol}55`}}>
-              🧠 Cover the notes above and try to recall these from memory before reading.
+        <div className="note-reveal" style={{background:D?"#0d1117":"#fff",borderTop:`1px solid ${borderCol}22`}}>
+          {images.length > 0 && (
+            <div style={{padding:"8px 16px 0"}}>
+              {images.map((img,ii)=>img&&img.image?(
+                <div key={ii} style={{marginBottom:10,cursor:"zoom-in",borderRadius:8,overflow:"hidden",position:"relative"}}
+                  onClick={()=>setLightbox(img.image)}>
+                  <img src={img.image} alt="diagram" style={{maxWidth:"100%",borderRadius:8,display:"block",border:`1px solid ${bd2}`}}/>
+                  <div style={{position:"absolute",bottom:6,right:6,background:"rgba(0,0,0,.55)",color:"#fff",fontSize:10,padding:"2px 8px",borderRadius:8,fontWeight:600}}>🔍 Zoom</div>
+                </div>
+              ):null)}
             </div>
           )}
-          <MD text={content} D={D}/>
+          <div style={{padding:"12px 16px"}}>
+            {def?.selfCheck&&(
+              <div style={{padding:"8px 12px",borderRadius:8,background:bgCol,marginBottom:10,fontSize:11,
+                color:lblCol,fontStyle:"italic",lineHeight:1.55,border:`1px dashed ${borderCol}55`}}>
+                🧠 Cover the notes above and try to recall these from memory before reading.
+              </div>
+            )}
+            <MD text={content} D={D}/>
+          </div>
+        </div>
+      )}
+      {lightbox&&(
+        <div className="img-lb" onClick={()=>setLightbox(null)}>
+          <img src={lightbox} alt="enlarged" style={{maxWidth:"95vw",maxHeight:"90vh",borderRadius:12,boxShadow:"0 30px 80px rgba(0,0,0,.5)"}}/>
+          <button onClick={()=>setLightbox(null)} style={{position:"absolute",top:16,right:16,background:"rgba(255,255,255,.15)",color:"#fff",border:"none",borderRadius:"50%",width:36,height:36,fontSize:20,cursor:"pointer",lineHeight:1}}>×</button>
         </div>
       )}
     </div>
   );
 }
 
-/* SmartNoteCard: renders parsed note sections + image lightbox */
+/* SmartNoteCard: renders parsed note sections with inline images */
 function SmartNoteCard({note, D, subjectAccent, canEdit, onEdit, onDelete}) {
   const [lightbox, setLightbox] = React.useState(null);
   const isHtml = (note.body||"").trimStart().startsWith("<");
   const parsed = !isHtml ? parseNoteBody(note.body||"") : null;
   const bd2 = D?"#2a3347":"#e5e7eb";
   const accentCol = subjectAccent||"#6366f1";
+  const isSideBySide = note.layoutMode === "side-by-side" && (note.images||[]).length > 0;
+
+  // Distribute images to sections: images with a sectionKey go to their section;
+  // unassigned images go to the first non-__pre section.
+  const sectionImages = (sectionKey) => {
+    const allImgs = note.images||[];
+    const keyed = allImgs.filter(img => img && img.sectionKey === sectionKey);
+    if (keyed.length) return keyed;
+    // Fall back: unassigned images go to first real section
+    const unassigned = allImgs.filter(img => img && !img.sectionKey);
+    if (unassigned.length && parsed) {
+      const firstRealSec = parsed.find(s => s.key !== "__pre");
+      if (firstRealSec && firstRealSec.key === sectionKey) return unassigned;
+    }
+    return [];
+  };
+
   return (
     <div style={{background:D?"#161b27":"#fff",borderRadius:14,border:`1px solid ${bd2}`,overflow:"hidden",marginBottom:14}}>
       <div style={{padding:"12px 18px 10px",background:D?"rgba(255,255,255,.02)":"#fafafa",
@@ -1413,26 +1818,40 @@ function SmartNoteCard({note, D, subjectAccent, canEdit, onEdit, onDelete}) {
         </div>}
       </div>
       <div style={{padding:"14px 18px"}}>
-        {(note.images||[]).map((img,ii)=>img&&img.image?(
-          <div key={ii} style={{marginBottom:12,cursor:"zoom-in",borderRadius:8,overflow:"hidden",position:"relative"}}
-            onClick={()=>setLightbox(img.image)}>
-            <img src={img.image} alt="diagram" style={{maxWidth:"100%",borderRadius:8,display:"block",border:`1px solid ${bd2}`}}/>
-            <div style={{position:"absolute",bottom:6,right:6,background:"rgba(0,0,0,.55)",color:"#fff",fontSize:10,padding:"2px 8px",borderRadius:8,fontWeight:600}}>🔍 Zoom</div>
+        {note.diagram && (
+          <div style={{marginTop:4,marginBottom:12}}>
+            <DiagramRenderer diagram={note.diagram} D={D} width={680}/>
           </div>
-        ):null)}
-        {parsed
-          ? parsed.map((s,i)=><NoteSec key={i} sec={s} D={D}/>)
-          : isHtml
-            ? <div dangerouslySetInnerHTML={{__html:note.body}} className="rich-display" style={{color:D?"#d1d5db":"#374151"}}/>
-            : <MD text={note.body||note.text||""} D={D}/>
-        }
+        )}
+        <div style={isSideBySide ? {display:"grid",gridTemplateColumns:"2fr 1fr",gap:20,alignItems:"start"} : {}}>
+          <div>
+            {parsed
+              ? parsed.map((s,i)=><NoteSec key={i} sec={s} D={D} images={isSideBySide ? [] : sectionImages(s.key)}/>)
+              : isHtml
+                ? <div dangerouslySetInnerHTML={{__html:note.body}} className="rich-display" style={{color:D?"#d1d5db":"#374151"}}/>
+                : <MD text={note.body||note.text||""} D={D}/>
+            }
+            {!parsed && !isHtml && (note.images||[]).filter(img=>img&&img.image).map((img,ii)=>(
+              <div key={ii} style={{marginBottom:12,cursor:"zoom-in",borderRadius:8,overflow:"hidden",position:"relative"}}
+                onClick={()=>setLightbox(img.image)}>
+                <img src={img.image} alt="diagram" style={{maxWidth:"100%",borderRadius:8,display:"block",border:`1px solid ${bd2}`}}/>
+                <div style={{position:"absolute",bottom:6,right:6,background:"rgba(0,0,0,.55)",color:"#fff",fontSize:10,padding:"2px 8px",borderRadius:8,fontWeight:600}}>🔍 Zoom</div>
+              </div>
+            ))}
+          </div>
+          {isSideBySide && (
+            <div style={{position:"sticky",top:80}}>
+              {(note.images||[]).map((img,ii)=>img&&img.image?(
+                <img key={ii} src={img.image} alt="" style={{width:"100%",borderRadius:8,marginBottom:10,display:"block",border:`1px solid ${bd2}`}}/>
+              ):null)}
+            </div>
+          )}
+        </div>
       </div>
       {lightbox&&(
         <div className="img-lb" onClick={()=>setLightbox(null)}>
           <img src={lightbox} alt="enlarged" style={{maxWidth:"95vw",maxHeight:"90vh",borderRadius:12,boxShadow:"0 30px 80px rgba(0,0,0,.5)"}}/>
-          <button onClick={()=>setLightbox(null)}
-            style={{position:"absolute",top:16,right:16,background:"rgba(255,255,255,.15)",color:"#fff",border:"none",
-              borderRadius:"50%",width:36,height:36,fontSize:20,cursor:"pointer",lineHeight:1}}>×</button>
+          <button onClick={()=>setLightbox(null)} style={{position:"absolute",top:16,right:16,background:"rgba(255,255,255,.15)",color:"#fff",border:"none",borderRadius:"50%",width:36,height:36,fontSize:20,cursor:"pointer",lineHeight:1}}>×</button>
         </div>
       )}
     </div>
@@ -1722,8 +2141,8 @@ function AnnotatedImage({img, D}) {
 
 function CreateModal({mode, D, subjects, onClose, onSave, initialItem}) {
   const isEdit=!!initialItem;
-  const def={title:"",subjectId:subjects[0]?.id||"",topicId:"",heading:"",body:"",q:"",a:"",type:"mcq",text:"",marks:1,options:["","","",""],answer:0,explanation:"",markScheme:"",sampleAnswer:"",year:"",images:[]};
-  const [f,setF]=useState(()=>!initialItem?def:{...def,...initialItem,options:initialItem.options||["","","",""],images:initialItem.images||[],marks:initialItem.marks??1});
+  const def={title:"",subjectId:subjects[0]?.id||"",topicId:"",heading:"",body:"",q:"",a:"",type:"mcq",text:"",marks:1,options:["","","",""],answer:0,explanation:"",markScheme:"",sampleAnswer:"",year:"",images:[],diagram:null};
+  const [f,setF]=useState(()=>!initialItem?def:{...def,...initialItem,options:initialItem.options||["","","",""],images:initialItem.images||[],marks:initialItem.marks??1,diagram:initialItem.diagram||null});
   const set=(k,v)=>setF(p=>({...p,[k]:v}));
   const valid=()=>{
     if(mode==="section")   return f.title.trim()&&f.subjectId;
@@ -1737,7 +2156,7 @@ function CreateModal({mode, D, subjects, onClose, onSave, initialItem}) {
   const save=()=>{
     if(!valid())return;
     if(isEdit){
-      if(mode==="note")       onSave({...initialItem,heading:f.heading,body:f.body,images:f.images});
+      if(mode==="note")       onSave({...initialItem,heading:f.heading,body:f.body,images:f.images,diagram:f.diagram||null});
       else if(mode==="flashcard") onSave({...initialItem,q:f.q,a:f.a,images:f.images});
       else if(mode==="question"){
         const base={...initialItem,type:f.type,text:f.text,marks:Number(f.marks),year:f.year,images:f.images};
@@ -1749,7 +2168,7 @@ function CreateModal({mode, D, subjects, onClose, onSave, initialItem}) {
     const id=`${mode.slice(0,2)}-${uid()}`;
     if(mode==="section")   onSave({id,src:"admin",subjectId:f.subjectId,topicId:f.topicId,title:f.title,notes:[],flashcards:[],questions:[],subtopics:[]});
     else if(mode==="subtopic") onSave({id,title:f.title,notes:[],flashcards:[],questions:[]});
-    else if(mode==="note") onSave({id,heading:f.heading,body:f.body,images:f.images});
+    else if(mode==="note") onSave({id,heading:f.heading,body:f.body,images:f.images,diagram:f.diagram||null});
     else if(mode==="flashcard") onSave({id,q:f.q,a:f.a,images:f.images});
     else if(mode==="question"){
       const base={id,type:f.type,text:f.text,marks:Number(f.marks),year:f.year,images:f.images};
@@ -1761,7 +2180,6 @@ function CreateModal({mode, D, subjects, onClose, onSave, initialItem}) {
   const Inp=(k,ph)=><input style={I(D)} placeholder={ph} value={f[k]||""} onChange={e=>set(k,e.target.value)}/>;
   const TA=(k,ph,rows=4)=><textarea style={{...I(D,{resize:"vertical"})}} rows={rows} placeholder={ph} value={f[k]||""} onChange={e=>set(k,e.target.value)}/>;
   const Sel=(k,opts,cb)=><select style={I(D)} value={f[k]||""} onChange={e=>{set(k,e.target.value);cb&&cb(e.target.value);}}>{opts.map(o=><option key={o.v} value={o.v}>{o.l}</option>)}</select>;
-  const showImages=mode==="note"||mode==="flashcard"||mode==="question";
   const titles={section:isEdit?"Edit Topic":"New Topic",note:isEdit?"Edit Note":"New Note",flashcard:isEdit?"Edit Flashcard":"New Flashcard",question:isEdit?"Edit Question":"New Question",paper:"Add Past Paper",subtopic:isEdit?"Edit Sub-topic":"New Sub-topic"};
   return (
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.5)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
@@ -1782,6 +2200,62 @@ function CreateModal({mode, D, subjects, onClose, onSave, initialItem}) {
           {mode==="note"&&<>
             <div><Lbl c="Heading"/>{Inp("heading","e.g. Types of Stem Cells")}</div>
             <div><Lbl c="Content"/><RichEditor value={f.body||""} onChange={v=>set("body",v)} D={D} placeholder="Write revision notes…" minHeight={140}/></div>
+            <div>
+              <Lbl c="Diagram"/>
+              {f.diagram ? (
+                <div style={{...C(D),padding:12,marginBottom:4}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                    <span style={{fontSize:11,fontWeight:600,color:"#6366f1"}}>{f.diagram.type} diagram</span>
+                    <button onClick={()=>set("diagram",null)} style={{fontSize:11,color:"#ef4444",background:"none",border:"none",cursor:"pointer"}}>Remove</button>
+                  </div>
+                  <DiagramRenderer diagram={f.diagram} D={D} width={480}/>
+                </div>
+              ) : (
+                <button onClick={async()=>{
+                  if(!f.body||!stripHtml(f.body).trim()){showToast("Add note content first","warn");return;}
+                  showToast("Generating diagram…");
+                  try{
+                    const prompt=`You are a GCSE revision diagram designer. Analyse this note content and return ONLY valid JSON (no markdown) for the most appropriate SVG diagram template.
+
+Content: ${stripHtml(f.body).slice(0,600)}
+
+Choose ONE type from: process, cycle, hierarchy, comparison, timeline.
+
+Return: {"type":"process","accent":"#059669","data":{"steps":[{"id":"1","label":"Step name","sublabel":"optional detail"}]}}
+
+For cycle: data.steps array.
+For hierarchy: data.root with {label,children:[{label,children?}]}.
+For comparison: data.rows=[{id,label}],data.columns=[{id,label}],data.cells={"rowId:colId":true/false/"partial"}.
+For timeline: data.events=[{id,label,date,sublabel?,important?}].
+Keep labels short (2-4 words). Maximum 8 items. Use appropriate accent colour.`;
+                    const raw=await callAI(prompt,800);
+                    const s=raw.indexOf("{"),e=raw.lastIndexOf("}");
+                    if(s>=0&&e>s){const parsed=JSON.parse(raw.slice(s,e+1));set("diagram",parsed);}
+                    else showToast("Could not generate diagram — try again","error");
+                  }catch(err){showToast("Diagram generation failed: "+err.message,"error");}
+                }} style={{...B("#6366f1",true,{fontSize:12,padding:"7px 14px"})}}>
+                  ✨ Generate Diagram
+                </button>
+              )}
+            </div>
+            <div>
+              <Lbl c="Images (appear inline with content)"/>
+              <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
+                {(f.images||[]).map((img,ii)=>(
+                  <div key={ii} style={{position:"relative",width:56,height:56}}>
+                    <img src={img.image} alt="" style={{width:56,height:56,objectFit:"cover",borderRadius:6,border:`1px solid ${D?"#2a3347":"#e5e7eb"}`}}/>
+                    <button onClick={()=>set("images",(f.images||[]).filter((_,idx)=>idx!==ii))}
+                      style={{position:"absolute",top:-4,right:-4,background:"#ef4444",color:"#fff",border:"none",borderRadius:"50%",width:16,height:16,fontSize:10,cursor:"pointer",lineHeight:1,display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>
+                  </div>
+                ))}
+                <label style={{width:56,height:56,borderRadius:6,border:`1.5px dashed ${D?"#374151":"#d1d5db"}`,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:20,color:mu(D)}}>
+                  +
+                  <input type="file" accept="image/*" multiple style={{display:"none"}}
+                    onChange={e=>{Array.from(e.target.files||[]).forEach(file=>{const r=new FileReader();r.onload=ev=>set("images",[...(f.images||[]),{image:ev.target.result,annotations:[]}]);r.readAsDataURL(file);});e.target.value="";}}/>
+                </label>
+              </div>
+              <p style={{fontSize:11,color:mu(D),marginTop:4}}>Images appear directly after the note content.</p>
+            </div>
           </>}
           {mode==="flashcard"&&<>
             <div><Lbl c="Question"/><RichEditor value={f.q||""} onChange={v=>set("q",v)} D={D} placeholder="Question…" minHeight={100}/></div>
@@ -1820,7 +2294,25 @@ function CreateModal({mode, D, subjects, onClose, onSave, initialItem}) {
             <div><Lbl c="Mark Scheme URL"/>{Inp("markSchemeUrl","https://…")}</div>
             <div><Lbl c="Examiner Report URL"/>{Inp("examinerUrl","https://…")}</div>
           </>}
-          {showImages&&<div style={{...C(D),padding:14,borderStyle:"dashed"}}><ImagePanel images={f.images} onChange={v=>set("images",v)} D={D}/></div>}
+          {(mode==="flashcard"||mode==="question")&&(
+            <div>
+              <label style={{fontSize:11,fontWeight:600,color:mu(D),display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:"0.05em"}}>Images</label>
+              <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
+                {(f.images||[]).map((img,ii)=>(
+                  <div key={ii} style={{position:"relative",width:56,height:56}}>
+                    <img src={img.image} alt="" style={{width:56,height:56,objectFit:"cover",borderRadius:6,border:`1px solid ${D?"#2a3347":"#e5e7eb"}`}}/>
+                    <button onClick={()=>set("images",(f.images||[]).filter((_,idx)=>idx!==ii))}
+                      style={{position:"absolute",top:-4,right:-4,background:"#ef4444",color:"#fff",border:"none",borderRadius:"50%",width:16,height:16,fontSize:10,cursor:"pointer",lineHeight:1,display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>
+                  </div>
+                ))}
+                <label style={{width:56,height:56,borderRadius:6,border:`1.5px dashed ${D?"#374151":"#d1d5db"}`,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:20,color:mu(D)}}>
+                  +
+                  <input type="file" accept="image/*" multiple style={{display:"none"}}
+                    onChange={e=>{Array.from(e.target.files||[]).forEach(file=>{const r=new FileReader();r.onload=ev=>set("images",[...(f.images||[]),{image:ev.target.result,annotations:[]}]);r.readAsDataURL(file);});e.target.value="";}}/>
+                </label>
+              </div>
+            </div>
+          )}
         </div>
         <div style={{display:"flex",gap:10,marginTop:22}}>
           <button onClick={onClose} style={{flex:1,padding:"10px 0",borderRadius:10,border:`1px solid ${D?"#374151":"#d1d5db"}`,background:"transparent",cursor:"pointer",fontSize:13,color:mu(D)}}>Cancel</button>
