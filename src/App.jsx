@@ -6867,13 +6867,9 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
             <div style={{width:56,height:56,borderRadius:16,background:`linear-gradient(135deg,${subj.accent},${subj.accent}88)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,flexShrink:0}}>{subj.icon}</div>
             <div style={{flex:1,minWidth:0}}>
               <h2 style={{fontSize:22,fontWeight:700,marginBottom:6}}>{subj.name}</h2>
-              {!subj._politics&&<div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:10}}>
-                {EXAM_BOARDS.map(b=>(
-                  <button key={b} onClick={()=>selectBoard(b)}
-                    style={{padding:"4px 12px",borderRadius:20,border:`1.5px solid ${curBoard===b?subj.accent:bd2}`,background:curBoard===b?subj.accent:"transparent",color:curBoard===b?"#fff":mu(D),cursor:"pointer",fontSize:12,fontWeight:curBoard===b?700:400,transition:"all .15s"}}>
-                    {b}
-                  </button>
-                ))}
+              {!subj._politics&&<div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10,flexWrap:"wrap"}}>
+                <span style={{fontSize:13,fontWeight:700,padding:"4px 14px",borderRadius:20,background:subj.accent,color:"#fff"}}>{curBoard}</span>
+                <button onClick={()=>setScreen("account")} style={{fontSize:11,color:mu(D),background:"none",border:"none",cursor:"pointer",textDecoration:"underline",padding:0}}>Change in Account Settings</button>
               </div>}
               {!subj._politics&&(()=>{
                 const ss=stats.subjStats?.[subj.id];
