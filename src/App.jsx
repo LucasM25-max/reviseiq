@@ -6048,6 +6048,7 @@ export default function App() {
 
   useEffect(()=>{
     if(!user||!ready)return;
+    progLoaded.current = false;
     (async()=>{
       let savedSels={};
       try{
@@ -6074,6 +6075,7 @@ export default function App() {
           setSelectedSubjectIds(isAdmin(user) ? null : []);
         }
       }catch(_){}
+      progLoaded.current = true;
       // Also load timetable exams for the Today widget
       try{
         const tr=await window.storage.get(SK.TIMETABLE(user));
@@ -6182,11 +6184,13 @@ export default function App() {
   },[screen,tab,flip,fcIdx,qIdx,secId,subIdx,section,subjects,markTodayActive]);
 
   const saveTimer=useRef(null);
+  const progLoaded=useRef(false);
   const gradeSnapsRef=useRef(gradeSnapshots);
   useEffect(()=>{gradeSnapsRef.current=gradeSnapshots;},[gradeSnapshots]);
 
   useEffect(()=>{
     if(!user)return;
+    if(!progLoaded.current)return;
     clearTimeout(saveTimer.current);
     saveTimer.current=setTimeout(async()=>{
       // Take a grade snapshot (at most one per day)
@@ -6227,7 +6231,7 @@ export default function App() {
       }
     },600);
     return ()=>clearTimeout(saveTimer.current);
-  },[user,userDisplayName,fcHist,stats,targetGrades,activityDates,activityCounts,boardSels]);
+  },[user,userDisplayName,fcHist,stats,targetGrades,activityDates,activityCounts,boardSels,selectedSubjectIds]);
 
   const handleOnboardingComplete = useCallback(async(board, examDate) => {
     setOnboarding(null);
