@@ -1739,7 +1739,7 @@ function NoteSec({sec, D, images=[]}) {
     <div style={{borderRadius:12,overflow:"hidden",border:`1.5px solid ${borderCol}33`,marginBottom:8}}>
       <button onClick={()=>setOpen(v=>!v)}
         style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"9px 14px",
-          background:bgCol,border:"none",cursor:"pointer",textAlign:"left"}}>
+          background:bgCol,borderLeft:`3px solid ${borderCol}`,borderTop:"none",borderRight:"none",borderBottom:"none",cursor:"pointer",textAlign:"left"}}>
         <span style={{fontSize:15,flexShrink:0}}>{def?.icon||"📝"}</span>
         <span style={{flex:1,fontSize:11,fontWeight:700,color:lblCol,textTransform:"uppercase",letterSpacing:"0.07em"}}>{heading}</span>
         {def?.selfCheck&&<span style={{fontSize:10,color:lblCol,background:borderCol+"25",padding:"2px 8px",borderRadius:10,fontWeight:700,marginRight:4}}>Try first!</span>}
@@ -1780,7 +1780,7 @@ function NoteSec({sec, D, images=[]}) {
 }
 
 /* SmartNoteCard: renders parsed note sections with inline images */
-function SmartNoteCard({note, D, subjectAccent, canEdit, onEdit, onDelete}) {
+function SmartNoteCard({note, D, subjectAccent, canEdit, onEdit, onDelete, onAddVisual}) {
   const [lightbox, setLightbox] = React.useState(null);
   const isHtml = (note.body||"").trimStart().startsWith("<");
   const parsed = !isHtml ? parseNoteBody(note.body||"") : null;
@@ -1803,6 +1803,10 @@ function SmartNoteCard({note, D, subjectAccent, canEdit, onEdit, onDelete}) {
     return [];
   };
 
+  // Change 15: detect dominant section type for semantic chip
+  const firstTypedSec = parsed ? parsed.find(s => s.key && s.key !== "__pre" && NOTE_SEC_DEFS[s.key]) : null;
+  const semanticDef = firstTypedSec ? NOTE_SEC_DEFS[firstTypedSec.key] : null;
+
   return (
     <div style={{background:D?"#161b27":"#fff",borderRadius:14,border:`1px solid ${bd2}`,overflow:"hidden",marginBottom:14}}>
       <div style={{padding:"12px 18px 10px",background:D?"rgba(255,255,255,.02)":"#fafafa",
@@ -1811,18 +1815,29 @@ function SmartNoteCard({note, D, subjectAccent, canEdit, onEdit, onDelete}) {
           <div style={{width:4,height:26,borderRadius:3,background:accentCol,flexShrink:0}}/>
           <h3 style={{fontWeight:700,fontSize:15,color:D?"#e8ecf4":"#111827",flex:1,
             overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{note.heading||note.text||""}</h3>
+          {semanticDef&&(
+            <span style={{
+              display:"inline-flex",alignItems:"center",gap:4,
+              fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:20,
+              background:D?semanticDef.bg_d:semanticDef.bg_l,
+              color:D?semanticDef.lbl_d:semanticDef.lbl_l,
+              border:`1px solid ${semanticDef.border}33`,
+              textTransform:"uppercase",letterSpacing:"0.06em",flexShrink:0
+            }}>
+              {semanticDef.icon} {firstTypedSec.key}
+            </span>
+          )}
         </div>
         {canEdit&&<div style={{display:"flex",gap:6,flexShrink:0,marginLeft:8}}>
           <button onClick={onEdit} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,color:"#6366f1",padding:"2px 6px"}}>✏️</button>
+          {!note.diagram&&onAddVisual&&(
+            <button onClick={()=>onAddVisual(note)} title="Generate diagram for this note"
+              style={{background:"none",border:"none",cursor:"pointer",fontSize:13,color:"#6366f1",padding:"2px 6px"}}>📊</button>
+          )}
           <button onClick={onDelete} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,color:"#ef4444",padding:"2px 6px"}}>🗑</button>
         </div>}
       </div>
       <div style={{padding:"14px 18px"}}>
-        {note.diagram && (
-          <div style={{marginTop:4,marginBottom:12}}>
-            <DiagramRenderer diagram={note.diagram} D={D} width={680}/>
-          </div>
-        )}
         <div style={isSideBySide ? {display:"grid",gridTemplateColumns:"2fr 1fr",gap:20,alignItems:"start"} : {}}>
           <div>
             {parsed
@@ -1847,6 +1862,28 @@ function SmartNoteCard({note, D, subjectAccent, canEdit, onEdit, onDelete}) {
             </div>
           )}
         </div>
+        {/* Change 16: diagram rendering with remove button */}
+        {canEdit && note.diagram && (
+          <div style={{marginTop:12,paddingTop:12,borderTop:`1px solid ${D?"#2a3347":"#e5e7eb"}`}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+              <span style={{fontSize:10,fontWeight:700,color:D?"#8896b3":"#9ca3af",textTransform:"uppercase",letterSpacing:"0.06em"}}>
+                📊 {note.diagram.type} diagram
+              </span>
+              {onAddVisual&&(
+                <button onClick={()=>onAddVisual({...note,_removeDiagram:true})}
+                  style={{fontSize:10,color:mu(D),background:"none",border:"none",cursor:"pointer"}}>
+                  ✕ Remove
+                </button>
+              )}
+            </div>
+            <DiagramRenderer diagram={note.diagram} D={D} width={660}/>
+          </div>
+        )}
+        {!canEdit && note.diagram && (
+          <div style={{marginTop:12,paddingTop:12,borderTop:`1px solid ${D?"#2a3347":"#e5e7eb"}`}}>
+            <DiagramRenderer diagram={note.diagram} D={D} width={660}/>
+          </div>
+        )}
       </div>
       {lightbox&&(
         <div className="img-lb" onClick={()=>setLightbox(null)}>
@@ -2141,8 +2178,8 @@ function AnnotatedImage({img, D}) {
 
 function CreateModal({mode, D, subjects, onClose, onSave, initialItem}) {
   const isEdit=!!initialItem;
-  const def={title:"",subjectId:subjects[0]?.id||"",topicId:"",heading:"",body:"",q:"",a:"",type:"mcq",text:"",marks:1,options:["","","",""],answer:0,explanation:"",markScheme:"",sampleAnswer:"",year:"",images:[],diagram:null};
-  const [f,setF]=useState(()=>!initialItem?def:{...def,...initialItem,options:initialItem.options||["","","",""],images:initialItem.images||[],marks:initialItem.marks??1,diagram:initialItem.diagram||null});
+  const def={title:"",subjectId:subjects[0]?.id||"",topicId:"",heading:"",body:"",q:"",a:"",type:"mcq",text:"",marks:1,options:["","","",""],answer:0,explanation:"",markScheme:"",sampleAnswer:"",year:"",images:[],diagram:null,cardImage:null,cardImageCaption:"",cardType:"standard"};
+  const [f,setF]=useState(()=>!initialItem?def:{...def,...initialItem,options:initialItem.options||["","","",""],images:initialItem.images||[],marks:initialItem.marks??1,diagram:initialItem.diagram||null,cardImage:initialItem.cardImage||null,cardImageCaption:initialItem.cardImageCaption||"",cardType:initialItem.cardType||"standard"});
   const set=(k,v)=>setF(p=>({...p,[k]:v}));
   const valid=()=>{
     if(mode==="section")   return f.title.trim()&&f.subjectId;
@@ -2157,7 +2194,7 @@ function CreateModal({mode, D, subjects, onClose, onSave, initialItem}) {
     if(!valid())return;
     if(isEdit){
       if(mode==="note")       onSave({...initialItem,heading:f.heading,body:f.body,images:f.images,diagram:f.diagram||null});
-      else if(mode==="flashcard") onSave({...initialItem,q:f.q,a:f.a,images:f.images});
+      else if(mode==="flashcard") onSave({...initialItem,q:f.q,a:f.a,images:f.images,cardImage:f.cardImage||null,cardImageCaption:f.cardImageCaption||"",diagram:f.diagram||null,cardType:f.cardType||"standard"});
       else if(mode==="question"){
         const base={...initialItem,type:f.type,text:f.text,marks:Number(f.marks),year:f.year,images:f.images};
         if(f.type==="mcq") onSave({...base,options:f.options,answer:f.answer,explanation:f.explanation});
@@ -2169,7 +2206,7 @@ function CreateModal({mode, D, subjects, onClose, onSave, initialItem}) {
     if(mode==="section")   onSave({id,src:"admin",subjectId:f.subjectId,topicId:f.topicId,title:f.title,notes:[],flashcards:[],questions:[],subtopics:[]});
     else if(mode==="subtopic") onSave({id,title:f.title,notes:[],flashcards:[],questions:[]});
     else if(mode==="note") onSave({id,heading:f.heading,body:f.body,images:f.images,diagram:f.diagram||null});
-    else if(mode==="flashcard") onSave({id,q:f.q,a:f.a,images:f.images});
+    else if(mode==="flashcard") onSave({id,q:f.q,a:f.a,images:f.images,cardImage:f.cardImage||null,cardImageCaption:f.cardImageCaption||"",diagram:f.diagram||null,cardType:f.cardType||"standard"});
     else if(mode==="question"){
       const base={id,type:f.type,text:f.text,marks:Number(f.marks),year:f.year,images:f.images};
       if(f.type==="mcq") onSave({...base,options:f.options,answer:f.answer,explanation:f.explanation});
@@ -2260,6 +2297,62 @@ Keep labels short (2-4 words). Maximum 8 items. Use appropriate accent colour.`;
           {mode==="flashcard"&&<>
             <div><Lbl c="Question"/><RichEditor value={f.q||""} onChange={v=>set("q",v)} D={D} placeholder="Question…" minHeight={100}/></div>
             <div><Lbl c="Answer"/><RichEditor value={f.a||""} onChange={v=>set("a",v)} D={D} placeholder="Answer…" minHeight={100}/></div>
+            <div>
+              <label style={{fontSize:11,fontWeight:600,color:mu(D),display:"block",marginBottom:8,textTransform:"uppercase",letterSpacing:"0.05em"}}>
+                Shared Visual (shown on both sides)
+              </label>
+              <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap"}}>
+                <label style={{...B("#6366f1",true,{fontSize:12,padding:"6px 12px",cursor:"pointer"})}}>
+                  📷 Upload Image
+                  <input type="file" accept="image/*" style={{display:"none"}}
+                    onChange={e=>{
+                      const file=e.target.files?.[0]; if(!file)return;
+                      const r=new FileReader();
+                      r.onload=ev=>{ set("cardImage",ev.target.result); set("cardType","dual-coded"); };
+                      r.readAsDataURL(file); e.target.value="";
+                    }}/>
+                </label>
+                <button onClick={async()=>{
+                  const content=stripHtml(f.q||"")+" "+stripHtml(f.a||"");
+                  if(!content.trim()){showToast("Add question and answer first","warn");return;}
+                  showToast("Generating diagram…");
+                  try{
+                    const prompt=`You are a GCSE revision diagram designer. Analyse this flashcard content and return ONLY valid JSON (no markdown) for the most appropriate diagram.\n\nQuestion: ${stripHtml(f.q||"").slice(0,200)}\nAnswer: ${stripHtml(f.a||"").slice(0,200)}\n\nChoose ONE type: process, cycle, hierarchy, comparison, structure, timeline.\nReturn: {"type":"process","accent":"#059669","data":{"steps":[{"id":"1","label":"Step name","sublabel":"optional"}]}}\nKeep labels under 4 words. Max 7 items.`;
+                    const raw=await callAI(prompt,600);
+                    const s=raw.indexOf("{"),e=raw.lastIndexOf("}");
+                    if(s>=0&&e>s){ set("diagram",JSON.parse(raw.slice(s,e+1))); set("cardType","dual-coded"); }
+                    else showToast("Could not generate — try again","error");
+                  }catch(err){showToast("Failed: "+err.message,"error");}
+                }} style={{...B("#6366f1",true,{fontSize:12,padding:"6px 12px"})}}>
+                  ✨ Generate Diagram
+                </button>
+                {(f.cardImage||f.diagram)&&(
+                  <button onClick={()=>{set("cardImage",null);set("diagram",null);set("cardType","standard");}}
+                    style={{...B("#ef4444",true,{fontSize:12,padding:"6px 12px"})}}>
+                    Remove Visual
+                  </button>
+                )}
+              </div>
+              {f.cardImage&&(
+                <div style={{marginBottom:8}}>
+                  <img src={f.cardImage} alt="card visual"
+                    style={{maxWidth:"100%",maxHeight:160,borderRadius:8,display:"block",border:`1px solid ${D?"#2a3347":"#e5e7eb"}`}}/>
+                  <input style={{...I(D,{marginTop:6,fontSize:12})}} placeholder="Caption for answer side (optional)"
+                    value={f.cardImageCaption||""} onChange={e=>set("cardImageCaption",e.target.value)}/>
+                </div>
+              )}
+              {f.diagram&&!f.cardImage&&(
+                <div style={{...C(D),padding:12,marginBottom:8}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                    <span style={{fontSize:11,fontWeight:600,color:"#6366f1"}}>{f.diagram.type} diagram</span>
+                  </div>
+                  <DiagramRenderer diagram={f.diagram} D={D} width={460}/>
+                </div>
+              )}
+              <p style={{fontSize:11,color:mu(D),marginTop:4}}>
+                The visual stays visible on both sides — the question and answer change around it.
+              </p>
+            </div>
           </>}
           {mode==="question"&&<>
             <div><Lbl c="Type"/>{Sel("type",[{v:"mcq",l:"Multiple Choice"},{v:"short",l:"Short Answer"},{v:"extended",l:"Extended Response"}])}</div>
@@ -5482,6 +5575,24 @@ function UCSectionModal({D,user,subjId,sec,subjects,onSaveSection,onClose}) {
     var n={id:uid2(),heading:noteHead.trim(),body:noteBody.trim()||noteHead.trim(),images:[],_userCreated:true};
     onSaveSection(subjId,{...sec,notes:[...notes,n]});
     setNoteHead(""); setNoteBody("");
+    // Background diagram suggestion (Change 16)
+    if(noteBody.trim().length>60){
+      var textContent=noteHead+": "+noteBody.slice(0,400);
+      callAI("You are a GCSE revision diagram designer. Analyse this note and return ONLY valid JSON (no markdown) for the best diagram, or return null if no diagram is appropriate.\n\nNote: "+textContent+"\n\nChoose ONE type: process, cycle, hierarchy, comparison, structure, timeline.\nReturn JSON or the exact word: null\n{\"type\":\"process\",\"accent\":\"#059669\",\"data\":{\"steps\":[{\"id\":\"1\",\"label\":\"Step\"}]}}",500)
+        .then(function(raw){
+          if(!raw||raw.trim()==="null") return;
+          var s=raw.indexOf("{"),e=raw.lastIndexOf("}");
+          if(s>=0&&e>s){
+            try{
+              var diagram=JSON.parse(raw.slice(s,e+1));
+              var updated={...n,diagram};
+              onSaveSection(subjId,{...sec,notes:[...notes,updated]});
+              showToast("📊 Diagram added to your note","success",2000);
+            }catch(_){}
+          }
+        })
+        .catch(function(){}); // Silent failure
+    }
   }
   function deleteNote(id){onSaveSection(subjId,{...sec,notes:notes.filter(function(n){return n.id!==id;})});}
 
@@ -5697,7 +5808,15 @@ function UCSectionModal({D,user,subjId,sec,subjects,onSaveSection,onClose}) {
               {curFC&&(
                 <div>
                   <div onClick={function(){setFlip(function(f){return !f;});}} style={{...C(D),padding:40,textAlign:"center",cursor:"pointer",minHeight:130,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:12,borderColor:"#6366f1",borderWidth:1.5}}>
-                    <div>
+                    <div style={{width:"100%"}}>
+                      {(curFC.cardImage||curFC.diagram)&&(
+                        <div style={{marginBottom:10,opacity:0.85}}>
+                          {curFC.cardImage
+                            ?<img src={curFC.cardImage} alt="" style={{maxWidth:"100%",maxHeight:120,borderRadius:8,display:"block",margin:"0 auto"}}/>
+                            :<DiagramRenderer diagram={curFC.diagram} D={D} width={360}/>
+                          }
+                        </div>
+                      )}
                       <div style={{fontSize:10,fontWeight:700,color:mu(D),marginBottom:8,textTransform:"uppercase"}}>{flip?"Answer":"Question"} — click to flip</div>
                       <div style={{fontSize:16,fontWeight:600,lineHeight:1.5}}>{flip?(curFC.a||curFC.back||""):(curFC.q||curFC.front||"")}</div>
                     </div>
@@ -6543,6 +6662,8 @@ export default function App() {
   const [qHintLvl,setQHintLvl]   = useState(0);      // 0-3 question hint reveals
   const [qSelfExp,setQSelfExp]   = useState("");      // post-marking self-explanation text
   const [qSelfDone,setQSelfDone] = useState(false);  // gates model answer reveal
+  const [labelTestMode, setLabelTestMode] = useState(false);   // Change 14 — label-reveal self-test
+  const [labelTestComplete, setLabelTestComplete] = useState(false); // Change 14
 
   const [stats,setStats]     = useState({fcC:0,fcT:0,qS:0,qM:0,weakQ:{},weakFC:{},subjStats:{}});
   const [targetGrades,setTargetGrades] = useState({});
@@ -7131,6 +7252,7 @@ export default function App() {
     setNoteSearch(""); setShuffledCards(null);
     setFcConf(null);setFcHintLvl(0);setFcSelfExp("");setFcSelfOpen(false);
     setQConf(null);setQHintLvl(0);setQSelfExp("");setQSelfDone(false);
+    setLabelTestMode(false);setLabelTestComplete(false);
     setScreen("section");
   };
 
@@ -7860,7 +7982,31 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                     subjectAccent={subj.accent}
                     canEdit={admin&&isAdminItem("notes",note)}
                     onEdit={()=>setModal({mode:"note",sectionId:section.id,initialItem:note})}
-                    onDelete={()=>{removeExtra(section.id,"notes",note.id);showToast("Note deleted");}}/>
+                    onDelete={()=>{removeExtra(section.id,"notes",note.id);showToast("Note deleted");}}
+                    onAddVisual={async(note)=>{
+                      if(note._removeDiagram){
+                        editInSection(section.id,"notes",{...note,diagram:null,_removeDiagram:undefined});
+                        showToast("Diagram removed");
+                        return;
+                      }
+                      showToast("Generating diagram…");
+                      try{
+                        const textContent=note.heading+": "+stripHtml(note.body||"").slice(0,500);
+                        const prompt=`You are a GCSE revision diagram designer. Analyse this note and return ONLY valid JSON (no markdown) for the best diagram.\n\nNote: ${textContent}\n\nChoose ONE type: process, cycle, hierarchy, comparison, structure, timeline.\nReturn: {"type":"process","accent":"#059669","data":{"steps":[{"id":"1","label":"Step","sublabel":"detail"}]}}\nRules: labels max 4 words, max 8 items, use subject-appropriate accent colour.`;
+                        const raw=await callAI(prompt,700);
+                        const s=raw.indexOf("{"),e=raw.lastIndexOf("}");
+                        if(s>=0&&e>s){
+                          const diagram=JSON.parse(raw.slice(s,e+1));
+                          const updated={...note,diagram};
+                          editInSection(section.id,"notes",updated);
+                          showToast("Diagram added ✓","success");
+                        } else {
+                          showToast("Could not generate diagram — try again","error");
+                        }
+                      }catch(err){
+                        showToast("Generation failed: "+err.message,"error");
+                      }
+                    }}/>
                 ))}</div>;
               })()}
             </div>
@@ -7924,6 +8070,11 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
             ];
             const SM2B=[{label:"Again",color:"#ef4444",rating:1},{label:"Hard",color:"#f59e0b",rating:2},{label:"Good",color:"#3b82f6",rating:3},{label:"Easy",color:"#10b981",rating:4}];
 
+            // Change 13: dual-coded card detection
+            const isDualCoded=!!(fc2?.cardImage||fc2?.diagram);
+            // Change 14: label-reveal self-test detection
+            const hasLabelTest=!!(fc2?.diagram?.type==="structure"&&(fc2?.diagram?.data?.labels||[]).length>0);
+
             return (
             <div className="fade-in">
               {admin&&<AdminBar D={D} actions={[{label:"＋ Add Flashcard",fn:()=>setModal({mode:"flashcard",sectionId:section.id})}]}/>}
@@ -7937,6 +8088,15 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                       style={{fontSize:10,padding:"3px 9px",borderRadius:8,border:`1.5px solid ${shuffled?"#f59e0b":"#d1d5db"}`,background:shuffled?"#f59e0b":"transparent",color:shuffled?"#fff":mu(D),cursor:"pointer",fontWeight:shuffled?700:400}}>🔀</button>
                     <button onClick={()=>{setCramMode(v=>!v);setFcIdx(0);setFlip(false);setFcConf(null);}}
                       style={{fontSize:10,padding:"3px 9px",borderRadius:8,border:`1.5px solid ${cramMode?"#6366f1":"#d1d5db"}`,background:cramMode?"#6366f1":"transparent",color:cramMode?"#fff":mu(D),cursor:"pointer",fontWeight:cramMode?700:400}}>🔥 Cram</button>
+                    {hasLabelTest&&(
+                      <button onClick={()=>{setLabelTestMode(v=>!v);setLabelTestComplete(false);}}
+                        style={{fontSize:10,padding:"3px 9px",borderRadius:8,
+                          border:`1.5px solid ${labelTestMode?"#0891B2":"#d1d5db"}`,
+                          background:labelTestMode?"#0891B2":"transparent",
+                          color:labelTestMode?"#fff":mu(D),cursor:"pointer",fontWeight:labelTestMode?700:400}}>
+                        🏷 Label Test
+                      </button>
+                    )}
                     <span style={{fontSize:11,color:mu(D)}}>FSRS</span>
                     <SRInfoTooltip D={D}/>
                   </div>
@@ -7950,12 +8110,24 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                   <span style={{fontSize:12,color:mu(D)}}>{cramMode?"cram":curState2?(curState2.reps>0?`${curState2.interval}d`:"new"):"new"}</span>
                 </div>
 
-                {/* Card type badge (Dual Coding — colour+icon signals cognitive demand) */}
+                {/* Card type badge + dual-coded / label indicators */}
                 <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:8,flexWrap:"wrap"}}>
                   <span style={{fontSize:10,fontWeight:700,padding:"3px 9px",borderRadius:12,
                     background:cardType2.color+"22",color:cardType2.color}}>
                     {cardType2.icon} {cardType2.label}
                   </span>
+                  {isDualCoded&&(
+                    <span style={{fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:10,
+                      background:D?"rgba(99,102,241,.15)":"#eef2ff",color:"#6366f1"}}>
+                      🖼 Dual-coded
+                    </span>
+                  )}
+                  {hasLabelTest&&(
+                    <span style={{fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:10,
+                      background:D?"rgba(8,145,178,.15)":"#f0f9ff",color:D?"#67e8f9":"#0e7490"}}>
+                      🏷 {(fc2.diagram.data?.labels||[]).length} labels
+                    </span>
+                  )}
                   {curState2&&<span style={{fontSize:10,color:mu(D),background:D?"#1e2537":"#f3f4f6",padding:"3px 8px",borderRadius:10}}>{`Stability: ${curState2.stability?.toFixed(1)}d · ${getRetrievability(fcHist,fc2.id)??'—'}% recall`}</span>}
                 </div>
 
@@ -8026,31 +8198,106 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                   </div>
                 )}
 
-                {/* ── STEP 3: The card (3-D flip) ── */}
+                {/* ── STEP 3: Label-reveal test OR card (3-D flip) ── */}
+                {labelTestMode&&hasLabelTest ? (
+                  <div style={{...C(D),padding:20,marginBottom:14}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+                      <div>
+                        <div style={{fontSize:13,fontWeight:700,color:D?"#67e8f9":"#0e7490"}}>🏷 Label Reveal Test</div>
+                        <div style={{fontSize:11,color:mu(D),marginTop:2}}>Type each label from memory. All correct to continue.</div>
+                      </div>
+                      <button onClick={()=>{setLabelTestMode(false);setLabelTestComplete(false);}}
+                        style={{fontSize:11,color:mu(D),background:"none",border:"none",cursor:"pointer"}}>✕ Exit</button>
+                    </div>
+                    {!labelTestComplete?(
+                      <LabelledStructure
+                        imageUrl={fc2.diagram.data?.imageUrl||null}
+                        labels={fc2.diagram.data?.labels||[]}
+                        accent={fc2.diagram.accent||subj.accent}
+                        D={D}
+                        width={560}
+                        selfTestMode={true}
+                        onAllCorrect={()=>{
+                          setLabelTestComplete(true);
+                          markTodayActive();
+                          showToast("All labels correct! 🎉","success",2600);
+                        }}
+                      />
+                    ):(
+                      <div style={{textAlign:"center",padding:"20px 0"}}>
+                        <div style={{fontSize:36,marginBottom:8}}>🎉</div>
+                        <div style={{fontSize:15,fontWeight:700,marginBottom:4,color:"#059669"}}>All labels correct!</div>
+                        <div style={{fontSize:13,color:mu(D),marginBottom:16}}>Rate how well you knew this:</div>
+                        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,maxWidth:360,margin:"0 auto"}}>
+                          {[{label:"Again",color:"#ef4444",rating:1},{label:"Hard",color:"#f59e0b",rating:2},{label:"Good",color:"#3b82f6",rating:3},{label:"Easy",color:"#10b981",rating:4}].map(btn=>(
+                            <button key={btn.rating} onClick={()=>{doSM2local(btn.rating);setLabelTestMode(false);setLabelTestComplete(false);}}
+                              style={{padding:"10px 4px",borderRadius:12,border:`2px solid ${btn.color}`,background:"transparent",cursor:"pointer",color:btn.color,fontWeight:700,fontSize:13}}
+                              onMouseEnter={e=>{e.currentTarget.style.background=btn.color;e.currentTarget.style.color="#fff";}}
+                              onMouseLeave={e=>{e.currentTarget.style.background="transparent";e.currentTarget.style.color=btn.color;}}>
+                              {btn.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ):(
                 <div className="fc-scene" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
                   <div className={`fc-card${flip?" flipped":""}`}
                     onClick={()=>{if(fcConf!==null){setFlip(v=>!v);setFcHintLvl(0);}}}
-                    style={{minHeight:180,borderRadius:14,border:`1.5px solid ${flip?subj.accent:bd2}`,
+                    style={{minHeight:isDualCoded?260:180,borderRadius:14,border:`1.5px solid ${flip?subj.accent:bd2}`,
                       cursor:fcConf!==null?"pointer":"default",opacity:fcConf===null?0.5:1,transition:"opacity .2s"}}>
-                    <div className="fc-face" style={{background:D?"#161b27":"#fff"}}>
-                      <div style={{fontSize:11,fontWeight:600,letterSpacing:"0.1em",color:mu(D),textTransform:"uppercase",marginBottom:12}}>
+                    {/* FRONT FACE */}
+                    <div className="fc-face" style={{background:D?"#161b27":"#fff",padding:"20px 24px",justifyContent:"flex-start"}}>
+                      {isDualCoded&&(
+                        <div style={{width:"100%",marginBottom:12,opacity:0.75,transition:"opacity .3s"}}>
+                          {fc2.cardImage?(
+                            <img src={fc2.cardImage} alt="card visual"
+                              style={{maxWidth:"100%",maxHeight:130,borderRadius:8,display:"block",margin:"0 auto",
+                                border:`1px solid ${D?"#2a3347":"#e5e7eb"}`}}/>
+                          ):fc2.diagram?(
+                            <DiagramRenderer diagram={fc2.diagram} D={D} width={400}/>
+                          ):null}
+                        </div>
+                      )}
+                      <div style={{fontSize:11,fontWeight:600,letterSpacing:"0.1em",color:mu(D),textTransform:"uppercase",marginBottom:8,alignSelf:"flex-start"}}>
                         Question
                         {fcConf!==null&&<span style={{marginLeft:8,fontSize:10,fontWeight:700,color:CONF3.find(c=>c.v===fcConf)?.color}}>
                           · {CONF3.find(c=>c.v===fcConf)?.icon} {CONF3.find(c=>c.v===fcConf)?.label}
                         </span>}
                       </div>
                       {(fc2.images||[]).length>0&&fc2.images.map((img,ii)=><AnnotatedImage key={ii} img={img} D={D}/>)}
-                      <ContentBlock content={fc2.q} D={D} fontSize={15} style={{color:tx(D),textAlign:"center"}}/>
+                      <ContentBlock content={fc2.q} D={D} fontSize={15} style={{color:tx(D),textAlign:isDualCoded?"left":"center",width:"100%"}}/>
                       {fcConf===null
-                        ?<p style={{fontSize:11,color:mu(D),marginTop:14}}>↑ Rate your confidence first</p>
-                        :<p style={{fontSize:11,color:mu(D),marginTop:14}}>Tap to reveal · Swipe to navigate</p>}
+                        ?<p style={{fontSize:11,color:mu(D),marginTop:14,alignSelf:"center"}}>↑ Rate your confidence first</p>
+                        :<p style={{fontSize:11,color:mu(D),marginTop:14,alignSelf:"center"}}>Tap to reveal · Swipe to navigate</p>}
                     </div>
-                    <div className="fc-face fc-back" style={{background:D?"#1a1040":"#f5f3ff",borderRadius:14}}>
-                      <div style={{fontSize:11,fontWeight:600,letterSpacing:"0.1em",color:subj.accent,textTransform:"uppercase",marginBottom:12}}>Answer</div>
-                      <ContentBlock content={fc2.a} D={D} fontSize={15} style={{color:subj.accent,fontWeight:500,textAlign:"center"}}/>
+                    {/* BACK FACE */}
+                    <div className="fc-face fc-back" style={{background:D?"#1a1040":"#f5f3ff",borderRadius:14,padding:"20px 24px",justifyContent:"flex-start"}}>
+                      {isDualCoded&&(
+                        <div style={{width:"100%",marginBottom:12}}>
+                          {fc2.cardImage?(
+                            <div>
+                              <img src={fc2.cardImage} alt="card visual"
+                                style={{maxWidth:"100%",maxHeight:140,borderRadius:8,display:"block",margin:"0 auto",
+                                  border:`1.5px solid ${subj.accent}44`}}/>
+                              {fc2.cardImageCaption&&(
+                                <p style={{fontSize:10,color:subj.accent,textAlign:"center",marginTop:4,fontStyle:"italic",fontWeight:600}}>
+                                  {fc2.cardImageCaption}
+                                </p>
+                              )}
+                            </div>
+                          ):fc2.diagram?(
+                            <DiagramRenderer diagram={fc2.diagram} D={D} width={400}/>
+                          ):null}
+                        </div>
+                      )}
+                      <div style={{fontSize:11,fontWeight:600,letterSpacing:"0.1em",color:subj.accent,textTransform:"uppercase",marginBottom:8,alignSelf:"flex-start"}}>Answer</div>
+                      <ContentBlock content={fc2.a} D={D} fontSize={15} style={{color:subj.accent,fontWeight:500,textAlign:isDualCoded?"left":"center",width:"100%"}}/>
                     </div>
                   </div>
                 </div>
+                )}
 
                 {/* ── STEP 4: Post-flip self-explanation + SM-2 rating ────────
                     Chi et al. (1994, d≈0.5): generating an explanation of WHY
