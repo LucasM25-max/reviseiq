@@ -2,6 +2,7 @@ import '../src/storage.js'
 import React, { useState, useEffect, useCallback, useRef } from "react"; 
 import ReactDOM from "react-dom/client";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar, Legend } from "recharts";
+import { Analytics } from '@vercel/analytics/react';
 
 /* ─── FONTS + KATEX ──────────────────────────────────────────────────────────── */
 const _fl=document.createElement("link");_fl.rel="stylesheet";
@@ -10218,5 +10219,6 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
       D={D}
     />
     <ToastContainer/>
+    <Analytics />
   </>);
 }
