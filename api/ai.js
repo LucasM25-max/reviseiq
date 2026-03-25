@@ -1,4 +1,4 @@
-// Vercel serverless function — proxies requests to Groq API
+ // Vercel serverless function — proxies requests to Groq API
 // Browser calls /api/ai (same origin), this function calls Groq with the env var key
 // No CORS issues, key is never exposed to the browser
 
