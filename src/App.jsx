@@ -103,6 +103,65 @@ const SK = {
   FRIENDS:   u => `gcse:fr:${u.replace(/\W/g,"-")}`,
   FREQS:     u => `gcse:frq:${u.replace(/\W/g,"-")}`,
 };
+// ── Wave 5 storage keys ──────────────────────────────────────────────────────
+const SK_SESSION     = u => `gcse:session:${u.replace(/\W/g,"-")}`;
+const SK_JOURNAL     = (u,sId) => `gcse:journal:${u.replace(/\W/g,"-")}:${sId}`;
+const SK_CALIBRATION = (u,sId) => `gcse:cal:${u.replace(/\W/g,"-")}:${sId}`;
+
+// Brier score helper: mean((prediction - outcome)^2), lower = better
+function calcBrierScore(predictions) {
+  if(!predictions||!predictions.length) return null;
+  const sum = predictions.reduce((acc,p) => acc + Math.pow(p.pred - p.outcome, 2), 0);
+  return sum / predictions.length;
+}
+// Confidence level (1-3) → probability
+function confToProb(conf) {
+  if(conf===1) return 0.2;
+  if(conf===2) return 0.5;
+  if(conf===3) return 0.85;
+  return 0.5;
+}
+// Strategy logic for Feature 21
+function getStrategyRecommendation(subj, allSections, fcHist, calibData, timetableExams, stats) {
+  const secs = allSections.filter(s=>s.subjectId===subj.id);
+  const totalCards = secs.reduce((a,s)=>a+(s.flashcards||[]).length,0);
+  const dueCards = secs.reduce((a,s)=>a+(s.flashcards||[]).filter(c=>{const st=fcHist[c.id];return !st||Date.now()>=st.due;}).length,0);
+  const masteredCards = totalCards>0?totalCards-dueCards:0;
+  const masteryPct = totalCards>0?Math.round((masteredCards/totalCards)*100):0;
+  const ss = stats.subjStats&&stats.subjStats[subj.id];
+  const qPct = ss&&ss.qM>0?Math.round((ss.qS/ss.qM)*100):null;
+  const brierScore = calibData ? calcBrierScore(calibData) : null;
+  const overconfident = brierScore!=null && brierScore>0.25;
+  const daysToExam = (()=>{
+    const ex=(timetableExams||[]).filter(e=>e.subjectId===subj.id).sort((a,b)=>a.date.localeCompare(b.date))[0];
+    if(!ex) return null;
+    return Math.max(0,Math.round((new Date(ex.date+"T00:00:00")-Date.now())/86400000));
+  })();
+  // Decision logic
+  if(totalCards>0 && masteryPct<50) {
+    return {strategy:"flashcards",title:"Spaced Repetition",icon:"🃏",color:"#6366f1",
+      reason:`${dueCards} card${dueCards!==1?"s":""} due. Retrieval practice will cement this content.`};
+  }
+  if(overconfident) {
+    return {strategy:"blurting",title:"Blurting Exercise",icon:"🧠",color:"#d97706",
+      reason:"Your calibration shows you may be overestimating recall. Blurting will reveal real gaps."};
+  }
+  if(daysToExam!=null && daysToExam<=14 && masteryPct>=60) {
+    return {strategy:"questions",title:"Exam Practice",icon:"✏️",color:"#ef4444",
+      reason:`Exam in ${daysToExam} day${daysToExam!==1?"s":""}. High-pressure practice is your priority now.`};
+  }
+  if(qPct!=null && qPct<55) {
+    return {strategy:"weak",title:"Weak Topic Drill",icon:"🎯",color:"#dc2626",
+      reason:"Your question accuracy is below 55%. Target your weakest areas to maximise marks."};
+  }
+  if(masteryPct>75 && (qPct==null||qPct>65)) {
+    return {strategy:"mixed",title:"Mixed Revision",icon:"🔀",color:"#10b981",
+      reason:"Strong foundation detected. Mix flashcards, questions, and blurting to consolidate."};
+  }
+  return {strategy:"flashcards",title:"Flashcard Review",icon:"🃏",color:"#6366f1",
+    reason:"Regular spaced repetition keeps content fresh. Review your due cards now."};
+}
+
 const hashPw = s => btoa(encodeURIComponent(s)).slice(0,32);
 const ADMIN_PASS_HASH = hashPw("ReviseIQAdmin");
 const ADMIN_SCHOOL = "Gordon's School";
@@ -2509,6 +2568,749 @@ function ForecastBar({cards,fcHist,D,accent}) {
   );
 }
 
+/* ─── WAVE 5 COMPONENTS ─────────────────────────────────────────────────────
+   Feature 17: Pre-Session Goal Setting
+   Feature 18: Post-Session Reflection
+   Feature 19: Calibration Training System
+   Feature 20: Memory Decay Curve Display
+   Feature 21: Strategy Selection Guide
+─────────────────────────────────────────────────────────────────────────────── */
+
+/* ─── Feature 17: Pre-Session Goal Modal ──────────────────────────────────── */
+function SessionGoalModal({D, onStart, onSkip}) {
+  const [goal, setGoal] = React.useState("");
+  const [confidence, setConf] = React.useState(3);
+  const [duration, setDuration] = React.useState(25);
+  const times = [5,10,15,25,45,60];
+  const confLabels = ["😟 Low","🤔 Unsure","😊 OK","💪 Good","🔥 High"];
+  const bd2 = D?"#374151":"#e5e7eb";
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.65)",zIndex:9000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}} className="fade-in">
+      <div style={{background:D?"#161b27":"#fff",borderRadius:20,width:"100%",maxWidth:440,padding:28,boxShadow:"0 30px 80px rgba(0,0,0,.3)"}}>
+        <div style={{textAlign:"center",marginBottom:20}}>
+          <div style={{fontSize:36,marginBottom:8}}>🎯</div>
+          <h3 style={{fontSize:18,fontWeight:700,color:D?"#e8ecf4":"#111827",margin:0}}>Set Your Session Goal</h3>
+          <p style={{fontSize:12,color:D?"#9ca3af":"#6b7280",marginTop:4}}>30 seconds of planning = 30% better retention</p>
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:16}}>
+          <div>
+            <label style={{fontSize:11,fontWeight:700,color:D?"#9ca3af":"#6b7280",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:"0.05em"}}>What do you want to achieve?</label>
+            <input value={goal} onChange={e=>setGoal(e.target.value)}
+              placeholder="e.g. Master photosynthesis equations"
+              style={{width:"100%",padding:"10px 14px",borderRadius:10,border:`1.5px solid ${bd2}`,background:D?"#1e2537":"#f9fafb",color:D?"#e8ecf4":"#111827",fontSize:13,outline:"none",boxSizing:"border-box"}}/>
+          </div>
+          <div>
+            <label style={{fontSize:11,fontWeight:700,color:D?"#9ca3af":"#6b7280",display:"block",marginBottom:8,textTransform:"uppercase",letterSpacing:"0.05em"}}>How confident do you feel right now?</label>
+            <div style={{display:"flex",gap:6}}>
+              {[1,2,3,4,5].map(v=>(
+                <button key={v} onClick={()=>setConf(v)}
+                  style={{flex:1,padding:"8px 4px",borderRadius:10,border:`2px solid ${confidence===v?"#6366f1":bd2}`,background:confidence===v?"#6366f1":"transparent",
+                    color:confidence===v?"#fff":(D?"#9ca3af":"#6b7280"),cursor:"pointer",fontSize:12,fontWeight:confidence===v?700:400,transition:"all .12s"}}>
+                  {v}
+                </button>
+              ))}
+            </div>
+            <div style={{fontSize:11,color:"#6366f1",textAlign:"center",marginTop:4,fontWeight:600}}>{confLabels[confidence-1]}</div>
+          </div>
+          <div>
+            <label style={{fontSize:11,fontWeight:700,color:D?"#9ca3af":"#6b7280",display:"block",marginBottom:8,textTransform:"uppercase",letterSpacing:"0.05em"}}>Time available</label>
+            <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+              {times.map(t=>(
+                <button key={t} onClick={()=>setDuration(t)}
+                  style={{flex:1,minWidth:44,padding:"8px 4px",borderRadius:9,border:`2px solid ${duration===t?"#6366f1":bd2}`,
+                    background:duration===t?"#6366f1":"transparent",color:duration===t?"#fff":(D?"#9ca3af":"#6b7280"),
+                    cursor:"pointer",fontSize:12,fontWeight:duration===t?700:400,transition:"all .12s"}}>
+                  {t}m
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div style={{display:"flex",gap:10,marginTop:22}}>
+          <button onClick={onSkip}
+            style={{flex:1,padding:"11px 0",borderRadius:12,border:`1px solid ${bd2}`,background:"transparent",color:D?"#9ca3af":"#6b7280",cursor:"pointer",fontSize:13}}>
+            Skip
+          </button>
+          <button onClick={()=>onStart({goal:goal.trim(),confidence,duration,startTime:Date.now()})}
+            style={{flex:2,padding:"11px 0",borderRadius:12,border:"none",background:"#6366f1",color:"#fff",fontWeight:700,fontSize:14,cursor:"pointer"}}>
+            Start Session →
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Feature 18: Post-Session Reflection ─────────────────────────────────── */
+function PostSessionReflection({D, sessionGoal, subjectId, onSave, onSkip}) {
+  const [open, setOpen] = React.useState(true);
+  const [understood, setU] = React.useState("");
+  const [unclear, setC] = React.useState("");
+  const [improve, setI] = React.useState("");
+  const bd2 = D?"#374151":"#e5e7eb";
+  const handleSave = () => {
+    onSave({
+      date: new Date().toISOString().slice(0,10),
+      goal: sessionGoal||"",
+      reflections: {understood:understood.trim(), unclear:unclear.trim(), improve:improve.trim()}
+    });
+  };
+  if(!open) return null;
+  return (
+    <div style={{...C(D),marginTop:16,overflow:"hidden",border:"1.5px solid #6366f1"}} className="slide-up">
+      <button onClick={()=>setOpen(false)}
+        style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"12px 16px",background:D?"rgba(99,102,241,.1)":"#eef2ff",border:"none",cursor:"pointer",textAlign:"left"}}>
+        <span style={{fontSize:18}}>📝</span>
+        <span style={{flex:1,fontSize:13,fontWeight:700,color:"#6366f1"}}>Session Reflection <span style={{fontSize:11,fontWeight:400,color:D?"#a5b4fc":"#4338ca"}}>(optional — 2 mins)</span></span>
+        <span style={{fontSize:11,color:"#6366f1",fontWeight:700}}>▼</span>
+      </button>
+      <div style={{padding:"16px 18px",display:"flex",flexDirection:"column",gap:12}}>
+        {sessionGoal&&<div style={{padding:"8px 12px",borderRadius:8,background:D?"#1e2537":"#f9fafb",fontSize:12,color:D?"#9ca3af":"#6b7280"}}>
+          🎯 Goal: <em>{sessionGoal}</em>
+        </div>}
+        {[
+          {key:"understood",label:"✅ What did I understand well?",val:understood,set:setU,ph:"e.g. The stages of mitosis"},
+          {key:"unclear",label:"❓ What is still unclear?",val:unclear,set:setC,ph:"e.g. Why ATP is needed"},
+          {key:"improve",label:"🔄 What will I do differently next time?",val:improve,set:setI,ph:"e.g. Test myself without notes first"},
+        ].map(field=>(
+          <div key={field.key}>
+            <label style={{fontSize:11,fontWeight:600,color:D?"#9ca3af":"#6b7280",display:"block",marginBottom:4}}>{field.label}</label>
+            <textarea value={field.val} onChange={e=>field.set(e.target.value)} rows={2}
+              placeholder={field.ph}
+              style={{width:"100%",padding:"8px 12px",borderRadius:8,border:`1px solid ${bd2}`,background:D?"#1e2537":"#f9fafb",color:D?"#e8ecf4":"#111827",fontSize:12,resize:"none",outline:"none",boxSizing:"border-box"}}/>
+          </div>
+        ))}
+        <div style={{display:"flex",gap:8,marginTop:4}}>
+          <button onClick={onSkip} style={{flex:1,padding:"9px 0",borderRadius:10,border:`1px solid ${bd2}`,background:"transparent",color:D?"#9ca3af":"#6b7280",cursor:"pointer",fontSize:12}}>Skip</button>
+          <button onClick={handleSave} style={{flex:2,padding:"9px 0",borderRadius:10,border:"none",background:"#6366f1",color:"#fff",fontWeight:700,fontSize:13,cursor:"pointer"}}>Save Reflection ✓</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Feature 18: Study Journal Timeline ──────────────────────────────────── */
+function StudyJournalTab({D, entries, mu2, tx2}) {
+  if(!entries||!entries.length) return (
+    <div style={{padding:"40px 0",textAlign:"center"}}>
+      <p style={{fontSize:28,marginBottom:8}}>📔</p>
+      <p style={{fontSize:14,fontWeight:600,color:tx2,marginBottom:4}}>No reflections yet</p>
+      <p style={{fontSize:12,color:mu2}}>Complete a study session and add a reflection to start your journal.</p>
+    </div>
+  );
+  return (
+    <div className="fade-in">
+      {[...entries].reverse().map((entry,i)=>(
+        <div key={i} style={{display:"flex",gap:12,marginBottom:16}}>
+          <div style={{display:"flex",flexDirection:"column",alignItems:"center"}}>
+            <div style={{width:10,height:10,borderRadius:"50%",background:"#6366f1",flexShrink:0,marginTop:4}}/>
+            {i<entries.length-1&&<div style={{width:2,flex:1,background:D?"#2a3347":"#e5e7eb",marginTop:4}}/>}
+          </div>
+          <div style={{flex:1,paddingBottom:16}}>
+            <div style={{fontSize:11,color:mu2,marginBottom:4,fontWeight:600}}>{entry.date}</div>
+            {entry.goal&&<div style={{fontSize:12,color:"#6366f1",fontWeight:600,marginBottom:6}}>🎯 {entry.goal}</div>}
+            <div style={{display:"flex",flexDirection:"column",gap:6}}>
+              {entry.reflections?.understood&&(
+                <div style={{padding:"8px 12px",borderRadius:8,background:D?"rgba(16,185,129,.08)":"#f0fdf4",fontSize:12,color:D?"#6ee7b7":"#15803d"}}>
+                  <strong>✅ Understood:</strong> {entry.reflections.understood}
+                </div>
+              )}
+              {entry.reflections?.unclear&&(
+                <div style={{padding:"8px 12px",borderRadius:8,background:D?"rgba(245,158,11,.08)":"#fffbeb",fontSize:12,color:D?"#fcd34d":"#92400e"}}>
+                  <strong>❓ Unclear:</strong> {entry.reflections.unclear}
+                </div>
+              )}
+              {entry.reflections?.improve&&(
+                <div style={{padding:"8px 12px",borderRadius:8,background:D?"rgba(99,102,241,.08)":"#eef2ff",fontSize:12,color:D?"#a5b4fc":"#4338ca"}}>
+                  <strong>🔄 Next time:</strong> {entry.reflections.improve}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ─── Feature 19: Calibration Accuracy Gauge ──────────────────────────────── */
+function CalibrationGauge({D, calibData, subjectName}) {
+  const score = calibData&&calibData.length>0 ? calcBrierScore(calibData) : null;
+  if(score===null) return null;
+  // Gauge: arc from 0 (perfect) to 0.35+ (poor)
+  const clampedScore = Math.min(score, 0.35);
+  const pct = clampedScore / 0.35; // 0=great, 1=poor
+  const label = score<0.15 ? "Well-calibrated 🟢" : score<0.25 ? "Moderate 🟡" : "Overconfident 🔴";
+  const col = score<0.15 ? "#10b981" : score<0.25 ? "#f59e0b" : "#ef4444";
+  const r = 44, cx2 = 56, cy2 = 56;
+  const arcLen = Math.PI * r; // half-circle
+  const dash = arcLen * (1 - pct);
+  // Overconfident intervention
+  const showWarning = score >= 0.25 && calibData.length >= 5;
+  return (
+    <div style={{...C(D),padding:20}}>
+      <h3 style={{fontWeight:700,fontSize:14,marginBottom:4,color:D?"#e8ecf4":"#111827"}}>🎯 Calibration Accuracy</h3>
+      <p style={{fontSize:12,color:D?"#9ca3af":"#6b7280",marginBottom:14}}>How well your confidence predicts actual performance.</p>
+      <div style={{display:"flex",alignItems:"center",gap:20,flexWrap:"wrap"}}>
+        <div style={{flexShrink:0}}>
+          <svg width={112} height={68} viewBox="0 0 112 68">
+            <path d={`M 12 56 A ${r} ${r} 0 0 1 100 56`}
+              fill="none" stroke={D?"#2a3347":"#e5e7eb"} strokeWidth={10} strokeLinecap="round"/>
+            <path d={`M 12 56 A ${r} ${r} 0 0 1 100 56`}
+              fill="none" stroke={col} strokeWidth={10} strokeLinecap="round"
+              strokeDasharray={arcLen} strokeDashoffset={dash*0}
+              style={{strokeDashoffset:dash,transition:"stroke-dashoffset .8s ease"}}/>
+            <text x={cx2} y={52} textAnchor="middle" fontSize={15} fontWeight={700} fill={col}>{score.toFixed(2)}</text>
+            <text x={cx2} y={64} textAnchor="middle" fontSize={9} fill={D?"#9ca3af":"#6b7280"}>Brier score</text>
+          </svg>
+        </div>
+        <div style={{flex:1,minWidth:140}}>
+          <div style={{fontSize:14,fontWeight:700,color:col,marginBottom:4}}>{label}</div>
+          <div style={{fontSize:12,color:D?"#9ca3af":"#6b7280",lineHeight:1.55}}>
+            Based on {calibData.length} prediction{calibData.length!==1?"s":""}.
+            {score<0.15?" Your confidence closely matches your actual recall — excellent metacognition.":
+             score<0.25?" Your predictions are fairly accurate but there's room for improvement.":
+             " You're regularly overestimating your understanding."}
+          </div>
+          <div style={{display:"flex",gap:8,marginTop:8,fontSize:10,flexWrap:"wrap"}}>
+            <span style={{background:"#10b98122",color:"#10b981",padding:"2px 8px",borderRadius:10,fontWeight:600}}>🟢 &lt;0.15 good</span>
+            <span style={{background:"#f59e0b22",color:"#d97706",padding:"2px 8px",borderRadius:10,fontWeight:600}}>🟡 0.15–0.25</span>
+            <span style={{background:"#ef444422",color:"#ef4444",padding:"2px 8px",borderRadius:10,fontWeight:600}}>🔴 &gt;0.25 poor</span>
+          </div>
+        </div>
+      </div>
+      {showWarning&&(
+        <div style={{marginTop:12,padding:"10px 14px",borderRadius:10,background:D?"rgba(239,68,68,.1)":"#fef2f2",border:"1px solid #ef4444",fontSize:12,color:D?"#fca5a5":"#b91c1c",lineHeight:1.6}}>
+          ⚠️ You're overestimating your understanding — try slowing down and checking answers before committing. Consider using the Blurting tool to reveal real gaps.
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── Feature 20: Memory Decay Curve ──────────────────────────────────────── */
+function MemoryDecayChart({D, cardState, accent}) {
+  const data = React.useMemo(()=>{
+    if(!cardState||!cardState.stability) return [];
+    const stability = cardState.stability;
+    const lastReview = cardState.lastReview||Date.now();
+    const elapsedDays = (Date.now()-lastReview)/86400000;
+    const pts = [];
+    for(let d=0; d<=Math.max(30, stability*2); d+=1){
+      // Ebbinghaus: R = e^(-t/S) where S is memory strength (simplified)
+      const ebbinghaus = Math.round(Math.exp(-(d+elapsedDays)/(stability*1.5))*100);
+      // FSRS retrievability
+      const fsrs = Math.round(fsrsRetrievability(stability, d+elapsedDays)*100);
+      const nextReviewDay = Math.round(cardState.interval||stability);
+      pts.push({d, ebbinghaus:Math.max(0,ebbinghaus), fsrs:Math.max(0,fsrs),
+        isNext: d===nextReviewDay});
+    }
+    return pts;
+  },[cardState]);
+  if(!data.length) return null;
+  // Find where FSRS crosses 90%
+  const nextReview = cardState.interval||0;
+  const retAtNext = data.find(p=>p.d===Math.round(nextReview));
+  return (
+    <div style={{marginBottom:8,padding:"10px 14px",borderRadius:10,background:D?"#161b27":"#f9fafb",border:`1px solid ${D?"#2a3347":"#e5e7eb"}`}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+        <span style={{fontSize:11,fontWeight:600,color:D?"#9ca3af":"#6b7280"}}>📉 Memory decay curve</span>
+        {retAtNext&&<span style={{fontSize:10,color:accent,fontWeight:600}}>Next review: {Math.round(nextReview)}d · {retAtNext.fsrs}% recall</span>}
+      </div>
+      <ResponsiveContainer width="100%" height={80}>
+        <LineChart data={data} margin={{top:2,right:2,left:-30,bottom:0}}>
+          <XAxis dataKey="d" tick={{fontSize:8,fill:D?"#6b7280":"#9ca3af"}} tickLine={false} axisLine={false}
+            tickFormatter={v=>v%10===0?v+"d":""}/>
+          <YAxis domain={[0,100]} tick={{fontSize:8,fill:D?"#6b7280":"#9ca3af"}} tickLine={false} axisLine={false}
+            tickFormatter={v=>v===100?"":v+"%"}/>
+          <Tooltip contentStyle={{background:D?"#1e2537":"#fff",border:`1px solid ${D?"#374151":"#e5e7eb"}`,borderRadius:6,fontSize:10,padding:"4px 8px"}}
+            formatter={(val,name)=>[val+"%",name==="ebbinghaus"?"Ebbinghaus":"FSRS"]}
+            labelFormatter={v=>"Day "+v}/>
+          <Line type="monotone" dataKey="ebbinghaus" stroke={D?"#4b5563":"#d1d5db"} strokeWidth={1.5}
+            dot={false} strokeDasharray="4 2" name="ebbinghaus"/>
+          <Line type="monotone" dataKey="fsrs" stroke={accent} strokeWidth={2}
+            dot={false} name="fsrs" activeDot={{r:3}}/>
+        </LineChart>
+      </ResponsiveContainer>
+      <div style={{display:"flex",gap:12,marginTop:2,justifyContent:"center"}}>
+        <span style={{fontSize:9,color:D?"#6b7280":"#9ca3af",display:"flex",alignItems:"center",gap:3}}>
+          <span style={{width:12,height:2,background:D?"#4b5563":"#d1d5db",display:"inline-block",borderRadius:1}}/>Ebbinghaus
+        </span>
+        <span style={{fontSize:9,color:accent,display:"flex",alignItems:"center",gap:3}}>
+          <span style={{width:12,height:2,background:accent,display:"inline-block",borderRadius:1}}/>FSRS
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Feature 21: Strategy Recommendation ─────────────────────────────────── */
+function StrategyRecommendation({D, subj, allSections, fcHist, calibData, timetableExams, stats,
+  onFlashcards, onBlurt, onQuestions, onWeak}) {
+  const rec = React.useMemo(()=>getStrategyRecommendation(subj, allSections, fcHist, calibData, timetableExams, stats),
+    [subj, allSections, fcHist, calibData, timetableExams, stats]);
+  const actionMap = {flashcards:onFlashcards, blurting:onBlurt, questions:onQuestions, weak:onWeak, mixed:onFlashcards};
+  const action = actionMap[rec.strategy]||onFlashcards;
+  return (
+    <div style={{...C(D),padding:18,marginBottom:18,borderColor:rec.color,borderWidth:1.5,background:D?rec.color+"0d":rec.color+"08"}}>
+      <div style={{display:"flex",alignItems:"flex-start",gap:12,flexWrap:"wrap"}}>
+        <div style={{width:40,height:40,borderRadius:12,background:rec.color+"22",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>
+          {rec.icon}
+        </div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:11,fontWeight:700,color:rec.color,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:2}}>
+            Recommended for you
+          </div>
+          <div style={{fontSize:15,fontWeight:700,color:D?"#e8ecf4":"#111827",marginBottom:3}}>{rec.title}</div>
+          <div style={{fontSize:12,color:D?"#9ca3af":"#6b7280",lineHeight:1.55}}>{rec.reason}</div>
+        </div>
+        <button onClick={action}
+          style={{padding:"9px 18px",borderRadius:10,border:"none",background:rec.color,color:"#fff",fontWeight:700,fontSize:13,cursor:"pointer",flexShrink:0,whiteSpace:"nowrap",alignSelf:"center"}}>
+          Start →
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ─── WAVE 6 COMPONENTS ─────────────────────────────────────────────────────
+   Feature 22: Mastery Meter (three rings)
+   Feature 23: Exam Readiness Score
+   Feature 24: Achievement Milestones
+   Feature 25: Streak Redesign
+   Feature 26: Focus Mode
+─────────────────────────────────────────────────────────────────────────────── */
+
+/* ── Wave 6 storage keys ── */
+// gcse:achievements:<user>  gcse:totalDays:<user>  gcse:mockscores:<user>:<subjectId>
+
+// Feature 22: calculate mastery across three dimensions
+function calculateMastery(subjectId, allSections, fcHist, stats) {
+  const secs = allSections.filter(s=>s.subjectId===subjectId);
+  // 1. Flashcard mastery: stability > 14 days
+  const allCards = secs.flatMap(s=>s.flashcards||[]);
+  const fcMastered = allCards.filter(c=>{const st=fcHist[c.id];return st&&st.stability>14;}).length;
+  const fcMastery = allCards.length>0 ? Math.round((fcMastered/allCards.length)*100) : 0;
+  // 2. Question accuracy: first-attempt >= 70%
+  const ss = stats.subjStats&&stats.subjStats[subjectId];
+  const questionAccuracy = ss&&ss.qM>0 ? Math.round((ss.qS/ss.qM)*100) : 0;
+  // 3. Coverage: topics with any review activity
+  const totalTopics = secs.length;
+  const coveredTopics = secs.filter(s=>{
+    const hasFC = (s.flashcards||[]).some(c=>fcHist[c.id]!=null);
+    const wq = stats.weakQ&&stats.weakQ[s.id];
+    return hasFC||(wq&&wq.total>0);
+  }).length;
+  const coverage = totalTopics>0 ? Math.round((coveredTopics/totalTopics)*100) : 0;
+  const masteredTopics = secs.filter(s=>{
+    const secCards = s.flashcards||[];
+    const secFcM = secCards.length>0 ? secCards.filter(c=>{const st=fcHist[c.id];return st&&st.stability>14;}).length/secCards.length*100 : 80;
+    const wq = stats.weakQ&&stats.weakQ[s.id];
+    const secQA = wq&&wq.total>0 ? Math.round(((wq.total-wq.wrong)/wq.total)*100) : 80;
+    return secFcM>=80&&secQA>=80;
+  }).length;
+  return {flashcardMastery:fcMastery, questionAccuracy, coverage, masteredTopics, totalTopics};
+}
+
+// Feature 23: exam readiness score (0–100)
+function calculateExamReadiness(subjectId, allSections, fcHist, stats, calibData, timetableExams) {
+  const secs = allSections.filter(s=>s.subjectId===subjectId);
+  const allCards = secs.flatMap(s=>s.flashcards||[]);
+  // FSRS retrievability avg (25%)
+  let retSum=0, retCount=0;
+  allCards.forEach(c=>{
+    const st=fcHist[c.id];
+    if(st&&st.stability){
+      const el=(Date.now()-(st.lastReview||Date.now()))/86400000;
+      retSum+=fsrsRetrievability(st.stability,el);retCount++;
+    }
+  });
+  const fsrsRet = retCount>0 ? Math.round((retSum/retCount)*100) : 40;
+  // Question accuracy (20%)
+  const ss=stats.subjStats&&stats.subjStats[subjectId];
+  const qAcc = ss&&ss.qM>0 ? Math.round((ss.qS/ss.qM)*100) : 40;
+  // Coverage (15%)
+  const totalTopics=secs.length;
+  const covered=secs.filter(s=>{const wq=stats.weakQ&&stats.weakQ[s.id];return (s.flashcards||[]).some(c=>fcHist[c.id])||(wq&&wq.total>0);}).length;
+  const coverage=totalTopics>0?Math.round((covered/totalTopics)*100):40;
+  // Calibration (15%) — Brier score inverted: score 0.0 → 100, score 0.35 → 0
+  const brier = calibData&&calibData.length>=3 ? calcBrierScore(calibData) : null;
+  const calScore = brier!=null ? Math.max(0,Math.round((1-brier/0.35)*100)) : 50;
+  // Mock exam (15%) — stored separately, default 50 if no data
+  const mockScore = 50; // placeholder; real mock scores stored in gcse:mockscores
+  // Spaced distribution (10%) — ratio of cards with interval > 1 day
+  const distributed = allCards.filter(c=>{const st=fcHist[c.id];return st&&st.interval>1;}).length;
+  const spacedScore = allCards.length>0 ? Math.round((distributed/allCards.length)*100) : 40;
+  const score = Math.round(
+    fsrsRet*0.25 + qAcc*0.20 + coverage*0.15 + calScore*0.15 + mockScore*0.15 + spacedScore*0.10
+  );
+  // Insight
+  const components = [
+    {name:"FSRS retention",val:fsrsRet,w:0.25},
+    {name:"question accuracy",val:qAcc,w:0.20},
+    {name:"topic coverage",val:coverage,w:0.15},
+    {name:"calibration",val:calScore,w:0.15},
+    {name:"spaced practice",val:spacedScore,w:0.10},
+  ];
+  const weakest = [...components].sort((a,b)=>a.val-b.val)[0];
+  const grade = score>=90?"9":score>=80?"8":score>=70?"7":score>=60?"6":score>=50?"5":score>=40?"4":"3";
+  const insight = `Score ${score}/100 — on track for Grade ${grade}. Focus on ${weakest.name} (${weakest.val}%) to improve.`;
+  return {score, breakdown:{fsrsRet,qAcc,coverage,calScore,spacedScore}, insight};
+}
+
+// Feature 24: achievement definitions and checker
+const ACHIEVEMENTS = [
+  {id:"first_card",    title:"First Steps",        icon:"🃏", desc:"Complete your first flashcard review"},
+  {id:"first_session", title:"Session Starter",    icon:"⏱️",  desc:"Complete your first timed study session"},
+  {id:"streak_7",      title:"Week Warrior",       icon:"🔥", desc:"Maintain a 7-day study streak"},
+  {id:"streak_30",     title:"Monthly Master",     icon:"🏆", desc:"Maintain a 30-day study streak"},
+  {id:"cards_100",     title:"Centurion",          icon:"💯", desc:"Review 100 flashcards"},
+  {id:"perfect_cal",   title:"Mind Reader",        icon:"🎯", desc:"Achieve Brier score below 0.15"},
+  {id:"all_rings",     title:"Triple Crown",       icon:"👑", desc:"All three mastery rings reach 80%+"},
+  {id:"mastery_topic", title:"Topic Expert",       icon:"🌟", desc:"Fully master your first topic"},
+  {id:"questions_50",  title:"Practice Makes Perfect",icon:"✏️",desc:"Answer 50 exam questions"},
+  {id:"readiness_80",  title:"Exam Ready",         icon:"🎓", desc:"Achieve Exam Readiness score of 80+"},
+];
+
+function checkNewAchievements(existingIds, stats, fcHist, allSections, calibData, streak, subjects) {
+  const earned=[];
+  const has=id=>existingIds.includes(id);
+  const totalFCReviewed=Object.keys(fcHist).length;
+  const totalQ=stats.qM||0;
+  if(!has("first_card")&&totalFCReviewed>0) earned.push("first_card");
+  if(!has("streak_7")&&streak>=7) earned.push("streak_7");
+  if(!has("streak_30")&&streak>=30) earned.push("streak_30");
+  if(!has("cards_100")&&totalFCReviewed>=100) earned.push("cards_100");
+  if(!has("questions_50")&&totalQ>=50) earned.push("questions_50");
+  const allCalScores=Object.values(calibData||{}).flat();
+  if(!has("perfect_cal")&&allCalScores.length>=10&&calcBrierScore(allCalScores)<0.15) earned.push("perfect_cal");
+  // Check mastery across any subject
+  for(const s of subjects) {
+    const m=calculateMastery(s.id,allSections,fcHist,stats);
+    if(!has("mastery_topic")&&m.masteredTopics>0) earned.push("mastery_topic");
+    if(!has("all_rings")&&m.flashcardMastery>=80&&m.questionAccuracy>=80&&m.coverage>=80) earned.push("all_rings");
+  }
+  return [...new Set(earned)];
+}
+
+/* ── Feature 22: Three-Ring Mastery SVG ── */
+function MasteryRings({mastery, accent, size=60, D}) {
+  const {flashcardMastery:fm, questionAccuracy:qa, coverage:cov} = mastery;
+  const rings = [
+    {pct:fm,  color:"#6366f1", r:26, label:"FC"},
+    {pct:qa,  color:"#10b981", r:18, label:"Q"},
+    {pct:cov, color:"#f59e0b", r:10, label:"Cv"},
+  ];
+  return (
+    <svg width={size} height={size} viewBox="0 0 60 60" style={{flexShrink:0}}>
+      {rings.map(({pct,color,r})=>{
+        const circ=2*Math.PI*r;
+        const dash=circ*(pct/100);
+        return (
+          <g key={r}>
+            <circle cx={30} cy={30} r={r} fill="none" stroke={D?"#2a3347":"#e5e7eb"} strokeWidth={4}/>
+            <circle cx={30} cy={30} r={r} fill="none" stroke={color} strokeWidth={4}
+              strokeDasharray={circ} strokeDashoffset={circ-dash} strokeLinecap="round"
+              transform="rotate(-90 30 30)" style={{transition:"stroke-dashoffset .6s ease"}}/>
+          </g>
+        );
+      })}
+      <text x={30} y={34} textAnchor="middle" fontSize={10} fontWeight={700} fill={D?"#e8ecf4":"#111827"}>
+        {Math.round((fm+qa+cov)/3)}%
+      </text>
+    </svg>
+  );
+}
+
+/* ── Feature 22: Mastery Detail Panel ── */
+function MasteryPanel({D, mastery, subjectName}) {
+  const {flashcardMastery:fm,questionAccuracy:qa,coverage:cov,masteredTopics:mt,totalTopics:tt}=mastery;
+  const rings=[
+    {label:"Flashcard Mastery",val:fm,color:"#6366f1",icon:"🃏",desc:`Cards with stability >14 days`},
+    {label:"Question Accuracy",val:qa,color:"#10b981",icon:"✏️",desc:`First-attempt question scores`},
+    {label:"Topic Coverage",  val:cov,color:"#f59e0b",icon:"📚",desc:`Topics with any review activity`},
+  ];
+  const allGreen=fm>=80&&qa>=80&&cov>=80;
+  return (
+    <div style={{...C(D),padding:20,marginBottom:16}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,flexWrap:"wrap",gap:8}}>
+        <div>
+          <h3 style={{fontWeight:700,fontSize:14,margin:0}}>🎯 Mastery Meter</h3>
+          <p style={{fontSize:11,color:mu(D),margin:"2px 0 0"}}>{mt}/{tt} topics fully mastered</p>
+        </div>
+        {allGreen&&<span style={{fontSize:11,fontWeight:700,background:"#dcfce7",color:"#15803d",padding:"3px 10px",borderRadius:20}}>👑 Subject Mastered!</span>}
+      </div>
+      <div style={{display:"flex",flexDirection:"column",gap:10}}>
+        {rings.map(r=>(
+          <div key={r.label}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+              <span style={{fontSize:12,fontWeight:600,color:D?"#e8ecf4":"#374151"}}>{r.icon} {r.label}</span>
+              <span style={{fontSize:13,fontWeight:800,color:r.val>=80?"#10b981":r.val>=50?"#f59e0b":"#ef4444"}}>{r.val}%</span>
+            </div>
+            <div style={{height:6,borderRadius:6,background:D?"#2a3347":"#e5e7eb",overflow:"hidden"}}>
+              <div style={{height:"100%",borderRadius:6,background:r.color,width:r.val+"%",transition:"width .8s ease"}}/>
+            </div>
+            {r.val<80&&<p style={{fontSize:10,color:mu(D),margin:"3px 0 0"}}>{r.desc}</p>}
+          </div>
+        ))}
+      </div>
+      <div style={{display:"flex",gap:8,marginTop:12,fontSize:10,color:mu(D),flexWrap:"wrap"}}>
+        <span style={{background:"#6366f122",color:"#6366f1",padding:"2px 7px",borderRadius:8}}>🟣 Flashcards</span>
+        <span style={{background:"#10b98122",color:"#10b981",padding:"2px 7px",borderRadius:8}}>🟢 Questions</span>
+        <span style={{background:"#f59e0b22",color:"#d97706",padding:"2px 7px",borderRadius:8}}>🟡 Coverage</span>
+        <span style={{marginLeft:"auto",fontWeight:600,color:allGreen?"#10b981":mu(D)}}>All 3 ≥ 80% to master</span>
+      </div>
+    </div>
+  );
+}
+
+/* ── Feature 23: Exam Readiness Gauge ── */
+function ExamReadinessGauge({D, readiness, subjectName, accent}) {
+  const {score,breakdown,insight}=readiness;
+  const col=score>=80?"#10b981":score>=60?"#6366f1":score>=40?"#f59e0b":"#ef4444";
+  const r=40,circ=2*Math.PI*r,arc=circ*0.75;
+  const dash=arc*(score/100);
+  const offset=circ*0.125; // start at 7 o'clock
+  return (
+    <div style={{...C(D),padding:20,marginBottom:16}}>
+      <h3 style={{fontWeight:700,fontSize:14,marginBottom:4}}>🎓 Exam Readiness</h3>
+      <p style={{fontSize:11,color:mu(D),marginBottom:14}}>Combined score across all revision dimensions</p>
+      <div style={{display:"flex",alignItems:"center",gap:20,flexWrap:"wrap"}}>
+        <div style={{flexShrink:0,position:"relative"}}>
+          <svg width={100} height={100} viewBox="0 0 100 100">
+            <circle cx={50} cy={50} r={r} fill="none" stroke={D?"#2a3347":"#e5e7eb"} strokeWidth={8}
+              strokeDasharray={`${arc} ${circ-arc}`} strokeDashoffset={-offset} strokeLinecap="round"/>
+            <circle cx={50} cy={50} r={r} fill="none" stroke={col} strokeWidth={8}
+              strokeDasharray={`${dash} ${circ-dash}`} strokeDashoffset={-offset} strokeLinecap="round"
+              style={{transition:"stroke-dasharray .8s ease"}}/>
+            <text x={50} y={48} textAnchor="middle" fontSize={20} fontWeight={800} fill={col}>{score}</text>
+            <text x={50} y={62} textAnchor="middle" fontSize={9} fill={D?"#9ca3af":"#6b7280"}>/ 100</text>
+          </svg>
+        </div>
+        <div style={{flex:1,minWidth:120}}>
+          <p style={{fontSize:12,lineHeight:1.6,color:D?"#d1d5db":"#374151",marginBottom:10}}>{insight}</p>
+          <div style={{display:"flex",flexDirection:"column",gap:4}}>
+            {[
+              {l:"FSRS retention",v:breakdown.fsrsRet,w:"25%"},
+              {l:"Question accuracy",v:breakdown.qAcc,w:"20%"},
+              {l:"Coverage",v:breakdown.coverage,w:"15%"},
+              {l:"Calibration",v:breakdown.calScore,w:"15%"},
+              {l:"Spaced practice",v:breakdown.spacedScore,w:"10%"},
+            ].map(item=>(
+              <div key={item.l} style={{display:"flex",gap:6,alignItems:"center"}}>
+                <span style={{fontSize:9,color:mu(D),width:90,flexShrink:0}}>{item.l}</span>
+                <div style={{flex:1,height:4,borderRadius:4,background:D?"#2a3347":"#e5e7eb",overflow:"hidden"}}>
+                  <div style={{height:"100%",borderRadius:4,background:col,width:item.v+"%",transition:"width .6s"}}/>
+                </div>
+                <span style={{fontSize:9,fontWeight:600,color:mu(D),width:28,textAlign:"right"}}>{item.v}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Feature 24: Achievement Toast + Trophy Grid ── */
+function AchievementToast({achievement, D, onClose}) {
+  const def=ACHIEVEMENTS.find(a=>a.id===achievement)||{icon:"🏆",title:achievement,desc:""};
+  return (
+    <div className="slide-up" style={{position:"fixed",bottom:80,left:"50%",transform:"translateX(-50%)",zIndex:9999,
+      background:"linear-gradient(135deg,#6366f1,#8b5cf6)",color:"#fff",borderRadius:16,
+      padding:"14px 20px",minWidth:260,maxWidth:340,boxShadow:"0 12px 40px rgba(99,102,241,.4)",
+      display:"flex",alignItems:"center",gap:12}}>
+      <span style={{fontSize:32,flexShrink:0}}>{def.icon}</span>
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.08em",opacity:0.8,marginBottom:2}}>Achievement Unlocked!</div>
+        <div style={{fontSize:15,fontWeight:800}}>{def.title}</div>
+        <div style={{fontSize:11,opacity:0.8,marginTop:1}}>{def.desc}</div>
+      </div>
+      <button onClick={onClose} style={{background:"rgba(255,255,255,.2)",border:"none",color:"#fff",borderRadius:"50%",width:24,height:24,cursor:"pointer",fontSize:14,lineHeight:1,flexShrink:0}}>×</button>
+    </div>
+  );
+}
+
+function TrophyGrid({D, achievementIds}) {
+  if(!achievementIds||!achievementIds.length) return (
+    <div style={{textAlign:"center",padding:"32px 0",color:mu(D)}}>
+      <p style={{fontSize:28,marginBottom:6}}>🏆</p>
+      <p style={{fontSize:13}}>No achievements yet — keep studying to unlock them!</p>
+    </div>
+  );
+  return (
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))",gap:10}}>
+      {ACHIEVEMENTS.map(a=>{
+        const earned=achievementIds.includes(a.id);
+        return (
+          <div key={a.id} style={{...C(D),padding:14,textAlign:"center",opacity:earned?1:0.35,
+            borderColor:earned?"#6366f1":undefined,transition:"opacity .2s"}}>
+            <div style={{fontSize:28,marginBottom:6}}>{a.icon}</div>
+            <div style={{fontSize:12,fontWeight:700,color:D?"#e8ecf4":"#111827",marginBottom:2}}>{a.title}</div>
+            <div style={{fontSize:10,color:mu(D),lineHeight:1.4}}>{a.desc}</div>
+            {earned&&<div style={{marginTop:6,fontSize:9,color:"#6366f1",fontWeight:700}}>✓ EARNED</div>}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ── Feature 26: Focus Mode ── */
+function FocusMode({D, cards, questions, section, subj, fcHist, onExit}) {
+  const [mode,setMode]=React.useState("work");   // "work"|"break"
+  const [timeLeft,setTL]=React.useState(25*60);
+  const [running,setRunning]=React.useState(false);
+  const [workMins,setWorkMins]=React.useState(25);
+  const [noise,setNoise]=React.useState(false);
+  const [cardIdx,setCI]=React.useState(0);
+  const [flipped,setFlipped]=React.useState(false);
+  const [exitConfirm,setExitConfirm]=React.useState(false);
+  const audioCtxRef=React.useRef(null);
+  const noiseNodeRef=React.useRef(null);
+  const timerRef=React.useRef(null);
+
+  React.useEffect(()=>{
+    if(!running)return;
+    timerRef.current=setInterval(()=>{
+      setTL(t=>{
+        if(t<=1){
+          clearInterval(timerRef.current);
+          if(mode==="work"){setMode("break");setTL(5*60);}
+          else{setMode("work");setTL(workMins*60);}
+          setRunning(false);
+          return 0;
+        }
+        return t-1;
+      });
+    },1000);
+    return()=>clearInterval(timerRef.current);
+  },[running,mode,workMins]);
+
+  const toggleNoise=()=>{
+    if(!noise){
+      const ctx=new (window.AudioContext||window.webkitAudioContext)();
+      const buf=ctx.createBuffer(1,ctx.sampleRate*2,ctx.sampleRate);
+      const data=buf.getChannelData(0);
+      for(let i=0;i<data.length;i++) data[i]=(Math.random()*2-1)*0.15;
+      const src=ctx.createBufferSource();src.buffer=buf;src.loop=true;
+      const gain=ctx.createGain();gain.gain.value=0.3;
+      src.connect(gain);gain.connect(ctx.destination);src.start();
+      audioCtxRef.current=ctx;noiseNodeRef.current=src;
+    }else{
+      try{noiseNodeRef.current?.stop();audioCtxRef.current?.close();}catch(_){}
+      audioCtxRef.current=null;noiseNodeRef.current=null;
+    }
+    setNoise(v=>!v);
+  };
+
+  React.useEffect(()=>()=>{
+    clearInterval(timerRef.current);
+    try{noiseNodeRef.current?.stop();audioCtxRef.current?.close();}catch(_){}
+  },[]);
+
+  const fmtT=s=>`${String(Math.floor(s/60)).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`;
+  const timerPct=mode==="work"?(1-timeLeft/(workMins*60))*100:(1-timeLeft/(5*60))*100;
+  const r=70,circ=2*Math.PI*r;
+  const col=mode==="work"?"#6366f1":"#10b981";
+  const fc=cards[Math.min(cardIdx,cards.length-1)];
+
+  if(exitConfirm) return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.8)",zIndex:10000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+      <div style={{background:D?"#1e2537":"#fff",borderRadius:20,padding:28,maxWidth:340,textAlign:"center"}}>
+        <p style={{fontSize:18,marginBottom:8}}>⏸</p>
+        <p style={{fontSize:15,fontWeight:700,marginBottom:6}}>Exit Focus Mode?</p>
+        <p style={{fontSize:13,color:mu(D),marginBottom:18}}>Your session progress will be lost.</p>
+        <div style={{display:"flex",gap:10}}>
+          <button onClick={()=>setExitConfirm(false)} style={{flex:1,padding:"10px 0",borderRadius:10,border:"1px solid #d1d5db",background:"transparent",cursor:"pointer",fontSize:13}}>Stay</button>
+          <button onClick={onExit} style={{flex:1,padding:"10px 0",borderRadius:10,border:"none",background:"#ef4444",color:"#fff",cursor:"pointer",fontSize:13,fontWeight:700}}>Exit</button>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{position:"fixed",inset:0,background:D?"#0a0d14":"#f0f4ff",zIndex:9500,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:20}}>
+      {/* Top controls */}
+      <div style={{position:"absolute",top:0,left:0,right:0,padding:"12px 20px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <div style={{fontSize:14,fontWeight:700,color:D?"#e8ecf4":"#111827"}}>{subj?.icon} {subj?.name}</div>
+        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+          <button onClick={toggleNoise} title="Brown noise"
+            style={{fontSize:12,padding:"5px 10px",borderRadius:8,border:`1px solid ${noise?"#6366f1":"#d1d5db"}`,background:noise?"#6366f1":"transparent",color:noise?"#fff":(D?"#9ca3af":"#6b7280"),cursor:"pointer"}}>
+            {noise?"🔊":"🔇"} Noise
+          </button>
+          <button onClick={()=>setExitConfirm(true)}
+            style={{fontSize:12,padding:"5px 12px",borderRadius:8,border:"1px solid #d1d5db",background:"transparent",color:D?"#9ca3af":"#6b7280",cursor:"pointer"}}>
+            ✕ Exit
+          </button>
+        </div>
+      </div>
+
+      {/* Timer ring */}
+      <div style={{marginBottom:24,position:"relative"}}>
+        <svg width={160} height={160} viewBox="0 0 160 160">
+          <circle cx={80} cy={80} r={r} fill="none" stroke={D?"#2a3347":"#e5e7eb"} strokeWidth={8}/>
+          <circle cx={80} cy={80} r={r} fill="none" stroke={col} strokeWidth={8}
+            strokeDasharray={circ} strokeDashoffset={circ*(1-timerPct/100)} strokeLinecap="round"
+            transform="rotate(-90 80 80)" style={{transition:"stroke-dashoffset 1s linear"}}/>
+          <text x={80} y={76} textAnchor="middle" fontSize={28} fontWeight={800} fill={D?"#e8ecf4":"#111827"}>{fmtT(timeLeft)}</text>
+          <text x={80} y={96} textAnchor="middle" fontSize={11} fill={col} fontWeight={600}>{mode==="work"?"Focus":"Break"}</text>
+        </svg>
+      </div>
+
+      {/* Timer controls */}
+      <div style={{display:"flex",gap:10,marginBottom:24,alignItems:"center"}}>
+        {!running?(
+          <>
+            <select value={workMins} onChange={e=>{setWorkMins(Number(e.target.value));setTL(Number(e.target.value)*60);}}
+              style={{padding:"6px 10px",borderRadius:8,border:"1px solid #d1d5db",background:D?"#1e2537":"#fff",color:D?"#e8ecf4":"#111827",fontSize:12}}>
+              {[5,10,15,25,45,60].map(m=><option key={m} value={m}>{m} min</option>)}
+            </select>
+            <button onClick={()=>setRunning(true)}
+              style={{padding:"10px 24px",borderRadius:12,border:"none",background:col,color:"#fff",fontWeight:700,fontSize:15,cursor:"pointer"}}>
+              ▶ Start
+            </button>
+          </>
+        ):(
+          <button onClick={()=>setRunning(false)}
+            style={{padding:"10px 24px",borderRadius:12,border:"none",background:"#f59e0b",color:"#fff",fontWeight:700,fontSize:15,cursor:"pointer"}}>
+            ⏸ Pause
+          </button>
+        )}
+      </div>
+
+      {/* Current flashcard */}
+      {mode==="work"&&fc&&(
+        <div style={{width:"100%",maxWidth:500}}>
+          <div style={{fontSize:11,fontWeight:600,color:mu(D),textAlign:"center",marginBottom:8,textTransform:"uppercase",letterSpacing:"0.08em"}}>
+            Card {Math.min(cardIdx,cards.length-1)+1} / {cards.length} · {flipped?"Answer":"Question"}
+          </div>
+          <div onClick={()=>setFlipped(v=>!v)}
+            style={{...C(D),padding:32,textAlign:"center",cursor:"pointer",minHeight:140,display:"flex",alignItems:"center",justifyContent:"center",
+              borderColor:flipped?"#6366f1":undefined}}>
+            <div style={{fontSize:17,lineHeight:1.7,fontWeight:flipped?600:400,color:flipped?"#6366f1":tx(D)}}>
+              {flipped?(fc.a||fc.back||""):(fc.q||fc.front||"")}
+            </div>
+          </div>
+          <div style={{display:"flex",gap:8,marginTop:10}}>
+            <button onClick={()=>{setCI(i=>i>0?i-1:cards.length-1);setFlipped(false);}}
+              style={{flex:1,padding:"10px 0",borderRadius:10,border:"1px solid #d1d5db",background:"transparent",color:mu(D),cursor:"pointer",fontSize:13}}>←</button>
+            <button onClick={()=>{setCI(i=>(i+1)%cards.length);setFlipped(false);}}
+              style={{flex:1,padding:"10px 0",borderRadius:10,border:"none",background:"#6366f1",color:"#fff",cursor:"pointer",fontSize:13,fontWeight:700}}>→</button>
+          </div>
+        </div>
+      )}
+      {mode==="break"&&(
+        <div style={{textAlign:"center"}}>
+          <p style={{fontSize:36,marginBottom:8}}>☕</p>
+          <p style={{fontSize:16,fontWeight:700,color:D?"#e8ecf4":"#111827",marginBottom:4}}>Break time!</p>
+          <p style={{fontSize:13,color:mu(D)}}>Step away, breathe, hydrate. Your brain is consolidating.</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ─── ADMIN IMPORT MODAL ─────────────────────────────────────────────────── */
 function ManageAccountsModal({D, accounts, adminUser, onClose, onDelete}) {
   var users = Object.keys(accounts).filter(function(u){ return u!==adminUser; }).sort();
@@ -3104,7 +3906,7 @@ function Header({user,userDisplayName,D,onDark,onHome,onDash,onTarget,onTimetabl
 }
 
 /* ─── ACCOUNT SETTINGS SCREEN ───────────────────────────────────────────────── */
-function AccountScreen({D,user,userDisplayName,userSchool,accounts,selectedSubjectIds,boardSels,onBack,onSave,onEditSubjects}) {
+function AccountScreen({D,user,userDisplayName,userSchool,accounts,selectedSubjectIds,boardSels,achievements,onBack,onSave,onEditSubjects}) {
   var [dnIn, setDNIn] = React.useState(userDisplayName||"");
   var [schIn, setSchIn] = React.useState(userSchool||"");
   var [pwIn, setPwIn] = React.useState("");
@@ -3206,6 +4008,19 @@ function AccountScreen({D,user,userDisplayName,userSchool,accounts,selectedSubje
             )}
           </div>
         </div>
+
+        {/* W6: Achievement trophies */}
+        {achievements&&(
+          <div style={{...C(D),padding:22,marginBottom:18}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14,flexWrap:"wrap"}}>
+              <div>
+                <h3 style={{fontSize:15,fontWeight:700,color:D?"#e8ecf4":"#111827",margin:0}}>🏆 Achievements</h3>
+                <p style={{fontSize:12,color:D?"#9ca3af":"#6b7280",margin:"2px 0 0"}}>{achievements.length} / {ACHIEVEMENTS.length} unlocked</p>
+              </div>
+            </div>
+            <TrophyGrid D={D} achievementIds={achievements.map(a=>a.id)}/>
+          </div>
+        )}
 
         <button onClick={onBack}
           style={{width:"100%",background:"transparent",color:mu(D),border:"1.5px solid "+bd2,borderRadius:12,padding:"10px 0",fontSize:13,cursor:"pointer"}}>
@@ -6665,6 +7480,20 @@ export default function App() {
   const [labelTestMode, setLabelTestMode] = useState(false);   // Change 14 — label-reveal self-test
   const [labelTestComplete, setLabelTestComplete] = useState(false); // Change 14
 
+  // ── Wave 5 state ──────────────────────────────────────────────────────────
+  const [sessionSetup, setSessionSetup] = useState(null);    // {goal,confidence,duration,startTime}
+  const [showGoalModal, setShowGoalModal] = useState(false); // Feature 17
+  const [showReflection, setShowReflection] = useState(false); // Feature 18
+  const [journalData, setJournalData] = useState({});          // {subjectId:[entries]}
+  const [calibrationData, setCalibrationData] = useState({}); // {subjectId:[{pred,outcome}]}
+  const [goalModalShownThisTab, setGoalModalShownThisTab] = useState(false); // prevent double-show
+
+  // ── Wave 6 state ──────────────────────────────────────────────────────────
+  const [achievements, setAchievements] = useState([]);        // [{id,title,desc,dateEarned}]
+  const [newAchievement, setNewAchievement] = useState(null);  // id of just-unlocked achievement
+  const [focusMode, setFocusMode] = useState(false);           // Feature 26
+  const [totalDaysStudied, setTotalDaysStudied] = useState(0); // Feature 25
+
   const [stats,setStats]     = useState({fcC:0,fcT:0,qS:0,qM:0,weakQ:{},weakFC:{},subjStats:{}});
   const [targetGrades,setTargetGrades] = useState({});
 
@@ -6850,6 +7679,40 @@ export default function App() {
         const ucr=await window.storage.get("gcse:uc:all:"+user.replace(/\W/g,"-"),false);
         if(ucr?.value){var ucParsed=JSON.parse(ucr.value);if(ucParsed&&typeof ucParsed==="object")setUserContent(ucParsed);}
       }catch(_){}
+      // Wave 5: Load calibration data for each selected subject
+      try{
+        const sIds=[...new Set([...(savedSels?Object.keys(savedSels):[]),...ALL_SUBJECTS.map(s=>s.id)])];
+        const calResults=await Promise.allSettled(sIds.map(sId=>window.storage.get(SK_CALIBRATION(user,sId),true)));
+        const calMap={};
+        calResults.forEach((r,i)=>{
+          if(r.status==="fulfilled"&&r.value?.value){
+            try{calMap[sIds[i]]=JSON.parse(r.value.value);}catch(_){}
+          }
+        });
+        if(Object.keys(calMap).length)setCalibrationData(calMap);
+      }catch(_){}
+      // Wave 5: Load journal entries for each subject
+      try{
+        const jIds=ALL_SUBJECTS.map(s=>s.id);
+        const jResults=await Promise.allSettled(jIds.map(sId=>window.storage.get(SK_JOURNAL(user,sId),true)));
+        const jMap={};
+        jResults.forEach((r,i)=>{
+          if(r.status==="fulfilled"&&r.value?.value){
+            try{const parsed=JSON.parse(r.value.value);if(Array.isArray(parsed)&&parsed.length)jMap[jIds[i]]=parsed;}catch(_){}
+          }
+        });
+        if(Object.keys(jMap).length)setJournalData(jMap);
+      }catch(_){}
+      // Wave 6: Load achievements
+      try{
+        const ar=await window.storage.get("gcse:achievements:"+user.replace(/\W/g,"-"),true);
+        if(ar?.value){const a=JSON.parse(ar.value);if(Array.isArray(a))setAchievements(a);}
+      }catch(_){}
+      // Wave 6: Load total days studied
+      try{
+        const td=await window.storage.get("gcse:totalDays:"+user.replace(/\W/g,"-"),true);
+        if(td?.value)setTotalDaysStudied(Number(td.value)||0);
+      }catch(_){}
     })();
   },[user,ready]);
 
@@ -6868,11 +7731,17 @@ export default function App() {
       if(prev.has(today)) return prev;
       const next=new Set(prev); next.add(today);
       setStreakPop(true); setTimeout(()=>setStreakPop(false),400);
+      // Wave 6: increment total days
+      setTotalDaysStudied(d=>{
+        const nd=d+1;
+        window.storage.set("gcse:totalDays:"+user.replace(/\W/g,"-"),String(nd),true).catch(()=>{});
+        return nd;
+      });
       return next;
     });
     setAC(prev=>({...prev,[today]:(prev[today]||0)+1}));
     trackEvent('session_active', { screen });
-  },[]);
+  },[user]);
 
   const saveAccounts = async n => { try{await window.storage.set(SK.ACCOUNTS,JSON.stringify(n),true);}catch(_){} };
 
@@ -6914,7 +7783,44 @@ export default function App() {
     setPersonalSubjects(ps);
     window.storage.set(SK_PERSONAL(user),JSON.stringify(ps),false).catch(()=>{});
   };
-  // Global keyboard shortcuts
+
+  // Wave 5 helpers
+  const saveJournalEntry = (subjectId, entry) => {
+    setJournalData(prev=>{
+      const cur=prev[subjectId]||[];
+      const next=[...cur,entry].slice(-50);
+      window.storage.set(SK_JOURNAL(user,subjectId),JSON.stringify(next),true).catch(()=>{});
+      return{...prev,[subjectId]:next};
+    });
+    setShowReflection(false);
+    showToast("Reflection saved ✓","success");
+  };
+  const saveSessionSetup = async (setup) => {
+    setSessionSetup(setup);
+    setShowGoalModal(false);
+    try{
+      const key=SK_SESSION(user);
+      const existing=(await window.storage.get(key,true).catch(()=>({})))?.value;
+      const all=existing?JSON.parse(existing):[];
+      all.push({...setup,subjectId:subjDef?.id});
+      await window.storage.set(key,JSON.stringify(all.slice(-100)),true);
+    }catch(_){}
+  };
+
+  // Wave 6: check and unlock achievements
+  const runAchievementCheck = useCallback((curAchievements)=>{
+    const existingIds=(curAchievements||achievements).map(a=>a.id);
+    const streak=calcStreak(activityDates);
+    const newIds=checkNewAchievements(existingIds,stats,fcHist,allSections,calibrationData,streak,subjects);
+    if(!newIds.length) return;
+    const now=new Date().toISOString().slice(0,10);
+    const newEntries=newIds.map(id=>{const def=ACHIEVEMENTS.find(a=>a.id===id)||{id,title:id,desc:""};return{...def,dateEarned:now};});
+    const next=[...(curAchievements||achievements),...newEntries];
+    setAchievements(next);
+    window.storage.set("gcse:achievements:"+user.replace(/\W/g,"-"),JSON.stringify(next),true).catch(()=>{});
+    // Show first newly unlocked achievement as toast
+    if(newIds[0]) { setNewAchievement(newIds[0]); setTimeout(()=>setNewAchievement(null),4000); }
+  },[achievements,stats,fcHist,allSections,calibrationData,activityDates,subjects,user]);
   useEffect(()=>{
     const handler=(e)=>{
       const tag=document.activeElement?.tagName;
@@ -7253,6 +8159,7 @@ export default function App() {
     setFcConf(null);setFcHintLvl(0);setFcSelfExp("");setFcSelfOpen(false);
     setQConf(null);setQHintLvl(0);setQSelfExp("");setQSelfDone(false);
     setLabelTestMode(false);setLabelTestComplete(false);
+    setGoalModalShownThisTab(false);setShowGoalModal(false);setShowReflection(false);
     setScreen("section");
   };
 
@@ -7466,6 +8373,7 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
       accounts={accounts}
       selectedSubjectIds={selectedSubjectIds||[]}
       boardSels={boardSels}
+      achievements={achievements}
       onBack={()=>setScreen("home")}
       onEditSubjects={()=>setShowSubjectSelection(true)}
       onSave={function(changes){
@@ -7542,6 +8450,10 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                 <div style={{fontSize:11,color:mu(D),marginBottom:2}}>Longest streak</div>
                 <div style={{fontWeight:700,fontSize:18,color:mu(D)}}>{calcLongestStreak(activityDates)}d</div>
               </div>
+              {totalDaysStudied>0&&<div style={{textAlign:"right",marginLeft:12}}>
+                <div style={{fontSize:11,color:mu(D),marginBottom:2}}>Total days</div>
+                <div style={{fontWeight:700,fontSize:18,color:"#6366f1"}}>📈{totalDaysStudied}</div>
+              </div>}
             </div>
             <div style={{display:"flex",gap:3,overflowX:"auto",paddingBottom:2,marginBottom:14}}>
               {(()=>{const weeks=[];const t=new Date();t.setHours(0,0,0,0);const dow=t.getDay()===0?6:t.getDay()-1;const start=new Date(t);start.setDate(start.getDate()-dow-14);for(let w=0;w<3;w++){const week=[];for(let d=0;d<7;d++){const dt=new Date(start);dt.setDate(dt.getDate()+w*7+d);const k=dt.toISOString().slice(0,10);week.push({k,a:activityDates.has(k),t:k===todayStr()});}weeks.push(week);}return weeks.map((wk,wi)=>(
@@ -7597,19 +8509,24 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
             const predicted=qPct!=null?pctToGrade(qPct):null;
             const target=targetGrades[s.id]||null;
             const customCount=(bData.custom||[]).length;
+            const mastery=calculateMastery(s.id,allSections,fcHist,stats);
+            const hasMasteryData=mastery.flashcardMastery>0||mastery.questionAccuracy>0||mastery.coverage>0;
             return (
               <button key={s.id} onClick={async()=>{setSubIdx(si);setSubjTab("sections");await ensureBoardLoaded(s.id,selBoard);setScreen("subject");}}
                 style={{...C(D),padding:22,textAlign:"left",cursor:"pointer",display:"block",width:"100%",transition:"transform .15s,box-shadow .15s",position:"relative"}}
                 onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="0 12px 40px rgba(0,0,0,.1)"}}
                 onMouseLeave={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow=""}}>
-                {predicted&&(
-                  <div style={{position:"absolute",top:14,right:14,display:"flex",gap:5,alignItems:"center"}}>
-                    {target&&<span style={{fontSize:11,fontWeight:800,color:"#fff",background:gradeColor(target),padding:"2px 8px",borderRadius:8,opacity:0.9}} title={`Target: ${target}`}>🎯{target}</span>}
-                    <span style={{fontSize:13,fontWeight:800,color:"#fff",background:gradeColor(predicted),padding:"3px 9px",borderRadius:8}}>{predicted}</span>
-                  </div>
-                )}
+                <div style={{position:"absolute",top:12,right:12,display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4}}>
+                  {hasMasteryData
+                    ? <MasteryRings mastery={mastery} accent={s.accent} size={54} D={D}/>
+                    : predicted&&(
+                        <span style={{fontSize:13,fontWeight:800,color:"#fff",background:gradeColor(predicted),padding:"3px 9px",borderRadius:8}}>{predicted}</span>
+                      )
+                  }
+                  {target&&<span style={{fontSize:10,fontWeight:800,color:"#fff",background:gradeColor(target),padding:"1px 6px",borderRadius:6}}>🎯{target}</span>}
+                </div>
                 <div style={{width:44,height:44,borderRadius:12,background:`linear-gradient(135deg,${s.accent},${s.accent}88)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,marginBottom:12}}>{s.icon}</div>
-                <div style={{fontWeight:700,fontSize:15,marginBottom:4,paddingRight:predicted?70:0}}>{s.name}</div>
+                <div style={{fontWeight:700,fontSize:15,marginBottom:4,paddingRight:hasMasteryData?60:predicted?70:0}}>{s.name}</div>
                 <div style={{display:"flex",gap:7,flexWrap:"wrap",alignItems:"center"}}>
                   <span style={{fontSize:11,color:mu(D),background:D?"#1e2537":"#f3f4f6",padding:"2px 7px",borderRadius:10}}>{selBoard}</span>
                   {customCount>0&&<span style={{fontSize:11,color:"#6366f1",fontWeight:600}}>+{customCount}</span>}
@@ -7741,10 +8658,33 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
             );
           })()}
           <div style={{display:"flex",alignItems:"center",borderBottom:"1px solid "+bd2,marginBottom:24,gap:2,flexWrap:"wrap"}}>
-            {(subj._politics?[["sections","📚 Topics"]]:[["sections","📚 Topics"],["mynotes","📓 My Notes"],["papers","📄 Papers"]]).map(function(pair){var t=pair[0],label=pair[1];return(
+            {(subj._politics?[["sections","📚 Topics"]]:[["sections","📚 Topics"],["mynotes","📓 My Notes"],["papers","📄 Papers"],["journal","📔 Journal"]]).map(function(pair){var t=pair[0],label=pair[1];return(
               <button key={t} onClick={function(){setSubjTab(t);}} style={{padding:"10px 18px",fontSize:13,fontWeight:subjTab===t?600:400,color:subjTab===t?subj.accent:mu(D),background:"none",border:"none",cursor:"pointer",borderBottom:subjTab===t?"2px solid "+subj.accent:"2px solid transparent",marginBottom:-1,transition:"color .15s"}}>{label}</button>
             );})}
           </div>
+
+          {/* Feature 21: Strategy recommendation — shown at top of sections tab */}
+          {subjTab==="sections"&&!subj._politics&&(
+            <StrategyRecommendation
+              D={D} subj={subj} allSections={allSections} fcHist={fcHist}
+              calibData={calibrationData[subj.id]}
+              timetableExams={timetableExams} stats={stats}
+              onFlashcards={()=>{
+                const sec=allSections.filter(s=>s.subjectId===subj.id&&(s.flashcards||[]).length>0)[0];
+                if(!sec)return;
+                const ti=curTopics.findIndex(t=>t.sections.some(s=>s.id===sec.id));
+                if(ti>=0)navToSection(subIdx,ti,sec.id);
+              }}
+              onBlurt={()=>{setBlurtSubjId(subj.id);setBlurtSecId2(null);setScreen("blurting");}}
+              onQuestions={()=>{
+                const sec=allSections.filter(s=>s.subjectId===subj.id&&(s.questions||[]).length>0)[0];
+                if(!sec)return;
+                const ti=curTopics.findIndex(t=>t.sections.some(s=>s.id===sec.id));
+                if(ti>=0){navToSection(subIdx,ti,sec.id);setTab("questions");}
+              }}
+              onWeak={()=>{setTTSubj(subIdx);setScreen("target");}}
+            />
+          )}
 
           {subjTab==="sections"&&(
             <div className="fade-in">
@@ -7867,6 +8807,36 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
           )}
           {subjTab==="mynotes"&&<SubjMyNotesTab D={D} subjId={subj.id} ucData={userContent} setModal={setModal} deleteUCSection={deleteUCSection} tx2={tx(D)} mu2={mu(D)}/>}
           {subjTab==="papers"&&<PastPapersTab papers={curBData.papers} onAdd={()=>setModal({mode:"paper"})} onDelete={deletePaper} admin={admin} D={D} accent={subj.accent} board={curBoard} subjectName={subj.name}/>}
+          {subjTab==="journal"&&(
+            <div className="fade-in">
+              {/* W6: Mastery + Readiness panels */}
+              {!subj._politics&&(()=>{
+                const mastery=calculateMastery(subj.id,allSections,fcHist,stats);
+                const readiness=calculateExamReadiness(subj.id,allSections,fcHist,stats,calibrationData[subj.id],timetableExams);
+                return (<>
+                  <MasteryPanel D={D} mastery={mastery} subjectName={subj.name}/>
+                  <ExamReadinessGauge D={D} readiness={readiness} subjectName={subj.name} accent={subj.accent}/>
+                  {(calibrationData[subj.id]||[]).length>=3&&(
+                    <CalibrationGauge D={D} calibData={calibrationData[subj.id]} subjectName={subj.name}/>
+                  )}
+                </>);
+              })()}
+              {/* Focus Mode button */}
+              {!subj._politics&&(
+                <button onClick={()=>setFocusMode(true)}
+                  style={{...B("#6366f1",true,{width:"100%",padding:"11px 0",fontSize:13,fontWeight:700,marginBottom:18})}}>
+                  🎯 Start Focus Mode
+                </button>
+              )}
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:8}}>
+                <div>
+                  <h3 style={{fontSize:15,fontWeight:700,margin:0}}>📔 Study Journal</h3>
+                  <p style={{fontSize:12,color:mu(D),margin:"2px 0 0"}}>Your post-session reflections for {subj.name}</p>
+                </div>
+              </div>
+              <StudyJournalTab D={D} entries={journalData[subj.id]||[]} mu2={mu(D)} tx2={tx(D)}/>
+            </div>
+          )}
         </div>
         {modal?.mode==="section"&&<CreateModal mode="section" D={D} subjects={subjects} onClose={()=>setModal(null)} onSave={addCustomSection}/>}
         {modal?.mode==="subtopic"&&modal._parentTopicId&&<CreateModal mode="subtopic" D={D} subjects={subjects} onClose={()=>setModal(null)} onSave={st=>addSubtopic(modal._parentTopicId,st)}/>}
@@ -7951,7 +8921,13 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
           </div>
         )}
         <div style={{maxWidth:inFocusMode?680:760,margin:"0 auto",padding:inFocusMode?"16px 24px":"28px 24px",paddingBottom:100}}>
-          {!inFocusMode && <button onClick={()=>setScreen("subject")} style={{fontSize:13,color:mu(D),background:"none",border:"none",cursor:"pointer",marginBottom:16}}>← {subj.name}</button>}
+          {!inFocusMode && <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+            <button onClick={()=>setScreen("subject")} style={{fontSize:13,color:mu(D),background:"none",border:"none",cursor:"pointer"}}>← {subj.name}</button>
+            <button onClick={()=>setFocusMode(true)}
+              style={{fontSize:12,padding:"6px 14px",borderRadius:8,border:"1px solid #6366f1",background:"transparent",color:"#6366f1",cursor:"pointer",fontWeight:600}}>
+              🎯 Focus Mode
+            </button>
+          </div>}
           {!inFocusMode && <div style={{marginBottom:20}}>
             <h2 style={{fontSize:18,fontWeight:700,marginBottom:4}}>{section.title}</h2>
             <p style={{fontSize:12,color:mu(D)}}>{subj.name} · {curBoard}</p>
@@ -8013,6 +8989,11 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
           )}
 
           {tab==="flashcards"&&(()=>{
+            // Feature 17: Show goal modal on first entry to flashcard tab
+            if(!goalModalShownThisTab&&!showGoalModal&&cards.length>0){
+              setGoalModalShownThisTab(true);
+              setShowGoalModal(true);
+            }
             // Shuffle mode — uses top-level shuffledCards (Rules of Hooks compliant)
             const [shuffled,setShuffled]=[shuffledCards,setShuffledCards];
             const activeCards=shuffled||cards;
@@ -8051,6 +9032,18 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                 setFCH(prevH=>{const ps=getCardState(prevH,cardId);return{...prevH,[cardId]:fsrsNext(ps,rating)};});
               }
               const correct=rating>=3;
+              // Feature 19: record calibration prediction vs outcome
+              if(fcConf!==null){
+                const pred=confToProb(fcConf);
+                const outcome=correct?1:0;
+                const sId=subjDef?.id||"";
+                setCalibrationData(prev=>{
+                  const cur=prev[sId]||[];
+                  const next=[...cur,{pred,outcome,ts:Date.now()}].slice(-200);
+                  window.storage.set(SK_CALIBRATION(user,sId),JSON.stringify(next),true).catch(()=>{});
+                  return{...prev,[sId]:next};
+                });
+              }
               setStats(s=>{
                 const wfc={...s.weakFC};
                 wfc[section.id]={wrong:(wfc[section.id]?.wrong||0)+(correct?0:1),total:(wfc[section.id]?.total||0)+1};
@@ -8061,6 +9054,8 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
               trackEvent('card_rated', { sectionId: section?.id, subjectId: subjDef?.id, value: rating });
               setFlip(false);setFcConf(null);setFcHintLvl(0);setFcSelfExp("");setFcSelfOpen(false);
               setFcIdx(i=>{const len=activeCards.length;return len>0?(i<len-1?i+1:0):0;});
+              // Wave 6: check achievements after rating
+              setTimeout(()=>runAchievementCheck(null),300);
             };
 
             const CONF3=[
@@ -8101,6 +9096,11 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                     <SRInfoTooltip D={D}/>
                   </div>
                 </div>
+
+                {/* Feature 20: Memory decay curve for current card */}
+                {fc2&&curState2&&curState2.stability>0&&(
+                  <MemoryDecayChart D={D} cardState={curState2} accent={subj.accent}/>
+                )}
 
                 <ForecastBar cards={activeCards} fcHist={fcHist} D={D} accent={subj.accent}/>
 
@@ -8366,6 +9366,10 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                 <button onClick={()=>{const c={...fcHist};activeCards.forEach(x=>delete c[x.id]);setFCH(c);setFcIdx(0);setFlip(false);setFcConf(null);setFcHintLvl(0);showToast("Cards reset");}}
                   style={{marginTop:14,display:"block",margin:"14px auto 0",fontSize:11,color:mu(D),background:"none",border:"none",cursor:"pointer",textDecoration:"underline"}}>
                   Reset all cards
+                </button>
+                <button onClick={()=>{setShowReflection(true);runAchievementCheck(null);}}
+                  style={{display:"block",margin:"8px auto 0",fontSize:11,color:"#6366f1",background:"none",border:"1px solid #6366f1",borderRadius:8,padding:"5px 14px",cursor:"pointer"}}>
+                  📝 End Session & Reflect
                 </button>
               </>}
             </div>
@@ -8955,6 +9959,28 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
               </div>
             );
           })()}
+
+          {/* W5+W6: Calibration summary across all subjects */}
+          {(()=>{
+            const allPreds=Object.values(calibrationData).flat();
+            if(!allPreds.length) return null;
+            return <CalibrationGauge D={D} calibData={allPreds} subjectName="All Subjects"/>;
+          })()}
+
+          {/* W6: Total days studied banner */}
+          {totalDaysStudied>0&&(
+            <div style={{...C(D),padding:18,display:"flex",alignItems:"center",gap:16,flexWrap:"wrap"}}>
+              <div style={{fontSize:32}}>📈</div>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:700,fontSize:16}}>{totalDaysStudied} total days studied</div>
+                <div style={{fontSize:12,color:mu(D)}}>This never resets. Every study session counts.</div>
+              </div>
+              <div style={{textAlign:"right"}}>
+                <div style={{fontSize:11,color:mu(D)}}>Achievements</div>
+                <div style={{fontWeight:700,fontSize:20,color:"#6366f1"}}>{achievements.length}/{ACHIEVEMENTS.length}</div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -9144,6 +10170,45 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
         </div>
       )}
   return (<>
+    {/* W5: Pre-session goal modal (Feature 17) */}
+    {showGoalModal&&(
+      <SessionGoalModal D={D}
+        onStart={setup=>{saveSessionSetup(setup);}}
+        onSkip={()=>{setShowGoalModal(false);setGoalModalShownThisTab(true);}}
+      />
+    )}
+
+    {/* W5: Post-session reflection panel (Feature 18) */}
+    {showReflection&&screen==="section"&&subjDef&&(
+      <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:800,padding:"0 16px 16px",maxWidth:680,margin:"0 auto"}}>
+        <PostSessionReflection
+          D={D}
+          sessionGoal={sessionSetup?.goal}
+          subjectId={subjDef.id}
+          onSave={entry=>{saveJournalEntry(subjDef.id,entry);runAchievementCheck(null);}}
+          onSkip={()=>setShowReflection(false)}
+        />
+      </div>
+    )}
+
+    {/* W6: Achievement toast (Feature 24) */}
+    {newAchievement&&(
+      <AchievementToast achievement={newAchievement} D={D} onClose={()=>setNewAchievement(null)}/>
+    )}
+
+    {/* W6: Focus Mode overlay (Feature 26) */}
+    {focusMode&&screen==="section"&&section&&(
+      <FocusMode
+        D={D}
+        cards={section.flashcards||[]}
+        questions={section.questions||[]}
+        section={section}
+        subj={subjDef}
+        fcHist={fcHist}
+        onExit={()=>setFocusMode(false)}
+      />
+    )}
+
     <MobileBottomNav
       screen={screen}
       onHome={()=>setScreen("home")}
