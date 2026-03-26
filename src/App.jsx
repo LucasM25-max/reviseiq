@@ -9801,6 +9801,13 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                           {showSketch&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginTop:8}}><SketchCanvas D={D}/><DiagramRenderer diagram={fc2.diagram} D={D} width={240}/></div>}
                         </div>
                       )}
+                      {(fc2.type==="cloze"||fc2.type==="sequence") ? (
+                        fc2.type==="cloze"
+                          ? <ClozeCard card={fc2} D={D} onSubmit={()=>setFcSelfOpen(true)}/>
+                          : <SequenceCard card={fc2} D={D} onSubmit={()=>setFcSelfOpen(true)}/>
+                      ) : (
+                        <ContentBlock content={fc2.a} D={D} fontSize={15} style={{color:subj.accent,fontWeight:500,textAlign:isDualCoded?"left":"center",width:"100%"}}/>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -9888,6 +9895,7 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                       style={{marginTop:6,marginLeft:6,padding:"6px 10px",borderRadius:8,border:"none",background:"#6366f1",color:"#fff",fontSize:12}}>Prompt→SVG</button>
                     {explainFeedback&&<div style={{marginTop:6,fontSize:12}}><div>✅ {explainFeedback.correct}</div><div>🧩 {explainFeedback.missing}</div></div>}
                     {svgPreview&&<div style={{marginTop:8}} dangerouslySetInnerHTML={{__html:String(svgPreview).includes("<svg")?svgPreview:""}}/>}
+                    {explainFeedback&&<div style={{marginTop:6,fontSize:12}}><div>✅ {explainFeedback.correct}</div><div>🧩 {explainFeedback.missing}</div></div>}
                   </details>
                 )}
 
