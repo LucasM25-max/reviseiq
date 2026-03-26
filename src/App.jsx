@@ -2,7 +2,7 @@ import '../src/storage.js'
 import React, { useState, useEffect, useCallback, useRef } from "react"; 
 import ReactDOM from "react-dom/client";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar, Legend } from "recharts";
-import { buildTodaySessionPlan, computeNextBestActions, getSubjectStrategy } from "./learningEngine.js";
+import { computeNextBestActions, getSubjectStrategy } from "./learningEngine.js";
 
 /* ─── FONTS + KATEX ──────────────────────────────────────────────────────────── */
 const _fl=document.createElement("link");_fl.rel="stylesheet";
