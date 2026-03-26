@@ -9641,7 +9641,8 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
             <div className="fade-in">
               {admin&&<AdminBar D={D} actions={[{label:"＋ Add Flashcard",fn:()=>setModal({mode:"flashcard",sectionId:section.id})}]}/>}
               {activeCards.length===0&&<div style={{...C(D),padding:32,textAlign:"center",color:mu(D),fontSize:14}}>No flashcards yet.{admin?" Add one above.":""}</div>}
-              {fc2&&<>
+              {fc2&&(
+                <div>
                 {/* Status bar */}
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 14px",borderRadius:10,background:D?"#1e2537":"#f3f4f6",marginBottom:8}}>
                   <span style={{fontSize:12,color:mu(D)}}><strong style={{color:cramMode?"#6366f1":dueCards2.length>0?"#f59e0b":tx(D)}}>{cramMode?"CRAM":dueCards2.length}</strong>{cramMode?" mode":" due"} · {activeCards.filter(c=>{const s=getCardState(fcHist,c.id);return s&&!isCardDue(fcHist,c.id);}).length} scheduled</span>
@@ -9887,6 +9888,7 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                       )}
                   </div>
                 </div>
+                </div>
                 )}
 
                 {/* ── STEP 4: Post-flip self-explanation + SM-2 rating ────────
@@ -9991,7 +9993,7 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                   style={{display:"block",margin:"8px auto 0",fontSize:11,color:"#6366f1",background:"none",border:"1px solid #6366f1",borderRadius:8,padding:"5px 14px",cursor:"pointer"}}>
                   📝 End Session & Reflect
                 </button>
-              </>}
+                </div>)}
             </div>
             );
           })()}
