@@ -108,6 +108,8 @@ const SK_SESSION     = u => `gcse:session:${u.replace(/\W/g,"-")}`;
 const SK_JOURNAL     = (u,sId) => `gcse:journal:${u.replace(/\W/g,"-")}:${sId}`;
 const SK_CALIBRATION = (u,sId) => `gcse:cal:${u.replace(/\W/g,"-")}:${sId}`;
 const SK_ERROR_PATTERNS = (u,sId) => `gcse:errorPatterns:${(u||"").replace(/\W/g,"-")}:${(sId||"")}`;
+const SK_GRAPH = (u,sId) => `gcse:graph:${(u||"").replace(/\W/g,"-")}:${sId}`;
+const SK_SVG_ASSETS = u => `gcse:svgAssets:${(u||"").replace(/\W/g,"-")}`;
 
 // Brier score helper: mean((prediction - outcome)^2), lower = better
 function calcBrierScore(predictions) {
@@ -1285,6 +1287,90 @@ function ProgressiveDiagram({steps=[],D}){
 function ConceptMap({x,y,relation,D}){
   return <svg viewBox="0 0 360 120" style={{width:"100%",maxWidth:420}}><circle cx="70" cy="60" r="32" fill={D?"#1e293b":"#eef2ff"} stroke="#6366f1"/><circle cx="290" cy="60" r="32" fill={D?"#1e293b":"#eef2ff"} stroke="#6366f1"/><text x="70" y="64" textAnchor="middle" fontSize="12">{x||"X"}</text><text x="290" y="64" textAnchor="middle" fontSize="12">{y||"Y"}</text><line x1="104" y1="60" x2="256" y2="60" stroke="#6366f1" markerEnd="url(#arr)"/><defs><marker id="arr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#6366f1"/></marker></defs><text x="180" y="48" textAnchor="middle" fontSize="11">{relation||"relates to"}</text></svg>;
 }
+function getNodePositions(nodes,w=560,h=360){
+  const r=Math.min(w,h)*0.36,cx=w/2,cy=h/2;
+  return (nodes||[]).map(function(n,i){
+    const a=(Math.PI*2*i)/Math.max(nodes.length,1)-Math.PI/2;
+    return {...n,x:cx+r*Math.cos(a),y:cy+r*Math.sin(a)};
+  });
+}
+function calculateFrontier(graph, masteryMap){
+  const m=masteryMap||{};
+  const edges=(graph?.edges||[]);
+  return (graph?.nodes||[]).filter(function(n){
+    const mn=Number(m[n.id]??n.mastery??0);
+    if(mn>=70) return false;
+    return edges.some(function(e){
+      const other=e.from===n.id?e.to:e.to===n.id?e.from:null;
+      if(!other) return false;
+      const mo=Number(m[other]||0);
+      return mo>=70;
+    });
+  }).map(n=>n.id);
+}
+function checkPrerequisites(graph, topicId, masteryMap, threshold){
+  const t=threshold==null?60:threshold;
+  const edges=(graph?.edges||[]).filter(e=>e.to===topicId&&e.type==="requires");
+  const unmet=edges.filter(e=>Number(masteryMap?.[e.from]||0)<t).map(e=>e.from);
+  return unmet;
+}
+function ProcessCard({card,D}){
+  const [idx,setIdx]=React.useState(0);
+  const steps=card?.steps||[];
+  React.useEffect(()=>setIdx(0),[card?.id]);
+  return <div style={{...C(D),padding:12}}><div style={{fontSize:13,fontWeight:700,marginBottom:8}}>{steps[idx]?.label||"Step"}</div><button onClick={()=>setIdx(i=>Math.min(steps.length-1,i+1))} style={{padding:"6px 10px",borderRadius:8,border:"none",background:"#6366f1",color:"#fff"}}>Next Step</button><div style={{marginTop:10,fontSize:12,color:mu(D)}}>{steps.map((s,i)=><div key={i}>{i+1}. {s.label}</div>)}</div></div>;
+}
+function SketchCanvas({D}){
+  const ref=React.useRef(null); const drawing=React.useRef(false);
+  const start=e=>{drawing.current=true; const c=ref.current.getContext("2d"); c.beginPath(); c.moveTo(e.nativeEvent.offsetX,e.nativeEvent.offsetY);};
+  const move=e=>{if(!drawing.current)return; const c=ref.current.getContext("2d"); c.lineWidth=2; c.strokeStyle=D?"#e5e7eb":"#111827"; c.lineTo(e.nativeEvent.offsetX,e.nativeEvent.offsetY); c.stroke();};
+  const end=()=>{drawing.current=false;};
+  return <canvas ref={ref} width={320} height={180} onMouseDown={start} onMouseMove={move} onMouseUp={end} onMouseLeave={end} style={{border:"1px solid #94a3b8",borderRadius:8,background:D?"#0f172a":"#fff",width:"100%",maxWidth:340}}/>;
+}
+function GraphCard({card,D}){
+  return <div>{card?.graph&&<QuestionFigure figure={card.graph} D={D} figureNumber={1}/>}<p style={{fontSize:13,marginBottom:8}}>{card?.question||""}</p>{card?.annotation&&<div style={{fontSize:12,color:"#6366f1"}}>↗ {card.annotation.label||"Key point"}</div>}</div>;
+}
+async function generateSVGDiagram(content,user){
+  const key=SK_SVG_ASSETS(user);
+  const hash=btoa(unescape(encodeURIComponent(content||""))).slice(0,40);
+  try{
+    const cache=JSON.parse(localStorage.getItem(key)||"{}");
+    if(cache[hash]&&String(cache[hash]).includes("<svg")) return cache[hash];
+    let svg="";
+    if(typeof window!=="undefined"&&typeof window.generateSVGDiagram==="function"){
+      try{svg=await window.generateSVGDiagram(content);}catch(_){}
+    }
+    if(!svg||!String(svg).includes("<svg")) svg=`<svg xmlns="http://www.w3.org/2000/svg" width="360" height="140"><rect x="10" y="10" width="340" height="120" fill="#eef2ff" stroke="#6366f1"/><text x="24" y="75" font-size="14" fill="#1f2937">${(content||"Diagram").slice(0,36)}</text></svg>`;
+    cache[hash]=svg; localStorage.setItem(key,JSON.stringify(cache)); return svg;
+  }catch(_){return `<svg xmlns="http://www.w3.org/2000/svg" width="360" height="140"><rect x="10" y="10" width="340" height="120" fill="#eef2ff" stroke="#6366f1"/><text x="24" y="75" font-size="14" fill="#1f2937">Diagram</text></svg>`;}
+}
+function KnowledgeGraph({D,user,subjectId,masteryMap,onSelectNode,onGoToPrereq}){
+  const [graph,setGraph]=React.useState({nodes:[],edges:[]});
+  const [selected,setSelected]=React.useState(null);
+  const [name,setName]=React.useState(""); const [from,setFrom]=React.useState(""); const [to,setTo]=React.useState(""); const [etype,setEType]=React.useState("requires");
+  React.useEffect(()=>{try{setGraph(JSON.parse(localStorage.getItem(SK_GRAPH(user,subjectId))||"{\"nodes\":[],\"edges\":[]}"));}catch(_){setGraph({nodes:[],edges:[]});}},[user,subjectId]);
+  const nodes=(graph.nodes||[]).slice(0,50).map(n=>({...n,mastery:Number(masteryMap?.[n.id]??n.mastery??0)}));
+  const frontier=calculateFrontier({nodes,edges:graph.edges||[]},masteryMap);
+  const pos=React.useMemo(()=>getNodePositions(nodes,560,360),[JSON.stringify(nodes)]);
+  const save=(g)=>{setGraph(g); try{localStorage.setItem(SK_GRAPH(user,subjectId),JSON.stringify(g));}catch(_){}};
+  return <div style={{...C(D),padding:14,marginTop:12}}>
+    <h3 style={{fontSize:14,fontWeight:700,marginBottom:8}}>Knowledge Graph</h3>
+    <svg viewBox="0 0 560 360" style={{width:"100%",maxWidth:560}}>
+      <circle cx="280" cy="180" r="26" fill="#6366f1"/><text x="280" y="185" textAnchor="middle" fill="#fff" fontSize="11">Subject</text>
+      {(graph.edges||[]).map((e,i)=>{const a=pos.find(n=>n.id===e.from),b=pos.find(n=>n.id===e.to); if(!a||!b)return null; return <line key={i} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="#94a3b8" strokeWidth={Math.max(1,Number(e.weight)||1)}/>;})}
+      {pos.map((n,i)=>{const col=n.mastery>70?"#16a34a":n.mastery<40?"#9ca3af":"#f59e0b"; const isFront=frontier.includes(n.id); return <g key={i} onClick={()=>{setSelected(n.id); onSelectNode&&onSelectNode(n.id); const unmet=checkPrerequisites(graph,n.id,masteryMap,60); if(unmet.length&&onGoToPrereq)onGoToPrereq(unmet[0],n.id);}}><circle cx={n.x} cy={n.y} r="18" fill={col} stroke={isFront?"#3b82f6":"#1f2937"} strokeWidth={isFront?3:1.5}/><text x={n.x} y={n.y+4} textAnchor="middle" fontSize="9" fill="#fff">{n.name?.slice(0,7)}</text>{Number(n.examFrequency||0)>7&&<text x={n.x+14} y={n.y-12} fontSize="10">⭐</text>}</g>;})}
+    </svg>
+    <div style={{display:"grid",gridTemplateColumns:"1fr auto",gap:6,marginTop:8}}><input value={name} onChange={e=>setName(e.target.value)} placeholder="New node" style={{...I(D,{fontSize:12})}}/><button onClick={()=>{if(!name.trim())return; save({...graph,nodes:[...(graph.nodes||[]),{id:uid(),name:name.trim(),mastery:0,examFrequency:0}]}); setName("");}} style={{padding:"6px 10px"}}>Add</button></div>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr auto",gap:6,marginTop:6}}>
+      <select value={from} onChange={e=>setFrom(e.target.value)} style={{...I(D,{fontSize:12})}}><option value="">From</option>{nodes.map(n=><option key={n.id} value={n.id}>{n.name}</option>)}</select>
+      <select value={to} onChange={e=>setTo(e.target.value)} style={{...I(D,{fontSize:12})}}><option value="">To</option>{nodes.map(n=><option key={n.id} value={n.id}>{n.name}</option>)}</select>
+      <select value={etype} onChange={e=>setEType(e.target.value)} style={{...I(D,{fontSize:12})}}>{["requires","contrasts","explains","example","caused_by"].map(t=><option key={t}>{t}</option>)}</select>
+      <button onClick={()=>{if(!from||!to)return; save({...graph,edges:[...(graph.edges||[]),{from,to,type:etype,weight:1}]});}} style={{padding:"6px 10px"}}>Edge</button>
+    </div>
+    {selected&&<button onClick={()=>save({...graph,nodes:(graph.nodes||[]).filter(n=>n.id!==selected),edges:(graph.edges||[]).filter(e=>e.from!==selected&&e.to!==selected)})} style={{marginTop:8,fontSize:11}}>Delete selected node</button>}
+  </div>;
+}
+function GraphEditor(props){ return <KnowledgeGraph {...props}/>; }
 
 async function blurtAnalyse(notesText, blurtText) {
   const prompt = "You are a GCSE revision coach analysing a blurting exercise.\n\nRevision Notes:\n"+notesText+"\n\nStudent's blurt (from memory):\n"+blurtText+"\n\nRespond ONLY with valid JSON (no markdown, no backticks):\n{\"remembered\":[\"well-recalled point\"],\"missed\":[\"key point they forgot\"],\"partial\":[\"partially recalled point\"],\"feedback\":\"2-sentence encouragement + top tip\",\"score\":75}\n\nScore = % of key concepts the student demonstrated (0-100).";
@@ -7793,6 +7879,9 @@ export default function App() {
   const [transferQuestion,setTransferQuestion] = useState(null);
   const [ladderTick,setLadderTick] = useState(0);
   const [weeklyPlan,setWeeklyPlan] = useState([]);
+  const [prereqModal,setPrereqModal] = useState(null); // {from,to}
+  const [showSketch,setShowSketch] = useState(false);
+  const [svgPreview,setSvgPreview] = useState("");
   // Evidence-based enhancements — top-level state (Rules of Hooks)
   const [fcConf,setFcConf]       = useState(null);   // null|1|2|3 pre-flip confidence (Metcalfe & Finn 2008)
   const [fcHintLvl,setFcHintLvl] = useState(0);      // 0-2 hint reveals (Bjork 1994 Desirable Difficulties)
@@ -8489,6 +8578,15 @@ export default function App() {
   const deletePaper = id => { const cur=getBD(subjDef.id,curBoard); saveBD(subjDef.id,curBoard,{papers:cur.papers.filter(p=>p.id!==id)}); };
 
   const navToSection = (si,ti,sId) => {
+    try{
+      const s=subjects[si]; const graph=JSON.parse(localStorage.getItem(SK_GRAPH(user,s?.id))||"{\"nodes\":[],\"edges\":[]}");
+      const mastery={};
+      allSections.filter(x=>x.subjectId===s?.id).forEach(function(sec){
+        const m=calculateMastery(sec.subjectId,allSections,fcHist,stats); mastery[sec.id]=Math.round((m.flashcardMastery+m.questionAccuracy)/2);
+      });
+      const unmet=checkPrerequisites(graph,sId,mastery,60);
+      if(unmet.length){setPrereqModal({from:unmet[0],to:sId,si,ti});return;}
+    }catch(_){}
     setSubIdx(si);setTopIdx(ti);setSecId(sId);
     setTab("notes");setFcIdx(0);setFlip(false);
     setQIdx(0);setQRes(null);setSelOpt(null);setTA("");setSmMdl(false);
@@ -9004,6 +9102,13 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
               <p style={{fontSize:12,color:D?"#9ca3af":"#6b7280",margin:0}}>This is <strong>not GCSE content</strong> — it's factual, non-biased political awareness for well-rounded world knowledge. Notes only. Use the AI Tutor to explore any topic further.</p>
             </div>
           </div>}
+          {!subj._politics&&(
+            admin ? (
+              <GraphEditor D={D} user={user} subjectId={subj.id} masteryMap={{}} onSelectNode={function(){}} onGoToPrereq={function(from,to){setPrereqModal({from,to,si:subIdx,ti:topIdx||0});}}/>
+            ) : (
+              <KnowledgeGraph D={D} user={user} subjectId={subj.id} masteryMap={{}} onSelectNode={function(){}} onGoToPrereq={function(from,to){setPrereqModal({from,to,si:subIdx,ti:topIdx||0});}}/>
+            )
+          )}
           {subjTab === "sections" && (()=>{
             const allSecsDue = curTopics.flatMap(t => t.sections).filter(s => (s.flashcards||[]).some(c => isCardDue(fcHist, c.id)));
             const allSecsNew = curTopics.flatMap(t => t.sections).filter(s => (s.questions||[]).length > 0 || (s.flashcards||[]).length > 0);
@@ -9679,6 +9784,23 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                         </div>
                       )}
                       <div style={{fontSize:11,fontWeight:600,letterSpacing:"0.1em",color:subj.accent,textTransform:"uppercase",marginBottom:8,alignSelf:"flex-start"}}>Answer</div>
+                      {(fc2.type==="cloze"||fc2.type==="sequence"||fc2.type==="process"||fc2.type==="graph") ? (
+                        fc2.type==="cloze"
+                          ? <ClozeCard card={fc2} D={D} onSubmit={()=>setFcSelfOpen(true)}/>
+                          : fc2.type==="sequence"
+                            ? <SequenceCard card={fc2} D={D} onSubmit={()=>setFcSelfOpen(true)}/>
+                            : fc2.type==="process"
+                              ? <ProcessCard card={fc2} D={D}/>
+                              : <GraphCard card={fc2} D={D}/>
+                      ) : (
+                        <ContentBlock content={fc2.a} D={D} fontSize={15} style={{color:subj.accent,fontWeight:500,textAlign:isDualCoded?"left":"center",width:"100%"}}/>
+                      )}
+                      {!!fc2?.diagram&&(
+                        <div style={{marginTop:8}}>
+                          <button onClick={()=>setShowSketch(s=>!s)} style={{fontSize:11,padding:"4px 9px",borderRadius:8,border:"1px solid #6366f1",background:"transparent",color:"#6366f1"}}>Sketch it</button>
+                          {showSketch&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginTop:8}}><SketchCanvas D={D}/><DiagramRenderer diagram={fc2.diagram} D={D} width={240}/></div>}
+                        </div>
+                      )}
                       {(fc2.type==="cloze"||fc2.type==="sequence") ? (
                         fc2.type==="cloze"
                           ? <ClozeCard card={fc2} D={D} onSubmit={()=>setFcSelfOpen(true)}/>
@@ -9769,6 +9891,10 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                     <textarea value={explainText} onChange={e=>setExplainText(e.target.value)} rows={2} style={{...I(D,{marginTop:6,fontSize:12})}} placeholder="Explain this card in your own words…"/>
                     <button onClick={()=>setExplainFeedback(verifyExplanation(fc2.a||fc2.text||fc2.q,explainText))}
                       style={{marginTop:6,padding:"6px 10px",borderRadius:8,border:"none",background:"#0ea5e9",color:"#fff",fontSize:12}}>Check explanation</button>
+                    <button onClick={async()=>{const svg=await generateSVGDiagram(stripHtml(fc2.a||fc2.text||fc2.q),user);setSvgPreview(svg);}}
+                      style={{marginTop:6,marginLeft:6,padding:"6px 10px",borderRadius:8,border:"none",background:"#6366f1",color:"#fff",fontSize:12}}>Prompt→SVG</button>
+                    {explainFeedback&&<div style={{marginTop:6,fontSize:12}}><div>✅ {explainFeedback.correct}</div><div>🧩 {explainFeedback.missing}</div></div>}
+                    {svgPreview&&<div style={{marginTop:8}} dangerouslySetInnerHTML={{__html:String(svgPreview).includes("<svg")?svgPreview:""}}/>}
                     {explainFeedback&&<div style={{marginTop:6,fontSize:12}}><div>✅ {explainFeedback.correct}</div><div>🧩 {explainFeedback.missing}</div></div>}
                   </details>
                 )}
@@ -10676,6 +10802,18 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
     {/* W6: Achievement toast (Feature 24) */}
     {newAchievement&&(
       <AchievementToast achievement={newAchievement} D={D} onClose={()=>setNewAchievement(null)}/>
+    )}
+    {prereqModal&&(
+      <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:12000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+        <div style={{...C(D),padding:18,maxWidth:420,width:"100%"}}>
+          <h3 style={{fontSize:15,fontWeight:700,marginBottom:8}}>This topic has prerequisites</h3>
+          <p style={{fontSize:13,color:mu(D),marginBottom:12}}>This topic builds on {prereqModal.from}. Review it first?</p>
+          <div style={{display:"flex",gap:8}}>
+            <button onClick={()=>{setSecId(prereqModal.from);setScreen("section");setPrereqModal(null);}} style={{...B("#6366f1",false,{padding:"8px 12px",fontSize:12})}}>Go to prerequisite</button>
+            <button onClick={()=>{setSubIdx(prereqModal.si);setTopIdx(prereqModal.ti);setSecId(prereqModal.to);setScreen("section");setPrereqModal(null);}} style={{...B("#9ca3af",false,{padding:"8px 12px",fontSize:12})}}>Continue anyway</button>
+          </div>
+        </div>
+      </div>
     )}
 
     {/* W6: Focus Mode overlay (Feature 26) */}
