@@ -2,6 +2,7 @@ import '../src/storage.js'
 import React, { useState, useEffect, useCallback, useRef } from "react"; 
 import ReactDOM from "react-dom/client";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar, Legend } from "recharts";
+import { computeNextBestActions, getSubjectStrategy } from "./learningEngine.js";
 
 /* ─── FONTS + KATEX ──────────────────────────────────────────────────────────── */
 const _fl=document.createElement("link");_fl.rel="stylesheet";
@@ -162,43 +163,7 @@ function getDominantErrorPattern(user, subjectId){
 }
 // Strategy logic for Feature 21
 function getStrategyRecommendation(subj, allSections, fcHist, calibData, timetableExams, stats) {
-  const secs = allSections.filter(s=>s.subjectId===subj.id);
-  const totalCards = secs.reduce((a,s)=>a+(s.flashcards||[]).length,0);
-  const dueCards = secs.reduce((a,s)=>a+(s.flashcards||[]).filter(c=>{const st=fcHist[c.id];return !st||Date.now()>=st.due;}).length,0);
-  const masteredCards = totalCards>0?totalCards-dueCards:0;
-  const masteryPct = totalCards>0?Math.round((masteredCards/totalCards)*100):0;
-  const ss = stats.subjStats&&stats.subjStats[subj.id];
-  const qPct = ss&&ss.qM>0?Math.round((ss.qS/ss.qM)*100):null;
-  const brierScore = calibData ? calcBrierScore(calibData) : null;
-  const overconfident = brierScore!=null && brierScore>0.25;
-  const daysToExam = (()=>{
-    const ex=(timetableExams||[]).filter(e=>e.subjectId===subj.id).sort((a,b)=>a.date.localeCompare(b.date))[0];
-    if(!ex) return null;
-    return Math.max(0,Math.round((new Date(ex.date+"T00:00:00")-Date.now())/86400000));
-  })();
-  // Decision logic
-  if(totalCards>0 && masteryPct<50) {
-    return {strategy:"flashcards",title:"Spaced Repetition",icon:"🃏",color:"#6366f1",
-      reason:`${dueCards} card${dueCards!==1?"s":""} due. Retrieval practice will cement this content.`};
-  }
-  if(overconfident) {
-    return {strategy:"blurting",title:"Blurting Exercise",icon:"🧠",color:"#d97706",
-      reason:"Your calibration shows you may be overestimating recall. Blurting will reveal real gaps."};
-  }
-  if(daysToExam!=null && daysToExam<=14 && masteryPct>=60) {
-    return {strategy:"questions",title:"Exam Practice",icon:"✏️",color:"#ef4444",
-      reason:`Exam in ${daysToExam} day${daysToExam!==1?"s":""}. High-pressure practice is your priority now.`};
-  }
-  if(qPct!=null && qPct<55) {
-    return {strategy:"weak",title:"Weak Topic Drill",icon:"🎯",color:"#dc2626",
-      reason:"Your question accuracy is below 55%. Target your weakest areas to maximise marks."};
-  }
-  if(masteryPct>75 && (qPct==null||qPct>65)) {
-    return {strategy:"mixed",title:"Mixed Revision",icon:"🔀",color:"#10b981",
-      reason:"Strong foundation detected. Mix flashcards, questions, and blurting to consolidate."};
-  }
-  return {strategy:"flashcards",title:"Flashcard Review",icon:"🃏",color:"#6366f1",
-    reason:"Regular spaced repetition keeps content fresh. Review your due cards now."};
+  return getSubjectStrategy(subj, allSections, fcHist, calibData, timetableExams, stats);
 }
 
 const hashPw = s => btoa(encodeURIComponent(s)).slice(0,32);
@@ -6938,106 +6903,42 @@ function ExamCoachScreen({D,subjects,allSections,boardSels,boardData,onBack}) {
 /* ─── TODAY WIDGET ───────────────────────────────────────────────────────── */
 function TodayWidget({D,subjects,allSections,fcHist,stats,timetableExams,boardSels,
   onNavigateSection,onNavigateBlurt,onMock}) {
-  const now = Date.now();
-  const todayDate = new Date().toISOString().slice(0,10);
-
-  // 1. SM-2 due cards per subject
-  const dueBySubj = {};
-  subjects.forEach(function(s){
-    const secs = allSections.filter(function(sec){return sec.subjectId===s.id;});
-    var count = 0;
-    secs.forEach(function(sec){
-      (sec.flashcards||[]).forEach(function(c){
-        if(isCardDue(fcHist,c.id)) count++;
-      });
-    });
-    if(count>0) dueBySubj[s.id] = count;
+  const plan = computeNextBestActions({subjects,allSections,stats,fcHist,timetableExams});
+  const finalItems = plan.map(function(item){
+    if(item.kind==="flashcards"){
+      const subj = subjects.find(function(s){return s.id===item.subjectId;});
+      const sec = allSections.find(function(s){return s.id===item.sectionId;});
+      return {
+        emoji:"🃏",
+        text:item.label,
+        sub:item.subtitle,
+        color:subj?subj.accent:"#6366f1",
+        action:function(){if(sec)onNavigateSection(sec,"flashcards");}
+      };
+    }
+    if(item.kind==="questions"){
+      const subj = subjects.find(function(s){return s.id===item.subjectId;});
+      const sec = allSections.find(function(s){return s.id===item.sectionId;});
+      return {
+        emoji:"❓",
+        text:item.label,
+        sub:item.subtitle,
+        color:subj?subj.accent:"#ef4444",
+        action:function(){if(sec)onNavigateSection(sec,"questions");}
+      };
+    }
+    if(item.kind==="exam"){
+      const sec = item.sectionId?allSections.find(function(s){return s.id===item.sectionId;}):null;
+      return {
+        emoji:"📅",
+        text:item.label,
+        sub:sec?("Blurting: "+sec.title):item.subtitle,
+        color:item.days<=3?"#ef4444":item.days<=7?"#f59e0b":"#10b981",
+        action:function(){if(sec)onNavigateBlurt(item.subjectId,sec.id);else onMock();}
+      };
+    }
+    return {emoji:"📝",text:"Take a mock exam",sub:"Simulate real exam conditions",color:"#6366f1",action:onMock};
   });
-
-  // 2. Weakest section by question history (worst accuracy with ≥1 attempt)
-  var weakestSec = null; var worstPct = 101;
-  allSections.forEach(function(sec){
-    const wq = stats.weakQ&&stats.weakQ[sec.id];
-    if(!wq||!wq.total) return;
-    const pct = Math.round(((wq.total - wq.wrong)/wq.total)*100);
-    if(pct < worstPct){ worstPct = pct; weakestSec = sec; }
-  });
-
-  // 3. Most urgent upcoming exam (soonest future date)
-  var urgentExam = null; var minDays = Infinity;
-  (timetableExams||[]).forEach(function(exam){
-    const dt = new Date(exam.date+"T00:00:00");
-    const diff = Math.round((dt - now)/(86400000));
-    if(diff>=0 && diff<minDays){ minDays=diff; urgentExam=exam; }
-  });
-
-  // Build prioritised action items
-  const items = [];
-
-  // Flash cards: pick the subject with the most due cards
-  if(Object.keys(dueBySubj).length>0){
-    const topSubjId = Object.keys(dueBySubj).sort(function(a,b){return dueBySubj[b]-dueBySubj[a];})[0];
-    const topSubj = subjects.find(function(s){return s.id===topSubjId;});
-    const count = dueBySubj[topSubjId];
-    // Find the section with the most due cards for this subject
-    var bestSec=null; var bestCount=0;
-    allSections.filter(function(s){return s.subjectId===topSubjId;}).forEach(function(sec){
-      var dc=(sec.flashcards||[]).filter(function(c){return isCardDue(fcHist,c.id);}).length;
-      if(dc>bestCount){bestCount=dc;bestSec=sec;}
-    });
-    items.push({
-      emoji:"🃏",
-      text:"Review "+count+" due "+topSubj.name+" flashcard"+(count!==1?"s":""),
-      sub:bestSec?bestSec.title:topSubj.name,
-      color:topSubj.accent,
-      action:function(){if(bestSec)onNavigateSection(bestSec,"flashcards");}
-    });
-  }
-
-  // Weak questions area
-  if(weakestSec){
-    const sec = weakestSec;
-    const subj = subjects.find(function(s){return s.id===sec.subjectId;});
-    const qCount = (sec.questions||[]).length;
-    items.push({
-      emoji:"❓",
-      text:"Practice "+(qCount>0?qCount+" ":"")+"question"+(qCount!==1?"s":"")+": "+sec.title,
-      sub:"Your weakest area · "+worstPct+"% accuracy",
-      color:subj?subj.accent:"#ef4444",
-      action:function(){onNavigateSection(sec,"questions");}
-    });
-  }
-
-  // Upcoming exam blurt
-  if(urgentExam){
-    const eSubj = subjects.find(function(s){return s.id===urgentExam.subjectId;});
-    const label = urgentExam.label||(eSubj?eSubj.name:"exam");
-    // Find a relevant section for blurting
-    const relSec = urgentExam.sectionId
-      ? allSections.find(function(s){return s.id===urgentExam.sectionId;})
-      : allSections.find(function(s){return s.subjectId===urgentExam.subjectId;});
-    const daysLabel = minDays===0?"today":minDays===1?"tomorrow":"in "+minDays+" days";
-    items.push({
-      emoji:"📅",
-      text:"Quick blurt: "+label+" (exam "+daysLabel+")",
-      sub:relSec?"Blurting: "+relSec.title:"Exam preparation",
-      color:minDays<=3?"#ef4444":minDays<=7?"#f59e0b":"#10b981",
-      action:function(){if(relSec)onNavigateBlurt(urgentExam.subjectId,relSec.id);else onMock();}
-    });
-  }
-
-  // Pad to 3 items if we have fewer — suggest a mock exam
-  if(items.length<3){
-    items.push({
-      emoji:"📝",
-      text:"Take a mock exam",
-      sub:"Simulate real exam conditions",
-      color:"#6366f1",
-      action:onMock
-    });
-  }
-
-  const finalItems = items.slice(0,3);
   if(!finalItems.some(function(i){return i.text!=="Take a mock exam";})) return null; // nothing meaningful to show
 
   return (

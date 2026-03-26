@@ -1,0 +1,208 @@
+// Unified learning-domain primitives and orchestration utilities.
+// Phase 1 foundation: centralize cross-feature decision logic so
+// screens consume one engine instead of duplicating heuristics.
+
+function safeNum(n, d = 0) {
+  return Number.isFinite(Number(n)) ? Number(n) : d;
+}
+
+export function getSectionDueCount(section, fcHist = {}, nowTs = Date.now()) {
+  const cards = (section && section.flashcards) || [];
+  return cards.reduce((acc, c) => {
+    const st = fcHist[c.id];
+    if (!st || !st.due || nowTs >= st.due) return acc + 1;
+    return acc;
+  }, 0);
+}
+
+export function getQuestionAccuracy(sectionId, stats = {}) {
+  const wq = (stats.weakQ && stats.weakQ[sectionId]) || null;
+  if (!wq || !safeNum(wq.total)) return null;
+  const total = safeNum(wq.total);
+  const wrong = safeNum(wq.wrong);
+  const score = Math.max(0, total - wrong);
+  return total > 0 ? Math.round((score / total) * 100) : null;
+}
+
+export function computeSectionCompetency(section, stats = {}, fcHist = {}, nowTs = Date.now()) {
+  const cards = (section.flashcards || []).length;
+  const due = getSectionDueCount(section, fcHist, nowTs);
+  const reviewed = (section.flashcards || []).filter(c => fcHist && fcHist[c.id]).length;
+  const memoryPct = cards > 0 ? Math.round(((cards - due) / cards) * 100) : null;
+  const coveragePct = cards > 0 ? Math.round((reviewed / cards) * 100) : null;
+  const questionPct = getQuestionAccuracy(section.id, stats);
+
+  const parts = [memoryPct, questionPct, coveragePct].filter(v => v != null);
+  const competency = parts.length ? Math.round(parts.reduce((a, b) => a + b, 0) / parts.length) : 0;
+
+  return {
+    sectionId: section.id,
+    memoryPct,
+    questionPct,
+    coveragePct,
+    competency,
+    dueCards: due,
+    cardCount: cards,
+    questionCount: (section.questions || []).length,
+  };
+}
+
+export function getUrgentExam(timetableExams = [], nowTs = Date.now()) {
+  let urgent = null;
+  let minDays = Infinity;
+  timetableExams.forEach(exam => {
+    const dt = new Date((exam.date || "") + "T00:00:00");
+    const diff = Math.round((dt.getTime() - nowTs) / 86400000);
+    if (diff >= 0 && diff < minDays) {
+      minDays = diff;
+      urgent = exam;
+    }
+  });
+  return urgent ? { exam: urgent, days: minDays } : null;
+}
+
+export function computeSubjectSnapshot(subject, allSections = [], stats = {}, fcHist = {}, timetableExams = [], nowTs = Date.now()) {
+  const sections = allSections.filter(s => s.subjectId === subject.id);
+  const competency = sections.map(sec => computeSectionCompetency(sec, stats, fcHist, nowTs));
+  const dueCards = competency.reduce((a, c) => a + c.dueCards, 0);
+  const avgCompetency = competency.length
+    ? Math.round(competency.reduce((a, c) => a + c.competency, 0) / competency.length)
+    : 0;
+  const weakSection = [...competency]
+    .filter(c => c.questionPct != null)
+    .sort((a, b) => a.questionPct - b.questionPct)[0] || null;
+  const urgent = getUrgentExam((timetableExams || []).filter(e => e.subjectId === subject.id), nowTs);
+
+  return {
+    subjectId: subject.id,
+    dueCards,
+    avgCompetency,
+    weakSectionId: weakSection ? weakSection.sectionId : null,
+    weakQuestionPct: weakSection ? weakSection.questionPct : null,
+    examDays: urgent ? urgent.days : null,
+  };
+}
+
+export function computeNextBestActions({ subjects = [], allSections = [], stats = {}, fcHist = {}, timetableExams = [], nowTs = Date.now() }) {
+  const actions = [];
+
+  // 1) Highest due-card load first.
+  const dueBySubject = subjects
+    .map(s => {
+      const sections = allSections.filter(sec => sec.subjectId === s.id);
+      const due = sections.reduce((a, sec) => a + getSectionDueCount(sec, fcHist, nowTs), 0);
+      return { subject: s, due, sections };
+    })
+    .filter(x => x.due > 0)
+    .sort((a, b) => b.due - a.due);
+
+  if (dueBySubject[0]) {
+    const top = dueBySubject[0];
+    const bestSec = [...top.sections]
+      .map(sec => ({ sec, due: getSectionDueCount(sec, fcHist, nowTs) }))
+      .sort((a, b) => b.due - a.due)[0]?.sec || null;
+    actions.push({
+      kind: 'flashcards',
+      priority: 100,
+      subjectId: top.subject.id,
+      sectionId: bestSec ? bestSec.id : null,
+      label: `Review ${top.due} due ${top.subject.name} flashcards`,
+      subtitle: bestSec ? bestSec.title : top.subject.name,
+    });
+  }
+
+  // 2) Weakest question section.
+  const weakSections = allSections
+    .map(sec => ({ sec, pct: getQuestionAccuracy(sec.id, stats) }))
+    .filter(x => x.pct != null)
+    .sort((a, b) => a.pct - b.pct);
+
+  if (weakSections[0]) {
+    const wk = weakSections[0];
+    actions.push({
+      kind: 'questions',
+      priority: 90,
+      subjectId: wk.sec.subjectId,
+      sectionId: wk.sec.id,
+      label: `Practice questions: ${wk.sec.title}`,
+      subtitle: `Weakest area · ${wk.pct}% accuracy`,
+    });
+  }
+
+  // 3) Urgent exam prep.
+  const urgent = getUrgentExam(timetableExams, nowTs);
+  if (urgent) {
+    actions.push({
+      kind: 'exam',
+      priority: urgent.days <= 3 ? 95 : urgent.days <= 7 ? 85 : 70,
+      subjectId: urgent.exam.subjectId,
+      sectionId: urgent.exam.sectionId || null,
+      examId: urgent.exam.id,
+      days: urgent.days,
+      label: `Exam prep: ${urgent.exam.label || 'Upcoming exam'}`,
+      subtitle: urgent.days === 0 ? 'Exam today' : urgent.days === 1 ? 'Exam tomorrow' : `Exam in ${urgent.days} days`,
+    });
+  }
+
+  if (!actions.length) {
+    actions.push({
+      kind: 'mock',
+      priority: 50,
+      label: 'Take a mock exam',
+      subtitle: 'Simulate exam conditions',
+    });
+  }
+
+  return actions.sort((a, b) => b.priority - a.priority).slice(0, 3);
+}
+
+export function getSubjectStrategy(subj, allSections = [], fcHist = {}, calibrationData = [], timetableExams = [], stats = {}) {
+  const snapshot = computeSubjectSnapshot(subj, allSections, stats, fcHist, timetableExams);
+  const brier = Array.isArray(calibrationData) && calibrationData.length
+    ? calibrationData.reduce((a, p) => a + Math.pow((safeNum(p.pred, 0.5) - safeNum(p.outcome, 0)), 2), 0) / calibrationData.length
+    : null;
+
+  if (snapshot.dueCards > 0 && snapshot.avgCompetency < 55) {
+    return {
+      strategy: 'flashcards',
+      title: 'Spaced Repetition',
+      icon: '🃏',
+      color: '#6366f1',
+      reason: `${snapshot.dueCards} cards due and competency is still building.`,
+    };
+  }
+  if (brier != null && brier > 0.25) {
+    return {
+      strategy: 'blurting',
+      title: 'Blurting Exercise',
+      icon: '🧠',
+      color: '#d97706',
+      reason: 'Confidence calibration is off. Use free recall to expose gaps.',
+    };
+  }
+  if (snapshot.examDays != null && snapshot.examDays <= 14) {
+    return {
+      strategy: 'questions',
+      title: 'Exam Practice',
+      icon: '✏️',
+      color: '#ef4444',
+      reason: `Exam in ${snapshot.examDays} day${snapshot.examDays !== 1 ? 's' : ''}. Prioritise timed questions.`,
+    };
+  }
+  if (snapshot.weakQuestionPct != null && snapshot.weakQuestionPct < 55) {
+    return {
+      strategy: 'weak',
+      title: 'Weak Topic Drill',
+      icon: '🎯',
+      color: '#dc2626',
+      reason: `Lowest question accuracy is ${snapshot.weakQuestionPct}%.`,
+    };
+  }
+  return {
+    strategy: 'mixed',
+    title: 'Mixed Revision',
+    icon: '🔀',
+    color: '#10b981',
+    reason: 'Maintain retention with mixed cards, questions, and retrieval.',
+  };
+}
