@@ -2,6 +2,7 @@ import '../src/storage.js'
 import React, { useState, useEffect, useCallback, useRef } from "react"; 
 import ReactDOM from "react-dom/client";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar, Legend } from "recharts";
+import { buildTodaySessionPlan, computeNextBestActions, getSubjectStrategy } from "./learningEngine.js";
 
 /* ─── FONTS + KATEX ──────────────────────────────────────────────────────────── */
 const _fl=document.createElement("link");_fl.rel="stylesheet";
@@ -162,43 +163,7 @@ function getDominantErrorPattern(user, subjectId){
 }
 // Strategy logic for Feature 21
 function getStrategyRecommendation(subj, allSections, fcHist, calibData, timetableExams, stats) {
-  const secs = allSections.filter(s=>s.subjectId===subj.id);
-  const totalCards = secs.reduce((a,s)=>a+(s.flashcards||[]).length,0);
-  const dueCards = secs.reduce((a,s)=>a+(s.flashcards||[]).filter(c=>{const st=fcHist[c.id];return !st||Date.now()>=st.due;}).length,0);
-  const masteredCards = totalCards>0?totalCards-dueCards:0;
-  const masteryPct = totalCards>0?Math.round((masteredCards/totalCards)*100):0;
-  const ss = stats.subjStats&&stats.subjStats[subj.id];
-  const qPct = ss&&ss.qM>0?Math.round((ss.qS/ss.qM)*100):null;
-  const brierScore = calibData ? calcBrierScore(calibData) : null;
-  const overconfident = brierScore!=null && brierScore>0.25;
-  const daysToExam = (()=>{
-    const ex=(timetableExams||[]).filter(e=>e.subjectId===subj.id).sort((a,b)=>a.date.localeCompare(b.date))[0];
-    if(!ex) return null;
-    return Math.max(0,Math.round((new Date(ex.date+"T00:00:00")-Date.now())/86400000));
-  })();
-  // Decision logic
-  if(totalCards>0 && masteryPct<50) {
-    return {strategy:"flashcards",title:"Spaced Repetition",icon:"🃏",color:"#6366f1",
-      reason:`${dueCards} card${dueCards!==1?"s":""} due. Retrieval practice will cement this content.`};
-  }
-  if(overconfident) {
-    return {strategy:"blurting",title:"Blurting Exercise",icon:"🧠",color:"#d97706",
-      reason:"Your calibration shows you may be overestimating recall. Blurting will reveal real gaps."};
-  }
-  if(daysToExam!=null && daysToExam<=14 && masteryPct>=60) {
-    return {strategy:"questions",title:"Exam Practice",icon:"✏️",color:"#ef4444",
-      reason:`Exam in ${daysToExam} day${daysToExam!==1?"s":""}. High-pressure practice is your priority now.`};
-  }
-  if(qPct!=null && qPct<55) {
-    return {strategy:"weak",title:"Weak Topic Drill",icon:"🎯",color:"#dc2626",
-      reason:"Your question accuracy is below 55%. Target your weakest areas to maximise marks."};
-  }
-  if(masteryPct>75 && (qPct==null||qPct>65)) {
-    return {strategy:"mixed",title:"Mixed Revision",icon:"🔀",color:"#10b981",
-      reason:"Strong foundation detected. Mix flashcards, questions, and blurting to consolidate."};
-  }
-  return {strategy:"flashcards",title:"Flashcard Review",icon:"🃏",color:"#6366f1",
-    reason:"Regular spaced repetition keeps content fresh. Review your due cards now."};
+  return getSubjectStrategy(subj, allSections, fcHist, calibData, timetableExams, stats);
 }
 
 const hashPw = s => btoa(encodeURIComponent(s)).slice(0,32);
@@ -6938,106 +6903,42 @@ function ExamCoachScreen({D,subjects,allSections,boardSels,boardData,onBack}) {
 /* ─── TODAY WIDGET ───────────────────────────────────────────────────────── */
 function TodayWidget({D,subjects,allSections,fcHist,stats,timetableExams,boardSels,
   onNavigateSection,onNavigateBlurt,onMock}) {
-  const now = Date.now();
-  const todayDate = new Date().toISOString().slice(0,10);
-
-  // 1. SM-2 due cards per subject
-  const dueBySubj = {};
-  subjects.forEach(function(s){
-    const secs = allSections.filter(function(sec){return sec.subjectId===s.id;});
-    var count = 0;
-    secs.forEach(function(sec){
-      (sec.flashcards||[]).forEach(function(c){
-        if(isCardDue(fcHist,c.id)) count++;
-      });
-    });
-    if(count>0) dueBySubj[s.id] = count;
+  const plan = computeNextBestActions({subjects,allSections,stats,fcHist,timetableExams});
+  const finalItems = plan.map(function(item){
+    if(item.kind==="flashcards"){
+      const subj = subjects.find(function(s){return s.id===item.subjectId;});
+      const sec = allSections.find(function(s){return s.id===item.sectionId;});
+      return {
+        emoji:"🃏",
+        text:item.label,
+        sub:item.subtitle,
+        color:subj?subj.accent:"#6366f1",
+        action:function(){if(sec)onNavigateSection(sec,"flashcards");}
+      };
+    }
+    if(item.kind==="questions"){
+      const subj = subjects.find(function(s){return s.id===item.subjectId;});
+      const sec = allSections.find(function(s){return s.id===item.sectionId;});
+      return {
+        emoji:"❓",
+        text:item.label,
+        sub:item.subtitle,
+        color:subj?subj.accent:"#ef4444",
+        action:function(){if(sec)onNavigateSection(sec,"questions");}
+      };
+    }
+    if(item.kind==="exam"){
+      const sec = item.sectionId?allSections.find(function(s){return s.id===item.sectionId;}):null;
+      return {
+        emoji:"📅",
+        text:item.label,
+        sub:sec?("Blurting: "+sec.title):item.subtitle,
+        color:item.days<=3?"#ef4444":item.days<=7?"#f59e0b":"#10b981",
+        action:function(){if(sec)onNavigateBlurt(item.subjectId,sec.id);else onMock();}
+      };
+    }
+    return {emoji:"📝",text:"Take a mock exam",sub:"Simulate real exam conditions",color:"#6366f1",action:onMock};
   });
-
-  // 2. Weakest section by question history (worst accuracy with ≥1 attempt)
-  var weakestSec = null; var worstPct = 101;
-  allSections.forEach(function(sec){
-    const wq = stats.weakQ&&stats.weakQ[sec.id];
-    if(!wq||!wq.total) return;
-    const pct = Math.round(((wq.total - wq.wrong)/wq.total)*100);
-    if(pct < worstPct){ worstPct = pct; weakestSec = sec; }
-  });
-
-  // 3. Most urgent upcoming exam (soonest future date)
-  var urgentExam = null; var minDays = Infinity;
-  (timetableExams||[]).forEach(function(exam){
-    const dt = new Date(exam.date+"T00:00:00");
-    const diff = Math.round((dt - now)/(86400000));
-    if(diff>=0 && diff<minDays){ minDays=diff; urgentExam=exam; }
-  });
-
-  // Build prioritised action items
-  const items = [];
-
-  // Flash cards: pick the subject with the most due cards
-  if(Object.keys(dueBySubj).length>0){
-    const topSubjId = Object.keys(dueBySubj).sort(function(a,b){return dueBySubj[b]-dueBySubj[a];})[0];
-    const topSubj = subjects.find(function(s){return s.id===topSubjId;});
-    const count = dueBySubj[topSubjId];
-    // Find the section with the most due cards for this subject
-    var bestSec=null; var bestCount=0;
-    allSections.filter(function(s){return s.subjectId===topSubjId;}).forEach(function(sec){
-      var dc=(sec.flashcards||[]).filter(function(c){return isCardDue(fcHist,c.id);}).length;
-      if(dc>bestCount){bestCount=dc;bestSec=sec;}
-    });
-    items.push({
-      emoji:"🃏",
-      text:"Review "+count+" due "+topSubj.name+" flashcard"+(count!==1?"s":""),
-      sub:bestSec?bestSec.title:topSubj.name,
-      color:topSubj.accent,
-      action:function(){if(bestSec)onNavigateSection(bestSec,"flashcards");}
-    });
-  }
-
-  // Weak questions area
-  if(weakestSec){
-    const sec = weakestSec;
-    const subj = subjects.find(function(s){return s.id===sec.subjectId;});
-    const qCount = (sec.questions||[]).length;
-    items.push({
-      emoji:"❓",
-      text:"Practice "+(qCount>0?qCount+" ":"")+"question"+(qCount!==1?"s":"")+": "+sec.title,
-      sub:"Your weakest area · "+worstPct+"% accuracy",
-      color:subj?subj.accent:"#ef4444",
-      action:function(){onNavigateSection(sec,"questions");}
-    });
-  }
-
-  // Upcoming exam blurt
-  if(urgentExam){
-    const eSubj = subjects.find(function(s){return s.id===urgentExam.subjectId;});
-    const label = urgentExam.label||(eSubj?eSubj.name:"exam");
-    // Find a relevant section for blurting
-    const relSec = urgentExam.sectionId
-      ? allSections.find(function(s){return s.id===urgentExam.sectionId;})
-      : allSections.find(function(s){return s.subjectId===urgentExam.subjectId;});
-    const daysLabel = minDays===0?"today":minDays===1?"tomorrow":"in "+minDays+" days";
-    items.push({
-      emoji:"📅",
-      text:"Quick blurt: "+label+" (exam "+daysLabel+")",
-      sub:relSec?"Blurting: "+relSec.title:"Exam preparation",
-      color:minDays<=3?"#ef4444":minDays<=7?"#f59e0b":"#10b981",
-      action:function(){if(relSec)onNavigateBlurt(urgentExam.subjectId,relSec.id);else onMock();}
-    });
-  }
-
-  // Pad to 3 items if we have fewer — suggest a mock exam
-  if(items.length<3){
-    items.push({
-      emoji:"📝",
-      text:"Take a mock exam",
-      sub:"Simulate real exam conditions",
-      color:"#6366f1",
-      action:onMock
-    });
-  }
-
-  const finalItems = items.slice(0,3);
   if(!finalItems.some(function(i){return i.text!=="Take a mock exam";})) return null; // nothing meaningful to show
 
   return (
@@ -7068,6 +6969,62 @@ function TodayWidget({D,subjects,allSections,fcHist,stats,timetableExams,boardSe
             </button>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+function PracticeSessionScreen({D, session, onBack, onOpenBlock, onComplete, onReset}) {
+  const [done, setDone] = React.useState({});
+  const blocks = session?.blocks || [];
+  const completeCount = blocks.filter(b => done[b.id]).length;
+  const pct = blocks.length ? Math.round((completeCount / blocks.length) * 100) : 0;
+  const bd2=D?"#2a3347":"#e5e7eb";
+
+  function toggleDone(id) {
+    setDone(prev => {
+      const next = {...prev, [id]: !prev[id]};
+      const finished = blocks.length>0 && blocks.every(b => next[b.id]);
+      if (finished) onComplete && onComplete();
+      return next;
+    });
+  }
+
+  return (
+    <div style={{minHeight:"100vh",background:D?"#0f1117":"#f9fafb",color:tx(D)}} className="fade-in">
+      <div style={{maxWidth:820,margin:"0 auto",padding:"32px 24px"}}>
+        <button onClick={onBack} style={{fontSize:13,color:mu(D),background:"none",border:"none",cursor:"pointer",marginBottom:18}}>← Back</button>
+        <h2 style={{fontSize:22,fontWeight:700,marginBottom:4}}>🎯 {session?.missionTitle||"Guided Session"}</h2>
+        <p style={{fontSize:13,color:mu(D),marginBottom:16}}>{session?.missionSubtitle||"Complete your recommended study blocks."}</p>
+        <div style={{height:8,borderRadius:999,background:D?"#1e2537":"#e5e7eb",overflow:"hidden",marginBottom:16}}>
+          <div style={{height:"100%",width:pct+"%",background:"#6366f1",transition:"width .25s ease"}}/>
+        </div>
+        <p style={{fontSize:12,color:mu(D),marginBottom:18}}>{completeCount}/{blocks.length} blocks complete</p>
+
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          {blocks.map((b,idx)=>(
+            <div key={b.id} style={{...C(D),padding:14,borderColor:done[b.id]?"#16a34a":undefined}}>
+              <div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"flex-start"}}>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:11,color:mu(D),marginBottom:4}}>Block {idx+1} · {b.etaMin} min</div>
+                  <div style={{fontWeight:700,fontSize:14,marginBottom:3}}>{b.title}</div>
+                  <div style={{fontSize:12,color:mu(D)}}>{b.detail}</div>
+                </div>
+                <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                  <button onClick={()=>onOpenBlock&&onOpenBlock(b)} style={{...B("#6366f1",false,{fontSize:12,padding:"7px 12px"})}}>Open</button>
+                  <button onClick={()=>toggleDone(b.id)} style={{...B(done[b.id]?"#16a34a":"transparent",!done[b.id],{fontSize:12,padding:"7px 12px",borderColor:done[b.id]?"#16a34a":bd2,color:done[b.id]?"#fff":mu(D)})}}>
+                    {done[b.id]?"Done":"Mark done"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{display:"flex",gap:10,marginTop:18}}>
+          <button onClick={onReset} style={{...B("transparent",true,{padding:"10px 14px",fontSize:13,borderColor:bd2,color:mu(D)})}}>Regenerate Plan</button>
+          <button onClick={onBack} style={{...B("#111827",false,{padding:"10px 14px",fontSize:13})}}>Return Home</button>
+        </div>
       </div>
     </div>
   );
@@ -8185,6 +8142,7 @@ export default function App() {
   const [showPass,setShowPass]= useState(false);
   const [userGoogleKey,setGK]= useState("");
   const [screen,setScreen]   = useState("login");
+  const [todaySession,setTodaySession] = useState(null);
   const [D,setD]             = useState(false);
   const [ready,setReady]     = useState(false);
   const [online,setOnline]   = useState(typeof navigator!=="undefined"?navigator.onLine:true);
@@ -8976,6 +8934,27 @@ export default function App() {
 const hProps={user,userDisplayName,D,onDark:()=>setD(!D),onHome:()=>setScreen("home"),onDash:()=>{setScreen("dashboard");trackEvent('screen_view',{screen:'dashboard'});},onTarget:()=>{setTTSubj(null);setScreen("target");trackEvent('screen_view',{screen:'target'});},onTimetable:()=>setScreen("timetable"),onBlurt:()=>{setBlurtSubjId(null);setBlurtSecId2(null);setScreen("blurting");trackEvent('screen_view',{screen:'blurting'});},onMock:()=>{setScreen("mock");trackEvent('screen_view',{screen:'mock'});},onTutor:()=>{setTutorSubjId(null);setScreen("tutor");trackEvent('screen_view',{screen:'tutor'});},onCoach:()=>setScreen("coach"),onLeaderboards:()=>setScreen("friends"),onAccount:()=>setScreen("account"),streak,onSearch:()=>setSearchOpen(true),globalOverlays:_goEl,screen};
 const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=>!s._politics)[0]?.id||null}); };
 
+const openSessionBlock = (block) => {
+  if(!block) return;
+  if(block.type==="mock"){ setScreen("mock"); return; }
+  if(block.type==="blurting"){ setBlurtSubjId(block.subjectId||null); setBlurtSecId2(block.sectionId||null); setScreen("blurting"); return; }
+  if(block.type==="flashcards"||block.type==="questions"){
+    const sec = allSections.find(s=>s.id===block.sectionId);
+    if(!sec){ setScreen("home"); return; }
+    const si=subjects.findIndex(s=>s.id===sec.subjectId);
+    if(si<0){ setScreen("home"); return; }
+    const b=boardSels[subjects[si].id]||DEFAULT_BOARD;
+    ensureBoardLoaded(subjects[si].id,b).then(function(){
+      const bd=boardData[subjects[si].id+":"+b]||{custom:[],extras:{},papers:[]};
+      const merged=mergeTopics(subjects[si].topics||[],bd.custom,bd.extras);
+      const ti=merged.findIndex(t=>t.sections.some(s=>s.id===sec.id));
+      if(ti<0)return;
+      setSubIdx(si);setTopIdx(ti);setSecId(sec.id);setTab(block.type==="questions"?"questions":"flashcards");
+      setScreen("section");
+    });
+  }
+};
+
   // Personal subject routing — handled before the main screen router
   // User content screen (private notes/flashcards/questions)
   if(ucScreen) return (
@@ -9144,6 +9123,22 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
       <TimetableScreen D={D} subjects={subjects} allSections={allSections} user={user} stats={stats} onNav={handleTimetableNav} onBack={()=>setScreen("home")}/>
     </>);
   }
+  if(screen==="practice"&&todaySession){
+    return (
+      <PracticeSessionScreen
+        D={D}
+        session={todaySession}
+        onBack={()=>setScreen("home")}
+        onOpenBlock={openSessionBlock}
+        onComplete={()=>showToast("Great work — guided session complete!","success")}
+        onReset={()=>{
+          const plan = buildTodaySessionPlan({subjects,allSections,stats,fcHist,timetableExams});
+          setTodaySession(plan);
+          showToast("Session regenerated");
+        }}
+      />
+    );
+  }
 
   if(screen==="blurting") return (<>
     <Header {...hProps}/>
@@ -9242,6 +9237,28 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
           <h2 style={{fontSize:24,fontWeight:700,margin:0}}>Hey {userDisplayName||getDisplayName(user)} 👋</h2>
           <button onClick={function(){openMyNotes(null);}} style={{display:"flex",alignItems:"center",gap:6,padding:"8px 16px",borderRadius:10,border:"1.5px solid #6366f1",background:D?"rgba(99,102,241,.12)":"#eef2ff",color:"#6366f1",fontSize:13,fontWeight:600,cursor:"pointer"}}>📓 My Notes &amp; Flashcards</button>
         </div>
+        {(()=>{
+          const guidedPlan = buildTodaySessionPlan({subjects,allSections,stats,fcHist,timetableExams});
+          const b = guidedPlan.primaryBlock || {};
+          return (
+            <div style={{...C(D),padding:"16px 18px",marginBottom:14,borderColor:"#6366f1",borderWidth:1.5}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,flexWrap:"wrap"}}>
+                <div style={{flex:1,minWidth:200}}>
+                  <div style={{fontSize:11,fontWeight:800,color:"#6366f1",letterSpacing:"0.07em",textTransform:"uppercase",marginBottom:4}}>Guided Session</div>
+                  <h3 style={{fontSize:16,fontWeight:700,margin:"0 0 4px"}}>{guidedPlan.missionTitle}</h3>
+                  <p style={{fontSize:12,color:mu(D),margin:0}}>{guidedPlan.missionSubtitle}</p>
+                  <p style={{fontSize:12,margin:"8px 0 0",color:tx(D)}}><strong>Start with:</strong> {b.title}</p>
+                </div>
+                <button onClick={()=>{
+                  setTodaySession(guidedPlan);
+                  setScreen("practice");
+                }} style={{...B("#6366f1",false,{padding:"10px 16px",fontSize:13,fontWeight:700,whiteSpace:"nowrap"})}}>
+                  Start Session →
+                </button>
+              </div>
+            </div>
+          );
+        })()}
         {streak>0&&(
           <div style={{...C(D),padding:"18px 22px",marginBottom:22,background:streak>=7?(D?"#1c0d05":"#fff7ed"):undefined,borderColor:streak>=7?"#f97316":undefined}}>
             <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:12}}>
