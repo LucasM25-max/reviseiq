@@ -156,6 +156,28 @@ export function computeNextBestActions({ subjects = [], allSections = [], stats 
   return actions.sort((a, b) => b.priority - a.priority).slice(0, 3);
 }
 
+export function buildTodaySessionPlan({ subjects = [], allSections = [], stats = {}, fcHist = {}, timetableExams = [], nowTs = Date.now() }) {
+  const actions = computeNextBestActions({ subjects, allSections, stats, fcHist, timetableExams, nowTs });
+  const blocks = actions.map((a, idx) => {
+    if (a.kind === "flashcards") return { id: `b${idx}`, type: "flashcards", title: a.label, detail: a.subtitle, etaMin: 12, ...a };
+    if (a.kind === "questions") return { id: `b${idx}`, type: "questions", title: a.label, detail: a.subtitle, etaMin: 15, ...a };
+    if (a.kind === "exam") return { id: `b${idx}`, type: "blurting", title: a.label, detail: a.subtitle, etaMin: 12, ...a };
+    return { id: `b${idx}`, type: "mock", title: "Take a mock exam", detail: "Exam simulation block", etaMin: 25, ...a };
+  });
+
+  const totalEta = blocks.reduce((a, b) => a + b.etaMin, 0);
+  const primary = blocks[0] || { type: "mock", title: "Take a mock exam", detail: "No urgent actions detected", etaMin: 25 };
+
+  return {
+    generatedAt: nowTs,
+    missionTitle: "Today's Guided Session",
+    missionSubtitle: `Complete ${blocks.length} focused block${blocks.length !== 1 ? "s" : ""} (${totalEta} min est.)`,
+    primaryBlock: primary,
+    totalEta,
+    blocks,
+  };
+}
+
 export function getSubjectStrategy(subj, allSections = [], fcHist = {}, calibrationData = [], timetableExams = [], stats = {}) {
   const snapshot = computeSubjectSnapshot(subj, allSections, stats, fcHist, timetableExams);
   const brier = Array.isArray(calibrationData) && calibrationData.length

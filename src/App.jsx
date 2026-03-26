@@ -6974,6 +6974,62 @@ function TodayWidget({D,subjects,allSections,fcHist,stats,timetableExams,boardSe
   );
 }
 
+function PracticeSessionScreen({D, session, onBack, onOpenBlock, onComplete, onReset}) {
+  const [done, setDone] = React.useState({});
+  const blocks = session?.blocks || [];
+  const completeCount = blocks.filter(b => done[b.id]).length;
+  const pct = blocks.length ? Math.round((completeCount / blocks.length) * 100) : 0;
+  const bd2=D?"#2a3347":"#e5e7eb";
+
+  function toggleDone(id) {
+    setDone(prev => {
+      const next = {...prev, [id]: !prev[id]};
+      const finished = blocks.length>0 && blocks.every(b => next[b.id]);
+      if (finished) onComplete && onComplete();
+      return next;
+    });
+  }
+
+  return (
+    <div style={{minHeight:"100vh",background:D?"#0f1117":"#f9fafb",color:tx(D)}} className="fade-in">
+      <div style={{maxWidth:820,margin:"0 auto",padding:"32px 24px"}}>
+        <button onClick={onBack} style={{fontSize:13,color:mu(D),background:"none",border:"none",cursor:"pointer",marginBottom:18}}>← Back</button>
+        <h2 style={{fontSize:22,fontWeight:700,marginBottom:4}}>🎯 {session?.missionTitle||"Guided Session"}</h2>
+        <p style={{fontSize:13,color:mu(D),marginBottom:16}}>{session?.missionSubtitle||"Complete your recommended study blocks."}</p>
+        <div style={{height:8,borderRadius:999,background:D?"#1e2537":"#e5e7eb",overflow:"hidden",marginBottom:16}}>
+          <div style={{height:"100%",width:pct+"%",background:"#6366f1",transition:"width .25s ease"}}/>
+        </div>
+        <p style={{fontSize:12,color:mu(D),marginBottom:18}}>{completeCount}/{blocks.length} blocks complete</p>
+
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          {blocks.map((b,idx)=>(
+            <div key={b.id} style={{...C(D),padding:14,borderColor:done[b.id]?"#16a34a":undefined}}>
+              <div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"flex-start"}}>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:11,color:mu(D),marginBottom:4}}>Block {idx+1} · {b.etaMin} min</div>
+                  <div style={{fontWeight:700,fontSize:14,marginBottom:3}}>{b.title}</div>
+                  <div style={{fontSize:12,color:mu(D)}}>{b.detail}</div>
+                </div>
+                <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                  <button onClick={()=>onOpenBlock&&onOpenBlock(b)} style={{...B("#6366f1",false,{fontSize:12,padding:"7px 12px"})}}>Open</button>
+                  <button onClick={()=>toggleDone(b.id)} style={{...B(done[b.id]?"#16a34a":"transparent",!done[b.id],{fontSize:12,padding:"7px 12px",borderColor:done[b.id]?"#16a34a":bd2,color:done[b.id]?"#fff":mu(D)})}}>
+                    {done[b.id]?"Done":"Mark done"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{display:"flex",gap:10,marginTop:18}}>
+          <button onClick={onReset} style={{...B("transparent",true,{padding:"10px 14px",fontSize:13,borderColor:bd2,color:mu(D)})}}>Regenerate Plan</button>
+          <button onClick={onBack} style={{...B("#111827",false,{padding:"10px 14px",fontSize:13})}}>Return Home</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ─── FOOTER ────────────────────────────────────────────────────────────── */
 /* ─── USER CONTENT MODALS ───────────────────────────────────────────────────── */
 // UCNewSectionModal: simple name-entry for a new user section
@@ -8086,6 +8142,7 @@ export default function App() {
   const [showPass,setShowPass]= useState(false);
   const [userGoogleKey,setGK]= useState("");
   const [screen,setScreen]   = useState("login");
+  const [todaySession,setTodaySession] = useState(null);
   const [D,setD]             = useState(false);
   const [ready,setReady]     = useState(false);
   const [online,setOnline]   = useState(typeof navigator!=="undefined"?navigator.onLine:true);
@@ -8877,6 +8934,27 @@ export default function App() {
 const hProps={user,userDisplayName,D,onDark:()=>setD(!D),onHome:()=>setScreen("home"),onDash:()=>{setScreen("dashboard");trackEvent('screen_view',{screen:'dashboard'});},onTarget:()=>{setTTSubj(null);setScreen("target");trackEvent('screen_view',{screen:'target'});},onTimetable:()=>setScreen("timetable"),onBlurt:()=>{setBlurtSubjId(null);setBlurtSecId2(null);setScreen("blurting");trackEvent('screen_view',{screen:'blurting'});},onMock:()=>{setScreen("mock");trackEvent('screen_view',{screen:'mock'});},onTutor:()=>{setTutorSubjId(null);setScreen("tutor");trackEvent('screen_view',{screen:'tutor'});},onCoach:()=>setScreen("coach"),onLeaderboards:()=>setScreen("friends"),onAccount:()=>setScreen("account"),streak,onSearch:()=>setSearchOpen(true),globalOverlays:_goEl,screen};
 const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=>!s._politics)[0]?.id||null}); };
 
+const openSessionBlock = (block) => {
+  if(!block) return;
+  if(block.type==="mock"){ setScreen("mock"); return; }
+  if(block.type==="blurting"){ setBlurtSubjId(block.subjectId||null); setBlurtSecId2(block.sectionId||null); setScreen("blurting"); return; }
+  if(block.type==="flashcards"||block.type==="questions"){
+    const sec = allSections.find(s=>s.id===block.sectionId);
+    if(!sec){ setScreen("home"); return; }
+    const si=subjects.findIndex(s=>s.id===sec.subjectId);
+    if(si<0){ setScreen("home"); return; }
+    const b=boardSels[subjects[si].id]||DEFAULT_BOARD;
+    ensureBoardLoaded(subjects[si].id,b).then(function(){
+      const bd=boardData[subjects[si].id+":"+b]||{custom:[],extras:{},papers:[]};
+      const merged=mergeTopics(subjects[si].topics||[],bd.custom,bd.extras);
+      const ti=merged.findIndex(t=>t.sections.some(s=>s.id===sec.id));
+      if(ti<0)return;
+      setSubIdx(si);setTopIdx(ti);setSecId(sec.id);setTab(block.type==="questions"?"questions":"flashcards");
+      setScreen("section");
+    });
+  }
+};
+
   // Personal subject routing — handled before the main screen router
   // User content screen (private notes/flashcards/questions)
   if(ucScreen) return (
@@ -9045,6 +9123,22 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
       <TimetableScreen D={D} subjects={subjects} allSections={allSections} user={user} stats={stats} onNav={handleTimetableNav} onBack={()=>setScreen("home")}/>
     </>);
   }
+  if(screen==="practice"&&todaySession){
+    return (
+      <PracticeSessionScreen
+        D={D}
+        session={todaySession}
+        onBack={()=>setScreen("home")}
+        onOpenBlock={openSessionBlock}
+        onComplete={()=>showToast("Great work — guided session complete!","success")}
+        onReset={()=>{
+          const plan = buildTodaySessionPlan({subjects,allSections,stats,fcHist,timetableExams});
+          setTodaySession(plan);
+          showToast("Session regenerated");
+        }}
+      />
+    );
+  }
 
   if(screen==="blurting") return (<>
     <Header {...hProps}/>
@@ -9143,6 +9237,28 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
           <h2 style={{fontSize:24,fontWeight:700,margin:0}}>Hey {userDisplayName||getDisplayName(user)} 👋</h2>
           <button onClick={function(){openMyNotes(null);}} style={{display:"flex",alignItems:"center",gap:6,padding:"8px 16px",borderRadius:10,border:"1.5px solid #6366f1",background:D?"rgba(99,102,241,.12)":"#eef2ff",color:"#6366f1",fontSize:13,fontWeight:600,cursor:"pointer"}}>📓 My Notes &amp; Flashcards</button>
         </div>
+        {(()=>{
+          const guidedPlan = buildTodaySessionPlan({subjects,allSections,stats,fcHist,timetableExams});
+          const b = guidedPlan.primaryBlock || {};
+          return (
+            <div style={{...C(D),padding:"16px 18px",marginBottom:14,borderColor:"#6366f1",borderWidth:1.5}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,flexWrap:"wrap"}}>
+                <div style={{flex:1,minWidth:200}}>
+                  <div style={{fontSize:11,fontWeight:800,color:"#6366f1",letterSpacing:"0.07em",textTransform:"uppercase",marginBottom:4}}>Guided Session</div>
+                  <h3 style={{fontSize:16,fontWeight:700,margin:"0 0 4px"}}>{guidedPlan.missionTitle}</h3>
+                  <p style={{fontSize:12,color:mu(D),margin:0}}>{guidedPlan.missionSubtitle}</p>
+                  <p style={{fontSize:12,margin:"8px 0 0",color:tx(D)}}><strong>Start with:</strong> {b.title}</p>
+                </div>
+                <button onClick={()=>{
+                  setTodaySession(guidedPlan);
+                  setScreen("practice");
+                }} style={{...B("#6366f1",false,{padding:"10px 16px",fontSize:13,fontWeight:700,whiteSpace:"nowrap"})}}>
+                  Start Session →
+                </button>
+              </div>
+            </div>
+          );
+        })()}
         {streak>0&&(
           <div style={{...C(D),padding:"18px 22px",marginBottom:22,background:streak>=7?(D?"#1c0d05":"#fff7ed"):undefined,borderColor:streak>=7?"#f97316":undefined}}>
             <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:12}}>
