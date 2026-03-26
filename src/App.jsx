@@ -7520,6 +7520,7 @@ export default function App() {
   const [ucScreen,setUCScreen]         = useState(null); // null|{subjId}
   const [selectedSubjectIds,setSelectedSubjectIds] = useState(null); // null = not yet loaded; [] = none chosen; [id,...] = chosen
   const [showSubjectSelection,setShowSubjectSelection] = useState(false); // for editing from account screen
+  const [prefsReady,setPrefsReady] = useState(false); // prevents overwriting prefs before hydration completes
 
   // Derive subjects: filter ALL_SUBJECTS to only those the user has selected, plus always include politics.
   // While selectedSubjectIds is null (not yet loaded from storage), show all subjects so nothing breaks during load.
@@ -7614,6 +7615,7 @@ export default function App() {
 
   useEffect(()=>{
     if(!user||!ready)return;
+    setPrefsReady(false);
     progLoaded.current = false;
     (async()=>{
       let savedSels={};
@@ -7662,7 +7664,10 @@ export default function App() {
           }
         }
       }catch(_){}
-      progLoaded.current = true;
+      setTimeout(()=>{
+        progLoaded.current = true;
+        setPrefsReady(true);
+      },0);
       // Also load timetable exams for the Today widget
       try{
         const tr=await window.storage.get(SK.TIMETABLE(user));
@@ -7870,21 +7875,22 @@ export default function App() {
   // ── Immediate saves for critical prefs — no debounce, independent of fcHist ──
   // targetGrades: save the moment it changes
   useEffect(()=>{
-    if(!user||!progLoaded.current)return;
+    if(!user||!progLoaded.current||!prefsReady)return;
     window.storage.get(SK.PREFS(user),true).then(r=>{
       const existing=r?.value?JSON.parse(r.value):{};
       return window.storage.set(SK.PREFS(user),JSON.stringify({...existing,targetGrades}),true);
     }).catch(()=>{});
-  },[user,targetGrades]);
+  },[user,targetGrades,prefsReady]);
 
   // selectedSubjectIds + boardSels: save together immediately whenever either changes
   useEffect(()=>{
-    if(!user||!progLoaded.current)return;
+    if(!user||!progLoaded.current||!prefsReady)return;
+    if(selectedSubjectIds===null)return;
     window.storage.get(SK.PREFS(user),true).then(r=>{
       const existing=r?.value?JSON.parse(r.value):{};
       return window.storage.set(SK.PREFS(user),JSON.stringify({...existing,selectedSubjectIds:selectedSubjectIds||[],boardSels}),true);
     }).catch(()=>{});
-  },[user,selectedSubjectIds,boardSels]);
+  },[user,selectedSubjectIds,boardSels,prefsReady]);
 
   useEffect(()=>{
     if(!user)return;
@@ -10147,28 +10153,6 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
     );
   }
 
-      {analyticsData&&(
-        <div onClick={()=>setAnalyticsData(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:9500,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
-          <div onClick={e=>e.stopPropagation()} style={{background:D?"#1e2537":"#fff",borderRadius:16,width:480,maxWidth:"96vw",maxHeight:"80vh",display:"flex",flexDirection:"column",boxShadow:"0 30px 80px rgba(0,0,0,.3)"}}>
-            <div style={{padding:"18px 22px",borderBottom:"1px solid "+(D?"#374151":"#e5e7eb"),display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <h2 style={{fontSize:17,fontWeight:700,margin:0,color:tx(D)}}>📊 Analytics — Last {analyticsData.days} day{analyticsData.days!==1?"s":""}</h2>
-              <button onClick={()=>setAnalyticsData(null)} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",color:mu(D)}}>✕</button>
-            </div>
-            <div style={{padding:"16px 22px",flex:1,overflowY:"auto"}}>
-              <p style={{fontSize:13,color:mu(D),marginBottom:14}}>{analyticsData.total} total events</p>
-              {Object.entries(analyticsData.summary).sort((a,b)=>b[1]-a[1]).map(([event,count])=>(
-                <div key={event} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 12px",borderRadius:8,background:D?"#161b27":"#f9fafb",marginBottom:6}}>
-                  <span style={{fontSize:13,fontFamily:"monospace",color:tx(D)}}>{event}</span>
-                  <span style={{fontSize:13,fontWeight:700,color:"#6366f1"}}>{count}</span>
-                </div>
-              ))}
-            </div>
-            <div style={{padding:"12px 22px",borderTop:"1px solid "+(D?"#374151":"#e5e7eb")}}>
-              <button onClick={()=>setAnalyticsData(null)} style={{width:"100%",padding:"9px 0",borderRadius:10,border:"1px solid "+(D?"#374151":"#e5e7eb"),background:"transparent",color:mu(D),cursor:"pointer",fontSize:13}}>Close</button>
-            </div>
-          </div>
-        </div>
-      )}
   return (<>
     {/* W5: Pre-session goal modal (Feature 17) */}
     {showGoalModal&&(
@@ -10218,5 +10202,27 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
       D={D}
     />
     <ToastContainer/>
+    {analyticsData&&(
+      <div onClick={()=>setAnalyticsData(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:9500,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+        <div onClick={e=>e.stopPropagation()} style={{background:D?"#1e2537":"#fff",borderRadius:16,width:480,maxWidth:"96vw",maxHeight:"80vh",display:"flex",flexDirection:"column",boxShadow:"0 30px 80px rgba(0,0,0,.3)"}}>
+          <div style={{padding:"18px 22px",borderBottom:"1px solid "+(D?"#374151":"#e5e7eb"),display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <h2 style={{fontSize:17,fontWeight:700,margin:0,color:tx(D)}}>📊 Analytics — Last {analyticsData.days} day{analyticsData.days!==1?"s":""}</h2>
+            <button onClick={()=>setAnalyticsData(null)} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",color:mu(D)}}>✕</button>
+          </div>
+          <div style={{padding:"16px 22px",flex:1,overflowY:"auto"}}>
+            <p style={{fontSize:13,color:mu(D),marginBottom:14}}>{analyticsData.total} total events</p>
+            {Object.entries(analyticsData.summary).sort((a,b)=>b[1]-a[1]).map(([event,count])=>(
+              <div key={event} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 12px",borderRadius:8,background:D?"#161b27":"#f9fafb",marginBottom:6}}>
+                <span style={{fontSize:13,fontFamily:"monospace",color:tx(D)}}>{event}</span>
+                <span style={{fontSize:13,fontWeight:700,color:"#6366f1"}}>{count}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{padding:"12px 22px",borderTop:"1px solid "+(D?"#374151":"#e5e7eb")}}>
+            <button onClick={()=>setAnalyticsData(null)} style={{width:"100%",padding:"9px 0",borderRadius:10,border:"1px solid "+(D?"#374151":"#e5e7eb"),background:"transparent",color:mu(D),cursor:"pointer",fontSize:13}}>Close</button>
+          </div>
+        </div>
+      </div>
+    )}
   </>);
 }
