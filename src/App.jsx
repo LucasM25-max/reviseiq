@@ -1167,6 +1167,125 @@ function QuestionFigure({ figure, D, figureNumber=1 }) {
   );
 }
 
+function generateWhyPrompt(card){
+  if(typeof window!=="undefined"&&typeof window.generateWhyPrompt==="function"){
+    try{return window.generateWhyPrompt(card);}catch(_){}
+  }
+  var src=stripHtml(card?.a||card?.text||card?.q||"");
+  var key=(src.split(/\s+/).filter(Boolean).slice(0,4).join(" "))||"this concept";
+  return "Why is "+key+" important?";
+}
+function inferDifficulty(q){
+  if(q?.difficulty>=1&&q?.difficulty<=5) return q.difficulty;
+  var m=Number(q?.marks||1);
+  var t=(q?.text||"").toLowerCase();
+  var d=m>=8?5:m>=6?4:m>=4?3:m>=2?2:1;
+  if(/evaluate|assess|justify/.test(t)) d=Math.min(5,d+1);
+  if(/describe|explain|analyse|compare/.test(t)) d=Math.min(5,d+0.5);
+  return Math.max(1,Math.min(5,Math.round(d)));
+}
+function selectAdaptiveQuestions(list,user,subjectId){
+  var arr=(list||[]).map(function(q){return {...q,difficulty:inferDifficulty(q)};});
+  if(!user||!subjectId) return arr;
+  try{
+    var key="gcse:difficultyLevel:"+user.replace(/\W/g,"-")+":"+subjectId;
+    var lv=Number(localStorage.getItem(key)||3); if(!lv) lv=3;
+    var easy=arr.filter(q=>q.difficulty<lv), mid=arr.filter(q=>q.difficulty===lv), hard=arr.filter(q=>q.difficulty>lv);
+    var pick=[],max=Math.min(20,arr.length);
+    while(pick.length<max&&(easy.length||mid.length||hard.length)){
+      var r=Math.random();
+      var pool=r<0.2?easy:r<0.9?mid:hard;
+      if(!pool.length) pool=mid.length?mid:(hard.length?hard:easy);
+      if(!pool.length) break;
+      pick.push(pool.shift());
+    }
+    return pick.length?pick:arr;
+  }catch(_){return arr;}
+}
+function updateAdaptiveLevel(user,subjectId,isCorrect){
+  if(!user||!subjectId) return;
+  try{
+    var kH="gcse:difficultyHist:"+user.replace(/\W/g,"-")+":"+subjectId;
+    var hist=JSON.parse(localStorage.getItem(kH)||"[]");
+    hist=[...hist.slice(-19),isCorrect?1:0];
+    localStorage.setItem(kH,JSON.stringify(hist));
+    var acc=hist.reduce((a,b)=>a+b,0)/Math.max(hist.length,1);
+    var key="gcse:difficultyLevel:"+user.replace(/\W/g,"-")+":"+subjectId;
+    var lv=Number(localStorage.getItem(key)||3)||3;
+    if(acc>=0.7) lv=Math.min(5,lv+1); else if(acc<0.45) lv=Math.max(1,lv-1);
+    localStorage.setItem(key,String(lv));
+  }catch(_){}
+}
+function getLadderLevel(user,topicId){
+  if(!user||!topicId) return 1;
+  try{return Math.max(1,Math.min(5,Number(localStorage.getItem("gcse:ladder:"+user.replace(/\W/g,"-")+":"+topicId)||1)||1));}catch(_){return 1;}
+}
+function updateLadderLevel(user,topicId,correct){
+  if(!user||!topicId) return 1;
+  var cur=getLadderLevel(user,topicId);
+  var next=Math.max(1,Math.min(5,cur+(correct?1:-1)));
+  try{localStorage.setItem("gcse:ladder:"+user.replace(/\W/g,"-")+":"+topicId,String(next));}catch(_){}
+  return next;
+}
+function verifyExplanation(content, studentExplanation){
+  if(typeof window!=="undefined"&&typeof window.verifyExplanation==="function"){
+    try{return window.verifyExplanation(content, studentExplanation);}catch(_){}
+  }
+  var c=_cleanText(stripHtml(content||"")); var s=_cleanText(studentExplanation||"");
+  var kws=[...new Set(c.split(" ").filter(w=>w.length>4))].slice(0,10);
+  var hit=kws.filter(k=>s.includes(k));
+  return {
+    correct: s.length>30 ? "You explained key ideas clearly." : "Good start.",
+    missing: hit.length<Math.max(2,Math.floor(kws.length/3)) ? "Add detail on: "+kws.slice(0,3).join(", ") : "Add one concrete example."
+  };
+}
+function generateTransferQuestion(originalQuestion){
+  if(typeof window!=="undefined"&&typeof window.generateTransferQuestion==="function"){
+    try{return window.generateTransferQuestion(originalQuestion);}catch(_){}
+  }
+  var q={...(originalQuestion||{})};
+  var t=(q.text||"").replace(/\b(\d+)\b/g,function(m){return String(Number(m)+1);});
+  return {...q,id:"tr-"+uid(),text:"Apply It: "+(t||"Use this idea in a new context."),_transfer:true};
+}
+function getWeekKey(d){
+  var dt=new Date(d||Date.now()); var onejan=new Date(dt.getFullYear(),0,1); var day=Math.floor((dt-onejan)/86400000);
+  return dt.getFullYear()+"-W"+Math.ceil((day+onejan.getDay()+1)/7);
+}
+function generateWeeklyPlan(user, subjects, allSections, fcHist, stats, timetableExams){
+  var week=getWeekKey();
+  var key="gcse:weeklyPlan:"+(user||"").replace(/\W/g,"-")+":"+week;
+  try{var ex=JSON.parse(localStorage.getItem(key)||"null"); if(ex&&Array.isArray(ex)) return ex;}catch(_){}
+  var due=allSections.flatMap(s=>(s.flashcards||[]).filter(c=>isCardDue(fcHist,c.id)).map(()=>s.title)).slice(0,3);
+  var weak=Object.entries(stats?.weakQ||{}).sort((a,b)=>(b[1]?.wrong||0)-(a[1]?.wrong||0)).slice(0,3).map(x=>x[0]);
+  var examSoon=(timetableExams||[]).slice().sort((a,b)=>a.date.localeCompare(b.date))[0];
+  var base=["Review due flashcards"+(due[0]?" ("+due[0]+")":""),"Do 10 mixed questions"+(weak[0]?" on "+weak[0]:""),examSoon?"Exam prep for "+(examSoon.label||"upcoming exam"):"Revise weakest topic"];
+  var days=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+  var plan=days.map(function(d,i){return {day:d,tasks:[base[i%base.length]]};});
+  try{localStorage.setItem(key,JSON.stringify(plan));}catch(_){}
+  return plan;
+}
+function generateSessionOptions(user, subjectId, allSections, stats, fcHist){
+  var secs=allSections.filter(s=>s.subjectId===subjectId);
+  var due=secs.find(s=>(s.flashcards||[]).some(c=>isCardDue(fcHist,c.id)));
+  var weakId=Object.entries(stats?.weakQ||{}).sort((a,b)=>(b[1]?.wrong||0)-(a[1]?.wrong||0))[0]?.[0];
+  var weak=secs.find(s=>s.id===weakId)||secs[0];
+  return [
+    {title:"Due Card Sprint",description:"Clear due flashcards in "+(due?.title||"this topic"),action:{type:"flashcards",sectionId:due?.id}},
+    {title:"Weak Spot Drill",description:"Target weaker questions in "+(weak?.title||"your topic"),action:{type:"questions",sectionId:weak?.id}},
+    {title:"Mixed Focus",description:"Blend flashcards + exam questions",action:{type:"target"}}
+  ];
+}
+function ProgressiveDiagram({steps=[],D}){
+  const [idx,setIdx]=React.useState(0);
+  React.useEffect(()=>setIdx(0),[steps.length]);
+  const cur=steps[idx]||null;
+  if(!cur) return null;
+  return <div style={{...C(D),padding:12}} className="fade-in"><p style={{fontSize:12,marginBottom:8}}>{cur.text}</p>{cur.svg&&<div style={{opacity:1,transition:"opacity .25s"}}><DiagramRenderer diagram={cur.svg} D={D} width={420}/></div>}{idx<steps.length-1&&<button onClick={()=>setIdx(i=>i+1)} style={{marginTop:8,padding:"6px 12px",borderRadius:8,border:"none",background:"#6366f1",color:"#fff"}}>Next</button>}</div>;
+}
+function ConceptMap({x,y,relation,D}){
+  return <svg viewBox="0 0 360 120" style={{width:"100%",maxWidth:420}}><circle cx="70" cy="60" r="32" fill={D?"#1e293b":"#eef2ff"} stroke="#6366f1"/><circle cx="290" cy="60" r="32" fill={D?"#1e293b":"#eef2ff"} stroke="#6366f1"/><text x="70" y="64" textAnchor="middle" fontSize="12">{x||"X"}</text><text x="290" y="64" textAnchor="middle" fontSize="12">{y||"Y"}</text><line x1="104" y1="60" x2="256" y2="60" stroke="#6366f1" markerEnd="url(#arr)"/><defs><marker id="arr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#6366f1"/></marker></defs><text x="180" y="48" textAnchor="middle" fontSize="11">{relation||"relates to"}</text></svg>;
+}
+
 async function blurtAnalyse(notesText, blurtText) {
   const prompt = "You are a GCSE revision coach analysing a blurting exercise.\n\nRevision Notes:\n"+notesText+"\n\nStudent's blurt (from memory):\n"+blurtText+"\n\nRespond ONLY with valid JSON (no markdown, no backticks):\n{\"remembered\":[\"well-recalled point\"],\"missed\":[\"key point they forgot\"],\"partial\":[\"partially recalled point\"],\"feedback\":\"2-sentence encouragement + top tip\",\"score\":75}\n\nScore = % of key concepts the student demonstrated (0-100).";
   const raw = await callGeminiSimple(prompt, 1000);
@@ -7667,6 +7786,13 @@ export default function App() {
   const [qRes,setQRes]       = useState(null);
   const [marking,setMark]    = useState(false);
   const [showMdl,setSmMdl]   = useState(false);
+  const [elabOpen,setElabOpen] = useState(false);
+  const [elabText,setElabText] = useState("");
+  const [explainText,setExplainText] = useState("");
+  const [explainFeedback,setExplainFeedback] = useState(null);
+  const [transferQuestion,setTransferQuestion] = useState(null);
+  const [ladderTick,setLadderTick] = useState(0);
+  const [weeklyPlan,setWeeklyPlan] = useState([]);
   // Evidence-based enhancements — top-level state (Rules of Hooks)
   const [fcConf,setFcConf]       = useState(null);   // null|1|2|3 pre-flip confidence (Metcalfe & Finn 2008)
   const [fcHintLvl,setFcHintLvl] = useState(0);      // 0-2 hint reveals (Bjork 1994 Desirable Difficulties)
@@ -7928,6 +8054,12 @@ export default function App() {
     window.addEventListener("offline",goff);
     return()=>{window.removeEventListener("online",go);window.removeEventListener("offline",goff);};
   },[]);
+
+  useEffect(()=>{
+    if(!user||!ready||!allSections.length) return;
+    const plan=generateWeeklyPlan(user,subjects,allSections,fcHist,stats,timetableExams);
+    setWeeklyPlan(Array.isArray(plan)?plan:[]);
+  },[user,ready,allSections,subjects,fcHist,stats,timetableExams]);
 
   const markTodayActive = useCallback(()=>{
     const today=todayStr();
@@ -8704,6 +8836,38 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
           onNavigateBlurt={function(subjId,secId2){setBlurtSubjId(subjId);setBlurtSecId2(secId2);setScreen("blurting");}}
           onMock={function(){setScreen("mock");}}
         />
+        {(()=>{
+          const sid=subjects[0]?.id;
+          if(!sid) return null;
+          const opts=generateSessionOptions(user,sid,allSections,stats,fcHist).slice(0,3);
+          return (
+            <div style={{...C(D),padding:14,margin:"14px 0"}}>
+              <h3 style={{fontSize:14,fontWeight:700,marginBottom:8}}>Structured Session Choices</h3>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:8}}>
+                {opts.map((o,i)=>(
+                  <button key={i} onClick={()=>{if(o.action.type==="target"){setScreen("target");return;} if(o.action.sectionId){const sec=allSections.find(s=>s.id===o.action.sectionId); if(!sec)return; const si=subjects.findIndex(s=>s.id===sec.subjectId); if(si<0)return; setSubIdx(si); setTopIdx(0); setSecId(sec.id); setTab(o.action.type==="questions"?"questions":"flashcards"); setScreen("section");}}}
+                    style={{textAlign:"left",padding:10,borderRadius:10,border:`1px solid ${bd2}`,background:D?"#161b27":"#fff",cursor:"pointer"}}>
+                    <div style={{fontSize:12,fontWeight:700,marginBottom:4}}>{o.title}</div>
+                    <div style={{fontSize:11,color:mu(D)}}>{o.description}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+        {weeklyPlan?.length>0&&(
+          <div style={{...C(D),padding:14,marginBottom:14}}>
+            <h3 style={{fontSize:14,fontWeight:700,marginBottom:8}}>Weekly AI Learning Plan</h3>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:8}}>
+              {weeklyPlan.slice(0,7).map((d,idx)=>(
+                <button key={idx} onClick={()=>setScreen("target")} style={{textAlign:"left",padding:8,borderRadius:8,border:`1px solid ${bd2}`,background:"transparent",cursor:"pointer"}}>
+                  <div style={{fontSize:11,fontWeight:700}}>{d.day}</div>
+                  <div style={{fontSize:11,color:mu(D),marginTop:2}}>{d.tasks?.[0]}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",gap:14}}>
           {subjects.map((s,si)=>{
@@ -9055,11 +9219,14 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
   if(screen==="section"&&section){
     const inFocusMode = tab === "flashcards" || tab === "questions";
     const subj=subjDef;
-    const cards=section.flashcards||[], qs=section.questions||[];
+    const cards=section.flashcards||[], rawQs=section.questions||[];
+    const qs=selectAdaptiveQuestions(rawQs,user,subj?.id);
     const safeFcIdx = cards.length > 0 ? Math.min(fcIdx, cards.length-1) : 0;
     const fc = cards.length>0 ? cards[safeFcIdx] : null;
-    const q  = qs.length>0   ? qs[Math.min(qIdx,qs.length-1)]       : null;
+    const q  = transferQuestion || (qs.length>0   ? qs[Math.min(qIdx,qs.length-1)]       : null);
     const isCustomSec = section.src==="admin";
+    const ladderTopicId = section._parentTopicId||section.id;
+    const ladderLevel = getLadderLevel(user, ladderTopicId);
 
     const isAdminItem=(key,item)=>{
       if(isCustomSec)return true;
@@ -9083,6 +9250,10 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
         });
       }
       const correct=rating>=3;
+      updateLadderLevel(user, ladderTopicId, correct); setLadderTick(v=>v+1);
+      if(correct){
+        setElabOpen(true);
+      }
       setStats(s=>{
         const wfc={...s.weakFC};
         wfc[section.id]={wrong:(wfc[section.id]?.wrong||0)+(correct?0:1),total:(wfc[section.id]?.total||0)+1};
@@ -9237,6 +9408,7 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                 setFCH(prevH=>{const ps=getCardState(prevH,cardId);return{...prevH,[cardId]:fsrsNext(ps,rating)};});
               }
               const correct=rating>=3;
+              updateLadderLevel(user, ladderTopicId, correct); setLadderTick(v=>v+1);
               // Feature 19: record calibration prediction vs outcome
               if(fcConf!==null){
                 const pred=confToProb(fcConf);
@@ -9258,6 +9430,7 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
               });
               trackEvent('card_rated', { sectionId: section?.id, subjectId: subjDef?.id, value: rating });
               setFlip(false);setFcConf(null);setFcHintLvl(0);setFcSelfExp("");setFcSelfOpen(false);
+              if(correct) setElabOpen(true);
               setFcIdx(i=>{const len=activeCards.length;return len>0?(i<len-1?i+1:0):0;});
               // Wave 6: check achievements after rating
               setTimeout(()=>runAchievementCheck(null),300);
@@ -9573,6 +9746,32 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                     </div>
                   </div>
                 )}
+                <div style={{marginTop:10,padding:"10px 12px",borderRadius:10,background:D?"#1e2537":"#f8fafc",border:`1px solid ${D?"#374151":"#e5e7eb"}`}}>
+                  <div style={{fontSize:11,fontWeight:700,marginBottom:6}}>Difficulty Ladder</div>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:4}}>
+                    {["Know","Understand","Apply","Evaluate","Mastery"].map((l,i)=>(
+                      <div key={l} style={{padding:"5px 4px",borderRadius:6,fontSize:9,textAlign:"center",background:(i+1)<=ladderLevel?"#6366f1":"transparent",color:(i+1)<=ladderLevel?"#fff":mu(D),border:`1px solid ${bd2}`}}>{l}</div>
+                    ))}
+                  </div>
+                </div>
+                {flip&&elabOpen&&fc2&&(
+                  <details style={{marginTop:8}}>
+                    <summary style={{cursor:"pointer",fontSize:12,fontWeight:700}}>Why/How prompt</summary>
+                    <div style={{marginTop:6,fontSize:12,color:mu(D)}}>{generateWhyPrompt(fc2)}</div>
+                    <textarea value={elabText} onChange={e=>setElabText(e.target.value)} rows={2} style={{...I(D,{marginTop:6,fontSize:12})}} placeholder="Write 1–2 sentences…"/>
+                    <button onClick={()=>{try{localStorage.setItem("gcse:elab:"+user.replace(/\W/g,"-")+":"+fc2.id,JSON.stringify({prompt:generateWhyPrompt(fc2),response:elabText,date:new Date().toISOString()}));showToast("Saved");}catch(_){};}}
+                      style={{marginTop:6,padding:"6px 10px",borderRadius:8,border:"none",background:"#6366f1",color:"#fff",fontSize:12}}>Save</button>
+                  </details>
+                )}
+                {fc2&&(
+                  <details style={{marginTop:8}}>
+                    <summary style={{cursor:"pointer",fontSize:12,fontWeight:700}}>Explain It</summary>
+                    <textarea value={explainText} onChange={e=>setExplainText(e.target.value)} rows={2} style={{...I(D,{marginTop:6,fontSize:12})}} placeholder="Explain this card in your own words…"/>
+                    <button onClick={()=>setExplainFeedback(verifyExplanation(fc2.a||fc2.text||fc2.q,explainText))}
+                      style={{marginTop:6,padding:"6px 10px",borderRadius:8,border:"none",background:"#0ea5e9",color:"#fff",fontSize:12}}>Check explanation</button>
+                    {explainFeedback&&<div style={{marginTop:6,fontSize:12}}><div>✅ {explainFeedback.correct}</div><div>🧩 {explainFeedback.missing}</div></div>}
+                  </details>
+                )}
 
                 {!flip&&(
                   <div style={{display:"flex",gap:12,marginTop:12}}>
@@ -9651,6 +9850,13 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                     {(q.images||[]).map((img,ii)=><AnnotatedImage key={ii} img={img} D={D}/>)}
                     {q.figure&&<QuestionFigure figure={q.figure} D={D} figureNumber={1}/>}
                     <ContentBlock content={q.text} D={D} fontSize={15} style={{marginBottom:18}}/>
+                    <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
+                      <button onClick={()=>{setTransferQuestion(generateTransferQuestion(q));setQRes(null);setSelOpt(null);setTA("");}}
+                        style={{fontSize:12,padding:"6px 12px",borderRadius:8,border:"1px solid #6366f1",background:"transparent",color:"#6366f1",cursor:"pointer"}}>Apply It</button>
+                      {q&&/how does .* relate to|relate[s]? to/i.test((q.text||"").toLowerCase())&&(
+                        <details><summary style={{cursor:"pointer",fontSize:12}}>Concept Map</summary><ConceptMap x={(q.text||"X").split(" ")[2]} y={(q.text||"Y").split(" ").slice(-1)[0]} relation="relates to" D={D}/></details>
+                      )}
+                    </div>
 
                     {/* ── MCQ ── */}
                     {q.type==="mcq"&&(
@@ -9665,6 +9871,8 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                             <div key={oi}>
                               <button onClick={()=>{if(!qRes){
                                 const ok=oi===q.answer;setSelOpt(oi);setQRes(ok?"correct":"wrong");markTodayActive();
+                                updateAdaptiveLevel(user, subj.id, ok);
+                                updateLadderLevel(user, ladderTopicId, ok); setLadderTick(v=>v+1);
                                 setStats(s=>{const wq={...s.weakQ};wq[section.id]={wrong:(wq[section.id]?.wrong||0)+(ok?0:1),total:(wq[section.id]?.total||0)+1};const ss={...s.subjStats};ss[subj.id]={...ss[subj.id],qS:(ss[subj.id]?.qS||0)+(ok?1:0),qM:(ss[subj.id]?.qM||0)+1,fcC:ss[subj.id]?.fcC||0,fcT:ss[subj.id]?.fcT||0};return{...s,qS:s.qS+(ok?1:0),qM:s.qM+1,weakQ:wq,subjStats:ss};});
                               }}}
                                 style={{width:"100%",textAlign:"left",padding:"11px 16px",borderRadius:10,
@@ -9778,6 +9986,8 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                               r.errorType = errType;
                             }
                             const pct=q.marks>0?r.score/q.marks:0;
+                            updateAdaptiveLevel(user, subj.id, pct>=0.5);
+                            updateLadderLevel(user, ladderTopicId, pct>=0.5); setLadderTick(v=>v+1);
                             setQRes(r);
                             setStats(s=>{const wq={...s.weakQ};wq[section.id]={wrong:(wq[section.id]?.wrong||0)+(pct<0.5?1:0),total:(wq[section.id]?.total||0)+1};const ss={...s.subjStats};ss[subj.id]={...ss[subj.id],qS:(ss[subj.id]?.qS||0)+(r.score||0),qM:(ss[subj.id]?.qM||0)+q.marks,fcC:ss[subj.id]?.fcC||0,fcT:ss[subj.id]?.fcT||0};return{...s,qS:s.qS+(r.score||0),qM:s.qM+q.marks,weakQ:wq,subjStats:ss};});
                           }catch(e){setQRes({score:"?",feedback:"ReviseIQ AI unavailable — self-mark using the mark scheme below.",missedPoints:[],modelAnswer:q.sampleAnswer||"",examTip:""});}
@@ -9846,6 +10056,12 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                                   {idx<(qRes.structureDiagram||[]).length-1&&<span style={{color:mu(D)}}>→</span>}
                                 </React.Fragment>
                               ))}
+                            </div>
+                          </details>
+                          <details style={{marginBottom:8}}>
+                            <summary style={{cursor:"pointer",fontWeight:700,fontSize:12}}>Progressive Reveal</summary>
+                            <div style={{marginTop:8}}>
+                              <ProgressiveDiagram D={D} steps={(qRes.structureDiagram||[]).map(function(s){return {text:s,svg:null};})}/>
                             </div>
                           </details>
                           <details style={{marginBottom:8}}>
@@ -9918,7 +10134,7 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                   </div>
 
                   {qRes&&(
-                    <button onClick={()=>{setQIdx(i=>i<qs.length-1?i+1:0);setQRes(null);setSelOpt(null);setTA("");setSmMdl(false);setQHintLvl(0);setQConf(null);setQSelfExp("");setQSelfDone(false);}}
+                    <button onClick={()=>{setQIdx(i=>i<qs.length-1?i+1:0);setQRes(null);setSelOpt(null);setTA("");setSmMdl(false);setQHintLvl(0);setQConf(null);setQSelfExp("");setQSelfDone(false);setTransferQuestion(null);}}
                       style={{width:"100%",...B(subj.accent,false,{padding:"12px 0",borderRadius:12,fontSize:14})}}>
                       {qIdx<qs.length-1?"Next Question →":"↺ Restart"}
                     </button>
