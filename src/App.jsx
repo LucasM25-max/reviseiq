@@ -107,6 +107,7 @@ const SK = {
 const SK_SESSION     = u => `gcse:session:${u.replace(/\W/g,"-")}`;
 const SK_JOURNAL     = (u,sId) => `gcse:journal:${u.replace(/\W/g,"-")}:${sId}`;
 const SK_CALIBRATION = (u,sId) => `gcse:cal:${u.replace(/\W/g,"-")}:${sId}`;
+const SK_ERROR_PATTERNS = (u,sId) => `gcse:errorPatterns:${(u||"").replace(/\W/g,"-")}:${(sId||"")}`;
 
 // Brier score helper: mean((prediction - outcome)^2), lower = better
 function calcBrierScore(predictions) {
@@ -120,6 +121,42 @@ function confToProb(conf) {
   if(conf===2) return 0.5;
   if(conf===3) return 0.85;
   return 0.5;
+}
+function detectErrorType(questionText, studentAnswer, markScheme, missedPoints){
+  var q=(questionText||"").toLowerCase();
+  var a=(studentAnswer||"").toLowerCase();
+  var ms=((markScheme||"")+" "+(missedPoints||[]).join(" ")).toLowerCase();
+  var cmdWords=["describe","explain","compare","evaluate","analyse","calculate","justify","assess"];
+  var hasCmd=cmdWords.some(function(w){return q.includes(w);});
+  var keyTerms=(ms.match(/\b[a-z]{5,}\b/g)||[]).slice(0,10);
+  var termHits=keyTerms.filter(function(t){return a.includes(t);}).length;
+  if(keyTerms.length>3 && termHits<=1) return "Knowledge Gap";
+  if(hasCmd && /(state|list|define)\b/.test(a) && /(explain|evaluate|compare|assess|justify)/.test(q)) return "Command Word Error";
+  if(a.length>40 && /(because|therefore|so|leads to|results? in)/.test(a) && termHits>=2 && (missedPoints||[]).length>0) return "Application Error";
+  if(a.length<25 || !/[.!?]/.test(studentAnswer||"")) return "Communication Error";
+  return "Knowledge Gap";
+}
+function incrementErrorPattern(user, subjectId, type){
+  if(!user||!subjectId||!type||typeof window==="undefined") return null;
+  try{
+    var key=SK_ERROR_PATTERNS(user,subjectId);
+    var cur=JSON.parse(localStorage.getItem(key)||"{}");
+    var base={"Knowledge Gap":0,"Application Error":0,"Command Word Error":0,"Communication Error":0};
+    var next={...base,...cur,[type]:(cur[type]||0)+1};
+    localStorage.setItem(key,JSON.stringify(next));
+    return next;
+  }catch(_){return null;}
+}
+function getDominantErrorPattern(user, subjectId){
+  if(!user||!subjectId||typeof window==="undefined") return null;
+  try{
+    var obj=JSON.parse(localStorage.getItem(SK_ERROR_PATTERNS(user,subjectId))||"{}");
+    var vals=Object.entries({"Knowledge Gap":obj["Knowledge Gap"]||0,"Application Error":obj["Application Error"]||0,"Command Word Error":obj["Command Word Error"]||0,"Communication Error":obj["Communication Error"]||0});
+    var total=vals.reduce((a,v)=>a+v[1],0);
+    if(total<10) return null;
+    vals.sort((a,b)=>b[1]-a[1]);
+    return {type:vals[0][0], pct:Math.round((vals[0][1]/total)*100), total};
+  }catch(_){return null;}
 }
 // Strategy logic for Feature 21
 function getStrategyRecommendation(subj, allSections, fcHist, calibData, timetableExams, stats) {
@@ -965,7 +1002,169 @@ async function markAnswer(q, ans) {
   const raw = await callGeminiSimple(prompt, 800);
   const fence = "`"+"`"+"`"; const clean = raw.split(fence+"json").join("").split(fence).join("").trim();
   const s=clean.indexOf("{"), e=clean.lastIndexOf("}");
-  return JSON.parse(s>=0&&e>=0?clean.slice(s,e+1):clean);
+  const parsed = JSON.parse(s>=0&&e>=0?clean.slice(s,e+1):clean);
+  const markPoints = Array.isArray(parsed?.missedPoints) ? parsed.missedPoints : [];
+  return {
+    ...parsed,
+    annotatedAnswer: parsed.annotatedAnswer || (parsed.modelAnswer||"").split(/(?<=[.!?])\s+/).filter(Boolean).map(function(seg,idx){
+      return {text:seg, type:idx===0?"point":(idx%2===0?"evidence":"explanation")};
+    }),
+    structureDiagram: parsed.structureDiagram || ["Point","Evidence","Explanation","Application"],
+    comparisonTable: parsed.comparisonTable || markPoints.slice(0,4).map(function(pt){
+      return {student:(ans||"").slice(0,120), expectation:pt};
+    }),
+    workedSolution: parsed.workedSolution || (parsed.modelAnswer||""),
+  };
+}
+
+function _cleanText(s){return (s||"").toLowerCase().replace(/[^a-z0-9\s]/g," ").replace(/\s+/g," ").trim();}
+function _clozeLooseMatch(correct, input){
+  const a=_cleanText(correct), b=_cleanText(input);
+  if(!a||!b) return false;
+  if(a===b) return true;
+  if(a.replace(/s$/,"")===b.replace(/s$/,"")) return true;
+  return a.includes(b) || b.includes(a);
+}
+function parseClozeText(text){
+  const parts=[]; let i=0; let bi=0;
+  const src=String(text||"");
+  while(i<src.length){
+    const s=src.indexOf("{{",i);
+    if(s===-1){parts.push({type:"text",value:src.slice(i)});break;}
+    if(s>i) parts.push({type:"text",value:src.slice(i,s)});
+    const e=src.indexOf("}}",s+2);
+    if(e===-1){parts.push({type:"text",value:src.slice(s)});break;}
+    const ans=src.slice(s+2,e).trim();
+    parts.push({type:"blank",answer:ans,index:bi++});
+    i=e+2;
+  }
+  return parts;
+}
+
+function ClozeCard({ card, D, onSubmit }) {
+  const parts = React.useMemo(()=>parseClozeText(card?.text||card?.q||""), [card?.text, card?.q]);
+  const blanks = React.useMemo(()=>parts.filter(p=>p.type==="blank"), [parts]);
+  const [vals,setVals]=React.useState(function(){
+    const obj={}; blanks.forEach(function(b){obj[b.index]="";}); return obj;
+  });
+  const [result,setResult]=React.useState(null);
+  React.useEffect(()=>{const obj={}; blanks.forEach(function(b){obj[b.index]="";}); setVals(obj); setResult(null);}, [card?.id, blanks.length]);
+  const submit=async()=>{
+    const rows = blanks.map(function(b){
+      const user=(vals[b.index]||"").trim();
+      const correct=(b.answer||"").trim();
+      const exact=_cleanText(user)===_cleanText(correct);
+      return {user,correct,ok:exact || _clozeLooseMatch(correct,user)};
+    });
+    const allCorrect = rows.every(r=>r.ok);
+    const score = rows.length?Math.round((rows.filter(r=>r.ok).length/rows.length)*100):0;
+    const out={allCorrect,score,rows};
+    setResult(out);
+    if(onSubmit) onSubmit(out);
+  };
+  return (
+    <div style={{borderRadius:12,border:`1.5px solid ${D?"#374151":"#e5e7eb"}`,padding:16,background:D?"#161b27":"#fff"}}>
+      {card?.diagram&&<div style={{marginBottom:10}}><DiagramRenderer diagram={card.diagram} D={D} width={420}/></div>}
+      <div style={{lineHeight:2,fontSize:15,color:D?"#e5e7eb":"#111827"}}>
+        {parts.map(function(p,idx){
+          if(p.type==="text") return <span key={idx}>{p.value}</span>;
+          return <input key={idx} value={vals[p.index]||""} onChange={e=>setVals(v=>({...v,[p.index]:e.target.value}))}
+            style={{display:"inline-block",minWidth:120,padding:"4px 8px",margin:"0 5px",borderRadius:8,border:`1.5px solid ${D?"#4b5563":"#cbd5e1"}`,background:D?"#0f172a":"#f8fafc",color:D?"#fff":"#111"}}/>;
+        })}
+      </div>
+      <button onClick={submit} style={{marginTop:12,padding:"8px 14px",borderRadius:8,border:"none",background:"#6366f1",color:"#fff",cursor:"pointer",fontWeight:700}}>Check answers</button>
+      {result&&<div style={{marginTop:10,fontSize:12,color:result.allCorrect?"#16a34a":"#d97706"}}>{result.allCorrect?"✓ All correct":"Score: "+result.score+"%"}</div>}
+    </div>
+  );
+}
+
+function SequenceCard({ card, D, onSubmit }) {
+  const base = React.useMemo(()=>Array.isArray(card?.items)?card.items.filter(Boolean):[], [card?.items]);
+  const [order,setOrder]=React.useState([]);
+  const [dragIdx,setDragIdx]=React.useState(null);
+  const [result,setResult]=React.useState(null);
+  React.useEffect(()=>{
+    const arr=[...base].sort(()=>Math.random()-0.5);
+    setOrder(arr); setResult(null); setDragIdx(null);
+  }, [card?.id, base.join("|")]);
+  const onDropAt=(idx)=>{
+    if(dragIdx===null||dragIdx===idx) return;
+    setOrder(prev=>{
+      const n=[...prev]; const [m]=n.splice(dragIdx,1); n.splice(idx,0,m); return n;
+    });
+    setDragIdx(null);
+  };
+  const grade=()=>{
+    const correctPositions = order.reduce((a,it,i)=>a + (it===base[i]?1:0),0);
+    const score = base.length?correctPositions/base.length:0;
+    const status = score===1 ? "correct" : score>=0.5 ? "partial" : "incorrect";
+    const out={status,score,correctPositions,total:base.length};
+    setResult(out);
+    if(onSubmit) onSubmit(out);
+  };
+  return (
+    <div style={{borderRadius:12,border:`1.5px solid ${D?"#374151":"#e5e7eb"}`,padding:16,background:D?"#161b27":"#fff"}}>
+      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+        {order.map(function(it,idx){return (
+          <div key={it+"-"+idx} draggable
+            onDragStart={()=>setDragIdx(idx)} onDragOver={e=>e.preventDefault()} onDrop={()=>onDropAt(idx)}
+            style={{padding:"10px 12px",borderRadius:10,border:`1px solid ${D?"#4b5563":"#d1d5db"}`,background:D?"#0f172a":"#f9fafb",cursor:"grab"}}>
+            {it}
+          </div>
+        );})}
+      </div>
+      <button onClick={grade} style={{marginTop:12,padding:"8px 14px",borderRadius:8,border:"none",background:"#6366f1",color:"#fff",cursor:"pointer",fontWeight:700}}>Check order</button>
+      {result&&(
+        <div style={{marginTop:10,fontSize:12}}>
+          <div style={{fontWeight:700,color:result.status==="correct"?"#16a34a":result.status==="partial"?"#d97706":"#dc2626"}}>
+            {result.status.toUpperCase()} · {Math.round(result.score*100)}%
+          </div>
+          <div style={{marginTop:6,color:D?"#cbd5e1":"#374151"}}>{base.map(function(x,i){return (i+1)+". "+x;}).join(" → ")}</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function QuestionFigure({ figure, D, figureNumber=1 }) {
+  if(!figure) return null;
+  const w=figure.data?.width||520, h=figure.data?.height||220, pad=28;
+  const pts=Array.isArray(figure.data?.points)?figure.data.points:[];
+  const minX=Math.min(...pts.map(p=>Number(p.x)||0),0), maxX=Math.max(...pts.map(p=>Number(p.x)||0),1);
+  const minY=Math.min(...pts.map(p=>Number(p.y)||0),0), maxY=Math.max(...pts.map(p=>Number(p.y)||0),1);
+  const sx=x=>pad+((x-minX)/(maxX-minX||1))*(w-pad*2), sy=y=>h-pad-((y-minY)/(maxY-minY||1))*(h-pad*2);
+  const chart = (function(){
+    if(figure.type==="photo") return <img src={figure.data?.src||""} alt={figure.caption||"figure"} style={{maxWidth:"100%",borderRadius:10}}/>;
+    if(figure.type==="table") return (
+      <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+        <thead><tr>{(figure.data?.headers||[]).map((h2,i)=><th key={i} style={{border:"1px solid #cbd5e1",padding:6,background:D?"#0f172a":"#f8fafc"}}>{h2}</th>)}</tr></thead>
+        <tbody>{(figure.data?.rows||[]).map((r,ri)=><tr key={ri}>{r.map((c,ci)=><td key={ci} style={{border:"1px solid #cbd5e1",padding:6}}>{String(c)}</td>)}</tr>)}</tbody>
+      </table>
+    );
+    if(figure.type==="svg"&&figure.data) return <DiagramRenderer diagram={figure.data} D={D} width={520}/>;
+    if(figure.type==="bar"){
+      const bars=Array.isArray(figure.data?.bars)?figure.data.bars:[];
+      const m=Math.max(...bars.map(b=>Number(b.value)||0),1);
+      return <svg viewBox={`0 0 ${w} ${h}`} style={{width:"100%",height:"auto"}}>{bars.map((b,i)=>{const bw=(w-pad*2)/Math.max(bars.length,1)-8; const x=pad+i*(bw+8); const hh=((Number(b.value)||0)/m)*(h-pad*2); return <g key={i}><rect x={x} y={h-pad-hh} width={bw} height={hh} fill="#6366f1"/><text x={x+bw/2} y={h-pad+14} textAnchor="middle" fontSize="10">{b.label||i+1}</text></g>;})}<line x1={pad} y1={h-pad} x2={w-pad} y2={h-pad} stroke="#94a3b8"/></svg>;
+    }
+    if(figure.type==="line"){
+      const lp=Array.isArray(figure.data?.points)?figure.data.points:[];
+      const d=lp.map((p,i)=>(i?"L":"M")+sx(Number(p.x)||0)+" "+sy(Number(p.y)||0)).join(" ");
+      return <svg viewBox={`0 0 ${w} ${h}`} style={{width:"100%",height:"auto"}}><line x1={pad} y1={h-pad} x2={w-pad} y2={h-pad} stroke="#94a3b8"/><line x1={pad} y1={pad} x2={pad} y2={h-pad} stroke="#94a3b8"/><path d={d} fill="none" stroke="#6366f1" strokeWidth="2"/></svg>;
+    }
+    if(figure.type==="scatter"){
+      const ps=pts;
+      return <svg viewBox={`0 0 ${w} ${h}`} style={{width:"100%",height:"auto"}}><line x1={pad} y1={h-pad} x2={w-pad} y2={h-pad} stroke="#94a3b8"/><line x1={pad} y1={pad} x2={pad} y2={h-pad} stroke="#94a3b8"/>{ps.map((p,i)=><circle key={i} cx={sx(Number(p.x)||0)} cy={sy(Number(p.y)||0)} r="4" fill={p.anomaly?"#ef4444":"#6366f1"}/>)}</svg>;
+    }
+    return null;
+  })();
+  return (
+    <div style={{marginBottom:12,padding:10,borderRadius:10,border:`1px solid ${D?"#374151":"#e5e7eb"}`,background:D?"#111827":"#fff"}}>
+      <div style={{fontSize:12,fontWeight:700,marginBottom:6}}>Figure {figureNumber}: {figure.caption||"Untitled"}</div>
+      {chart}
+      {figure.source&&<div style={{fontSize:11,color:D?"#9ca3af":"#6b7280",marginTop:6}}>Source: {figure.source}</div>}
+    </div>
+  );
 }
 
 async function blurtAnalyse(notesText, blurtText) {
@@ -7520,6 +7719,7 @@ export default function App() {
   const [ucScreen,setUCScreen]         = useState(null); // null|{subjId}
   const [selectedSubjectIds,setSelectedSubjectIds] = useState(null); // null = not yet loaded; [] = none chosen; [id,...] = chosen
   const [showSubjectSelection,setShowSubjectSelection] = useState(false); // for editing from account screen
+  const [prefsReady,setPrefsReady] = useState(false); // prevents overwriting prefs before hydration completes
 
   // Derive subjects: filter ALL_SUBJECTS to only those the user has selected, plus always include politics.
   // While selectedSubjectIds is null (not yet loaded from storage), show all subjects so nothing breaks during load.
@@ -7614,6 +7814,7 @@ export default function App() {
 
   useEffect(()=>{
     if(!user||!ready)return;
+    setPrefsReady(false);
     progLoaded.current = false;
     (async()=>{
       let savedSels={};
@@ -7662,7 +7863,10 @@ export default function App() {
           }
         }
       }catch(_){}
-      progLoaded.current = true;
+      setTimeout(()=>{
+        progLoaded.current = true;
+        setPrefsReady(true);
+      },0);
       // Also load timetable exams for the Today widget
       try{
         const tr=await window.storage.get(SK.TIMETABLE(user));
@@ -7870,21 +8074,22 @@ export default function App() {
   // ── Immediate saves for critical prefs — no debounce, independent of fcHist ──
   // targetGrades: save the moment it changes
   useEffect(()=>{
-    if(!user||!progLoaded.current)return;
+    if(!user||!progLoaded.current||!prefsReady)return;
     window.storage.get(SK.PREFS(user),true).then(r=>{
       const existing=r?.value?JSON.parse(r.value):{};
       return window.storage.set(SK.PREFS(user),JSON.stringify({...existing,targetGrades}),true);
     }).catch(()=>{});
-  },[user,targetGrades]);
+  },[user,targetGrades,prefsReady]);
 
   // selectedSubjectIds + boardSels: save together immediately whenever either changes
   useEffect(()=>{
-    if(!user||!progLoaded.current)return;
+    if(!user||!progLoaded.current||!prefsReady)return;
+    if(selectedSubjectIds===null)return;
     window.storage.get(SK.PREFS(user),true).then(r=>{
       const existing=r?.value?JSON.parse(r.value):{};
       return window.storage.set(SK.PREFS(user),JSON.stringify({...existing,selectedSubjectIds:selectedSubjectIds||[],boardSels}),true);
     }).catch(()=>{});
-  },[user,selectedSubjectIds,boardSels]);
+  },[user,selectedSubjectIds,boardSels,prefsReady]);
 
   useEffect(()=>{
     if(!user)return;
@@ -9267,7 +9472,15 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                         </span>}
                       </div>
                       {(fc2.images||[]).length>0&&fc2.images.map((img,ii)=><AnnotatedImage key={ii} img={img} D={D}/>)}
-                      <ContentBlock content={fc2.q} D={D} fontSize={15} style={{color:tx(D),textAlign:isDualCoded?"left":"center",width:"100%"}}/>
+                      <ContentBlock
+                        content={fc2.type==="cloze"
+                          ? String(fc2.text||fc2.q||"").replace(/\{\{(.*?)\}\}/g,"_____")
+                          : fc2.type==="sequence"
+                            ? (fc2.prompt||"Arrange these steps in the correct order.")
+                            : fc2.q}
+                        D={D} fontSize={15}
+                        style={{color:tx(D),textAlign:isDualCoded?"left":"center",width:"100%"}}
+                      />
                       {fcConf===null
                         ?<p style={{fontSize:11,color:mu(D),marginTop:14,alignSelf:"center"}}>↑ Rate your confidence first</p>
                         :<p style={{fontSize:11,color:mu(D),marginTop:14,alignSelf:"center"}}>Tap to reveal · Swipe to navigate</p>}
@@ -9293,7 +9506,13 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                         </div>
                       )}
                       <div style={{fontSize:11,fontWeight:600,letterSpacing:"0.1em",color:subj.accent,textTransform:"uppercase",marginBottom:8,alignSelf:"flex-start"}}>Answer</div>
-                      <ContentBlock content={fc2.a} D={D} fontSize={15} style={{color:subj.accent,fontWeight:500,textAlign:isDualCoded?"left":"center",width:"100%"}}/>
+                      {(fc2.type==="cloze"||fc2.type==="sequence") ? (
+                        fc2.type==="cloze"
+                          ? <ClozeCard card={fc2} D={D} onSubmit={()=>setFcSelfOpen(true)}/>
+                          : <SequenceCard card={fc2} D={D} onSubmit={()=>setFcSelfOpen(true)}/>
+                      ) : (
+                        <ContentBlock content={fc2.a} D={D} fontSize={15} style={{color:subj.accent,fontWeight:500,textAlign:isDualCoded?"left":"center",width:"100%"}}/>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -9430,6 +9649,7 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                       {q.year&&<span style={{fontSize:11,color:mu(D)}}>{q.year}</span>}
                     </div>
                     {(q.images||[]).map((img,ii)=><AnnotatedImage key={ii} img={img} D={D}/>)}
+                    {q.figure&&<QuestionFigure figure={q.figure} D={D} figureNumber={1}/>}
                     <ContentBlock content={q.text} D={D} fontSize={15} style={{marginBottom:18}}/>
 
                     {/* ── MCQ ── */}
@@ -9550,6 +9770,13 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                           if(!textAns.trim())return; setMark(true); markTodayActive(); trackEvent('question_submitted', { sectionId: section?.id, subjectId: subjDef?.id, tab: 'questions' });
                           try{
                             const r=await markAnswer(q,textAns);
+                            const errType = (typeof classifyError==="function")
+                              ? await Promise.resolve(classifyError(q,textAns,q.markScheme)).catch(()=>null)
+                              : detectErrorType(q.text,textAns,q.markScheme,r?.missedPoints);
+                            if(errType){
+                              incrementErrorPattern(user, subj.id, errType);
+                              r.errorType = errType;
+                            }
                             const pct=q.marks>0?r.score/q.marks:0;
                             setQRes(r);
                             setStats(s=>{const wq={...s.weakQ};wq[section.id]={wrong:(wq[section.id]?.wrong||0)+(pct<0.5?1:0),total:(wq[section.id]?.total||0)+1};const ss={...s.subjStats};ss[subj.id]={...ss[subj.id],qS:(ss[subj.id]?.qS||0)+(r.score||0),qM:(ss[subj.id]?.qM||0)+q.marks,fcC:ss[subj.id]?.fcC||0,fcT:ss[subj.id]?.fcT||0};return{...s,qS:s.qS+(r.score||0),qM:s.qM+q.marks,weakQ:wq,subjStats:ss};});
@@ -9605,6 +9832,46 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                               <p style={{fontSize:12,color:"#1d4ed8"}}>💡 <strong>Exam tip:</strong> {qRes.examTip}</p>
                             </div>
                           )}
+                          {qRes.errorType&&(
+                            <div style={{padding:"8px 12px",borderRadius:10,background:D?"rgba(245,158,11,.1)":"#fffbeb",border:"1px solid #f59e0b55",marginBottom:10,fontSize:12,color:D?"#fcd34d":"#92400e"}}>
+                              Main error type: <strong>{qRes.errorType}</strong>
+                            </div>
+                          )}
+                          <details style={{marginBottom:8}}>
+                            <summary style={{cursor:"pointer",fontWeight:700,fontSize:12}}>Structure Diagram</summary>
+                            <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginTop:8}}>
+                              {(qRes.structureDiagram||["Point","Evidence","Explanation","Application"]).map((s,idx)=>(
+                                <React.Fragment key={idx}>
+                                  <span style={{padding:"6px 10px",borderRadius:8,background:D?"#1e2537":"#eef2ff",fontSize:11,fontWeight:600}}>{s}</span>
+                                  {idx<(qRes.structureDiagram||[]).length-1&&<span style={{color:mu(D)}}>→</span>}
+                                </React.Fragment>
+                              ))}
+                            </div>
+                          </details>
+                          <details style={{marginBottom:8}}>
+                            <summary style={{cursor:"pointer",fontWeight:700,fontSize:12}}>Annotated Model Answer</summary>
+                            <div style={{marginTop:8,lineHeight:1.8,fontSize:13}}>
+                              {(Array.isArray(qRes.annotatedAnswer)?qRes.annotatedAnswer:[]).map((seg,idx)=>{
+                                const bg=seg.type==="point"?"#dcfce7":seg.type==="evidence"?"#dbeafe":"#fef3c7";
+                                return <span key={idx} style={{background:bg,padding:"1px 4px",borderRadius:4,marginRight:4}}>{seg.text}</span>;
+                              })}
+                            </div>
+                          </details>
+                          <details style={{marginBottom:8}}>
+                            <summary style={{cursor:"pointer",fontWeight:700,fontSize:12}}>Comparison Table</summary>
+                            <table style={{width:"100%",borderCollapse:"collapse",marginTop:8,fontSize:12}}>
+                              <thead><tr><th style={{border:"1px solid #cbd5e1",padding:6,textAlign:"left"}}>Student Answer</th><th style={{border:"1px solid #cbd5e1",padding:6,textAlign:"left"}}>Mark Scheme Expectation</th></tr></thead>
+                              <tbody>{(qRes.comparisonTable||[]).map((row,ri)=>(
+                                <tr key={ri}><td style={{border:"1px solid #cbd5e1",padding:6}}>{row.student}</td><td style={{border:"1px solid #cbd5e1",padding:6}}>{row.expectation}</td></tr>
+                              ))}</tbody>
+                            </table>
+                          </details>
+                          <details style={{marginBottom:12}}>
+                            <summary style={{cursor:"pointer",fontWeight:700,fontSize:12}}>Worked Solution</summary>
+                            <pre style={{marginTop:8,whiteSpace:"pre-wrap",fontSize:12,fontFamily:"IBM Plex Mono, monospace",background:D?"#0f172a":"#f8fafc",padding:10,borderRadius:8}}>
+                              {qRes.workedSolution||qRes.modelAnswer||q.sampleAnswer||""}
+                            </pre>
+                          </details>
 
                           {/* Post-marking self-explanation — Testing Effect (Roediger & Karpicke 2006):
                               forcing a retrieval attempt AFTER seeing outcome, at peak encoding
@@ -9741,6 +10008,20 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
       return {subject:s.icon+" "+s.name.split(" ")[0], pct:pct, fullName:s.name};
     });
     const hasRadarData=radarData.some(function(r){return r.pct>0;});
+    const dominantErrorSummary = (function(){
+      if(typeof window==="undefined"||!user) return null;
+      var all={"Knowledge Gap":0,"Application Error":0,"Command Word Error":0,"Communication Error":0};
+      ALL_SUBJECTS.forEach(function(s){
+        try{
+          var obj=JSON.parse(localStorage.getItem(SK_ERROR_PATTERNS(user,s.id))||"{}");
+          Object.keys(all).forEach(function(k){all[k]+=Number(obj[k]||0);});
+        }catch(_){}
+      });
+      var total=Object.values(all).reduce((a,b)=>a+b,0);
+      if(total<10) return null;
+      var top=Object.entries(all).sort((a,b)=>b[1]-a[1])[0];
+      return {type:top[0], pct:Math.round((top[1]/total)*100)};
+    })();
 
     return (
       <div style={{minHeight:"100vh",background:bg,color:tx(D)}} className="fade-in">
@@ -9748,6 +10029,13 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
         <div style={{maxWidth:900,margin:"0 auto",padding:"32px 24px"}}>
           <button onClick={()=>setScreen("home")} style={{fontSize:13,color:mu(D),background:"none",border:"none",cursor:"pointer",marginBottom:24}}>← Home</button>
           <h2 style={{fontSize:22,fontWeight:700,marginBottom:22}}>📊 Progress Dashboard</h2>
+          {dominantErrorSummary&&(
+            <div style={{...C(D),padding:14,marginBottom:14,background:D?"rgba(245,158,11,.08)":"#fffbeb",borderColor:"#f59e0b"}}>
+              <p style={{fontSize:13,color:D?"#fcd34d":"#92400e"}}>
+                Your main error type is <strong>{dominantErrorSummary.type}</strong> ({dominantErrorSummary.pct}%) — focus on improving this.
+              </p>
+            </div>
+          )}
 
           {/* Streak + Heatmap card */}
           <div style={{...C(D),padding:22,marginBottom:18,background:streak>0?(D?"rgba(249,115,22,0.05)":""):undefined,borderColor:streak>=7?"#f97316":undefined}}>
@@ -10147,28 +10435,6 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
     );
   }
 
-      {analyticsData&&(
-        <div onClick={()=>setAnalyticsData(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:9500,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
-          <div onClick={e=>e.stopPropagation()} style={{background:D?"#1e2537":"#fff",borderRadius:16,width:480,maxWidth:"96vw",maxHeight:"80vh",display:"flex",flexDirection:"column",boxShadow:"0 30px 80px rgba(0,0,0,.3)"}}>
-            <div style={{padding:"18px 22px",borderBottom:"1px solid "+(D?"#374151":"#e5e7eb"),display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <h2 style={{fontSize:17,fontWeight:700,margin:0,color:tx(D)}}>📊 Analytics — Last {analyticsData.days} day{analyticsData.days!==1?"s":""}</h2>
-              <button onClick={()=>setAnalyticsData(null)} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",color:mu(D)}}>✕</button>
-            </div>
-            <div style={{padding:"16px 22px",flex:1,overflowY:"auto"}}>
-              <p style={{fontSize:13,color:mu(D),marginBottom:14}}>{analyticsData.total} total events</p>
-              {Object.entries(analyticsData.summary).sort((a,b)=>b[1]-a[1]).map(([event,count])=>(
-                <div key={event} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 12px",borderRadius:8,background:D?"#161b27":"#f9fafb",marginBottom:6}}>
-                  <span style={{fontSize:13,fontFamily:"monospace",color:tx(D)}}>{event}</span>
-                  <span style={{fontSize:13,fontWeight:700,color:"#6366f1"}}>{count}</span>
-                </div>
-              ))}
-            </div>
-            <div style={{padding:"12px 22px",borderTop:"1px solid "+(D?"#374151":"#e5e7eb")}}>
-              <button onClick={()=>setAnalyticsData(null)} style={{width:"100%",padding:"9px 0",borderRadius:10,border:"1px solid "+(D?"#374151":"#e5e7eb"),background:"transparent",color:mu(D),cursor:"pointer",fontSize:13}}>Close</button>
-            </div>
-          </div>
-        </div>
-      )}
   return (<>
     {/* W5: Pre-session goal modal (Feature 17) */}
     {showGoalModal&&(
@@ -10218,5 +10484,27 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
       D={D}
     />
     <ToastContainer/>
+    {analyticsData&&(
+      <div onClick={()=>setAnalyticsData(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:9500,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+        <div onClick={e=>e.stopPropagation()} style={{background:D?"#1e2537":"#fff",borderRadius:16,width:480,maxWidth:"96vw",maxHeight:"80vh",display:"flex",flexDirection:"column",boxShadow:"0 30px 80px rgba(0,0,0,.3)"}}>
+          <div style={{padding:"18px 22px",borderBottom:"1px solid "+(D?"#374151":"#e5e7eb"),display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <h2 style={{fontSize:17,fontWeight:700,margin:0,color:tx(D)}}>📊 Analytics — Last {analyticsData.days} day{analyticsData.days!==1?"s":""}</h2>
+            <button onClick={()=>setAnalyticsData(null)} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",color:mu(D)}}>✕</button>
+          </div>
+          <div style={{padding:"16px 22px",flex:1,overflowY:"auto"}}>
+            <p style={{fontSize:13,color:mu(D),marginBottom:14}}>{analyticsData.total} total events</p>
+            {Object.entries(analyticsData.summary).sort((a,b)=>b[1]-a[1]).map(([event,count])=>(
+              <div key={event} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 12px",borderRadius:8,background:D?"#161b27":"#f9fafb",marginBottom:6}}>
+                <span style={{fontSize:13,fontFamily:"monospace",color:tx(D)}}>{event}</span>
+                <span style={{fontSize:13,fontWeight:700,color:"#6366f1"}}>{count}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{padding:"12px 22px",borderTop:"1px solid "+(D?"#374151":"#e5e7eb")}}>
+            <button onClick={()=>setAnalyticsData(null)} style={{width:"100%",padding:"9px 0",borderRadius:10,border:"1px solid "+(D?"#374151":"#e5e7eb"),background:"transparent",color:mu(D),cursor:"pointer",fontSize:13}}>Close</button>
+          </div>
+        </div>
+      </div>
+    )}
   </>);
 }
