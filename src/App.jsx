@@ -107,6 +107,9 @@ const SK = {
 const SK_SESSION     = u => `gcse:session:${u.replace(/\W/g,"-")}`;
 const SK_JOURNAL     = (u,sId) => `gcse:journal:${u.replace(/\W/g,"-")}:${sId}`;
 const SK_CALIBRATION = (u,sId) => `gcse:cal:${u.replace(/\W/g,"-")}:${sId}`;
+const SK_ERROR_PATTERNS = (u,sId) => `gcse:errorPatterns:${(u||"").replace(/\W/g,"-")}:${(sId||"")}`;
+const SK_GRAPH = (u,sId) => `gcse:graph:${(u||"").replace(/\W/g,"-")}:${sId}`;
+const SK_SVG_ASSETS = u => `gcse:svgAssets:${(u||"").replace(/\W/g,"-")}`;
 
 // Brier score helper: mean((prediction - outcome)^2), lower = better
 function calcBrierScore(predictions) {
@@ -120,6 +123,42 @@ function confToProb(conf) {
   if(conf===2) return 0.5;
   if(conf===3) return 0.85;
   return 0.5;
+}
+function detectErrorType(questionText, studentAnswer, markScheme, missedPoints){
+  var q=(questionText||"").toLowerCase();
+  var a=(studentAnswer||"").toLowerCase();
+  var ms=((markScheme||"")+" "+(missedPoints||[]).join(" ")).toLowerCase();
+  var cmdWords=["describe","explain","compare","evaluate","analyse","calculate","justify","assess"];
+  var hasCmd=cmdWords.some(function(w){return q.includes(w);});
+  var keyTerms=(ms.match(/\b[a-z]{5,}\b/g)||[]).slice(0,10);
+  var termHits=keyTerms.filter(function(t){return a.includes(t);}).length;
+  if(keyTerms.length>3 && termHits<=1) return "Knowledge Gap";
+  if(hasCmd && /(state|list|define)\b/.test(a) && /(explain|evaluate|compare|assess|justify)/.test(q)) return "Command Word Error";
+  if(a.length>40 && /(because|therefore|so|leads to|results? in)/.test(a) && termHits>=2 && (missedPoints||[]).length>0) return "Application Error";
+  if(a.length<25 || !/[.!?]/.test(studentAnswer||"")) return "Communication Error";
+  return "Knowledge Gap";
+}
+function incrementErrorPattern(user, subjectId, type){
+  if(!user||!subjectId||!type||typeof window==="undefined") return null;
+  try{
+    var key=SK_ERROR_PATTERNS(user,subjectId);
+    var cur=JSON.parse(localStorage.getItem(key)||"{}");
+    var base={"Knowledge Gap":0,"Application Error":0,"Command Word Error":0,"Communication Error":0};
+    var next={...base,...cur,[type]:(cur[type]||0)+1};
+    localStorage.setItem(key,JSON.stringify(next));
+    return next;
+  }catch(_){return null;}
+}
+function getDominantErrorPattern(user, subjectId){
+  if(!user||!subjectId||typeof window==="undefined") return null;
+  try{
+    var obj=JSON.parse(localStorage.getItem(SK_ERROR_PATTERNS(user,subjectId))||"{}");
+    var vals=Object.entries({"Knowledge Gap":obj["Knowledge Gap"]||0,"Application Error":obj["Application Error"]||0,"Command Word Error":obj["Command Word Error"]||0,"Communication Error":obj["Communication Error"]||0});
+    var total=vals.reduce((a,v)=>a+v[1],0);
+    if(total<10) return null;
+    vals.sort((a,b)=>b[1]-a[1]);
+    return {type:vals[0][0], pct:Math.round((vals[0][1]/total)*100), total};
+  }catch(_){return null;}
 }
 // Strategy logic for Feature 21
 function getStrategyRecommendation(subj, allSections, fcHist, calibData, timetableExams, stats) {
@@ -965,7 +1004,444 @@ async function markAnswer(q, ans) {
   const raw = await callGeminiSimple(prompt, 800);
   const fence = "`"+"`"+"`"; const clean = raw.split(fence+"json").join("").split(fence).join("").trim();
   const s=clean.indexOf("{"), e=clean.lastIndexOf("}");
-  return JSON.parse(s>=0&&e>=0?clean.slice(s,e+1):clean);
+  const parsed = JSON.parse(s>=0&&e>=0?clean.slice(s,e+1):clean);
+  const markPoints = Array.isArray(parsed?.missedPoints) ? parsed.missedPoints : [];
+  return {
+    ...parsed,
+    annotatedAnswer: parsed.annotatedAnswer || (parsed.modelAnswer||"").split(/(?<=[.!?])\s+/).filter(Boolean).map(function(seg,idx){
+      return {text:seg, type:idx===0?"point":(idx%2===0?"evidence":"explanation")};
+    }),
+    structureDiagram: parsed.structureDiagram || ["Point","Evidence","Explanation","Application"],
+    comparisonTable: parsed.comparisonTable || markPoints.slice(0,4).map(function(pt){
+      return {student:(ans||"").slice(0,120), expectation:pt};
+    }),
+    workedSolution: parsed.workedSolution || (parsed.modelAnswer||""),
+  };
+}
+
+function _cleanText(s){return (s||"").toLowerCase().replace(/[^a-z0-9\s]/g," ").replace(/\s+/g," ").trim();}
+function _clozeLooseMatch(correct, input){
+  const a=_cleanText(correct), b=_cleanText(input);
+  if(!a||!b) return false;
+  if(a===b) return true;
+  if(a.replace(/s$/,"")===b.replace(/s$/,"")) return true;
+  return a.includes(b) || b.includes(a);
+}
+function parseClozeText(text){
+  const parts=[]; let i=0; let bi=0;
+  const src=String(text||"");
+  while(i<src.length){
+    const s=src.indexOf("{{",i);
+    if(s===-1){parts.push({type:"text",value:src.slice(i)});break;}
+    if(s>i) parts.push({type:"text",value:src.slice(i,s)});
+    const e=src.indexOf("}}",s+2);
+    if(e===-1){parts.push({type:"text",value:src.slice(s)});break;}
+    const ans=src.slice(s+2,e).trim();
+    parts.push({type:"blank",answer:ans,index:bi++});
+    i=e+2;
+  }
+  return parts;
+}
+
+function ClozeCard({ card, D, onSubmit }) {
+  const parts = React.useMemo(()=>parseClozeText(card?.text||card?.q||""), [card?.text, card?.q]);
+  const blanks = React.useMemo(()=>parts.filter(p=>p.type==="blank"), [parts]);
+  const [vals,setVals]=React.useState(function(){
+    const obj={}; blanks.forEach(function(b){obj[b.index]="";}); return obj;
+  });
+  const [result,setResult]=React.useState(null);
+  React.useEffect(()=>{const obj={}; blanks.forEach(function(b){obj[b.index]="";}); setVals(obj); setResult(null);}, [card?.id, blanks.length]);
+  const submit=async()=>{
+    const rows = blanks.map(function(b){
+      const user=(vals[b.index]||"").trim();
+      const correct=(b.answer||"").trim();
+      const exact=_cleanText(user)===_cleanText(correct);
+      return {user,correct,ok:exact || _clozeLooseMatch(correct,user)};
+    });
+    const allCorrect = rows.every(r=>r.ok);
+    const score = rows.length?Math.round((rows.filter(r=>r.ok).length/rows.length)*100):0;
+    const out={allCorrect,score,rows};
+    setResult(out);
+    if(onSubmit) onSubmit(out);
+  };
+  return (
+    <div style={{borderRadius:12,border:`1.5px solid ${D?"#374151":"#e5e7eb"}`,padding:16,background:D?"#161b27":"#fff"}}>
+      {card?.diagram&&<div style={{marginBottom:10}}><DiagramRenderer diagram={card.diagram} D={D} width={420}/></div>}
+      <div style={{lineHeight:2,fontSize:15,color:D?"#e5e7eb":"#111827"}}>
+        {parts.map(function(p,idx){
+          if(p.type==="text") return <span key={idx}>{p.value}</span>;
+          return <input key={idx} value={vals[p.index]||""} onChange={e=>setVals(v=>({...v,[p.index]:e.target.value}))}
+            style={{display:"inline-block",minWidth:120,padding:"4px 8px",margin:"0 5px",borderRadius:8,border:`1.5px solid ${D?"#4b5563":"#cbd5e1"}`,background:D?"#0f172a":"#f8fafc",color:D?"#fff":"#111"}}/>;
+        })}
+      </div>
+      <button onClick={submit} style={{marginTop:12,padding:"8px 14px",borderRadius:8,border:"none",background:"#6366f1",color:"#fff",cursor:"pointer",fontWeight:700}}>Check answers</button>
+      {result&&<div style={{marginTop:10,fontSize:12,color:result.allCorrect?"#16a34a":"#d97706"}}>{result.allCorrect?"✓ All correct":"Score: "+result.score+"%"}</div>}
+    </div>
+  );
+}
+
+function SequenceCard({ card, D, onSubmit }) {
+  const base = React.useMemo(()=>Array.isArray(card?.items)?card.items.filter(Boolean):[], [card?.items]);
+  const [order,setOrder]=React.useState([]);
+  const [dragIdx,setDragIdx]=React.useState(null);
+  const [result,setResult]=React.useState(null);
+  React.useEffect(()=>{
+    const arr=[...base].sort(()=>Math.random()-0.5);
+    setOrder(arr); setResult(null); setDragIdx(null);
+  }, [card?.id, base.join("|")]);
+  const onDropAt=(idx)=>{
+    if(dragIdx===null||dragIdx===idx) return;
+    setOrder(prev=>{
+      const n=[...prev]; const [m]=n.splice(dragIdx,1); n.splice(idx,0,m); return n;
+    });
+    setDragIdx(null);
+  };
+  const grade=()=>{
+    const correctPositions = order.reduce((a,it,i)=>a + (it===base[i]?1:0),0);
+    const score = base.length?correctPositions/base.length:0;
+    const status = score===1 ? "correct" : score>=0.5 ? "partial" : "incorrect";
+    const out={status,score,correctPositions,total:base.length};
+    setResult(out);
+    if(onSubmit) onSubmit(out);
+  };
+  return (
+    <div style={{borderRadius:12,border:`1.5px solid ${D?"#374151":"#e5e7eb"}`,padding:16,background:D?"#161b27":"#fff"}}>
+      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+        {order.map(function(it,idx){return (
+          <div key={it+"-"+idx} draggable
+            onDragStart={()=>setDragIdx(idx)} onDragOver={e=>e.preventDefault()} onDrop={()=>onDropAt(idx)}
+            style={{padding:"10px 12px",borderRadius:10,border:`1px solid ${D?"#4b5563":"#d1d5db"}`,background:D?"#0f172a":"#f9fafb",cursor:"grab"}}>
+            {it}
+          </div>
+        );})}
+      </div>
+      <button onClick={grade} style={{marginTop:12,padding:"8px 14px",borderRadius:8,border:"none",background:"#6366f1",color:"#fff",cursor:"pointer",fontWeight:700}}>Check order</button>
+      {result&&(
+        <div style={{marginTop:10,fontSize:12}}>
+          <div style={{fontWeight:700,color:result.status==="correct"?"#16a34a":result.status==="partial"?"#d97706":"#dc2626"}}>
+            {result.status.toUpperCase()} · {Math.round(result.score*100)}%
+          </div>
+          <div style={{marginTop:6,color:D?"#cbd5e1":"#374151"}}>{base.map(function(x,i){return (i+1)+". "+x;}).join(" → ")}</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function QuestionFigure({ figure, D, figureNumber=1 }) {
+  if(!figure) return null;
+  const w=figure.data?.width||520, h=figure.data?.height||220, pad=28;
+  const pts=Array.isArray(figure.data?.points)?figure.data.points:[];
+  const minX=Math.min(...pts.map(p=>Number(p.x)||0),0), maxX=Math.max(...pts.map(p=>Number(p.x)||0),1);
+  const minY=Math.min(...pts.map(p=>Number(p.y)||0),0), maxY=Math.max(...pts.map(p=>Number(p.y)||0),1);
+  const sx=x=>pad+((x-minX)/(maxX-minX||1))*(w-pad*2), sy=y=>h-pad-((y-minY)/(maxY-minY||1))*(h-pad*2);
+  const chart = (function(){
+    if(figure.type==="photo") return <img src={figure.data?.src||""} alt={figure.caption||"figure"} style={{maxWidth:"100%",borderRadius:10}}/>;
+    if(figure.type==="table") return (
+      <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+        <thead><tr>{(figure.data?.headers||[]).map((h2,i)=><th key={i} style={{border:"1px solid #cbd5e1",padding:6,background:D?"#0f172a":"#f8fafc"}}>{h2}</th>)}</tr></thead>
+        <tbody>{(figure.data?.rows||[]).map((r,ri)=><tr key={ri}>{r.map((c,ci)=><td key={ci} style={{border:"1px solid #cbd5e1",padding:6}}>{String(c)}</td>)}</tr>)}</tbody>
+      </table>
+    );
+    if(figure.type==="svg"&&figure.data) return <DiagramRenderer diagram={figure.data} D={D} width={520}/>;
+    if(figure.type==="bar"){
+      const bars=Array.isArray(figure.data?.bars)?figure.data.bars:[];
+      const m=Math.max(...bars.map(b=>Number(b.value)||0),1);
+      return <svg viewBox={`0 0 ${w} ${h}`} style={{width:"100%",height:"auto"}}>{bars.map((b,i)=>{const bw=(w-pad*2)/Math.max(bars.length,1)-8; const x=pad+i*(bw+8); const hh=((Number(b.value)||0)/m)*(h-pad*2); return <g key={i}><rect x={x} y={h-pad-hh} width={bw} height={hh} fill="#6366f1"/><text x={x+bw/2} y={h-pad+14} textAnchor="middle" fontSize="10">{b.label||i+1}</text></g>;})}<line x1={pad} y1={h-pad} x2={w-pad} y2={h-pad} stroke="#94a3b8"/></svg>;
+    }
+    if(figure.type==="line"){
+      const lp=Array.isArray(figure.data?.points)?figure.data.points:[];
+      const d=lp.map((p,i)=>(i?"L":"M")+sx(Number(p.x)||0)+" "+sy(Number(p.y)||0)).join(" ");
+      return <svg viewBox={`0 0 ${w} ${h}`} style={{width:"100%",height:"auto"}}><line x1={pad} y1={h-pad} x2={w-pad} y2={h-pad} stroke="#94a3b8"/><line x1={pad} y1={pad} x2={pad} y2={h-pad} stroke="#94a3b8"/><path d={d} fill="none" stroke="#6366f1" strokeWidth="2"/></svg>;
+    }
+    if(figure.type==="scatter"){
+      const ps=pts;
+      return <svg viewBox={`0 0 ${w} ${h}`} style={{width:"100%",height:"auto"}}><line x1={pad} y1={h-pad} x2={w-pad} y2={h-pad} stroke="#94a3b8"/><line x1={pad} y1={pad} x2={pad} y2={h-pad} stroke="#94a3b8"/>{ps.map((p,i)=><circle key={i} cx={sx(Number(p.x)||0)} cy={sy(Number(p.y)||0)} r="4" fill={p.anomaly?"#ef4444":"#6366f1"}/>)}</svg>;
+    }
+    return null;
+  })();
+  return (
+    <div style={{marginBottom:12,padding:10,borderRadius:10,border:`1px solid ${D?"#374151":"#e5e7eb"}`,background:D?"#111827":"#fff"}}>
+      <div style={{fontSize:12,fontWeight:700,marginBottom:6}}>Figure {figureNumber}: {figure.caption||"Untitled"}</div>
+      {chart}
+      {figure.source&&<div style={{fontSize:11,color:D?"#9ca3af":"#6b7280",marginTop:6}}>Source: {figure.source}</div>}
+    </div>
+  );
+}
+
+function generateWhyPrompt(card){
+  if(typeof window!=="undefined"&&typeof window.generateWhyPrompt==="function"){
+    try{return window.generateWhyPrompt(card);}catch(_){}
+  }
+  var src=stripHtml(card?.a||card?.text||card?.q||"");
+  var key=(src.split(/\s+/).filter(Boolean).slice(0,4).join(" "))||"this concept";
+  return "Why is "+key+" important?";
+}
+function inferDifficulty(q){
+  if(q?.difficulty>=1&&q?.difficulty<=5) return q.difficulty;
+  var m=Number(q?.marks||1);
+  var t=(q?.text||"").toLowerCase();
+  var d=m>=8?5:m>=6?4:m>=4?3:m>=2?2:1;
+  if(/evaluate|assess|justify/.test(t)) d=Math.min(5,d+1);
+  if(/describe|explain|analyse|compare/.test(t)) d=Math.min(5,d+0.5);
+  return Math.max(1,Math.min(5,Math.round(d)));
+}
+function selectAdaptiveQuestions(list,user,subjectId){
+  var arr=(list||[]).map(function(q){return {...q,difficulty:inferDifficulty(q)};});
+  if(!user||!subjectId) return arr;
+  try{
+    var key="gcse:difficultyLevel:"+user.replace(/\W/g,"-")+":"+subjectId;
+    var lv=Number(localStorage.getItem(key)||3); if(!lv) lv=3;
+    var easy=arr.filter(q=>q.difficulty<lv), mid=arr.filter(q=>q.difficulty===lv), hard=arr.filter(q=>q.difficulty>lv);
+    var pick=[],max=Math.min(20,arr.length);
+    while(pick.length<max&&(easy.length||mid.length||hard.length)){
+      var r=Math.random();
+      var pool=r<0.2?easy:r<0.9?mid:hard;
+      if(!pool.length) pool=mid.length?mid:(hard.length?hard:easy);
+      if(!pool.length) break;
+      pick.push(pool.shift());
+    }
+    return pick.length?pick:arr;
+  }catch(_){return arr;}
+}
+function updateAdaptiveLevel(user,subjectId,isCorrect){
+  if(!user||!subjectId) return;
+  try{
+    var kH="gcse:difficultyHist:"+user.replace(/\W/g,"-")+":"+subjectId;
+    var hist=JSON.parse(localStorage.getItem(kH)||"[]");
+    hist=[...hist.slice(-19),isCorrect?1:0];
+    localStorage.setItem(kH,JSON.stringify(hist));
+    var acc=hist.reduce((a,b)=>a+b,0)/Math.max(hist.length,1);
+    var key="gcse:difficultyLevel:"+user.replace(/\W/g,"-")+":"+subjectId;
+    var lv=Number(localStorage.getItem(key)||3)||3;
+    if(acc>=0.7) lv=Math.min(5,lv+1); else if(acc<0.45) lv=Math.max(1,lv-1);
+    localStorage.setItem(key,String(lv));
+  }catch(_){}
+}
+function getLadderLevel(user,topicId){
+  if(!user||!topicId) return 1;
+  try{return Math.max(1,Math.min(5,Number(localStorage.getItem("gcse:ladder:"+user.replace(/\W/g,"-")+":"+topicId)||1)||1));}catch(_){return 1;}
+}
+function updateLadderLevel(user,topicId,correct){
+  if(!user||!topicId) return 1;
+  var cur=getLadderLevel(user,topicId);
+  var next=Math.max(1,Math.min(5,cur+(correct?1:-1)));
+  try{localStorage.setItem("gcse:ladder:"+user.replace(/\W/g,"-")+":"+topicId,String(next));}catch(_){}
+  return next;
+}
+function verifyExplanation(content, studentExplanation){
+  if(typeof window!=="undefined"&&typeof window.verifyExplanation==="function"){
+    try{return window.verifyExplanation(content, studentExplanation);}catch(_){}
+  }
+  var c=_cleanText(stripHtml(content||"")); var s=_cleanText(studentExplanation||"");
+  var kws=[...new Set(c.split(" ").filter(w=>w.length>4))].slice(0,10);
+  var hit=kws.filter(k=>s.includes(k));
+  return {
+    correct: s.length>30 ? "You explained key ideas clearly." : "Good start.",
+    missing: hit.length<Math.max(2,Math.floor(kws.length/3)) ? "Add detail on: "+kws.slice(0,3).join(", ") : "Add one concrete example."
+  };
+}
+function generateTransferQuestion(originalQuestion){
+  if(typeof window!=="undefined"&&typeof window.generateTransferQuestion==="function"){
+    try{return window.generateTransferQuestion(originalQuestion);}catch(_){}
+  }
+  var q={...(originalQuestion||{})};
+  var t=(q.text||"").replace(/\b(\d+)\b/g,function(m){return String(Number(m)+1);});
+  return {...q,id:"tr-"+uid(),text:"Apply It: "+(t||"Use this idea in a new context."),_transfer:true};
+}
+function getWeekKey(d){
+  var dt=new Date(d||Date.now()); var onejan=new Date(dt.getFullYear(),0,1); var day=Math.floor((dt-onejan)/86400000);
+  return dt.getFullYear()+"-W"+Math.ceil((day+onejan.getDay()+1)/7);
+}
+function generateWeeklyPlan(user, subjects, allSections, fcHist, stats, timetableExams){
+  var week=getWeekKey();
+  var key="gcse:weeklyPlan:"+(user||"").replace(/\W/g,"-")+":"+week;
+  try{var ex=JSON.parse(localStorage.getItem(key)||"null"); if(ex&&Array.isArray(ex)) return ex;}catch(_){}
+  var due=allSections.flatMap(s=>(s.flashcards||[]).filter(c=>isCardDue(fcHist,c.id)).map(()=>s.title)).slice(0,3);
+  var weak=Object.entries(stats?.weakQ||{}).sort((a,b)=>(b[1]?.wrong||0)-(a[1]?.wrong||0)).slice(0,3).map(x=>x[0]);
+  var examSoon=(timetableExams||[]).slice().sort((a,b)=>a.date.localeCompare(b.date))[0];
+  var base=["Review due flashcards"+(due[0]?" ("+due[0]+")":""),"Do 10 mixed questions"+(weak[0]?" on "+weak[0]:""),examSoon?"Exam prep for "+(examSoon.label||"upcoming exam"):"Revise weakest topic"];
+  var days=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+  var plan=days.map(function(d,i){return {day:d,tasks:[base[i%base.length]]};});
+  try{localStorage.setItem(key,JSON.stringify(plan));}catch(_){}
+  return plan;
+}
+function generateSessionOptions(user, subjectId, allSections, stats, fcHist){
+  var secs=allSections.filter(s=>s.subjectId===subjectId);
+  var due=secs.find(s=>(s.flashcards||[]).some(c=>isCardDue(fcHist,c.id)));
+  var weakId=Object.entries(stats?.weakQ||{}).sort((a,b)=>(b[1]?.wrong||0)-(a[1]?.wrong||0))[0]?.[0];
+  var weak=secs.find(s=>s.id===weakId)||secs[0];
+  return [
+    {title:"Due Card Sprint",description:"Clear due flashcards in "+(due?.title||"this topic"),action:{type:"flashcards",sectionId:due?.id}},
+    {title:"Weak Spot Drill",description:"Target weaker questions in "+(weak?.title||"your topic"),action:{type:"questions",sectionId:weak?.id}},
+    {title:"Mixed Focus",description:"Blend flashcards + exam questions",action:{type:"target"}}
+  ];
+}
+function ProgressiveDiagram({steps=[],D}){
+  const [idx,setIdx]=React.useState(0);
+  React.useEffect(()=>setIdx(0),[steps.length]);
+  const cur=steps[idx]||null;
+  if(!cur) return null;
+  return <div style={{...C(D),padding:12}} className="fade-in"><p style={{fontSize:12,marginBottom:8}}>{cur.text}</p>{cur.svg&&<div style={{opacity:1,transition:"opacity .25s"}}><DiagramRenderer diagram={cur.svg} D={D} width={420}/></div>}{idx<steps.length-1&&<button onClick={()=>setIdx(i=>i+1)} style={{marginTop:8,padding:"6px 12px",borderRadius:8,border:"none",background:"#6366f1",color:"#fff"}}>Next</button>}</div>;
+}
+function ConceptMap({x,y,relation,D}){
+  return <svg viewBox="0 0 360 120" style={{width:"100%",maxWidth:420}}><circle cx="70" cy="60" r="32" fill={D?"#1e293b":"#eef2ff"} stroke="#6366f1"/><circle cx="290" cy="60" r="32" fill={D?"#1e293b":"#eef2ff"} stroke="#6366f1"/><text x="70" y="64" textAnchor="middle" fontSize="12">{x||"X"}</text><text x="290" y="64" textAnchor="middle" fontSize="12">{y||"Y"}</text><line x1="104" y1="60" x2="256" y2="60" stroke="#6366f1" markerEnd="url(#arr)"/><defs><marker id="arr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#6366f1"/></marker></defs><text x="180" y="48" textAnchor="middle" fontSize="11">{relation||"relates to"}</text></svg>;
+}
+function getNodePositions(nodes,w=560,h=360){
+  const r=Math.min(w,h)*0.36,cx=w/2,cy=h/2;
+  return (nodes||[]).map(function(n,i){
+    const a=(Math.PI*2*i)/Math.max(nodes.length,1)-Math.PI/2;
+    return {...n,x:cx+r*Math.cos(a),y:cy+r*Math.sin(a)};
+  });
+}
+function calculateFrontier(graph, masteryMap){
+  const m=masteryMap||{};
+  const edges=(graph?.edges||[]);
+  return (graph?.nodes||[]).filter(function(n){
+    const mn=Number(m[n.id]??n.mastery??0);
+    if(mn>=70) return false;
+    return edges.some(function(e){
+      const other=e.from===n.id?e.to:e.to===n.id?e.from:null;
+      if(!other) return false;
+      const mo=Number(m[other]||0);
+      return mo>=70;
+    });
+  }).map(n=>n.id);
+}
+function checkPrerequisites(graph, topicId, masteryMap, threshold){
+  const t=threshold==null?60:threshold;
+  const edges=(graph?.edges||[]).filter(e=>e.to===topicId&&e.type==="requires");
+  const unmet=edges.filter(e=>Number(masteryMap?.[e.from]||0)<t).map(e=>e.from);
+  return unmet;
+}
+function ProcessCard({card,D}){
+  const [idx,setIdx]=React.useState(0);
+  const steps=card?.steps||[];
+  React.useEffect(()=>setIdx(0),[card?.id]);
+  return <div style={{...C(D),padding:12}}><div style={{fontSize:13,fontWeight:700,marginBottom:8}}>{steps[idx]?.label||"Step"}</div><button onClick={()=>setIdx(i=>Math.min(steps.length-1,i+1))} style={{padding:"6px 10px",borderRadius:8,border:"none",background:"#6366f1",color:"#fff"}}>Next Step</button><div style={{marginTop:10,fontSize:12,color:mu(D)}}>{steps.map((s,i)=><div key={i}>{i+1}. {s.label}</div>)}</div></div>;
+}
+function SketchCanvas({D}){
+  const ref=React.useRef(null); const drawing=React.useRef(false);
+  const start=e=>{drawing.current=true; const c=ref.current.getContext("2d"); c.beginPath(); c.moveTo(e.nativeEvent.offsetX,e.nativeEvent.offsetY);};
+  const move=e=>{if(!drawing.current)return; const c=ref.current.getContext("2d"); c.lineWidth=2; c.strokeStyle=D?"#e5e7eb":"#111827"; c.lineTo(e.nativeEvent.offsetX,e.nativeEvent.offsetY); c.stroke();};
+  const end=()=>{drawing.current=false;};
+  return <canvas ref={ref} width={320} height={180} onMouseDown={start} onMouseMove={move} onMouseUp={end} onMouseLeave={end} style={{border:"1px solid #94a3b8",borderRadius:8,background:D?"#0f172a":"#fff",width:"100%",maxWidth:340}}/>;
+}
+function GraphCard({card,D}){
+  return <div>{card?.graph&&<QuestionFigure figure={card.graph} D={D} figureNumber={1}/>}<p style={{fontSize:13,marginBottom:8}}>{card?.question||""}</p>{card?.annotation&&<div style={{fontSize:12,color:"#6366f1"}}>↗ {card.annotation.label||"Key point"}</div>}</div>;
+}
+async function generateSVGDiagram(content,user){
+  const key=SK_SVG_ASSETS(user);
+  const hash=btoa(unescape(encodeURIComponent(content||""))).slice(0,40);
+  try{
+    const cache=JSON.parse(localStorage.getItem(key)||"{}");
+    if(cache[hash]&&String(cache[hash]).includes("<svg")) return cache[hash];
+    let svg="";
+    if(typeof window!=="undefined"&&typeof window.generateSVGDiagram==="function"){
+      try{svg=await window.generateSVGDiagram(content);}catch(_){}
+    }
+    if(!svg||!String(svg).includes("<svg")) svg=`<svg xmlns="http://www.w3.org/2000/svg" width="360" height="140"><rect x="10" y="10" width="340" height="120" fill="#eef2ff" stroke="#6366f1"/><text x="24" y="75" font-size="14" fill="#1f2937">${(content||"Diagram").slice(0,36)}</text></svg>`;
+    cache[hash]=svg; localStorage.setItem(key,JSON.stringify(cache)); return svg;
+  }catch(_){return `<svg xmlns="http://www.w3.org/2000/svg" width="360" height="140"><rect x="10" y="10" width="340" height="120" fill="#eef2ff" stroke="#6366f1"/><text x="24" y="75" font-size="14" fill="#1f2937">Diagram</text></svg>`;}
+}
+function KnowledgeGraph({D,user,subjectId,masteryMap,onSelectNode,onGoToPrereq}){
+  const [graph,setGraph]=React.useState({nodes:[],edges:[]});
+  const [selected,setSelected]=React.useState(null);
+  const [name,setName]=React.useState(""); const [from,setFrom]=React.useState(""); const [to,setTo]=React.useState(""); const [etype,setEType]=React.useState("requires");
+  React.useEffect(()=>{try{setGraph(JSON.parse(localStorage.getItem(SK_GRAPH(user,subjectId))||"{\"nodes\":[],\"edges\":[]}"));}catch(_){setGraph({nodes:[],edges:[]});}},[user,subjectId]);
+  const nodes=(graph.nodes||[]).slice(0,50).map(n=>({...n,mastery:Number(masteryMap?.[n.id]??n.mastery??0)}));
+  const frontier=calculateFrontier({nodes,edges:graph.edges||[]},masteryMap);
+  const pos=React.useMemo(()=>getNodePositions(nodes,560,360),[JSON.stringify(nodes)]);
+  const save=(g)=>{setGraph(g); try{localStorage.setItem(SK_GRAPH(user,subjectId),JSON.stringify(g));}catch(_){}};
+  return <div style={{...C(D),padding:14,marginTop:12}}>
+    <h3 style={{fontSize:14,fontWeight:700,marginBottom:8}}>Knowledge Graph</h3>
+    <svg viewBox="0 0 560 360" style={{width:"100%",maxWidth:560}}>
+      <circle cx="280" cy="180" r="26" fill="#6366f1"/><text x="280" y="185" textAnchor="middle" fill="#fff" fontSize="11">Subject</text>
+      {(graph.edges||[]).map((e,i)=>{const a=pos.find(n=>n.id===e.from),b=pos.find(n=>n.id===e.to); if(!a||!b)return null; return <line key={i} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="#94a3b8" strokeWidth={Math.max(1,Number(e.weight)||1)}/>;})}
+      {pos.map((n,i)=>{const col=n.mastery>70?"#16a34a":n.mastery<40?"#9ca3af":"#f59e0b"; const isFront=frontier.includes(n.id); return <g key={i} onClick={()=>{setSelected(n.id); onSelectNode&&onSelectNode(n.id); const unmet=checkPrerequisites(graph,n.id,masteryMap,60); if(unmet.length&&onGoToPrereq)onGoToPrereq(unmet[0],n.id);}}><circle cx={n.x} cy={n.y} r="18" fill={col} stroke={isFront?"#3b82f6":"#1f2937"} strokeWidth={isFront?3:1.5}/><text x={n.x} y={n.y+4} textAnchor="middle" fontSize="9" fill="#fff">{n.name?.slice(0,7)}</text>{Number(n.examFrequency||0)>7&&<text x={n.x+14} y={n.y-12} fontSize="10">⭐</text>}</g>;})}
+    </svg>
+    <div style={{display:"grid",gridTemplateColumns:"1fr auto",gap:6,marginTop:8}}><input value={name} onChange={e=>setName(e.target.value)} placeholder="New node" style={{...I(D,{fontSize:12})}}/><button onClick={()=>{if(!name.trim())return; save({...graph,nodes:[...(graph.nodes||[]),{id:uid(),name:name.trim(),mastery:0,examFrequency:0}]}); setName("");}} style={{padding:"6px 10px"}}>Add</button></div>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr auto",gap:6,marginTop:6}}>
+      <select value={from} onChange={e=>setFrom(e.target.value)} style={{...I(D,{fontSize:12})}}><option value="">From</option>{nodes.map(n=><option key={n.id} value={n.id}>{n.name}</option>)}</select>
+      <select value={to} onChange={e=>setTo(e.target.value)} style={{...I(D,{fontSize:12})}}><option value="">To</option>{nodes.map(n=><option key={n.id} value={n.id}>{n.name}</option>)}</select>
+      <select value={etype} onChange={e=>setEType(e.target.value)} style={{...I(D,{fontSize:12})}}>{["requires","contrasts","explains","example","caused_by"].map(t=><option key={t}>{t}</option>)}</select>
+      <button onClick={()=>{if(!from||!to)return; save({...graph,edges:[...(graph.edges||[]),{from,to,type:etype,weight:1}]});}} style={{padding:"6px 10px"}}>Edge</button>
+    </div>
+    {selected&&<button onClick={()=>save({...graph,nodes:(graph.nodes||[]).filter(n=>n.id!==selected),edges:(graph.edges||[]).filter(e=>e.from!==selected&&e.to!==selected)})} style={{marginTop:8,fontSize:11}}>Delete selected node</button>}
+  </div>;
+}
+function GraphEditor(props){ return <KnowledgeGraph {...props}/>; }
+function masteryColor(p){return p>=70?"#16a34a":p>=40?"#f59e0b":"#9ca3af";}
+function buildTreemap(nodes,width,height){
+  const arr=[...(nodes||[])].filter(n=>n&&n.contentSize>0).sort((a,b)=>b.contentSize-a.contentSize);
+  if(!arr.length) return [];
+  const total=arr.reduce((a,n)=>a+n.contentSize,0)||1;
+  let x=0,y=0,w=width,h=height,dir=0;
+  return arr.map((n,i)=>{
+    const frac=n.contentSize/total;
+    let rw=w,rh=h;
+    if(dir%2===0){rw=Math.max(1,width*frac); const r={...n,x,y,w:rw,h}; x+=rw; w=Math.max(0,width-x); dir++; return r;}
+    rh=Math.max(1,height*frac); const r={...n,x,y,w,h:rh}; y+=rh; h=Math.max(0,height-y); dir++; return r;
+  });
+}
+function MasteryTreemap({nodes=[],D,onSelect}){
+  const [tip,setTip]=React.useState(null);
+  const layout=React.useMemo(()=>buildTreemap(nodes,900,320),[JSON.stringify(nodes)]);
+  if(!nodes.length) return <div style={{...C(D),padding:16,fontSize:13,color:mu(D)}}>No mastery data yet.</div>;
+  return <div style={{position:"relative",...C(D),padding:12}}>
+    <h3 style={{fontSize:14,fontWeight:700,marginBottom:8}}>Mastery Landscape</h3>
+    <svg viewBox="0 0 900 320" style={{width:"100%",height:"auto"}}>
+      {layout.map((n,i)=><g key={i} onMouseEnter={()=>setTip(n)} onMouseLeave={()=>setTip(null)} onClick={()=>onSelect&&onSelect(n)}>
+        <rect x={n.x} y={n.y} width={n.w} height={n.h} fill={masteryColor(n.mastery||0)} stroke="#fff"/>
+        {n.w>80&&n.h>28&&<text x={n.x+6} y={n.y+16} fontSize="11" fill="#fff">{n.name}</text>}
+      </g>)}
+    </svg>
+    {tip&&<div style={{position:"absolute",right:10,top:10,fontSize:11,background:D?"#0f172a":"#fff",border:"1px solid #cbd5e1",padding:"5px 8px",borderRadius:6}}>{tip.name} · {Math.round(tip.mastery||0)}%</div>}
+  </div>;
+}
+function LearningTimeline({sessions=[],exams=[],subjects=[],D,onSelect}){
+  const [tip,setTip]=React.useState(null);
+  const data=React.useMemo(()=>{
+    if(!sessions.length) return {items:[],min:0,max:1};
+    const times=sessions.map(s=>new Date(s.date).getTime());
+    const min=Math.min(...times),max=Math.max(...times,min+1);
+    const items=sessions.map((s,i)=>({...s,_x:30+((new Date(s.date).getTime()-min)/(max-min||1))*820,_h:Math.min(120,20+Number(s.duration||20))}));
+    return {items,min,max};
+  },[JSON.stringify(sessions)]);
+  if(!sessions.length) return <div style={{...C(D),padding:16,fontSize:13,color:mu(D)}}>No data yet.</div>;
+  const bySub={}; sessions.forEach(s=>{bySub[s.subject]=(bySub[s.subject]||0)+Number(s.duration||0);});
+  const topSub=Object.entries(bySub).sort((a,b)=>b[1]-a[1])[0];
+  return <div style={{...C(D),padding:12,marginTop:12}}>
+    <h3 style={{fontSize:14,fontWeight:700,marginBottom:8}}>Learning Timeline</h3>
+    <svg viewBox="0 0 900 220" style={{width:"100%",height:"auto"}}>
+      <line x1="30" y1="180" x2="860" y2="180" stroke="#94a3b8"/>
+      {data.items.map((s,i)=>{const subj=subjects.find(x=>x.name===s.subject||x.id===s.subjectId); const col=subj?.accent||"#6366f1"; return <rect key={i} x={s._x} y={180-s._h} width="10" height={s._h} fill={col} onMouseEnter={()=>setTip(s)} onMouseLeave={()=>setTip(null)} onClick={()=>onSelect&&onSelect(s)}/>;})}
+      {exams.map((e,i)=>{const x=30+((new Date(e.date).getTime()-data.min)/((data.max-data.min)||1))*820; return <line key={i} x1={x} y1="20" x2={x} y2="180" stroke="#ef4444" strokeDasharray="4 3"/>;})}
+    </svg>
+    {tip&&<div style={{fontSize:11,marginTop:6}}>{tip.date} · {tip.subject} · {tip.duration} min</div>}
+    <div style={{fontSize:11,color:mu(D),marginTop:6}}>Most studied subject: {topSub?.[0]||"—"}</div>
+  </div>;
+}
+function SketchnoteCanvas({D,user,subjectId}){
+  const key="gcse:sketchnotes:"+user.replace(/\W/g,"-")+":"+subjectId;
+  const [data,setData]=React.useState({nodes:[],edges:[]});
+  const [mode,setMode]=React.useState("move");
+  const [drag,setDrag]=React.useState(null);
+  const [sel,setSel]=React.useState(null);
+  const [zoom,setZoom]=React.useState(1);
+  React.useEffect(()=>{try{setData(JSON.parse(localStorage.getItem(key)||"{\"nodes\":[],\"edges\":[]}"));}catch(_){setData({nodes:[],edges:[]});}},[key]);
+  const save=(d)=>{setData(d); try{localStorage.setItem(key,JSON.stringify(d));}catch(_){}};
+  const addNode=(type)=>save({...data,nodes:[...data.nodes,{id:uid(),type,x:80+data.nodes.length*18,y:70+data.nodes.length*10,content:type}]});
+  const onDown=(id,e)=>{if(mode==="connect"){if(sel&&sel!==id){save({...data,edges:[...data.edges,{from:sel,to:id,label:""}]});setSel(null);}else setSel(id);return;} setDrag({id,ox:e.clientX,oy:e.clientY});};
+  const onMove=(e)=>{if(!drag)return; save({...data,nodes:data.nodes.map(n=>n.id===drag.id?{...n,x:n.x+(e.clientX-drag.ox)/zoom,y:n.y+(e.clientY-drag.oy)/zoom}:n)}); setDrag({id:drag.id,ox:e.clientX,oy:e.clientY});};
+  const onUp=()=>setDrag(null);
+  return <div style={{...C(D),padding:12,marginTop:12}} onMouseMove={onMove} onMouseUp={onUp} onMouseLeave={onUp}>
+    <div style={{display:"flex",gap:6,marginBottom:8}}><button onClick={()=>addNode("rect")}>+ Rect</button><button onClick={()=>addNode("circle")}>+ Circle</button><button onClick={()=>addNode("cloud")}>+ Cloud</button><button onClick={()=>setMode(mode==="connect"?"move":"connect")}>{mode==="connect"?"Move":"Connect"}</button><button onClick={()=>sel&&save({...data,nodes:data.nodes.filter(n=>n.id!==sel),edges:data.edges.filter(e=>e.from!==sel&&e.to!==sel)})}>Delete</button><button onClick={()=>setZoom(z=>Math.min(2,z+0.1))}>+</button><button onClick={()=>setZoom(z=>Math.max(0.6,z-0.1))}>-</button></div>
+    <svg viewBox={`0 0 ${600/zoom} ${280/zoom}`} style={{width:"100%",border:"1px solid #cbd5e1",borderRadius:8}}>
+      {data.edges.map((e,i)=>{const a=data.nodes.find(n=>n.id===e.from),b=data.nodes.find(n=>n.id===e.to); if(!a||!b)return null; return <g key={i}><line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="#94a3b8"/>{e.label&&<text x={(a.x+b.x)/2} y={(a.y+b.y)/2-4} fontSize="10">{e.label}</text>}</g>;})}
+      {data.nodes.map(n=><g key={n.id} onMouseDown={e=>onDown(n.id,e)} onClick={()=>setSel(n.id)}>{n.type==="circle"?<circle cx={n.x} cy={n.y} r="24" fill="#dbeafe" stroke={sel===n.id?"#6366f1":"#1e3a8a"}/>:n.type==="cloud"?<path d={`M ${n.x-26} ${n.y} C ${n.x-32} ${n.y-18}, ${n.x-10} ${n.y-30}, ${n.x+8} ${n.y-20} C ${n.x+26} ${n.y-28}, ${n.x+36} ${n.y-6}, ${n.x+22} ${n.y+8} C ${n.x+8} ${n.y+22}, ${n.x-18} ${n.y+20}, ${n.x-26} ${n.y}`} fill="#e9d5ff" stroke={sel===n.id?"#7c3aed":"#6d28d9"}/>:<rect x={n.x-26} y={n.y-16} width="52" height="32" rx="6" fill="#dcfce7" stroke={sel===n.id?"#16a34a":"#166534"}/>}<text x={n.x} y={n.y+4} textAnchor="middle" fontSize="10">{n.content}</text></g>)}
+    </svg>
+  </div>;
 }
 
 async function blurtAnalyse(notesText, blurtText) {
@@ -7468,6 +7944,18 @@ export default function App() {
   const [qRes,setQRes]       = useState(null);
   const [marking,setMark]    = useState(false);
   const [showMdl,setSmMdl]   = useState(false);
+  const [elabOpen,setElabOpen] = useState(false);
+  const [elabText,setElabText] = useState("");
+  const [explainText,setExplainText] = useState("");
+  const [explainFeedback,setExplainFeedback] = useState(null);
+  const [transferQuestion,setTransferQuestion] = useState(null);
+  const [ladderTick,setLadderTick] = useState(0);
+  const [weeklyPlan,setWeeklyPlan] = useState([]);
+  const [prereqModal,setPrereqModal] = useState(null); // {from,to}
+  const [showSketch,setShowSketch] = useState(false);
+  const [svgPreview,setSvgPreview] = useState("");
+  const [showTreemap,setShowTreemap] = useState(false);
+  const [timelineSelected,setTimelineSelected] = useState(null);
   // Evidence-based enhancements — top-level state (Rules of Hooks)
   const [fcConf,setFcConf]       = useState(null);   // null|1|2|3 pre-flip confidence (Metcalfe & Finn 2008)
   const [fcHintLvl,setFcHintLvl] = useState(0);      // 0-2 hint reveals (Bjork 1994 Desirable Difficulties)
@@ -7520,6 +8008,7 @@ export default function App() {
   const [ucScreen,setUCScreen]         = useState(null); // null|{subjId}
   const [selectedSubjectIds,setSelectedSubjectIds] = useState(null); // null = not yet loaded; [] = none chosen; [id,...] = chosen
   const [showSubjectSelection,setShowSubjectSelection] = useState(false); // for editing from account screen
+  const [prefsReady,setPrefsReady] = useState(false); // prevents overwriting prefs before hydration completes
 
   // Derive subjects: filter ALL_SUBJECTS to only those the user has selected, plus always include politics.
   // While selectedSubjectIds is null (not yet loaded from storage), show all subjects so nothing breaks during load.
@@ -7538,7 +8027,18 @@ export default function App() {
     [subjDef?.id, curBData.custom, curBData.extras]
   );
   const curTopic  = topIdx!=null ? curTopics[topIdx] : null;
-  const section   = curTopic ? curTopic.sections.find(s=>s.id===secId) : null;
+  const section   = React.useMemo(()=>{
+    if(!secId||!curTopics.length) return null;
+    if(curTopic){
+      const hit=curTopic.sections.find(s=>s.id===secId);
+      if(hit) return hit;
+    }
+    for(let i=0;i<curTopics.length;i++){
+      const hit=curTopics[i].sections.find(s=>s.id===secId);
+      if(hit) return hit;
+    }
+    return null;
+  },[secId,curTopics,curTopic]);
 
   const streak = calcStreak(activityDates);
 
@@ -7614,6 +8114,7 @@ export default function App() {
 
   useEffect(()=>{
     if(!user||!ready)return;
+    setPrefsReady(false);
     progLoaded.current = false;
     (async()=>{
       let savedSels={};
@@ -7662,7 +8163,10 @@ export default function App() {
           }
         }
       }catch(_){}
-      progLoaded.current = true;
+      setTimeout(()=>{
+        progLoaded.current = true;
+        setPrefsReady(true);
+      },0);
       // Also load timetable exams for the Today widget
       try{
         const tr=await window.storage.get(SK.TIMETABLE(user));
@@ -7724,6 +8228,12 @@ export default function App() {
     window.addEventListener("offline",goff);
     return()=>{window.removeEventListener("online",go);window.removeEventListener("offline",goff);};
   },[]);
+
+  useEffect(()=>{
+    if(!user||!ready||!allSections.length) return;
+    const plan=generateWeeklyPlan(user,subjects,allSections,fcHist,stats,timetableExams);
+    setWeeklyPlan(Array.isArray(plan)?plan:[]);
+  },[user,ready,allSections,subjects,fcHist,stats,timetableExams]);
 
   const markTodayActive = useCallback(()=>{
     const today=todayStr();
@@ -7870,21 +8380,22 @@ export default function App() {
   // ── Immediate saves for critical prefs — no debounce, independent of fcHist ──
   // targetGrades: save the moment it changes
   useEffect(()=>{
-    if(!user||!progLoaded.current)return;
+    if(!user||!progLoaded.current||!prefsReady)return;
     window.storage.get(SK.PREFS(user),true).then(r=>{
       const existing=r?.value?JSON.parse(r.value):{};
       return window.storage.set(SK.PREFS(user),JSON.stringify({...existing,targetGrades}),true);
     }).catch(()=>{});
-  },[user,targetGrades]);
+  },[user,targetGrades,prefsReady]);
 
   // selectedSubjectIds + boardSels: save together immediately whenever either changes
   useEffect(()=>{
-    if(!user||!progLoaded.current)return;
+    if(!user||!progLoaded.current||!prefsReady)return;
+    if(selectedSubjectIds===null)return;
     window.storage.get(SK.PREFS(user),true).then(r=>{
       const existing=r?.value?JSON.parse(r.value):{};
       return window.storage.set(SK.PREFS(user),JSON.stringify({...existing,selectedSubjectIds:selectedSubjectIds||[],boardSels}),true);
     }).catch(()=>{});
-  },[user,selectedSubjectIds,boardSels]);
+  },[user,selectedSubjectIds,boardSels,prefsReady]);
 
   useEffect(()=>{
     if(!user)return;
@@ -8152,6 +8663,20 @@ export default function App() {
   const deletePaper = id => { const cur=getBD(subjDef.id,curBoard); saveBD(subjDef.id,curBoard,{papers:cur.papers.filter(p=>p.id!==id)}); };
 
   const navToSection = (si,ti,sId) => {
+    try{
+      const s=subjects[si]; const graph=JSON.parse(localStorage.getItem(SK_GRAPH(user,s?.id))||"{\"nodes\":[],\"edges\":[]}");
+      const mastery={};
+      allSections.filter(x=>x.subjectId===s?.id).forEach(function(sec){
+        const cards=sec.flashcards||[];
+        const reviewed=cards.filter(c=>fcHist[c.id]).length;
+        const fcPct=cards.length?Math.round((reviewed/cards.length)*100):0;
+        const wq=stats?.weakQ?.[sec.id]||{wrong:0,total:0};
+        const qPct=wq.total?Math.round(((wq.total-wq.wrong)/wq.total)*100):0;
+        mastery[sec.id]=Math.round((fcPct+qPct)/2);
+      });
+      const unmet=checkPrerequisites(graph,sId,mastery,60);
+      if(unmet.length){setPrereqModal({from:unmet[0],to:sId,si,ti});return;}
+    }catch(_){}
     setSubIdx(si);setTopIdx(ti);setSecId(sId);
     setTab("notes");setFcIdx(0);setFlip(false);
     setQIdx(0);setQRes(null);setSelOpt(null);setTA("");setSmMdl(false);
@@ -8499,8 +9024,56 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
           onNavigateBlurt={function(subjId,secId2){setBlurtSubjId(subjId);setBlurtSecId2(secId2);setScreen("blurting");}}
           onMock={function(){setScreen("mock");}}
         />
+        {(()=>{
+          const sid=subjects[0]?.id;
+          if(!sid) return null;
+          const opts=generateSessionOptions(user,sid,allSections,stats,fcHist).slice(0,3);
+          return (
+            <div style={{...C(D),padding:14,margin:"14px 0"}}>
+              <h3 style={{fontSize:14,fontWeight:700,marginBottom:8}}>Structured Session Choices</h3>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:8}}>
+                {opts.map((o,i)=>(
+                  <button key={i} onClick={()=>{if(o.action.type==="target"){setScreen("target");return;} if(o.action.sectionId){const sec=allSections.find(s=>s.id===o.action.sectionId); if(!sec)return; const si=subjects.findIndex(s=>s.id===sec.subjectId); if(si<0)return; setSubIdx(si); setTopIdx(0); setSecId(sec.id); setTab(o.action.type==="questions"?"questions":"flashcards"); setScreen("section");}}}
+                    style={{textAlign:"left",padding:10,borderRadius:10,border:`1px solid ${bd2}`,background:D?"#161b27":"#fff",cursor:"pointer"}}>
+                    <div style={{fontSize:12,fontWeight:700,marginBottom:4}}>{o.title}</div>
+                    <div style={{fontSize:11,color:mu(D)}}>{o.description}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+        {weeklyPlan?.length>0&&(
+          <div style={{...C(D),padding:14,marginBottom:14}}>
+            <h3 style={{fontSize:14,fontWeight:700,marginBottom:8}}>Weekly AI Learning Plan</h3>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:8}}>
+              {weeklyPlan.slice(0,7).map((d,idx)=>(
+                <button key={idx} onClick={()=>setScreen("target")} style={{textAlign:"left",padding:8,borderRadius:8,border:`1px solid ${bd2}`,background:"transparent",cursor:"pointer"}}>
+                  <div style={{fontSize:11,fontWeight:700}}>{d.day}</div>
+                  <div style={{fontSize:11,color:mu(D),marginTop:2}}>{d.tasks?.[0]}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",gap:14}}>
+        <div style={{display:"flex",justifyContent:"flex-end",marginBottom:8}}>
+          <button onClick={()=>setShowTreemap(v=>!v)} style={{fontSize:12,padding:"6px 10px",borderRadius:8,border:"1px solid #6366f1",background:"transparent",color:"#6366f1"}}>{showTreemap?"Show Subject Cards":"Show Mastery Treemap"}</button>
+        </div>
+        {showTreemap&&<MasteryTreemap
+          D={D}
+          nodes={allSections.map(function(sec){const s=subjects.find(x=>x.id===sec.subjectId);const m=calculateMastery(sec.subjectId,allSections,fcHist,stats);return {subjectId:sec.subjectId,topicId:sec.id,name:(s?s.icon+" ":"")+sec.title,mastery:Math.round((m.flashcardMastery+m.questionAccuracy)/2),contentSize:(sec.notes||[]).length+(sec.flashcards||[]).length+(sec.questions||[]).length+1};})}
+          onSelect={function(n){
+            const sec=allSections.find(s=>s.id===n.topicId); if(!sec)return;
+            const si=subjects.findIndex(s=>s.id===sec.subjectId); if(si<0)return;
+            const b=boardSels[sec.subjectId]||DEFAULT_BOARD;
+            const bd=boardData[sec.subjectId+":"+b]||{custom:[],extras:{},papers:[]};
+            const subj=subjects[si]; const merged=mergeTopics(subj.topics||[],bd.custom,bd.extras);
+            const ti=merged.findIndex(t=>t.sections.some(s=>s.id===sec.id));
+            navToSection(si,ti>=0?ti:0,sec.id);
+          }}
+        />}
+        {!showTreemap&&<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",gap:14}}>
           {subjects.map((s,si)=>{
             const selBoard=boardSels[s.id]||DEFAULT_BOARD;
             const bData=getBD(s.id,selBoard);
@@ -8535,7 +9108,7 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
               </button>
             );
           })}
-        </div>
+        </div>}
       </div>
       {/* ── My Personal Subjects ── */}
       <div style={{maxWidth:960,margin:"0 auto",padding:"0 24px 32px"}}>
@@ -8635,6 +9208,14 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
               <p style={{fontSize:12,color:D?"#9ca3af":"#6b7280",margin:0}}>This is <strong>not GCSE content</strong> — it's factual, non-biased political awareness for well-rounded world knowledge. Notes only. Use the AI Tutor to explore any topic further.</p>
             </div>
           </div>}
+          {!subj._politics&&(
+            admin ? (
+              <GraphEditor D={D} user={user} subjectId={subj.id} masteryMap={{}} onSelectNode={function(){}} onGoToPrereq={function(from,to){setPrereqModal({from,to,si:subIdx,ti:topIdx||0});}}/>
+            ) : (
+              <KnowledgeGraph D={D} user={user} subjectId={subj.id} masteryMap={{}} onSelectNode={function(){}} onGoToPrereq={function(from,to){setPrereqModal({from,to,si:subIdx,ti:topIdx||0});}}/>
+            )
+          )}
+          {!subj._politics&&<SketchnoteCanvas D={D} user={user} subjectId={subj.id}/>}
           {subjTab === "sections" && (()=>{
             const allSecsDue = curTopics.flatMap(t => t.sections).filter(s => (s.flashcards||[]).some(c => isCardDue(fcHist, c.id)));
             const allSecsNew = curTopics.flatMap(t => t.sections).filter(s => (s.questions||[]).length > 0 || (s.flashcards||[]).length > 0);
@@ -8850,11 +9431,14 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
   if(screen==="section"&&section){
     const inFocusMode = tab === "flashcards" || tab === "questions";
     const subj=subjDef;
-    const cards=section.flashcards||[], qs=section.questions||[];
+    const cards=section.flashcards||[], rawQs=section.questions||[];
+    const qs=selectAdaptiveQuestions(rawQs,user,subj?.id);
     const safeFcIdx = cards.length > 0 ? Math.min(fcIdx, cards.length-1) : 0;
     const fc = cards.length>0 ? cards[safeFcIdx] : null;
-    const q  = qs.length>0   ? qs[Math.min(qIdx,qs.length-1)]       : null;
+    const q  = transferQuestion || (qs.length>0   ? qs[Math.min(qIdx,qs.length-1)]       : null);
     const isCustomSec = section.src==="admin";
+    const ladderTopicId = section._parentTopicId||section.id;
+    const ladderLevel = getLadderLevel(user, ladderTopicId);
 
     const isAdminItem=(key,item)=>{
       if(isCustomSec)return true;
@@ -8878,6 +9462,10 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
         });
       }
       const correct=rating>=3;
+      updateLadderLevel(user, ladderTopicId, correct); setLadderTick(v=>v+1);
+      if(correct){
+        setElabOpen(true);
+      }
       setStats(s=>{
         const wfc={...s.weakFC};
         wfc[section.id]={wrong:(wfc[section.id]?.wrong||0)+(correct?0:1),total:(wfc[section.id]?.total||0)+1};
@@ -9032,6 +9620,7 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                 setFCH(prevH=>{const ps=getCardState(prevH,cardId);return{...prevH,[cardId]:fsrsNext(ps,rating)};});
               }
               const correct=rating>=3;
+              updateLadderLevel(user, ladderTopicId, correct); setLadderTick(v=>v+1);
               // Feature 19: record calibration prediction vs outcome
               if(fcConf!==null){
                 const pred=confToProb(fcConf);
@@ -9053,6 +9642,7 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
               });
               trackEvent('card_rated', { sectionId: section?.id, subjectId: subjDef?.id, value: rating });
               setFlip(false);setFcConf(null);setFcHintLvl(0);setFcSelfExp("");setFcSelfOpen(false);
+              if(correct) setElabOpen(true);
               setFcIdx(i=>{const len=activeCards.length;return len>0?(i<len-1?i+1:0):0;});
               // Wave 6: check achievements after rating
               setTimeout(()=>runAchievementCheck(null),300);
@@ -9267,7 +9857,15 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                         </span>}
                       </div>
                       {(fc2.images||[]).length>0&&fc2.images.map((img,ii)=><AnnotatedImage key={ii} img={img} D={D}/>)}
-                      <ContentBlock content={fc2.q} D={D} fontSize={15} style={{color:tx(D),textAlign:isDualCoded?"left":"center",width:"100%"}}/>
+                      <ContentBlock
+                        content={fc2.type==="cloze"
+                          ? String(fc2.text||fc2.q||"").replace(/\{\{(.*?)\}\}/g,"_____")
+                          : fc2.type==="sequence"
+                            ? (fc2.prompt||"Arrange these steps in the correct order.")
+                            : fc2.q}
+                        D={D} fontSize={15}
+                        style={{color:tx(D),textAlign:isDualCoded?"left":"center",width:"100%"}}
+                      />
                       {fcConf===null
                         ?<p style={{fontSize:11,color:mu(D),marginTop:14,alignSelf:"center"}}>↑ Rate your confidence first</p>
                         :<p style={{fontSize:11,color:mu(D),marginTop:14,alignSelf:"center"}}>Tap to reveal · Swipe to navigate</p>}
@@ -9293,7 +9891,23 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                         </div>
                       )}
                       <div style={{fontSize:11,fontWeight:600,letterSpacing:"0.1em",color:subj.accent,textTransform:"uppercase",marginBottom:8,alignSelf:"flex-start"}}>Answer</div>
-                      <ContentBlock content={fc2.a} D={D} fontSize={15} style={{color:subj.accent,fontWeight:500,textAlign:isDualCoded?"left":"center",width:"100%"}}/>
+                      {(fc2.type==="cloze"||fc2.type==="sequence"||fc2.type==="process"||fc2.type==="graph") ? (
+                        fc2.type==="cloze"
+                          ? <ClozeCard card={fc2} D={D} onSubmit={()=>setFcSelfOpen(true)}/>
+                          : fc2.type==="sequence"
+                            ? <SequenceCard card={fc2} D={D} onSubmit={()=>setFcSelfOpen(true)}/>
+                            : fc2.type==="process"
+                              ? <ProcessCard card={fc2} D={D}/>
+                              : <GraphCard card={fc2} D={D}/>
+                      ) : (
+                        <ContentBlock content={fc2.a} D={D} fontSize={15} style={{color:subj.accent,fontWeight:500,textAlign:isDualCoded?"left":"center",width:"100%"}}/>
+                      )}
+                      {!!fc2?.diagram&&(
+                        <div style={{marginTop:8}}>
+                          <button onClick={()=>setShowSketch(s=>!s)} style={{fontSize:11,padding:"4px 9px",borderRadius:8,border:"1px solid #6366f1",background:"transparent",color:"#6366f1"}}>Sketch it</button>
+                          {showSketch&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginTop:8}}><SketchCanvas D={D}/><DiagramRenderer diagram={fc2.diagram} D={D} width={240}/></div>}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -9353,6 +9967,35 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                     {cramMode&&<p style={{fontSize:10,color:"#6366f1",textAlign:"center",marginTop:6}}>🔥 Cram mode — FSRS scheduling paused</p>}
                     </div>
                   </div>
+                )}
+                <div style={{marginTop:10,padding:"10px 12px",borderRadius:10,background:D?"#1e2537":"#f8fafc",border:`1px solid ${D?"#374151":"#e5e7eb"}`}}>
+                  <div style={{fontSize:11,fontWeight:700,marginBottom:6}}>Difficulty Ladder</div>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:4}}>
+                    {["Know","Understand","Apply","Evaluate","Mastery"].map((l,i)=>(
+                      <div key={l} style={{padding:"5px 4px",borderRadius:6,fontSize:9,textAlign:"center",background:(i+1)<=ladderLevel?"#6366f1":"transparent",color:(i+1)<=ladderLevel?"#fff":mu(D),border:`1px solid ${bd2}`}}>{l}</div>
+                    ))}
+                  </div>
+                </div>
+                {flip&&elabOpen&&fc2&&(
+                  <details style={{marginTop:8}}>
+                    <summary style={{cursor:"pointer",fontSize:12,fontWeight:700}}>Why/How prompt</summary>
+                    <div style={{marginTop:6,fontSize:12,color:mu(D)}}>{generateWhyPrompt(fc2)}</div>
+                    <textarea value={elabText} onChange={e=>setElabText(e.target.value)} rows={2} style={{...I(D,{marginTop:6,fontSize:12})}} placeholder="Write 1–2 sentences…"/>
+                    <button onClick={()=>{try{localStorage.setItem("gcse:elab:"+user.replace(/\W/g,"-")+":"+fc2.id,JSON.stringify({prompt:generateWhyPrompt(fc2),response:elabText,date:new Date().toISOString()}));showToast("Saved");}catch(_){};}}
+                      style={{marginTop:6,padding:"6px 10px",borderRadius:8,border:"none",background:"#6366f1",color:"#fff",fontSize:12}}>Save</button>
+                  </details>
+                )}
+                {fc2&&(
+                  <details style={{marginTop:8}}>
+                    <summary style={{cursor:"pointer",fontSize:12,fontWeight:700}}>Explain It</summary>
+                    <textarea value={explainText} onChange={e=>setExplainText(e.target.value)} rows={2} style={{...I(D,{marginTop:6,fontSize:12})}} placeholder="Explain this card in your own words…"/>
+                    <button onClick={()=>setExplainFeedback(verifyExplanation(fc2.a||fc2.text||fc2.q,explainText))}
+                      style={{marginTop:6,padding:"6px 10px",borderRadius:8,border:"none",background:"#0ea5e9",color:"#fff",fontSize:12}}>Check explanation</button>
+                    <button onClick={async()=>{const svg=await generateSVGDiagram(stripHtml(fc2.a||fc2.text||fc2.q),user);setSvgPreview(svg);}}
+                      style={{marginTop:6,marginLeft:6,padding:"6px 10px",borderRadius:8,border:"none",background:"#6366f1",color:"#fff",fontSize:12}}>Prompt→SVG</button>
+                    {explainFeedback&&<div style={{marginTop:6,fontSize:12}}><div>✅ {explainFeedback.correct}</div><div>🧩 {explainFeedback.missing}</div></div>}
+                    {svgPreview&&<div style={{marginTop:8}} dangerouslySetInnerHTML={{__html:String(svgPreview).includes("<svg")?svgPreview:""}}/>}
+                  </details>
                 )}
 
                 {!flip&&(
@@ -9430,7 +10073,15 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                       {q.year&&<span style={{fontSize:11,color:mu(D)}}>{q.year}</span>}
                     </div>
                     {(q.images||[]).map((img,ii)=><AnnotatedImage key={ii} img={img} D={D}/>)}
+                    {q.figure&&<QuestionFigure figure={q.figure} D={D} figureNumber={1}/>}
                     <ContentBlock content={q.text} D={D} fontSize={15} style={{marginBottom:18}}/>
+                    <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
+                      <button onClick={()=>{setTransferQuestion(generateTransferQuestion(q));setQRes(null);setSelOpt(null);setTA("");}}
+                        style={{fontSize:12,padding:"6px 12px",borderRadius:8,border:"1px solid #6366f1",background:"transparent",color:"#6366f1",cursor:"pointer"}}>Apply It</button>
+                      {q&&/how does .* relate to|relate[s]? to/i.test((q.text||"").toLowerCase())&&(
+                        <details><summary style={{cursor:"pointer",fontSize:12}}>Concept Map</summary><ConceptMap x={(q.text||"X").split(" ")[2]} y={(q.text||"Y").split(" ").slice(-1)[0]} relation="relates to" D={D}/></details>
+                      )}
+                    </div>
 
                     {/* ── MCQ ── */}
                     {q.type==="mcq"&&(
@@ -9445,6 +10096,8 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                             <div key={oi}>
                               <button onClick={()=>{if(!qRes){
                                 const ok=oi===q.answer;setSelOpt(oi);setQRes(ok?"correct":"wrong");markTodayActive();
+                                updateAdaptiveLevel(user, subj.id, ok);
+                                updateLadderLevel(user, ladderTopicId, ok); setLadderTick(v=>v+1);
                                 setStats(s=>{const wq={...s.weakQ};wq[section.id]={wrong:(wq[section.id]?.wrong||0)+(ok?0:1),total:(wq[section.id]?.total||0)+1};const ss={...s.subjStats};ss[subj.id]={...ss[subj.id],qS:(ss[subj.id]?.qS||0)+(ok?1:0),qM:(ss[subj.id]?.qM||0)+1,fcC:ss[subj.id]?.fcC||0,fcT:ss[subj.id]?.fcT||0};return{...s,qS:s.qS+(ok?1:0),qM:s.qM+1,weakQ:wq,subjStats:ss};});
                               }}}
                                 style={{width:"100%",textAlign:"left",padding:"11px 16px",borderRadius:10,
@@ -9550,7 +10203,16 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                           if(!textAns.trim())return; setMark(true); markTodayActive(); trackEvent('question_submitted', { sectionId: section?.id, subjectId: subjDef?.id, tab: 'questions' });
                           try{
                             const r=await markAnswer(q,textAns);
+                            const errType = (typeof classifyError==="function")
+                              ? await Promise.resolve(classifyError(q,textAns,q.markScheme)).catch(()=>null)
+                              : detectErrorType(q.text,textAns,q.markScheme,r?.missedPoints);
+                            if(errType){
+                              incrementErrorPattern(user, subj.id, errType);
+                              r.errorType = errType;
+                            }
                             const pct=q.marks>0?r.score/q.marks:0;
+                            updateAdaptiveLevel(user, subj.id, pct>=0.5);
+                            updateLadderLevel(user, ladderTopicId, pct>=0.5); setLadderTick(v=>v+1);
                             setQRes(r);
                             setStats(s=>{const wq={...s.weakQ};wq[section.id]={wrong:(wq[section.id]?.wrong||0)+(pct<0.5?1:0),total:(wq[section.id]?.total||0)+1};const ss={...s.subjStats};ss[subj.id]={...ss[subj.id],qS:(ss[subj.id]?.qS||0)+(r.score||0),qM:(ss[subj.id]?.qM||0)+q.marks,fcC:ss[subj.id]?.fcC||0,fcT:ss[subj.id]?.fcT||0};return{...s,qS:s.qS+(r.score||0),qM:s.qM+q.marks,weakQ:wq,subjStats:ss};});
                           }catch(e){setQRes({score:"?",feedback:"ReviseIQ AI unavailable — self-mark using the mark scheme below.",missedPoints:[],modelAnswer:q.sampleAnswer||"",examTip:""});}
@@ -9605,6 +10267,52 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                               <p style={{fontSize:12,color:"#1d4ed8"}}>💡 <strong>Exam tip:</strong> {qRes.examTip}</p>
                             </div>
                           )}
+                          {qRes.errorType&&(
+                            <div style={{padding:"8px 12px",borderRadius:10,background:D?"rgba(245,158,11,.1)":"#fffbeb",border:"1px solid #f59e0b55",marginBottom:10,fontSize:12,color:D?"#fcd34d":"#92400e"}}>
+                              Main error type: <strong>{qRes.errorType}</strong>
+                            </div>
+                          )}
+                          <details style={{marginBottom:8}}>
+                            <summary style={{cursor:"pointer",fontWeight:700,fontSize:12}}>Structure Diagram</summary>
+                            <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginTop:8}}>
+                              {(qRes.structureDiagram||["Point","Evidence","Explanation","Application"]).map((s,idx)=>(
+                                <React.Fragment key={idx}>
+                                  <span style={{padding:"6px 10px",borderRadius:8,background:D?"#1e2537":"#eef2ff",fontSize:11,fontWeight:600}}>{s}</span>
+                                  {idx<(qRes.structureDiagram||[]).length-1&&<span style={{color:mu(D)}}>→</span>}
+                                </React.Fragment>
+                              ))}
+                            </div>
+                          </details>
+                          <details style={{marginBottom:8}}>
+                            <summary style={{cursor:"pointer",fontWeight:700,fontSize:12}}>Progressive Reveal</summary>
+                            <div style={{marginTop:8}}>
+                              <ProgressiveDiagram D={D} steps={(qRes.structureDiagram||[]).map(function(s){return {text:s,svg:null};})}/>
+                            </div>
+                          </details>
+                          <details style={{marginBottom:8}}>
+                            <summary style={{cursor:"pointer",fontWeight:700,fontSize:12}}>Annotated Model Answer</summary>
+                            <div style={{marginTop:8,lineHeight:1.8,fontSize:13}}>
+                              {(Array.isArray(qRes.annotatedAnswer)?qRes.annotatedAnswer:[]).map((seg,idx)=>{
+                                const bg=seg.type==="point"?"#dcfce7":seg.type==="evidence"?"#dbeafe":"#fef3c7";
+                                return <span key={idx} style={{background:bg,padding:"1px 4px",borderRadius:4,marginRight:4}}>{seg.text}</span>;
+                              })}
+                            </div>
+                          </details>
+                          <details style={{marginBottom:8}}>
+                            <summary style={{cursor:"pointer",fontWeight:700,fontSize:12}}>Comparison Table</summary>
+                            <table style={{width:"100%",borderCollapse:"collapse",marginTop:8,fontSize:12}}>
+                              <thead><tr><th style={{border:"1px solid #cbd5e1",padding:6,textAlign:"left"}}>Student Answer</th><th style={{border:"1px solid #cbd5e1",padding:6,textAlign:"left"}}>Mark Scheme Expectation</th></tr></thead>
+                              <tbody>{(qRes.comparisonTable||[]).map((row,ri)=>(
+                                <tr key={ri}><td style={{border:"1px solid #cbd5e1",padding:6}}>{row.student}</td><td style={{border:"1px solid #cbd5e1",padding:6}}>{row.expectation}</td></tr>
+                              ))}</tbody>
+                            </table>
+                          </details>
+                          <details style={{marginBottom:12}}>
+                            <summary style={{cursor:"pointer",fontWeight:700,fontSize:12}}>Worked Solution</summary>
+                            <pre style={{marginTop:8,whiteSpace:"pre-wrap",fontSize:12,fontFamily:"IBM Plex Mono, monospace",background:D?"#0f172a":"#f8fafc",padding:10,borderRadius:8}}>
+                              {qRes.workedSolution||qRes.modelAnswer||q.sampleAnswer||""}
+                            </pre>
+                          </details>
 
                           {/* Post-marking self-explanation — Testing Effect (Roediger & Karpicke 2006):
                               forcing a retrieval attempt AFTER seeing outcome, at peak encoding
@@ -9651,7 +10359,7 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                   </div>
 
                   {qRes&&(
-                    <button onClick={()=>{setQIdx(i=>i<qs.length-1?i+1:0);setQRes(null);setSelOpt(null);setTA("");setSmMdl(false);setQHintLvl(0);setQConf(null);setQSelfExp("");setQSelfDone(false);}}
+                    <button onClick={()=>{setQIdx(i=>i<qs.length-1?i+1:0);setQRes(null);setSelOpt(null);setTA("");setSmMdl(false);setQHintLvl(0);setQConf(null);setQSelfExp("");setQSelfDone(false);setTransferQuestion(null);}}
                       style={{width:"100%",...B(subj.accent,false,{padding:"12px 0",borderRadius:12,fontSize:14})}}>
                       {qIdx<qs.length-1?"Next Question →":"↺ Restart"}
                     </button>
@@ -9741,6 +10449,20 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
       return {subject:s.icon+" "+s.name.split(" ")[0], pct:pct, fullName:s.name};
     });
     const hasRadarData=radarData.some(function(r){return r.pct>0;});
+    const dominantErrorSummary = (function(){
+      if(typeof window==="undefined"||!user) return null;
+      var all={"Knowledge Gap":0,"Application Error":0,"Command Word Error":0,"Communication Error":0};
+      ALL_SUBJECTS.forEach(function(s){
+        try{
+          var obj=JSON.parse(localStorage.getItem(SK_ERROR_PATTERNS(user,s.id))||"{}");
+          Object.keys(all).forEach(function(k){all[k]+=Number(obj[k]||0);});
+        }catch(_){}
+      });
+      var total=Object.values(all).reduce((a,b)=>a+b,0);
+      if(total<10) return null;
+      var top=Object.entries(all).sort((a,b)=>b[1]-a[1])[0];
+      return {type:top[0], pct:Math.round((top[1]/total)*100)};
+    })();
 
     return (
       <div style={{minHeight:"100vh",background:bg,color:tx(D)}} className="fade-in">
@@ -9748,6 +10470,21 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
         <div style={{maxWidth:900,margin:"0 auto",padding:"32px 24px"}}>
           <button onClick={()=>setScreen("home")} style={{fontSize:13,color:mu(D),background:"none",border:"none",cursor:"pointer",marginBottom:24}}>← Home</button>
           <h2 style={{fontSize:22,fontWeight:700,marginBottom:22}}>📊 Progress Dashboard</h2>
+          <LearningTimeline
+            D={D}
+            sessions={Object.keys(activityCounts||{}).map(function(k){return {date:k,subject:"Mixed",duration:(activityCounts[k]||0)*25,topics:["Revision"]};}).sort((a,b)=>a.date.localeCompare(b.date)).slice(-80)}
+            exams={timetableExams||[]}
+            subjects={subjects}
+            onSelect={setTimelineSelected}
+          />
+          {timelineSelected&&<div style={{...C(D),padding:10,marginTop:8,marginBottom:12,fontSize:12}}>Session: {timelineSelected.date} · {timelineSelected.duration} min · {timelineSelected.subject}</div>}
+          {dominantErrorSummary&&(
+            <div style={{...C(D),padding:14,marginBottom:14,background:D?"rgba(245,158,11,.08)":"#fffbeb",borderColor:"#f59e0b"}}>
+              <p style={{fontSize:13,color:D?"#fcd34d":"#92400e"}}>
+                Your main error type is <strong>{dominantErrorSummary.type}</strong> ({dominantErrorSummary.pct}%) — focus on improving this.
+              </p>
+            </div>
+          )}
 
           {/* Streak + Heatmap card */}
           <div style={{...C(D),padding:22,marginBottom:18,background:streak>0?(D?"rgba(249,115,22,0.05)":""):undefined,borderColor:streak>=7?"#f97316":undefined}}>
@@ -10147,28 +10884,6 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
     );
   }
 
-      {analyticsData&&(
-        <div onClick={()=>setAnalyticsData(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:9500,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
-          <div onClick={e=>e.stopPropagation()} style={{background:D?"#1e2537":"#fff",borderRadius:16,width:480,maxWidth:"96vw",maxHeight:"80vh",display:"flex",flexDirection:"column",boxShadow:"0 30px 80px rgba(0,0,0,.3)"}}>
-            <div style={{padding:"18px 22px",borderBottom:"1px solid "+(D?"#374151":"#e5e7eb"),display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <h2 style={{fontSize:17,fontWeight:700,margin:0,color:tx(D)}}>📊 Analytics — Last {analyticsData.days} day{analyticsData.days!==1?"s":""}</h2>
-              <button onClick={()=>setAnalyticsData(null)} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",color:mu(D)}}>✕</button>
-            </div>
-            <div style={{padding:"16px 22px",flex:1,overflowY:"auto"}}>
-              <p style={{fontSize:13,color:mu(D),marginBottom:14}}>{analyticsData.total} total events</p>
-              {Object.entries(analyticsData.summary).sort((a,b)=>b[1]-a[1]).map(([event,count])=>(
-                <div key={event} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 12px",borderRadius:8,background:D?"#161b27":"#f9fafb",marginBottom:6}}>
-                  <span style={{fontSize:13,fontFamily:"monospace",color:tx(D)}}>{event}</span>
-                  <span style={{fontSize:13,fontWeight:700,color:"#6366f1"}}>{count}</span>
-                </div>
-              ))}
-            </div>
-            <div style={{padding:"12px 22px",borderTop:"1px solid "+(D?"#374151":"#e5e7eb")}}>
-              <button onClick={()=>setAnalyticsData(null)} style={{width:"100%",padding:"9px 0",borderRadius:10,border:"1px solid "+(D?"#374151":"#e5e7eb"),background:"transparent",color:mu(D),cursor:"pointer",fontSize:13}}>Close</button>
-            </div>
-          </div>
-        </div>
-      )}
   return (<>
     {/* W5: Pre-session goal modal (Feature 17) */}
     {showGoalModal&&(
@@ -10195,6 +10910,31 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
     {newAchievement&&(
       <AchievementToast achievement={newAchievement} D={D} onClose={()=>setNewAchievement(null)}/>
     )}
+    {prereqModal&&(
+      <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.55)",zIndex:12000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+        <div style={{...C(D),padding:18,maxWidth:420,width:"100%"}}>
+          <h3 style={{fontSize:15,fontWeight:700,marginBottom:8}}>This topic has prerequisites</h3>
+          <p style={{fontSize:13,color:mu(D),marginBottom:12}}>This topic builds on {prereqModal.from}. Review it first?</p>
+          <div style={{display:"flex",gap:8}}>
+            <button onClick={()=>{
+              const sec=allSections.find(s=>s.id===prereqModal.from);
+              if(sec){
+                const si=subjects.findIndex(s=>s.id===sec.subjectId);
+                if(si>=0){
+                  const b=boardSels[sec.subjectId]||DEFAULT_BOARD;
+                  const bd=boardData[sec.subjectId+":"+b]||{custom:[],extras:{},papers:[]};
+                  const merged=mergeTopics(subjects[si].topics||[],bd.custom,bd.extras);
+                  const ti=merged.findIndex(t=>t.sections.some(s=>s.id===sec.id));
+                  setSubIdx(si);setTopIdx(ti>=0?ti:0);setSecId(sec.id);setScreen("section");
+                }
+              }
+              setPrereqModal(null);
+            }} style={{...B("#6366f1",false,{padding:"8px 12px",fontSize:12})}}>Go to prerequisite</button>
+            <button onClick={()=>{setSubIdx(prereqModal.si);setTopIdx(prereqModal.ti);setSecId(prereqModal.to);setScreen("section");setPrereqModal(null);}} style={{...B("#9ca3af",false,{padding:"8px 12px",fontSize:12})}}>Continue anyway</button>
+          </div>
+        </div>
+      </div>
+    )}
 
     {/* W6: Focus Mode overlay (Feature 26) */}
     {focusMode&&screen==="section"&&section&&(
@@ -10218,5 +10958,27 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
       D={D}
     />
     <ToastContainer/>
+    {analyticsData&&(
+      <div onClick={()=>setAnalyticsData(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:9500,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+        <div onClick={e=>e.stopPropagation()} style={{background:D?"#1e2537":"#fff",borderRadius:16,width:480,maxWidth:"96vw",maxHeight:"80vh",display:"flex",flexDirection:"column",boxShadow:"0 30px 80px rgba(0,0,0,.3)"}}>
+          <div style={{padding:"18px 22px",borderBottom:"1px solid "+(D?"#374151":"#e5e7eb"),display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <h2 style={{fontSize:17,fontWeight:700,margin:0,color:tx(D)}}>📊 Analytics — Last {analyticsData.days} day{analyticsData.days!==1?"s":""}</h2>
+            <button onClick={()=>setAnalyticsData(null)} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",color:mu(D)}}>✕</button>
+          </div>
+          <div style={{padding:"16px 22px",flex:1,overflowY:"auto"}}>
+            <p style={{fontSize:13,color:mu(D),marginBottom:14}}>{analyticsData.total} total events</p>
+            {Object.entries(analyticsData.summary).sort((a,b)=>b[1]-a[1]).map(([event,count])=>(
+              <div key={event} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 12px",borderRadius:8,background:D?"#161b27":"#f9fafb",marginBottom:6}}>
+                <span style={{fontSize:13,fontFamily:"monospace",color:tx(D)}}>{event}</span>
+                <span style={{fontSize:13,fontWeight:700,color:"#6366f1"}}>{count}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{padding:"12px 22px",borderTop:"1px solid "+(D?"#374151":"#e5e7eb")}}>
+            <button onClick={()=>setAnalyticsData(null)} style={{width:"100%",padding:"9px 0",borderRadius:10,border:"1px solid "+(D?"#374151":"#e5e7eb"),background:"transparent",color:mu(D),cursor:"pointer",fontSize:13}}>Close</button>
+          </div>
+        </div>
+      </div>
+    )}
   </>);
 }
