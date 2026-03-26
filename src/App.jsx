@@ -1274,8 +1274,264 @@ function generateSessionOptions(user, subjectId, allSections, stats, fcHist){
   return [
     {title:"Due Card Sprint",description:"Clear due flashcards in "+(due?.title||"this topic"),action:{type:"flashcards",sectionId:due?.id}},
     {title:"Weak Spot Drill",description:"Target weaker questions in "+(weak?.title||"your topic"),action:{type:"questions",sectionId:weak?.id}},
-    {title:"Mixed Focus",description:"Blend flashcards + exam questions",action:{type:"target"}}
+    {title:"Mixed Focus",description:"Blend flashcards + exam questions",action:{type:"target"}},
+    {title:"Interleaved Session",description:"Round-robin mixed topics for stronger transfer",action:{type:"interleaved",subjectId:subjectId}}
   ];
+}
+function getVariantStorageKey(user, cardId){
+  return "gcse:variants:"+String(user||"anon").replace(/\W/g,"-")+":"+String(cardId||"");
+}
+function simpleParaphrase(text){
+  var s=String(text||"");
+  var map={
+    "explain":"describe","describe":"outline","define":"state clearly","because":"since","therefore":"so","important":"significant",
+    "process":"sequence","increase":"rise","decrease":"fall","difference":"distinction","causes":"leads to","effect":"impact"
+  };
+  Object.keys(map).forEach(function(k){
+    var re=new RegExp("\\b"+k+"\\b","gi");
+    s=s.replace(re,function(m){ return m===m.toUpperCase()?map[k].toUpperCase():map[k];});
+  });
+  return s;
+}
+async function generateParaphrasedCard(card){
+  var base=String(card?.q||card?.text||"");
+  if(!base.trim()) return "";
+  if(typeof window!=="undefined"&&typeof window.generateParaphrase==="function"){
+    try{
+      var ai=await window.generateParaphrase(base, card);
+      if(ai&&String(ai).trim()) return String(ai).trim();
+    }catch(_){}
+  }
+  return simpleParaphrase(base);
+}
+function readCardVariants(user, cardId){
+  try{
+    var arr=JSON.parse(localStorage.getItem(getVariantStorageKey(user,cardId))||"[]");
+    return Array.isArray(arr)?arr:[];
+  }catch(_){return [];}
+}
+async function ensureCardVariantCached(user, card, reviewCount, stability){
+  if(!card||reviewCount<3||Number(stability||0)<=7) return null;
+  var existing=readCardVariants(user, card.id);
+  if(existing.length) return existing[0];
+  var text=await generateParaphrasedCard(card);
+  if(!text||text.trim()===String(card.q||card.text||"").trim()) return null;
+  var variant={text:text,createdAt:new Date().toISOString()};
+  try{ localStorage.setItem(getVariantStorageKey(user,card.id), JSON.stringify([variant])); }catch(_){}
+  return variant;
+}
+function maybeUseVariantText(user, card, reviewCount, stability){
+  if(!card||reviewCount<3||Number(stability||0)<=7) return null;
+  var variants=readCardVariants(user,card.id);
+  if(!variants.length) return null;
+  var p=Math.random();
+  if(p<0.3 || p>0.5) return null;
+  return variants[0]?.text||null;
+}
+function generateInterleavedSession(subjectId, allSections){
+  var secs=(allSections||[]).filter(function(s){return s.subjectId===subjectId;});
+  var byTopic={};
+  secs.forEach(function(sec){
+    var t=sec.topicId||sec.id;
+    if(!byTopic[t]) byTopic[t]=[];
+    (sec.flashcards||[]).forEach(function(c){byTopic[t].push({kind:"flashcard",sectionId:sec.id,topicId:t,item:c});});
+    (sec.questions||[]).forEach(function(q){byTopic[t].push({kind:"question",sectionId:sec.id,topicId:t,item:q});});
+  });
+  var topicIds=Object.keys(byTopic).filter(function(t){return byTopic[t].length>0;}).slice(0,8);
+  if(topicIds.length<3) return [];
+  var idx=0; var out=[]; var lastTopic=null; var guard=0;
+  while(guard<2000){
+    guard++;
+    var nonEmpty=topicIds.filter(function(t){return byTopic[t]&&byTopic[t].length;});
+    if(!nonEmpty.length) break;
+    var pick=nonEmpty[idx%nonEmpty.length];
+    idx++;
+    if(pick===lastTopic&&nonEmpty.length>1){
+      pick=nonEmpty.find(function(t){return t!==lastTopic;})||pick;
+    }
+    var next=(byTopic[pick]||[]).shift();
+    if(!next) continue;
+    out.push(next);
+    lastTopic=pick;
+  }
+  return out;
+}
+function createIDBHelpers(){
+  var dbName="reviseiq";
+  var storeName="offlineQueue";
+  function openDb(){
+    return new Promise(function(resolve,reject){
+      try{
+        var req=indexedDB.open(dbName,1);
+        req.onupgradeneeded=function(){
+          var db=req.result;
+          if(!db.objectStoreNames.contains(storeName)){
+            db.createObjectStore(storeName,{keyPath:"id"});
+          }
+        };
+        req.onsuccess=function(){resolve(req.result);};
+        req.onerror=function(){reject(req.error||new Error("idb_open_failed"));};
+      }catch(e){reject(e);}
+    });
+  }
+  async function withStore(mode, fn){
+    var db=await openDb();
+    return new Promise(function(resolve,reject){
+      var tx=db.transaction(storeName,mode);
+      var store=tx.objectStore(storeName);
+      Promise.resolve(fn(store,tx)).then(resolve).catch(reject);
+      tx.onerror=function(){reject(tx.error||new Error("idb_tx_failed"));};
+      tx.oncomplete=function(){ db.close(); };
+    });
+  }
+  return {
+    enqueue: async function(item){
+      return withStore("readwrite",function(store){ store.put(item); });
+    },
+    all: async function(){
+      return withStore("readonly",function(store){
+        return new Promise(function(resolve,reject){
+          var req=store.getAll();
+          req.onsuccess=function(){resolve(req.result||[]);};
+          req.onerror=function(){reject(req.error||new Error("idb_getall_failed"));};
+        });
+      });
+    },
+    removeMany: async function(ids){
+      return withStore("readwrite",function(store){ (ids||[]).forEach(function(id){store.delete(id);}); });
+    }
+  };
+}
+const IDB_QUEUE = createIDBHelpers();
+async function syncOfflineQueue(){
+  if(typeof window==="undefined") return {ok:0,failed:0};
+  var lockKey="gcse:offlineSyncLock";
+  if(window.__reviseiqSyncing) return {ok:0,failed:0,locked:true};
+  window.__reviseiqSyncing=true;
+  try{
+    if(localStorage.getItem(lockKey)==="1") return {ok:0,failed:0,locked:true};
+    localStorage.setItem(lockKey,"1");
+    var rows=[];
+    try{ rows=await IDB_QUEUE.all(); }catch(_){ rows=JSON.parse(localStorage.getItem("gcse:offlineQueue:backup")||"[]"); }
+    if(!rows.length) return {ok:0,failed:0};
+    var okIds=[]; var failed=0;
+    for(var i=0;i<rows.length;i++){
+      var row=rows[i];
+      try{
+        if(typeof window.applyOfflineAction==="function"){ await window.applyOfflineAction(row); }
+        else{
+          var k="gcse:offlineApplied";
+          var ex=JSON.parse(localStorage.getItem(k)||"[]");
+          ex.push({id:row.id,type:row.type,timestamp:row.timestamp});
+          localStorage.setItem(k,JSON.stringify(ex.slice(-500)));
+        }
+        okIds.push(row.id);
+      }catch(_){ failed++; }
+    }
+    if(okIds.length){
+      try{ await IDB_QUEUE.removeMany(okIds); }catch(_){
+        var backup=rows.filter(function(r){return okIds.indexOf(r.id)<0;});
+        localStorage.setItem("gcse:offlineQueue:backup",JSON.stringify(backup));
+      }
+    }
+    return {ok:okIds.length,failed:failed};
+  }finally{
+    localStorage.removeItem(lockKey);
+    window.__reviseiqSyncing=false;
+  }
+}
+function useOfflineQueue(user, online){
+  const enqueue = React.useCallback(async function(action){
+    var row={id:(Date.now()+"-"+Math.random().toString(36).slice(2)),type:action?.type||"unknown",payload:action?.payload||{},timestamp:Date.now(),user:user||"anon"};
+    if(online){
+      try{
+        if(typeof window.applyOfflineAction==="function"){ await window.applyOfflineAction(row); return row.id; }
+      }catch(_){}
+    }
+    try{ await IDB_QUEUE.enqueue(row); }
+    catch(_){
+      var key="gcse:offlineQueue:backup";
+      var arr=JSON.parse(localStorage.getItem(key)||"[]"); arr.push(row);
+      localStorage.setItem(key,JSON.stringify(arr.slice(-1000)));
+    }
+    return row.id;
+  },[online,user]);
+  React.useEffect(function(){
+    function onOnline(){ syncOfflineQueue(); }
+    window.addEventListener("online", onOnline);
+    return function(){ window.removeEventListener("online", onOnline); };
+  },[]);
+  return {enqueue, syncOfflineQueue};
+}
+function registerReviseIQServiceWorker(){
+  if(typeof window==="undefined"||!("serviceWorker" in navigator)||window.__reviseiqSWRegistered) return;
+  try{
+    var swCode='const CACHE=\"reviseiq-shell-v1\";self.addEventListener(\"install\",e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll([\"/\"]).catch(()=>{})));self.skipWaiting();});self.addEventListener(\"activate\",e=>{e.waitUntil(self.clients.claim());});self.addEventListener(\"fetch\",e=>{const r=e.request;const u=new URL(r.url);if(r.method!==\"GET\")return;e.respondWith((async()=>{if(u.origin===location.origin&&(u.pathname.endsWith(\".js\")||u.pathname.endsWith(\".css\")||u.pathname===\"/\")){const c=await caches.match(r);if(c)return c;try{const n=await fetch(r);const cache=await caches.open(CACHE);cache.put(r,n.clone());return n;}catch(_){return caches.match(\"/\");}}try{return await fetch(r);}catch(_){const c=await caches.match(r);if(c)return c;return new Response(\"Offline\",{status:503,headers:{\"Content-Type\":\"text/plain\"}});}})());});';
+    var blob=new Blob([swCode],{type:"text/javascript"});
+    var url=URL.createObjectURL(blob);
+    navigator.serviceWorker.register(url).catch(function(){});
+    window.__reviseiqSWRegistered=true;
+  }catch(_){}
+}
+function buildProgressSummary(userData){
+  if(typeof window!=="undefined"&&typeof window.generateSummary==="function"){
+    try{ return window.generateSummary(userData); }catch(_){}
+  }
+  var weak=(userData.weakestTopics||[]).slice(0,3).join(", ")||"None identified";
+  return "You are on a "+(userData.streak||0)+" day streak, studied "+(userData.totalDaysStudied||0)+" days, attempted "+(userData.questionsAttempted||0)+" questions, and your readiness score is "+(userData.readinessScore||0)+"%. Focus next on: "+weak+".";
+}
+function generateProgressReport(userData){
+  var summary=buildProgressSummary(userData);
+  var w=window.open("","_blank","width=900,height=700");
+  if(!w) return false;
+  var html='<!doctype html><html><head><title>ReviseIQ Progress Report</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#111}h1{margin-bottom:0}table{border-collapse:collapse;width:100%;margin-top:14px}td,th{border:1px solid #ddd;padding:8px;text-align:left}.muted{color:#666}</style></head><body><h1>ReviseIQ Progress Report</h1><p class=\"muted\">Generated '+new Date().toLocaleString()+'</p><table><tr><th>Metric</th><th>Value</th></tr><tr><td>Current streak</td><td>'+(userData.streak||0)+'</td></tr><tr><td>Total days studied</td><td>'+(userData.totalDaysStudied||0)+'</td></tr><tr><td>Questions attempted</td><td>'+(userData.questionsAttempted||0)+'</td></tr><tr><td>Weakest topics</td><td>'+((userData.weakestTopics||[]).join(", ")||"None")+'</td></tr><tr><td>Readiness score</td><td>'+(userData.readinessScore||0)+'%</td></tr></table><h3>Summary</h3><p>'+String(summary).replace(/</g,"&lt;")+'</p></body></html>';
+  w.document.open(); w.document.write(html); w.document.close();
+  setTimeout(function(){try{w.print();}catch(_){}},120);
+  return true;
+}
+function getGroupKey(groupId){ return "gcse:groups:"+String(groupId||"default").replace(/\W/g,"-"); }
+function loadGroup(groupId){
+  try{
+    var g=JSON.parse(localStorage.getItem(getGroupKey(groupId))||"null");
+    if(g&&Array.isArray(g.members)&&Array.isArray(g.leaderboard)) return g;
+  }catch(_){}
+  return {members:[],leaderboard:[]};
+}
+function saveGroup(groupId, group){
+  try{localStorage.setItem(getGroupKey(groupId),JSON.stringify(group));}catch(_){}
+}
+function upsertGroupScore(groupId, user, deltaQuestions, streak){
+  var g=loadGroup(groupId);
+  if(g.members.indexOf(user)<0) g.members.push(user);
+  var lb=g.leaderboard||[];
+  var i=lb.findIndex(function(x){return x.user===user;});
+  if(i<0) lb.push({user:user,totalQuestions:Math.max(0,deltaQuestions||0),streak:Math.max(0,streak||0)});
+  else{
+    lb[i]={...lb[i],totalQuestions:Math.max(0,(lb[i].totalQuestions||0)+(deltaQuestions||0)),streak:Math.max(lb[i].streak||0,streak||0)};
+  }
+  lb.sort(function(a,b){ return (b.totalQuestions-a.totalQuestions) || (b.streak-a.streak); });
+  g.leaderboard=lb;
+  saveGroup(groupId,g);
+  return g;
+}
+function createPeerQuiz(data){
+  var id="pq-"+uid();
+  var row={id:id,creator:data.creator||"",recipient:data.recipient||"",questions:Array.isArray(data.questions)?data.questions:[],answers:[],score:null,timeTaken:null,createdAt:new Date().toISOString()};
+  try{localStorage.setItem("gcse:peerQuiz:"+id,JSON.stringify(row));}catch(_){}
+  return id;
+}
+function submitPeerQuiz(id, answers, score, timeTaken){
+  var key="gcse:peerQuiz:"+id;
+  try{
+    var row=JSON.parse(localStorage.getItem(key)||"null");
+    if(!row) return false;
+    row.answers=Array.isArray(answers)?answers:[];
+    row.score=Number(score||0);
+    row.timeTaken=Number(timeTaken||0);
+    row.completedAt=new Date().toISOString();
+    localStorage.setItem(key,JSON.stringify(row));
+    return true;
+  }catch(_){return false;}
 }
 function ProgressiveDiagram({steps=[],D}){
   const [idx,setIdx]=React.useState(0);
@@ -4383,12 +4639,14 @@ function Header({user,userDisplayName,D,onDark,onHome,onDash,onTarget,onTimetabl
 }
 
 /* ─── ACCOUNT SETTINGS SCREEN ───────────────────────────────────────────────── */
-function AccountScreen({D,user,userDisplayName,userSchool,accounts,selectedSubjectIds,boardSels,achievements,onBack,onSave,onEditSubjects}) {
+function AccountScreen({D,user,userDisplayName,userSchool,accounts,selectedSubjectIds,boardSels,achievements,reportData,onBack,onSave,onEditSubjects}) {
   var [dnIn, setDNIn] = React.useState(userDisplayName||"");
   var [schIn, setSchIn] = React.useState(userSchool||"");
   var [pwIn, setPwIn] = React.useState("");
   var [saved, setSaved] = React.useState(false);
   var [pwErr, setPwErr] = React.useState("");
+  var [groupId, setGroupId] = React.useState("default");
+  var [groupData, setGroupData] = React.useState(loadGroup("default"));
 
   var isAdmin = user && user.toLowerCase().indexOf("admin")!==-1;
   var isEmail = user && user.indexOf("@")!==-1;
@@ -4409,6 +4667,7 @@ function AccountScreen({D,user,userDisplayName,userSchool,accounts,selectedSubje
   // Build display list of selected subjects with boards
   var selSubjList = ALL_SUBJECTS.filter(function(s){ return !s._politics && selectedSubjectIds && selectedSubjectIds.includes(s.id); });
   var politicsSub = ALL_SUBJECTS.find(function(s){ return s._politics; });
+  React.useEffect(function(){ setGroupData(loadGroup(groupId)); },[groupId]);
 
   return (
     <div style={{minHeight:"100vh",background:D?"#0f1117":"#f0f4ff",padding:24,overflowY:"auto"}}>
@@ -4498,6 +4757,25 @@ function AccountScreen({D,user,userDisplayName,userSchool,accounts,selectedSubje
             <TrophyGrid D={D} achievementIds={achievements.map(a=>a.id)}/>
           </div>
         )}
+        <div style={{...C(D),padding:22,marginBottom:18}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,marginBottom:10,flexWrap:"wrap"}}>
+            <h3 style={{fontSize:15,fontWeight:700,color:tx(D),margin:0}}>👥 Study Groups</h3>
+            <input value={groupId} onChange={function(e){setGroupId(e.target.value||"default");}} style={{...I(D,{maxWidth:170,fontSize:12,padding:"6px 10px"})}} placeholder="Group ID"/>
+          </div>
+          <button onClick={function(){ var g=upsertGroupScore(groupId,user,0,0); setGroupData(g);} }
+            style={{padding:"7px 12px",borderRadius:9,border:"1px solid #6366f1",background:"transparent",color:"#6366f1",fontSize:12,cursor:"pointer"}}>Join / Refresh Group</button>
+          <div style={{marginTop:10,fontSize:12,color:mu(D)}}>Members: {(groupData.members||[]).length}</div>
+          <div style={{marginTop:8,display:"grid",gap:6}}>
+            {(groupData.leaderboard||[]).slice(0,5).map(function(r,idx){
+              return <div key={idx} style={{display:"flex",justifyContent:"space-between",padding:"6px 8px",borderRadius:8,background:D?"#1e2537":"#f9fafb",border:"1px solid "+bd2}}>
+                <span style={{fontSize:12,color:tx(D)}}>{idx+1}. {r.user}</span>
+                <span style={{fontSize:11,color:mu(D)}}>{r.totalQuestions||0}Q · 🔥{r.streak||0}</span>
+              </div>;
+            })}
+          </div>
+          <button onClick={function(){ generateProgressReport(reportData||{}); }}
+            style={{marginTop:12,width:"100%",padding:"10px 0",borderRadius:10,border:"none",background:"#0ea5e9",color:"#fff",fontWeight:700,cursor:"pointer"}}>Download Report</button>
+        </div>
 
         <button onClick={onBack}
           style={{width:"100%",background:"transparent",color:mu(D),border:"1.5px solid "+bd2,borderRadius:12,padding:"10px 0",fontSize:13,cursor:"pointer"}}>
@@ -7910,6 +8188,7 @@ export default function App() {
   const [D,setD]             = useState(false);
   const [ready,setReady]     = useState(false);
   const [online,setOnline]   = useState(typeof navigator!=="undefined"?navigator.onLine:true);
+  const {enqueue:enqueueOffline,syncOfflineQueue:runOfflineSync} = useOfflineQueue(user, online);
   const [searchOpen,setSearchOpen] = useState(false);
   const [shortcutModal,setShortcutModal] = useState(false);
   const [onboarding,setOnboarding] = useState(null);
@@ -7984,6 +8263,7 @@ export default function App() {
   const [totalDaysStudied, setTotalDaysStudied] = useState(0); // Feature 25
 
   const [stats,setStats]     = useState({fcC:0,fcT:0,qS:0,qM:0,weakQ:{},weakFC:{},subjStats:{}});
+  const lastQCountRef = useRef(0);
   const [targetGrades,setTargetGrades] = useState({});
 
   const [activityDates,setAD] = useState(new Set());
@@ -8218,12 +8498,24 @@ export default function App() {
     window.addEventListener("offline",goff);
     return()=>{window.removeEventListener("online",go);window.removeEventListener("offline",goff);};
   },[]);
+  useEffect(()=>{ registerReviseIQServiceWorker(); },[]);
+  useEffect(()=>{ if(online) runOfflineSync(); },[online,runOfflineSync]);
 
   useEffect(()=>{
     if(!user||!ready||!allSections.length) return;
     const plan=generateWeeklyPlan(user,subjects,allSections,fcHist,stats,timetableExams);
     setWeeklyPlan(Array.isArray(plan)?plan:[]);
   },[user,ready,allSections,subjects,fcHist,stats,timetableExams]);
+  useEffect(()=>{
+    const prev=lastQCountRef.current||0;
+    const cur=Number(stats?.qM||0);
+    if(cur>prev){
+      const delta=cur-prev;
+      enqueueOffline({type:"question",payload:{delta:delta,total:cur}});
+      upsertGroupScore("default", user, delta, calcStreak(activityDates));
+    }
+    lastQCountRef.current=cur;
+  },[stats?.qM,user,enqueueOffline,activityDates]);
 
   const markTodayActive = useCallback(()=>{
     const today=todayStr();
@@ -8884,6 +9176,13 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
       selectedSubjectIds={selectedSubjectIds||[]}
       boardSels={boardSels}
       achievements={achievements}
+      reportData={{
+        streak:streak,
+        totalDaysStudied:totalDaysStudied,
+        questionsAttempted:stats?.qM||0,
+        weakestTopics:Object.entries(stats?.weakQ||{}).sort((a,b)=>(b[1]?.wrong||0)-(a[1]?.wrong||0)).slice(0,5).map(x=>x[0]),
+        readinessScore:Math.round(((stats?.fcT?((stats.fcC||0)/(stats.fcT||1))*100:40) + (stats?.qM?((stats.qS||0)/(stats.qM||1))*100:40))/2)
+      }}
       onBack={()=>setScreen("home")}
       onEditSubjects={()=>setShowSubjectSelection(true)}
       onSave={function(changes){
@@ -9012,13 +9311,30 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
         {(()=>{
           const sid=subjects[0]?.id;
           if(!sid) return null;
-          const opts=generateSessionOptions(user,sid,allSections,stats,fcHist).slice(0,3);
+          const opts=generateSessionOptions(user,sid,allSections,stats,fcHist);
           return (
             <div style={{...C(D),padding:14,margin:"14px 0"}}>
               <h3 style={{fontSize:14,fontWeight:700,marginBottom:8}}>Structured Session Choices</h3>
               <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:8}}>
                 {opts.map((o,i)=>(
-                  <button key={i} onClick={()=>{if(o.action.type==="target"){setScreen("target");return;} if(o.action.sectionId){const sec=allSections.find(s=>s.id===o.action.sectionId); if(!sec)return; const si=subjects.findIndex(s=>s.id===sec.subjectId); if(si<0)return; setSubIdx(si); setTopIdx(0); setSecId(sec.id); setTab(o.action.type==="questions"?"questions":"flashcards"); setScreen("section");}}}
+                  <button key={i} onClick={()=>{
+                    if(o.action.type==="target"){setScreen("target");return;}
+                    if(o.action.type==="interleaved"){
+                      const plan=generateInterleavedSession(sid,allSections);
+                      if(plan.length){
+                        try{localStorage.setItem("gcse:interleaved:"+user.replace(/\W/g,"-")+":"+sid,JSON.stringify(plan));}catch(_){}
+                        const first=plan[0];
+                        const sec=allSections.find(s=>s.id===first.sectionId);
+                        if(sec){
+                          const si=subjects.findIndex(s=>s.id===sec.subjectId); if(si>=0){ setSubIdx(si); setTopIdx(0); setSecId(sec.id); setTab(first.kind==="question"?"questions":"flashcards"); setScreen("section"); }
+                        }
+                      }else{
+                        showToast("Need at least 3 topics with cards/questions for interleaving.","warn");
+                      }
+                      return;
+                    }
+                    if(o.action.sectionId){const sec=allSections.find(s=>s.id===o.action.sectionId); if(!sec)return; const si=subjects.findIndex(s=>s.id===sec.subjectId); if(si<0)return; setSubIdx(si); setTopIdx(0); setSecId(sec.id); setTab(o.action.type==="questions"?"questions":"flashcards"); setScreen("section");}
+                  }}
                     style={{textAlign:"left",padding:10,borderRadius:10,border:`1px solid ${bd2}`,background:D?"#161b27":"#fff",cursor:"pointer"}}>
                     <div style={{fontSize:12,fontWeight:700,marginBottom:4}}>{o.title}</div>
                     <div style={{fontSize:11,color:mu(D)}}>{o.description}</div>
@@ -9565,6 +9881,10 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
             const safeFI=activeCards.length>0?Math.min(fcIdx,activeCards.length-1):0;
             const fc2=activeCards.length>0?activeCards[safeFI]:null;
             const curState2=fc2?getCardState(fcHist,fc2.id):null;
+            const reviewCount=Number(curState2?.reps||0);
+            const stabilityDays=Number(curState2?.stability||0);
+            if(fc2){ ensureCardVariantCached(user, fc2, reviewCount, stabilityDays).catch(function(){}); }
+            const fcVariantText=fc2?maybeUseVariantText(user, fc2, reviewCount, stabilityDays):null;
             const previews2=fc2?previewIntervals(curState2):["today","today","6d","1w"];
             const dueCards2=cramMode?activeCards:activeCards.filter(c=>isCardDue(fcHist,c.id));
             // Card type detection for metacognitive badge
@@ -9593,6 +9913,7 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
               if(!fc2)return;
               const cardId=fc2.id;
               markTodayActive();
+              enqueueOffline({type:"fsrs",payload:{cardId:cardId,rating:rating,subjectId:subjDef?.id||"",sectionId:section?.id||""}});
               if(!cramMode){
                 setFCH(prevH=>{const ps=getCardState(prevH,cardId);return{...prevH,[cardId]:fsrsNext(ps,rating)};});
               }
@@ -9840,7 +10161,7 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                           ? String(fc2.text||fc2.q||"").replace(/\{\{(.*?)\}\}/g,"_____")
                           : fc2.type==="sequence"
                             ? (fc2.prompt||"Arrange these steps in the correct order.")
-                            : fc2.q}
+                            : (fcVariantText||fc2.q)}
                         D={D} fontSize={15}
                         style={{color:tx(D),textAlign:isDualCoded?"left":"center",width:"100%"}}
                       />
