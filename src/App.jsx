@@ -1444,6 +1444,298 @@ function SketchnoteCanvas({D,user,subjectId}){
   </div>;
 }
 
+function SequenceCard({ card, D, onSubmit }) {
+  const base = React.useMemo(()=>Array.isArray(card?.items)?card.items.filter(Boolean):[], [card?.items]);
+  const [order,setOrder]=React.useState([]);
+  const [dragIdx,setDragIdx]=React.useState(null);
+  const [result,setResult]=React.useState(null);
+  React.useEffect(()=>{
+    const arr=[...base].sort(()=>Math.random()-0.5);
+    setOrder(arr); setResult(null); setDragIdx(null);
+  }, [card?.id, base.join("|")]);
+  const onDropAt=(idx)=>{
+    if(dragIdx===null||dragIdx===idx) return;
+    setOrder(prev=>{
+      const n=[...prev]; const [m]=n.splice(dragIdx,1); n.splice(idx,0,m); return n;
+    });
+    setDragIdx(null);
+  };
+  const grade=()=>{
+    const correctPositions = order.reduce((a,it,i)=>a + (it===base[i]?1:0),0);
+    const score = base.length?correctPositions/base.length:0;
+    const status = score===1 ? "correct" : score>=0.5 ? "partial" : "incorrect";
+    const out={status,score,correctPositions,total:base.length};
+    setResult(out);
+    if(onSubmit) onSubmit(out);
+  };
+  return (
+    <div style={{borderRadius:12,border:`1.5px solid ${D?"#374151":"#e5e7eb"}`,padding:16,background:D?"#161b27":"#fff"}}>
+      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+        {order.map(function(it,idx){return (
+          <div key={it+"-"+idx} draggable
+            onDragStart={()=>setDragIdx(idx)} onDragOver={e=>e.preventDefault()} onDrop={()=>onDropAt(idx)}
+            style={{padding:"10px 12px",borderRadius:10,border:`1px solid ${D?"#4b5563":"#d1d5db"}`,background:D?"#0f172a":"#f9fafb",cursor:"grab"}}>
+            {it}
+          </div>
+        );})}
+      </div>
+      <button onClick={grade} style={{marginTop:12,padding:"8px 14px",borderRadius:8,border:"none",background:"#6366f1",color:"#fff",cursor:"pointer",fontWeight:700}}>Check order</button>
+      {result&&(
+        <div style={{marginTop:10,fontSize:12}}>
+          <div style={{fontWeight:700,color:result.status==="correct"?"#16a34a":result.status==="partial"?"#d97706":"#dc2626"}}>
+            {result.status.toUpperCase()} · {Math.round(result.score*100)}%
+          </div>
+          <div style={{marginTop:6,color:D?"#cbd5e1":"#374151"}}>{base.map(function(x,i){return (i+1)+". "+x;}).join(" → ")}</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function QuestionFigure({ figure, D, figureNumber=1 }) {
+  if(!figure) return null;
+  const w=figure.data?.width||520, h=figure.data?.height||220, pad=28;
+  const pts=Array.isArray(figure.data?.points)?figure.data.points:[];
+  const minX=Math.min(...pts.map(p=>Number(p.x)||0),0), maxX=Math.max(...pts.map(p=>Number(p.x)||0),1);
+  const minY=Math.min(...pts.map(p=>Number(p.y)||0),0), maxY=Math.max(...pts.map(p=>Number(p.y)||0),1);
+  const sx=x=>pad+((x-minX)/(maxX-minX||1))*(w-pad*2), sy=y=>h-pad-((y-minY)/(maxY-minY||1))*(h-pad*2);
+  const chart = (function(){
+    if(figure.type==="photo") return <img src={figure.data?.src||""} alt={figure.caption||"figure"} style={{maxWidth:"100%",borderRadius:10}}/>;
+    if(figure.type==="table") return (
+      <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+        <thead><tr>{(figure.data?.headers||[]).map((h2,i)=><th key={i} style={{border:"1px solid #cbd5e1",padding:6,background:D?"#0f172a":"#f8fafc"}}>{h2}</th>)}</tr></thead>
+        <tbody>{(figure.data?.rows||[]).map((r,ri)=><tr key={ri}>{r.map((c,ci)=><td key={ci} style={{border:"1px solid #cbd5e1",padding:6}}>{String(c)}</td>)}</tr>)}</tbody>
+      </table>
+    );
+    if(figure.type==="svg"&&figure.data) return <DiagramRenderer diagram={figure.data} D={D} width={520}/>;
+    if(figure.type==="bar"){
+      const bars=Array.isArray(figure.data?.bars)?figure.data.bars:[];
+      const m=Math.max(...bars.map(b=>Number(b.value)||0),1);
+      return <svg viewBox={`0 0 ${w} ${h}`} style={{width:"100%",height:"auto"}}>{bars.map((b,i)=>{const bw=(w-pad*2)/Math.max(bars.length,1)-8; const x=pad+i*(bw+8); const hh=((Number(b.value)||0)/m)*(h-pad*2); return <g key={i}><rect x={x} y={h-pad-hh} width={bw} height={hh} fill="#6366f1"/><text x={x+bw/2} y={h-pad+14} textAnchor="middle" fontSize="10">{b.label||i+1}</text></g>;})}<line x1={pad} y1={h-pad} x2={w-pad} y2={h-pad} stroke="#94a3b8"/></svg>;
+    }
+    if(figure.type==="line"){
+      const lp=Array.isArray(figure.data?.points)?figure.data.points:[];
+      const d=lp.map((p,i)=>(i?"L":"M")+sx(Number(p.x)||0)+" "+sy(Number(p.y)||0)).join(" ");
+      return <svg viewBox={`0 0 ${w} ${h}`} style={{width:"100%",height:"auto"}}><line x1={pad} y1={h-pad} x2={w-pad} y2={h-pad} stroke="#94a3b8"/><line x1={pad} y1={pad} x2={pad} y2={h-pad} stroke="#94a3b8"/><path d={d} fill="none" stroke="#6366f1" strokeWidth="2"/></svg>;
+    }
+    if(figure.type==="scatter"){
+      const ps=pts;
+      return <svg viewBox={`0 0 ${w} ${h}`} style={{width:"100%",height:"auto"}}><line x1={pad} y1={h-pad} x2={w-pad} y2={h-pad} stroke="#94a3b8"/><line x1={pad} y1={pad} x2={pad} y2={h-pad} stroke="#94a3b8"/>{ps.map((p,i)=><circle key={i} cx={sx(Number(p.x)||0)} cy={sy(Number(p.y)||0)} r="4" fill={p.anomaly?"#ef4444":"#6366f1"}/>)}</svg>;
+    }
+    return null;
+  })();
+  return (
+    <div style={{marginBottom:12,padding:10,borderRadius:10,border:`1px solid ${D?"#374151":"#e5e7eb"}`,background:D?"#111827":"#fff"}}>
+      <div style={{fontSize:12,fontWeight:700,marginBottom:6}}>Figure {figureNumber}: {figure.caption||"Untitled"}</div>
+      {chart}
+      {figure.source&&<div style={{fontSize:11,color:D?"#9ca3af":"#6b7280",marginTop:6}}>Source: {figure.source}</div>}
+    </div>
+  );
+}
+
+function generateWhyPrompt(card){
+  if(typeof window!=="undefined"&&typeof window.generateWhyPrompt==="function"){
+    try{return window.generateWhyPrompt(card);}catch(_){}
+  }
+  var src=stripHtml(card?.a||card?.text||card?.q||"");
+  var key=(src.split(/\s+/).filter(Boolean).slice(0,4).join(" "))||"this concept";
+  return "Why is "+key+" important?";
+}
+function inferDifficulty(q){
+  if(q?.difficulty>=1&&q?.difficulty<=5) return q.difficulty;
+  var m=Number(q?.marks||1);
+  var t=(q?.text||"").toLowerCase();
+  var d=m>=8?5:m>=6?4:m>=4?3:m>=2?2:1;
+  if(/evaluate|assess|justify/.test(t)) d=Math.min(5,d+1);
+  if(/describe|explain|analyse|compare/.test(t)) d=Math.min(5,d+0.5);
+  return Math.max(1,Math.min(5,Math.round(d)));
+}
+function selectAdaptiveQuestions(list,user,subjectId){
+  var arr=(list||[]).map(function(q){return {...q,difficulty:inferDifficulty(q)};});
+  if(!user||!subjectId) return arr;
+  try{
+    var key="gcse:difficultyLevel:"+user.replace(/\W/g,"-")+":"+subjectId;
+    var lv=Number(localStorage.getItem(key)||3); if(!lv) lv=3;
+    var easy=arr.filter(q=>q.difficulty<lv), mid=arr.filter(q=>q.difficulty===lv), hard=arr.filter(q=>q.difficulty>lv);
+    var pick=[],max=Math.min(20,arr.length);
+    while(pick.length<max&&(easy.length||mid.length||hard.length)){
+      var r=Math.random();
+      var pool=r<0.2?easy:r<0.9?mid:hard;
+      if(!pool.length) pool=mid.length?mid:(hard.length?hard:easy);
+      if(!pool.length) break;
+      pick.push(pool.shift());
+    }
+    return pick.length?pick:arr;
+  }catch(_){return arr;}
+}
+function updateAdaptiveLevel(user,subjectId,isCorrect){
+  if(!user||!subjectId) return;
+  try{
+    var kH="gcse:difficultyHist:"+user.replace(/\W/g,"-")+":"+subjectId;
+    var hist=JSON.parse(localStorage.getItem(kH)||"[]");
+    hist=[...hist.slice(-19),isCorrect?1:0];
+    localStorage.setItem(kH,JSON.stringify(hist));
+    var acc=hist.reduce((a,b)=>a+b,0)/Math.max(hist.length,1);
+    var key="gcse:difficultyLevel:"+user.replace(/\W/g,"-")+":"+subjectId;
+    var lv=Number(localStorage.getItem(key)||3)||3;
+    if(acc>=0.7) lv=Math.min(5,lv+1); else if(acc<0.45) lv=Math.max(1,lv-1);
+    localStorage.setItem(key,String(lv));
+  }catch(_){}
+}
+function getLadderLevel(user,topicId){
+  if(!user||!topicId) return 1;
+  try{return Math.max(1,Math.min(5,Number(localStorage.getItem("gcse:ladder:"+user.replace(/\W/g,"-")+":"+topicId)||1)||1));}catch(_){return 1;}
+}
+function updateLadderLevel(user,topicId,correct){
+  if(!user||!topicId) return 1;
+  var cur=getLadderLevel(user,topicId);
+  var next=Math.max(1,Math.min(5,cur+(correct?1:-1)));
+  try{localStorage.setItem("gcse:ladder:"+user.replace(/\W/g,"-")+":"+topicId,String(next));}catch(_){}
+  return next;
+}
+function verifyExplanation(content, studentExplanation){
+  if(typeof window!=="undefined"&&typeof window.verifyExplanation==="function"){
+    try{return window.verifyExplanation(content, studentExplanation);}catch(_){}
+  }
+  var c=_cleanText(stripHtml(content||"")); var s=_cleanText(studentExplanation||"");
+  var kws=[...new Set(c.split(" ").filter(w=>w.length>4))].slice(0,10);
+  var hit=kws.filter(k=>s.includes(k));
+  return {
+    correct: s.length>30 ? "You explained key ideas clearly." : "Good start.",
+    missing: hit.length<Math.max(2,Math.floor(kws.length/3)) ? "Add detail on: "+kws.slice(0,3).join(", ") : "Add one concrete example."
+  };
+}
+function generateTransferQuestion(originalQuestion){
+  if(typeof window!=="undefined"&&typeof window.generateTransferQuestion==="function"){
+    try{return window.generateTransferQuestion(originalQuestion);}catch(_){}
+  }
+  var q={...(originalQuestion||{})};
+  var t=(q.text||"").replace(/\b(\d+)\b/g,function(m){return String(Number(m)+1);});
+  return {...q,id:"tr-"+uid(),text:"Apply It: "+(t||"Use this idea in a new context."),_transfer:true};
+}
+function getWeekKey(d){
+  var dt=new Date(d||Date.now()); var onejan=new Date(dt.getFullYear(),0,1); var day=Math.floor((dt-onejan)/86400000);
+  return dt.getFullYear()+"-W"+Math.ceil((day+onejan.getDay()+1)/7);
+}
+function generateWeeklyPlan(user, subjects, allSections, fcHist, stats, timetableExams){
+  var week=getWeekKey();
+  var key="gcse:weeklyPlan:"+(user||"").replace(/\W/g,"-")+":"+week;
+  try{var ex=JSON.parse(localStorage.getItem(key)||"null"); if(ex&&Array.isArray(ex)) return ex;}catch(_){}
+  var due=allSections.flatMap(s=>(s.flashcards||[]).filter(c=>isCardDue(fcHist,c.id)).map(()=>s.title)).slice(0,3);
+  var weak=Object.entries(stats?.weakQ||{}).sort((a,b)=>(b[1]?.wrong||0)-(a[1]?.wrong||0)).slice(0,3).map(x=>x[0]);
+  var examSoon=(timetableExams||[]).slice().sort((a,b)=>a.date.localeCompare(b.date))[0];
+  var base=["Review due flashcards"+(due[0]?" ("+due[0]+")":""),"Do 10 mixed questions"+(weak[0]?" on "+weak[0]:""),examSoon?"Exam prep for "+(examSoon.label||"upcoming exam"):"Revise weakest topic"];
+  var days=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+  var plan=days.map(function(d,i){return {day:d,tasks:[base[i%base.length]]};});
+  try{localStorage.setItem(key,JSON.stringify(plan));}catch(_){}
+  return plan;
+}
+function generateSessionOptions(user, subjectId, allSections, stats, fcHist){
+  var secs=allSections.filter(s=>s.subjectId===subjectId);
+  var due=secs.find(s=>(s.flashcards||[]).some(c=>isCardDue(fcHist,c.id)));
+  var weakId=Object.entries(stats?.weakQ||{}).sort((a,b)=>(b[1]?.wrong||0)-(a[1]?.wrong||0))[0]?.[0];
+  var weak=secs.find(s=>s.id===weakId)||secs[0];
+  return [
+    {title:"Due Card Sprint",description:"Clear due flashcards in "+(due?.title||"this topic"),action:{type:"flashcards",sectionId:due?.id}},
+    {title:"Weak Spot Drill",description:"Target weaker questions in "+(weak?.title||"your topic"),action:{type:"questions",sectionId:weak?.id}},
+    {title:"Mixed Focus",description:"Blend flashcards + exam questions",action:{type:"target"}}
+  ];
+}
+function ProgressiveDiagram({steps=[],D}){
+  const [idx,setIdx]=React.useState(0);
+  React.useEffect(()=>setIdx(0),[steps.length]);
+  const cur=steps[idx]||null;
+  if(!cur) return null;
+  return <div style={{...C(D),padding:12}} className="fade-in"><p style={{fontSize:12,marginBottom:8}}>{cur.text}</p>{cur.svg&&<div style={{opacity:1,transition:"opacity .25s"}}><DiagramRenderer diagram={cur.svg} D={D} width={420}/></div>}{idx<steps.length-1&&<button onClick={()=>setIdx(i=>i+1)} style={{marginTop:8,padding:"6px 12px",borderRadius:8,border:"none",background:"#6366f1",color:"#fff"}}>Next</button>}</div>;
+}
+function ConceptMap({x,y,relation,D}){
+  return <svg viewBox="0 0 360 120" style={{width:"100%",maxWidth:420}}><circle cx="70" cy="60" r="32" fill={D?"#1e293b":"#eef2ff"} stroke="#6366f1"/><circle cx="290" cy="60" r="32" fill={D?"#1e293b":"#eef2ff"} stroke="#6366f1"/><text x="70" y="64" textAnchor="middle" fontSize="12">{x||"X"}</text><text x="290" y="64" textAnchor="middle" fontSize="12">{y||"Y"}</text><line x1="104" y1="60" x2="256" y2="60" stroke="#6366f1" markerEnd="url(#arr)"/><defs><marker id="arr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#6366f1"/></marker></defs><text x="180" y="48" textAnchor="middle" fontSize="11">{relation||"relates to"}</text></svg>;
+}
+function getNodePositions(nodes,w=560,h=360){
+  const r=Math.min(w,h)*0.36,cx=w/2,cy=h/2;
+  return (nodes||[]).map(function(n,i){
+    const a=(Math.PI*2*i)/Math.max(nodes.length,1)-Math.PI/2;
+    return {...n,x:cx+r*Math.cos(a),y:cy+r*Math.sin(a)};
+  });
+}
+function calculateFrontier(graph, masteryMap){
+  const m=masteryMap||{};
+  const edges=(graph?.edges||[]);
+  return (graph?.nodes||[]).filter(function(n){
+    const mn=Number(m[n.id]??n.mastery??0);
+    if(mn>=70) return false;
+    return edges.some(function(e){
+      const other=e.from===n.id?e.to:e.to===n.id?e.from:null;
+      if(!other) return false;
+      const mo=Number(m[other]||0);
+      return mo>=70;
+    });
+  }).map(n=>n.id);
+}
+function checkPrerequisites(graph, topicId, masteryMap, threshold){
+  const t=threshold==null?60:threshold;
+  const edges=(graph?.edges||[]).filter(e=>e.to===topicId&&e.type==="requires");
+  const unmet=edges.filter(e=>Number(masteryMap?.[e.from]||0)<t).map(e=>e.from);
+  return unmet;
+}
+function ProcessCard({card,D}){
+  const [idx,setIdx]=React.useState(0);
+  const steps=card?.steps||[];
+  React.useEffect(()=>setIdx(0),[card?.id]);
+  return <div style={{...C(D),padding:12}}><div style={{fontSize:13,fontWeight:700,marginBottom:8}}>{steps[idx]?.label||"Step"}</div><button onClick={()=>setIdx(i=>Math.min(steps.length-1,i+1))} style={{padding:"6px 10px",borderRadius:8,border:"none",background:"#6366f1",color:"#fff"}}>Next Step</button><div style={{marginTop:10,fontSize:12,color:mu(D)}}>{steps.map((s,i)=><div key={i}>{i+1}. {s.label}</div>)}</div></div>;
+}
+function SketchCanvas({D}){
+  const ref=React.useRef(null); const drawing=React.useRef(false);
+  const start=e=>{drawing.current=true; const c=ref.current.getContext("2d"); c.beginPath(); c.moveTo(e.nativeEvent.offsetX,e.nativeEvent.offsetY);};
+  const move=e=>{if(!drawing.current)return; const c=ref.current.getContext("2d"); c.lineWidth=2; c.strokeStyle=D?"#e5e7eb":"#111827"; c.lineTo(e.nativeEvent.offsetX,e.nativeEvent.offsetY); c.stroke();};
+  const end=()=>{drawing.current=false;};
+  return <canvas ref={ref} width={320} height={180} onMouseDown={start} onMouseMove={move} onMouseUp={end} onMouseLeave={end} style={{border:"1px solid #94a3b8",borderRadius:8,background:D?"#0f172a":"#fff",width:"100%",maxWidth:340}}/>;
+}
+function GraphCard({card,D}){
+  return <div>{card?.graph&&<QuestionFigure figure={card.graph} D={D} figureNumber={1}/>}<p style={{fontSize:13,marginBottom:8}}>{card?.question||""}</p>{card?.annotation&&<div style={{fontSize:12,color:"#6366f1"}}>↗ {card.annotation.label||"Key point"}</div>}</div>;
+}
+async function generateSVGDiagram(content,user){
+  const key=SK_SVG_ASSETS(user);
+  const hash=btoa(unescape(encodeURIComponent(content||""))).slice(0,40);
+  try{
+    const cache=JSON.parse(localStorage.getItem(key)||"{}");
+    if(cache[hash]&&String(cache[hash]).includes("<svg")) return cache[hash];
+    let svg="";
+    if(typeof window!=="undefined"&&typeof window.generateSVGDiagram==="function"){
+      try{svg=await window.generateSVGDiagram(content);}catch(_){}
+    }
+    if(!svg||!String(svg).includes("<svg")) svg=`<svg xmlns="http://www.w3.org/2000/svg" width="360" height="140"><rect x="10" y="10" width="340" height="120" fill="#eef2ff" stroke="#6366f1"/><text x="24" y="75" font-size="14" fill="#1f2937">${(content||"Diagram").slice(0,36)}</text></svg>`;
+    cache[hash]=svg; localStorage.setItem(key,JSON.stringify(cache)); return svg;
+  }catch(_){return `<svg xmlns="http://www.w3.org/2000/svg" width="360" height="140"><rect x="10" y="10" width="340" height="120" fill="#eef2ff" stroke="#6366f1"/><text x="24" y="75" font-size="14" fill="#1f2937">Diagram</text></svg>`;}
+}
+function KnowledgeGraph({D,user,subjectId,masteryMap,onSelectNode,onGoToPrereq}){
+  const [graph,setGraph]=React.useState({nodes:[],edges:[]});
+  const [selected,setSelected]=React.useState(null);
+  const [name,setName]=React.useState(""); const [from,setFrom]=React.useState(""); const [to,setTo]=React.useState(""); const [etype,setEType]=React.useState("requires");
+  React.useEffect(()=>{try{setGraph(JSON.parse(localStorage.getItem(SK_GRAPH(user,subjectId))||"{\"nodes\":[],\"edges\":[]}"));}catch(_){setGraph({nodes:[],edges:[]});}},[user,subjectId]);
+  const nodes=(graph.nodes||[]).slice(0,50).map(n=>({...n,mastery:Number(masteryMap?.[n.id]??n.mastery??0)}));
+  const frontier=calculateFrontier({nodes,edges:graph.edges||[]},masteryMap);
+  const pos=React.useMemo(()=>getNodePositions(nodes,560,360),[JSON.stringify(nodes)]);
+  const save=(g)=>{setGraph(g); try{localStorage.setItem(SK_GRAPH(user,subjectId),JSON.stringify(g));}catch(_){}};
+  return <div style={{...C(D),padding:14,marginTop:12}}>
+    <h3 style={{fontSize:14,fontWeight:700,marginBottom:8}}>Knowledge Graph</h3>
+    <svg viewBox="0 0 560 360" style={{width:"100%",maxWidth:560}}>
+      <circle cx="280" cy="180" r="26" fill="#6366f1"/><text x="280" y="185" textAnchor="middle" fill="#fff" fontSize="11">Subject</text>
+      {(graph.edges||[]).map((e,i)=>{const a=pos.find(n=>n.id===e.from),b=pos.find(n=>n.id===e.to); if(!a||!b)return null; return <line key={i} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="#94a3b8" strokeWidth={Math.max(1,Number(e.weight)||1)}/>;})}
+      {pos.map((n,i)=>{const col=n.mastery>70?"#16a34a":n.mastery<40?"#9ca3af":"#f59e0b"; const isFront=frontier.includes(n.id); return <g key={i} onClick={()=>{setSelected(n.id); onSelectNode&&onSelectNode(n.id); const unmet=checkPrerequisites(graph,n.id,masteryMap,60); if(unmet.length&&onGoToPrereq)onGoToPrereq(unmet[0],n.id);}}><circle cx={n.x} cy={n.y} r="18" fill={col} stroke={isFront?"#3b82f6":"#1f2937"} strokeWidth={isFront?3:1.5}/><text x={n.x} y={n.y+4} textAnchor="middle" fontSize="9" fill="#fff">{n.name?.slice(0,7)}</text>{Number(n.examFrequency||0)>7&&<text x={n.x+14} y={n.y-12} fontSize="10">⭐</text>}</g>;})}
+    </svg>
+    <div style={{display:"grid",gridTemplateColumns:"1fr auto",gap:6,marginTop:8}}><input value={name} onChange={e=>setName(e.target.value)} placeholder="New node" style={{...I(D,{fontSize:12})}}/><button onClick={()=>{if(!name.trim())return; save({...graph,nodes:[...(graph.nodes||[]),{id:uid(),name:name.trim(),mastery:0,examFrequency:0}]}); setName("");}} style={{padding:"6px 10px"}}>Add</button></div>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr auto",gap:6,marginTop:6}}>
+      <select value={from} onChange={e=>setFrom(e.target.value)} style={{...I(D,{fontSize:12})}}><option value="">From</option>{nodes.map(n=><option key={n.id} value={n.id}>{n.name}</option>)}</select>
+      <select value={to} onChange={e=>setTo(e.target.value)} style={{...I(D,{fontSize:12})}}><option value="">To</option>{nodes.map(n=><option key={n.id} value={n.id}>{n.name}</option>)}</select>
+      <select value={etype} onChange={e=>setEType(e.target.value)} style={{...I(D,{fontSize:12})}}>{["requires","contrasts","explains","example","caused_by"].map(t=><option key={t}>{t}</option>)}</select>
+      <button onClick={()=>{if(!from||!to)return; save({...graph,edges:[...(graph.edges||[]),{from,to,type:etype,weight:1}]});}} style={{padding:"6px 10px"}}>Edge</button>
+    </div>
+    {selected&&<button onClick={()=>save({...graph,nodes:(graph.nodes||[]).filter(n=>n.id!==selected),edges:(graph.edges||[]).filter(e=>e.from!==selected&&e.to!==selected)})} style={{marginTop:8,fontSize:11}}>Delete selected node</button>}
+  </div>;
+}
+function GraphEditor(props){ return <KnowledgeGraph {...props}/>; }
+
 async function blurtAnalyse(notesText, blurtText) {
   const prompt = "You are a GCSE revision coach analysing a blurting exercise.\n\nRevision Notes:\n"+notesText+"\n\nStudent's blurt (from memory):\n"+blurtText+"\n\nRespond ONLY with valid JSON (no markdown, no backticks):\n{\"remembered\":[\"well-recalled point\"],\"missed\":[\"key point they forgot\"],\"partial\":[\"partially recalled point\"],\"feedback\":\"2-sentence encouragement + top tip\",\"score\":75}\n\nScore = % of key concepts the student demonstrated (0-100).";
   const raw = await callGeminiSimple(prompt, 1000);
@@ -9884,6 +10176,13 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                           {showSketch&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginTop:8}}><SketchCanvas D={D}/><DiagramRenderer diagram={fc2.diagram} D={D} width={240}/></div>}
                         </div>
                       )}
+                      {(fc2.type==="cloze"||fc2.type==="sequence") ? (
+                        fc2.type==="cloze"
+                          ? <ClozeCard card={fc2} D={D} onSubmit={()=>setFcSelfOpen(true)}/>
+                          : <SequenceCard card={fc2} D={D} onSubmit={()=>setFcSelfOpen(true)}/>
+                      ) : (
+                        <ContentBlock content={fc2.a} D={D} fontSize={15} style={{color:subj.accent,fontWeight:500,textAlign:isDualCoded?"left":"center",width:"100%"}}/>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -9971,6 +10270,7 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                       style={{marginTop:6,marginLeft:6,padding:"6px 10px",borderRadius:8,border:"none",background:"#6366f1",color:"#fff",fontSize:12}}>Prompt→SVG</button>
                     {explainFeedback&&<div style={{marginTop:6,fontSize:12}}><div>✅ {explainFeedback.correct}</div><div>🧩 {explainFeedback.missing}</div></div>}
                     {svgPreview&&<div style={{marginTop:8}} dangerouslySetInnerHTML={{__html:String(svgPreview).includes("<svg")?svgPreview:""}}/>}
+                    {explainFeedback&&<div style={{marginTop:6,fontSize:12}}><div>✅ {explainFeedback.correct}</div><div>🧩 {explainFeedback.missing}</div></div>}
                   </details>
                 )}
 
