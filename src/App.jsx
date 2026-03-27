@@ -13,6 +13,7 @@ import {
   getSubjectStrategy,
   normalizeAiServiceOutput,
 } from "./learningEngine.js";
+import { computeNextBestActions, getSubjectStrategy } from "./learningEngine.js";
 
 /* ─── FONTS + KATEX ──────────────────────────────────────────────────────────── */
 const _fl=document.createElement("link");_fl.rel="stylesheet";
