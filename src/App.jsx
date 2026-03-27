@@ -306,6 +306,406 @@ async function callAIChat(systemPrompt, messages, maxTokens){
 // Legacy aliases so any remaining callGeminiSimple / callGeminiChat calls still work
 var callGeminiSimple = callAI;
 var callGeminiChat = function(_ignored, systemPrompt, messages){ return callAIChat(systemPrompt, messages); };
+
+/* ─── PHASE 4: AI MICRO-SERVICES ─────────────────────────────────────────────
+   Each service enforces a strict JSON schema, validates + clamps output,
+   and provides a deterministic fallback so no feature dead-ends if AI fails.
+   Five services:
+     aiServiceFeedbackRubric       → replaces markAnswer
+     aiServiceMisconceptionExtractor → replaces blurtAnalyse
+     aiServiceQuestionGenerator    → replaces generateMockQuestions internals
+     aiServiceReflectionSummarizer → post-session coaching
+     buildTutorSystemPrompt        → Socratic guardrail for AI Tutor
+─────────────────────────────────────────────────────────────────────────────── */
+
+// ── Shared utilities ──────────────────────────────────────────────────────────
+function _aiClamp(v, lo, hi) { return Math.max(lo, Math.min(hi, Number(v) || 0)); }
+function _aiArr(v)            { return Array.isArray(v) ? v : []; }
+function _aiStr(v, fb)        { return (typeof v === 'string' && v.trim()) ? v.trim() : (fb || ''); }
+
+// Robust JSON extractor — handles fences, leading text, truncated objects
+function _parseAIJson(raw) {
+  if (!raw) return null;
+  var text = String(raw).replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+  // Try object
+  var s = text.indexOf('{'), e = text.lastIndexOf('}');
+  if (s >= 0 && e > s) { try { return JSON.parse(text.slice(s, e + 1)); } catch(_) {} }
+  // Try array
+  var as = text.indexOf('['), ae = text.lastIndexOf(']');
+  if (as >= 0 && ae > as) { try { return JSON.parse(text.slice(as, ae + 1)); } catch(_) {} }
+  // Last resort — attempt to repair truncated JSON by closing open braces
+  try {
+    var openCount = 0; var inStr = false; var esc = false;
+    for (var ci = 0; ci < text.length; ci++) {
+      var ch = text[ci];
+      if (esc) { esc = false; continue; }
+      if (ch === '\\' && inStr) { esc = true; continue; }
+      if (ch === '"') { inStr = !inStr; continue; }
+      if (!inStr) { if (ch === '{') openCount++; else if (ch === '}') openCount--; }
+    }
+    var repaired = text + '}'.repeat(Math.max(0, openCount));
+    return JSON.parse(repaired);
+  } catch(_) { return null; }
+}
+
+// Retry wrapper with exponential backoff — returns fallback() on all failures
+async function _aiWithRetry(fn, attempts, fallbackFn) {
+  var lastErr;
+  for (var i = 0; i < (attempts || 2); i++) {
+    try {
+      var r = await fn();
+      if (r != null) return r;
+    } catch (e) {
+      lastErr = e;
+      if (i < (attempts || 2) - 1) await new Promise(function(res) { setTimeout(res, 700 * (i + 1)); });
+    }
+  }
+  return typeof fallbackFn === 'function' ? fallbackFn() : fallbackFn;
+}
+
+// ── SERVICE 1: Feedback Rubric ────────────────────────────────────────────────
+// Validates: score bounds, rubric completeness, contradiction checks
+function _rubricFallback(q, ans) {
+  var hasAns = ((ans || '').trim().length > 20);
+  var maxM   = Number(q.marks) || 1;
+  var score  = hasAns ? Math.max(1, Math.ceil(maxM * 0.35)) : 0;
+  var ms     = q.markScheme || q.sampleAnswer || '';
+  var firstPoint = ms.split('\n').filter(function(l) { return l.trim(); })[0] || 'See mark scheme';
+  return {
+    score: score,
+    band: score === 0 ? 'Not attempted' : score >= maxM * 0.7 ? 'Achieving' : 'Developing',
+    feedback: hasAns
+      ? 'AI marking is temporarily unavailable. Self-mark using the mark scheme — check each bullet point against your answer.'
+      : 'No answer submitted — attempt the question before submitting.',
+    missedPoints: hasAns ? [firstPoint] : [],
+    strengths:    hasAns ? ['Attempted the question'] : [],
+    examTip:      'Re-read the command word and check you have addressed it directly.',
+    modelAnswer:  _aiStr(q.sampleAnswer || q.markScheme, ''),
+    errorType:    null,
+    annotatedAnswer:  [],
+    comparisonTable:  [],
+    structureDiagram: ['Point', 'Evidence', 'Explanation', 'Application'],
+    workedSolution:   _aiStr(q.sampleAnswer || q.markScheme, ''),
+  };
+}
+
+function _validateRubric(raw, q) {
+  if (!raw || typeof raw !== 'object') return null;
+  var maxM  = Number(q.marks) || 1;
+  var score = _aiClamp(raw.score, 0, maxM);
+  var band  = _aiStr(raw.band, score >= maxM * 0.8 ? 'Exceeding' : score >= maxM * 0.5 ? 'Achieving' : 'Developing');
+  var fb    = _aiStr(raw.feedback, 'See mark scheme for guidance.');
+  // Contradiction check: score > 0 but feedback says "not attempted"
+  if (score > 0 && /not attempted|no answer/i.test(fb)) {
+    fb = fb.replace(/not attempted|no answer/gi, 'partially completed');
+  }
+  // Score sanity: clamp if model hallucinated value above max
+  var msLines = _aiArr(raw.missedPoints).map(function(p) { return _aiStr(p, ''); }).filter(Boolean).slice(0, 8);
+  return {
+    score:            score,
+    band:             band,
+    feedback:         fb,
+    missedPoints:     msLines,
+    strengths:        _aiArr(raw.strengths).map(function(p) { return _aiStr(p, ''); }).filter(Boolean).slice(0, 4),
+    examTip:          _aiStr(raw.examTip || raw.exam_tip, 'Check command word requirements.'),
+    modelAnswer:      _aiStr(raw.modelAnswer || raw.model_answer, _aiStr(q.sampleAnswer, '')),
+    errorType:        raw.errorType || detectErrorType(q.text || '', '', q.markScheme || '', msLines),
+    annotatedAnswer:  _aiArr(raw.annotatedAnswer).slice(0, 14),
+    comparisonTable:  _aiArr(raw.comparisonTable).slice(0, 6),
+    structureDiagram: _aiArr(raw.structureDiagram).length >= 2
+      ? raw.structureDiagram
+      : ['Point', 'Evidence', 'Explanation', 'Application'],
+    workedSolution:   _aiStr(raw.workedSolution || raw.modelAnswer, _aiStr(q.sampleAnswer, '')),
+  };
+}
+
+async function aiServiceFeedbackRubric(q, studentAnswer) {
+  var maxM    = Number(q.marks) || 1;
+  var isMath  = /calculat|show.*work|find the|work out|compute/i.test(q.text || '');
+  var isExtd  = q.type === 'extended' || maxM >= 6;
+  var board   = _aiStr(q.board, 'GCSE');
+  var ms      = _aiStr(q.markScheme || q.sampleAnswer, 'Award marks for accurate, relevant content.');
+
+  var schemaLines = [
+    '"score": integer 0–' + maxM,
+    '"band": "Not attempted" | "Developing" | "Achieving" | "Exceeding"',
+    '"feedback": "2-3 sentence examiner comment — specific not generic"',
+    '"missedPoints": ["key mark-scheme point the student omitted (max 6)"]',
+    '"strengths": ["specific correct point the student made (max 3)"]',
+    '"examTip": "one concrete ' + board + ' exam technique tip"',
+    '"modelAnswer": "complete ideal answer"',
+    '"errorType": "Knowledge Gap"|"Application Error"|"Command Word Error"|"Communication Error"|null',
+    '"annotatedAnswer": [{"text":"sentence from model answer","type":"point"|"evidence"|"explanation"|"application"}]',
+    '"comparisonTable": [{"student":"excerpt from student answer","expectation":"mark point they missed"}]',
+    '"structureDiagram": ' + (isMath ? '["Formula","Substitution","Working","Answer+Units"]' : '["Point","Evidence","Explanation","Application"]'),
+    '"workedSolution": "' + (isMath ? 'full step-by-step working with units' : 'complete model answer') + '"',
+  ];
+
+  var rulesBlock = [
+    '- Score ONLY marks genuinely earned vs the mark scheme — do not be generous',
+    '- Score 0 for blank, irrelevant, or completely incorrect answers',
+    isMath ? '- Award method marks (M1) for correct method even if arithmetic is wrong' : '- For extended: use level descriptors if present in mark scheme',
+    isExtd ? '- Identify the HIGHEST level fully met — partial level = lower band' : '- Short answer: 1 mark per distinct accurate point matching the mark scheme',
+    '- errorType must be the PRIMARY reason marks were lost (not secondary)',
+    '- annotatedAnswer: label each sentence of your modelAnswer by function',
+    '- comparisonTable: map student phrases to the closest mark scheme expectations',
+  ].join('\n');
+
+  var prompt = 'You are an experienced ' + board + ' GCSE examiner. Mark this answer with precision.\n\n' +
+    'QUESTION: ' + (q.text || '') + '\n' +
+    'MAX MARKS: ' + maxM + '\n' +
+    'MARK SCHEME:\n' + ms + '\n' +
+    'STUDENT ANSWER:\n' + (studentAnswer || '(blank — student did not answer)') + '\n\n' +
+    'MARKING RULES:\n' + rulesBlock + '\n\n' +
+    'Respond ONLY with valid JSON — no markdown, no backticks, no extra text:\n' +
+    '{\n  ' + schemaLines.join(',\n  ') + '\n}';
+
+  return _aiWithRetry(
+    async function() {
+      var raw       = await callAI(prompt, 1400);
+      var parsed    = _parseAIJson(raw);
+      var validated = _validateRubric(parsed, q);
+      if (!validated) throw new Error('Rubric validation failed');
+      return validated;
+    },
+    2,
+    function() { return _rubricFallback(q, studentAnswer); }
+  );
+}
+
+// ── SERVICE 2: Misconception Extractor (Blurting) ─────────────────────────────
+// Schema: { score, remembered[], missed[], partial[], feedback, misconceptions[] }
+function _blurtFallback(blurtText) {
+  var wc = ((blurtText || '').trim().split(/\s+/).filter(Boolean).length);
+  return {
+    score: wc > 80 ? 55 : wc > 40 ? 35 : wc > 15 ? 18 : 5,
+    remembered:    wc > 10 ? ['Some content recalled — check accuracy against your notes'] : [],
+    missed:        ['AI analysis unavailable — manually compare your blurt against revision notes'],
+    partial:       [],
+    feedback:      'AI is temporarily offline. Compare your blurt directly against your notes: tick correct points, circle gaps, highlight partial recalls. This comparison is itself a powerful retrieval exercise.',
+    misconceptions: [],
+  };
+}
+
+function _validateBlurt(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  return {
+    score:          _aiClamp(raw.score, 0, 100),
+    remembered:     _aiArr(raw.remembered).map(function(s) { return _aiStr(s, ''); }).filter(Boolean).slice(0, 12),
+    missed:         _aiArr(raw.missed).map(function(s) { return _aiStr(s, ''); }).filter(Boolean).slice(0, 12),
+    partial:        _aiArr(raw.partial).map(function(s) { return _aiStr(s, ''); }).filter(Boolean).slice(0, 8),
+    feedback:       _aiStr(raw.feedback, 'Compare your blurt to your notes and identify the gaps.'),
+    misconceptions: _aiArr(raw.misconceptions).map(function(s) { return _aiStr(s, ''); }).filter(Boolean).slice(0, 6),
+  };
+}
+
+async function aiServiceMisconceptionExtractor(notesText, blurtText) {
+  var prompt = 'You are a GCSE revision coach running a blurting exercise analysis.\n\n' +
+    'REVISION NOTES (ground truth — treat as authoritative):\n' +
+    (notesText || '(no notes provided)').slice(0, 2200) + '\n\n' +
+    'STUDENT\'S BLURT (written purely from memory — do not penalise spelling or grammar):\n' +
+    (blurtText || '').slice(0, 1600) + '\n\n' +
+    'ANALYSIS RULES:\n' +
+    '- "remembered": key concepts/facts accurately demonstrated (specific, not vague)\n' +
+    '- "missed": important concepts from the notes not mentioned at all\n' +
+    '- "partial": concepts mentioned but inaccurately, incompletely, or too vaguely\n' +
+    '- "misconceptions": factually WRONG statements — these are the highest priority to flag\n' +
+    '- "score": 0–100, % of key note concepts demonstrated (realistic — most students score 30–65%)\n' +
+    '- "feedback": 2-sentence warm encouragement + single most important gap to address next\n\n' +
+    'Respond ONLY with valid JSON (no markdown, no backticks):\n' +
+    '{"score":50,"remembered":["specific point"],"missed":["specific point"],' +
+    '"partial":["specific point"],"feedback":"...","misconceptions":["wrong claim"]}';
+
+  return _aiWithRetry(
+    async function() {
+      var raw       = await callAI(prompt, 1300);
+      var parsed    = _parseAIJson(raw);
+      var validated = _validateBlurt(parsed);
+      if (!validated) throw new Error('Blurt validation failed');
+      return validated;
+    },
+    2,
+    function() { return _blurtFallback(blurtText); }
+  );
+}
+
+// ── SERVICE 3: Question Generator ────────────────────────────────────────────
+// Schema: validated array of question objects
+function _qFallback(subjName, needed) {
+  var total = (needed || []).reduce(function(a, n) { return a + (n.count || 1); }, 0) || 3;
+  return Array.from({ length: Math.min(total, 4) }, function(_, i) {
+    return {
+      id:           'fallback-q-' + i + '-' + Date.now(),
+      type:         i === 0 ? 'mcq' : 'short',
+      text:         'Explain one key concept from ' + (subjName || 'this topic') + '.',
+      marks:        i === 0 ? 1 : 2,
+      markScheme:   'Award 1 mark per accurate, relevant point up to the maximum.',
+      sampleAnswer: 'A strong answer includes a key term, its definition, and its significance.',
+      year:         'AI Generated',
+      options:      i === 0 ? ['Option A', 'Option B', 'Option C', 'Option D'] : undefined,
+      answer:       i === 0 ? 0 : undefined,
+      explanation:  i === 0 ? 'Option A is most accurate.' : undefined,
+    };
+  });
+}
+
+function _validateQItem(q) {
+  if (!q || typeof q !== 'object' || !(q.text || '').trim()) return null;
+  var marks = _aiClamp(q.marks, 1, 25);
+  var type  = ['mcq', 'short', 'extended'].includes(q.type) ? q.type : 'short';
+  var out = {
+    id:           _aiStr(q.id, 'ai-' + Math.random().toString(36).slice(2,9)),
+    type:         type,
+    text:         _aiStr(q.text, 'Explain this concept.'),
+    marks:        marks,
+    markScheme:   _aiStr(q.markScheme || q.mark_scheme, 'Award marks for accurate, relevant content.'),
+    sampleAnswer: _aiStr(q.sampleAnswer || q.model_answer || q.modelAnswer, ''),
+    year:         _aiStr(q.year, 'AI Generated'),
+  };
+  if (type === 'mcq') {
+    var opts = _aiArr(q.options).map(function(o) { return _aiStr(o, 'Option'); });
+    while (opts.length < 4) opts.push('Option ' + String.fromCharCode(65 + opts.length));
+    out.options     = opts.slice(0, 4);
+    out.answer      = _aiClamp(q.answer, 0, 3);
+    out.explanation = _aiStr(q.explanation, 'The correct option is the most accurate statement.');
+  }
+  return out;
+}
+
+async function aiServiceQuestionGenerator(subjName, board, notes, needed, markDist) {
+  var needPart = (needed || []).map(function(n) {
+    return '- ' + n.count + ' × ' + n.type + ' question(s), ' + n.marks + ' mark(s) each';
+  }).join('\n');
+
+  var prompt = 'You are an expert ' + (board || 'GCSE') + ' ' + (subjName || 'subject') + ' examiner.\n' +
+    'Generate exam-quality questions:\n' + needPart + '\n\n' +
+    (markDist ? 'Mark distribution: ' + markDist + '\n\n' : '') +
+    'Content context:\n' + ((notes || '').slice(0, 3000) || ('Standard ' + (board || 'GCSE') + ' ' + (subjName || 'subject') + ' content')) + '\n\n' +
+    'RULES:\n' +
+    '- Use authentic ' + (board || 'GCSE') + ' command words (state, describe, explain, evaluate, calculate, compare)\n' +
+    '- Do NOT include mark allocations in question text\n' +
+    '- Short answer mark schemes: one bullet per mark\n' +
+    '- Extended mark schemes: level descriptors L1/L2/L3 with indicative content\n' +
+    '- MCQ: 4 options (A–D), exactly one correct, include explanation of why correct\n' +
+    '- sampleAnswer: complete model answer for short/extended\n\n' +
+    'Respond ONLY with a valid JSON array — no markdown, no backticks:\n' +
+    '[{"type":"mcq"|"short"|"extended","text":"...","marks":N,' +
+    '"markScheme":"...","sampleAnswer":"...","year":"AI Generated",' +
+    '"options":["A...","B...","C...","D..."],"answer":0,"explanation":"..."}]';
+
+  return _aiWithRetry(
+    async function() {
+      var raw    = await callAI(prompt, 5000);
+      var parsed = _parseAIJson(raw);
+      if (!Array.isArray(parsed) || !parsed.length) throw new Error('No questions returned');
+      var validated = parsed.map(_validateQItem).filter(Boolean);
+      if (!validated.length) throw new Error('All questions failed validation');
+      return validated;
+    },
+    3,
+    function() { return _qFallback(subjName, needed); }
+  );
+}
+
+// ── SERVICE 4: Reflection Summarizer ─────────────────────────────────────────
+// Schema: { summary, keyGap, nextAction, encouragement }
+function _reflectionFallback(reflections) {
+  return {
+    summary:       reflections.understood ? 'You understood: ' + (reflections.understood || '').slice(0, 120) : 'Session complete.',
+    keyGap:        reflections.unclear    ? (reflections.unclear || '').slice(0, 200) : 'Compare your blurt against your notes to find any remaining gaps.',
+    nextAction:    reflections.improve    ? (reflections.improve || '').slice(0, 200) : 'Try a blurting exercise on the weakest topic next time.',
+    encouragement: 'Every study session builds your long-term memory — keep the habit!',
+  };
+}
+
+async function aiServiceReflectionSummarizer(reflections, subjectName) {
+  if (!reflections || (!reflections.understood && !reflections.unclear && !reflections.improve)) {
+    return _reflectionFallback(reflections || {});
+  }
+  var prompt = 'You are a warm, evidence-informed GCSE study coach. A student just completed a revision session on ' +
+    (subjectName || 'their subject') + ' and reflected as follows.\n\n' +
+    'Understood well: '        + _aiStr(reflections.understood, 'Not specified') + '\n' +
+    'Still unclear: '          + _aiStr(reflections.unclear, 'Not specified') + '\n' +
+    'Will do differently: '    + _aiStr(reflections.improve, 'Not specified') + '\n\n' +
+    'Give a brief coaching response. Respond ONLY with valid JSON:\n' +
+    '{"summary":"1 sentence: what went well","keyGap":"most important concept to revisit",' +
+    '"nextAction":"specific evidence-based technique to use next session (e.g. spaced retrieval, blurting, practice questions)",' +
+    '"encouragement":"1 warm sentence"}';
+
+  return _aiWithRetry(
+    async function() {
+      var raw    = await callAI(prompt, 450);
+      var parsed = _parseAIJson(raw);
+      if (!parsed || !parsed.summary) throw new Error('Invalid reflection output');
+      return {
+        summary:       _aiStr(parsed.summary, ''),
+        keyGap:        _aiStr(parsed.keyGap, _aiStr(reflections.unclear, '')),
+        nextAction:    _aiStr(parsed.nextAction, _aiStr(reflections.improve, 'Review your notes')),
+        encouragement: _aiStr(parsed.encouragement, 'Great work — keep the habit!'),
+      };
+    },
+    2,
+    function() { return _reflectionFallback(reflections); }
+  );
+}
+
+// ── SERVICE 5: Tutor System Prompt with Socratic Guardrail ────────────────────
+// socraticLevel: 0 = direct answers, 1 = guided, 2 = full Socratic (default)
+function buildTutorSystemPrompt(ctx, mode, board, subjName, topicLabel, socraticLevel) {
+  var lvl = typeof socraticLevel === 'number' ? socraticLevel : 2;
+  var imgInstr = 'When a diagram, chart or visual would GENUINELY help comprehension, include [IMG: descriptive search term]. Educational visuals only — not decorative.';
+
+  var pedagogyBlock;
+  if (mode === 'homework') {
+    pedagogyBlock =
+      'HOMEWORK HELP MODE — STRICT RULES:\n' +
+      '- NEVER state the final answer outright\n' +
+      '- Open with "What does the question ask you to find?" or "What information is given?"\n' +
+      '- After each student response, celebrate correct steps: "Exactly — now what comes next?"\n' +
+      '- Guide to the method step by step; let the student reach the answer themselves\n' +
+      '- Only reveal the complete worked answer if the student has made 3+ genuine attempts\n';
+  } else if (lvl >= 2) {
+    pedagogyBlock =
+      'TEACHING APPROACH — SOCRATIC MODE (default for new conversations):\n' +
+      '- For the FIRST message on any topic: ask "What do you already know about [topic]?" before explaining\n' +
+      '- Use guiding questions: "What does the command word tell you?", "Which formula applies?", "What would happen if…?"\n' +
+      '- After a student attempt, validate correct parts explicitly before correcting gaps\n' +
+      '- Only give a full direct explanation after at least ONE student retrieval attempt\n' +
+      '- End every substantive response with a follow-up question or a self-test prompt\n' +
+      '- For misconceptions: ask "Where do you think that idea comes from?" before correcting\n';
+  } else if (lvl === 1) {
+    pedagogyBlock =
+      'TEACHING APPROACH — GUIDED MODE:\n' +
+      '- Explain concepts clearly but always connect to exam application\n' +
+      '- After each explanation, add: "Now, can you explain this back in your own words?"\n' +
+      '- Highlight common misconceptions about the topic\n' +
+      '- Include a "Try this" question at the end of substantive explanations\n';
+  } else {
+    pedagogyBlock =
+      'TEACHING APPROACH — DIRECT MODE:\n' +
+      '- Provide clear, accurate explanations with examples and analogies\n' +
+      '- Connect every explanation to ' + board + ' exam requirements\n';
+  }
+
+  var hasContent = !!(ctx.notes || ctx.fcs || ctx.qs);
+  var contentBlock = hasContent
+    ? 'STUDENT\'S REVISION CONTENT (primary knowledge source — prioritise this over general knowledge):\n' +
+      (ctx.notes ? '=== NOTES ===\n' + ctx.notes.slice(0, 1800) + '\n\n' : '') +
+      (ctx.fcs   ? '=== FLASHCARDS ===\n' + ctx.fcs.slice(0, 600) + '\n\n' : '') +
+      (ctx.qs    ? '=== PAST QUESTIONS ===\n' + ctx.qs.slice(0, 600) + '\n\n' : '') +
+      'CONTENT BOUNDARY: Draw primarily from the content above. If asked about something not covered, say so clearly and offer to help with what IS in the notes. Use general ' + board + ' GCSE knowledge only to clarify or expand content already present in the notes.'
+    : 'KNOWLEDGE SOURCE: No revision notes added for this selection yet. Draw on accurate ' + board + ' GCSE ' + subjName + ' knowledge. Note when content is not in the student\'s notes.';
+
+  return 'You are ReviseIQ AI, a warm, expert GCSE ' + subjName + ' tutor (' + board + ').\n' +
+    'Current topic: "' + topicLabel + '"\n\n' +
+    pedagogyBlock + '\n' +
+    contentBlock + '\n\n' +
+    'STYLE: Warm, encouraging, precise. Use ## headings and • bullets for clarity. ' +
+    'Reference ' + board + ' mark scheme language. Keep responses focused — avoid padding.\n' +
+    imgInstr;
+}
+
+/* ─── END AI MICRO-SERVICES ─────────────────────────────────────────────────── */
 // Account format helpers (supports both legacy string and new {h,gki} object)
 function getAccHash(acc){return typeof acc==="string"?acc:acc?.h;}
 function getAccGki(acc){return typeof acc==="string"?null:(acc?.gki??null);}
@@ -964,24 +1364,10 @@ function mergeTopics(baseTopics, boardCustom, boardExtras) {
   return topicMap;
 }
 
+// Phase 4: markAnswer delegates to aiServiceFeedbackRubric
+// — strict JSON schema, score clamping, contradiction checks, deterministic fallback
 async function markAnswer(q, ans) {
-  const prompt = "You are an AQA GCSE examiner. Mark this answer strictly.\n\nQuestion: "+q.text+"\nMax marks: "+q.marks+"\nMark scheme: "+q.markScheme+"\nStudent answer: "+ans+"\n\nRespond ONLY with valid JSON (no markdown):\n{\"score\":0,\"feedback\":\"2-3 sentences\",\"missedPoints\":[\"point\"],\"modelAnswer\":\"ideal answer\",\"examTip\":\"one AQA tip\"}";
-  const raw = await callGeminiSimple(prompt, 800);
-  const fence = "`"+"`"+"`"; const clean = raw.split(fence+"json").join("").split(fence).join("").trim();
-  const s=clean.indexOf("{"), e=clean.lastIndexOf("}");
-  const parsed = JSON.parse(s>=0&&e>=0?clean.slice(s,e+1):clean);
-  const markPoints = Array.isArray(parsed?.missedPoints) ? parsed.missedPoints : [];
-  return {
-    ...parsed,
-    annotatedAnswer: parsed.annotatedAnswer || (parsed.modelAnswer||"").split(/(?<=[.!?])\s+/).filter(Boolean).map(function(seg,idx){
-      return {text:seg, type:idx===0?"point":(idx%2===0?"evidence":"explanation")};
-    }),
-    structureDiagram: parsed.structureDiagram || ["Point","Evidence","Explanation","Application"],
-    comparisonTable: parsed.comparisonTable || markPoints.slice(0,4).map(function(pt){
-      return {student:(ans||"").slice(0,120), expectation:pt};
-    }),
-    workedSolution: parsed.workedSolution || (parsed.modelAnswer||""),
-  };
+  return aiServiceFeedbackRubric(q, ans);
 }
 
 function _cleanText(s){return (s||"").toLowerCase().replace(/[^a-z0-9\s]/g," ").replace(/\s+/g," ").trim();}
@@ -1666,12 +2052,10 @@ function SketchnoteCanvas({D,user,subjectId}){
 }
 
 
+// Phase 4: blurtAnalyse delegates to aiServiceMisconceptionExtractor
+// — strict schema, realistic score calibration, misconception flagging, fallback
 async function blurtAnalyse(notesText, blurtText) {
-  const prompt = "You are a GCSE revision coach analysing a blurting exercise.\n\nRevision Notes:\n"+notesText+"\n\nStudent's blurt (from memory):\n"+blurtText+"\n\nRespond ONLY with valid JSON (no markdown, no backticks):\n{\"remembered\":[\"well-recalled point\"],\"missed\":[\"key point they forgot\"],\"partial\":[\"partially recalled point\"],\"feedback\":\"2-sentence encouragement + top tip\",\"score\":75}\n\nScore = % of key concepts the student demonstrated (0-100).";
-  const raw = await callGeminiSimple(prompt, 1000);
-  const fence = "`"+"`"+"`"; const clean = raw.split(fence+"json").join("").split(fence).join("").trim();
-  const s=clean.indexOf("{"), e=clean.lastIndexOf("}");
-  return JSON.parse(s>=0&&e>=0?clean.slice(s,e+1):clean);
+  return aiServiceMisconceptionExtractor(notesText, blurtText);
 }
 
 /* ─── GENERATE PARTED PAPER ─────────────────────────────────────────────────── */
@@ -1963,40 +2347,18 @@ const getMockSpec=(sId,board)=>{
   return [{n:"All papers",d:90,m:80,paperType:"comingSoon",desc:`${board} ${subj?.name||sId} mock papers coming soon.`,skills:[]}];
 };
 
+// Phase 4: generateMockQuestions delegates to aiServiceQuestionGenerator
+// — schema-validated output, score clamping, deterministic fallbacks
 async function generateMockQuestions(subjName,board,paperName,needed,contextNotes,markDist){
-  var markPart = markDist ? ("Mark distribution guidance: " + markDist + "\n") : "";
-  var needPart = needed.map(function(n){ return "- " + n.count + " x " + n.type + " question(s), " + n.marks + " mark(s) each"; }).join("\n");
-  var prompt = "You are an expert GCSE " + subjName + " examiner (" + board + "). Generate additional exam questions for \"" + paperName + "\".\n" +
-    markPart +
-    "Revision content:\n" + (contextNotes || ("Standard GCSE " + subjName + " content")) + "\n\n" +
-    "Generate these questions:\n" + needPart + "\n\n" +
-    "IMPORTANT: Use " + board + " GCSE command words. Questions must be exam-quality.\n" +
-    "Do NOT include mark allocations in question text.\n" +
-    "RESPOND ONLY with a valid JSON array. No markdown, no backticks. Each element:\n" +
-    "{\"type\":\"mcq\"|\"short\"|\"extended\",\"text\":\"..\",\"marks\":N,\"year\":\"AI Generated\"}\n" +
-    "MCQ: add \"options\":[\"A\",\"B\",\"C\",\"D\"],\"answer\":0,\"explanation\":\"...\"\n" +
-    "short/extended: add \"markScheme\":\"DETAILED scheme\",\"sampleAnswer\":\"model answer\"";
-
-  var lastErr = null;
-  for (var attempt = 0; attempt < 3; attempt++) {
-    try {
-      if (attempt > 0) await new Promise(function(res){ setTimeout(res, 800 * attempt); });
-      var raw = await callGeminiSimple(prompt, 5000);
-      var fence = "`"+"`"+"`"; raw = raw.split(fence+"json").join("").split(fence).join("").trim();
-      var start = raw.indexOf("[");
-      var end = raw.lastIndexOf("]");
-      if (start < 0 || end < 0) {
-        var lastBrace = raw.lastIndexOf("}");
-        if (lastBrace > 0 && start >= 0) raw = raw.slice(start, lastBrace + 1) + "]";
-        else throw new Error("No JSON array in response");
-      } else {
-        raw = raw.slice(start, end + 1);
-      }
-      var qs = JSON.parse(raw);
-      return Array.isArray(qs) ? qs.map(function(q){ return Object.assign({}, q, {id:"ai-"+uid()}); }) : [];
-    } catch(e) { lastErr = e; }
-  }
-  throw lastErr;
+  var questions = await aiServiceQuestionGenerator(subjName, board, contextNotes, needed, markDist);
+  // Tag with source paper name and ensure unique ids
+  return questions.map(function(q) {
+    return Object.assign({}, q, {
+      id: 'ai-' + uid(),
+      paperName: paperName || '',
+      year: q.year || 'AI Generated',
+    });
+  });
 }
 
 
@@ -3022,9 +3384,12 @@ For hierarchy: data.root with {label,children:[{label,children?}]}.
 For comparison: data.rows=[{id,label}],data.columns=[{id,label}],data.cells={"rowId:colId":true/false/"partial"}.
 For timeline: data.events=[{id,label,date,sublabel?,important?}].
 Keep labels short (2-4 words). Maximum 8 items. Use appropriate accent colour.`;
-                    const raw=await callAI(prompt,800);
-                    const s=raw.indexOf("{"),e=raw.lastIndexOf("}");
-                    if(s>=0&&e>s){const parsed=JSON.parse(raw.slice(s,e+1));set("diagram",parsed);}
+                    // Phase 4: use _parseAIJson for robust extraction, _aiWithRetry for resilience
+                    const parsed = await _aiWithRetry(
+                      async()=>{ const raw=await callAI(prompt,800); const p=_parseAIJson(raw); if(!p||!p.type) throw new Error("No diagram"); return p; },
+                      2, null
+                    );
+                    if(parsed) set("diagram",parsed);
                     else showToast("Could not generate diagram — try again","error");
                   }catch(err){showToast("Diagram generation failed: "+err.message,"error");}
                 }} style={{...B("#6366f1",true,{fontSize:12,padding:"7px 14px"})}}>
@@ -3075,9 +3440,12 @@ Keep labels short (2-4 words). Maximum 8 items. Use appropriate accent colour.`;
                   showToast("Generating diagram…");
                   try{
                     const prompt=`You are a GCSE revision diagram designer. Analyse this flashcard content and return ONLY valid JSON (no markdown) for the most appropriate diagram.\n\nQuestion: ${stripHtml(f.q||"").slice(0,200)}\nAnswer: ${stripHtml(f.a||"").slice(0,200)}\n\nChoose ONE type: process, cycle, hierarchy, comparison, structure, timeline.\nReturn: {"type":"process","accent":"#059669","data":{"steps":[{"id":"1","label":"Step name","sublabel":"optional"}]}}\nKeep labels under 4 words. Max 7 items.`;
-                    const raw=await callAI(prompt,600);
-                    const s=raw.indexOf("{"),e=raw.lastIndexOf("}");
-                    if(s>=0&&e>s){ set("diagram",JSON.parse(raw.slice(s,e+1))); set("cardType","dual-coded"); }
+                    // Phase 4: _parseAIJson + _aiWithRetry
+                    const parsed = await _aiWithRetry(
+                      async()=>{ const raw=await callAI(prompt,600); const p=_parseAIJson(raw); if(!p||!p.type) throw new Error("No diagram"); return p; },
+                      2, null
+                    );
+                    if(parsed){ set("diagram",parsed); set("cardType","dual-coded"); }
                     else showToast("Could not generate — try again","error");
                   }catch(err){showToast("Failed: "+err.message,"error");}
                 }} style={{...B("#6366f1",true,{fontSize:12,padding:"6px 12px"})}}>
@@ -3421,6 +3789,16 @@ function StudyJournalTab({D, entries, mu2, tx2}) {
               {entry.reflections?.improve&&(
                 <div style={{padding:"8px 12px",borderRadius:8,background:D?"rgba(99,102,241,.08)":"#eef2ff",fontSize:12,color:D?"#a5b4fc":"#4338ca"}}>
                   <strong>🔄 Next time:</strong> {entry.reflections.improve}
+                </div>
+              )}
+              {/* Phase 4: Coaching output from aiServiceReflectionSummarizer */}
+              {entry.coaching&&(
+                <div style={{padding:"10px 14px",borderRadius:10,background:D?"rgba(99,102,241,.06)":"#f8f7ff",border:"1px solid "+(D?"#4f46e522":"#c7d2fe"),marginTop:2}}>
+                  <div style={{fontSize:10,fontWeight:700,color:"#6366f1",textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:6}}>🤖 AI Coach</div>
+                  {entry.coaching.summary&&<p style={{fontSize:12,color:D?"#c7d2fe":"#3730a3",marginBottom:4,lineHeight:1.55}}>{entry.coaching.summary}</p>}
+                  {entry.coaching.keyGap&&<p style={{fontSize:11,color:mu2,marginBottom:3}}><strong>Key gap:</strong> {entry.coaching.keyGap}</p>}
+                  {entry.coaching.nextAction&&<p style={{fontSize:11,color:mu2,marginBottom:3}}><strong>Next session:</strong> {entry.coaching.nextAction}</p>}
+                  {entry.coaching.encouragement&&<p style={{fontSize:11,fontStyle:"italic",color:D?"#a5b4fc":"#4338ca"}}>{entry.coaching.encouragement}</p>}
                 </div>
               )}
             </div>
@@ -4833,6 +5211,15 @@ function BlurtingScreen({D,subjects,allSections,initSubjId,initSecId,onBack}) {
             <div style={{fontSize:15,fontWeight:600,marginBottom:10}}>{res.score>=80?"Excellent recall! 🎉":res.score>=60?"Good effort — a few gaps to fill":res.score>=40?"Keep practising — several areas to review":"Needs work — lots to consolidate"}</div>
             <p style={{fontSize:13,color:mu(D),lineHeight:1.65,maxWidth:500,margin:"0 auto"}}>{res.feedback}</p>
           </div>
+          {/* Phase 4: Misconceptions panel — highest priority to fix */}
+          {res.misconceptions&&res.misconceptions.length>0&&(
+            <div style={{padding:"14px 16px",borderRadius:12,background:D?"rgba(239,68,68,.1)":"#fef2f2",border:"2px solid #ef4444"}}>
+              <p style={{fontWeight:700,color:"#dc2626",marginBottom:8,fontSize:13}}>⚠️ Misconceptions Detected ({res.misconceptions.length}) — fix these first!</p>
+              {res.misconceptions.map((p,i)=><div key={i} style={{fontSize:12,lineHeight:1.65,padding:"5px 0",borderBottom:`1px solid ${D?"rgba(239,68,68,.2)":"#fee2e2"}`,color:D?"#fca5a5":"#b91c1c",display:"flex",gap:6}}>
+                <span style={{flexShrink:0}}>✗</span><span>{p}</span>
+              </div>)}
+            </div>
+          )}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
             {res.remembered?.length>0&&<div style={{...C(D),padding:16}}>
               <p style={{fontWeight:700,color:"#16a34a",marginBottom:10,fontSize:13}}>✓ Remembered ({res.remembered.length})</p>
@@ -6314,6 +6701,9 @@ function AITutorScreen({D,subjects,allSections,boardSels,boardData,user,googleKe
   const [activeModel,setActiveModel]=useState(TUTOR_MODELS[0]);
   const [listening,setListening]=useState(false);
   const [quizzing,setQuizzing]=useState(false);
+  // Phase 4: Socratic level — 2=Socratic (default), 1=guided, 0=direct
+  // Auto-decreases as conversation deepens (after student has made retrieval attempts)
+  const [socraticLevel,setSocraticLevel]=useState(2);
   const chatRef=useRef(null);
   const fileRef=useRef(null);
   const subj=subjects.find(function(s){return s.id===selSubj;});
@@ -6348,7 +6738,7 @@ function AITutorScreen({D,subjects,allSections,boardSels,boardData,user,googleKe
 
   useEffect(function(){if(chatRef.current)chatRef.current.scrollTop=chatRef.current.scrollHeight;},[messages,sending]);
 
-  const reset=function(){setMsgs([]);setInput("");setFiles([]);setErr("");try{window.storage.delete(memKey);}catch(e){}};
+  const reset=function(){setMsgs([]);setInput("");setFiles([]);setErr("");setSocraticLevel(2);try{window.storage.delete(memKey);}catch(e){}};
 
   const buildCtx=useCallback(()=>{
     const bd3=boardData[`${selSubj}:${selBoard}`]||{custom:[],extras:{},papers:[]};
@@ -6361,31 +6751,15 @@ function AITutorScreen({D,subjects,allSections,boardSels,boardData,user,googleKe
     return{notes,fcs,qs,hasContent:!!(notes||fcs||qs)};
   },[selSubj,selBoard,selSec,boardData,subjects]);// eslint-disable-line
 
+  // Phase 4: buildSys uses the Socratic-aware service — level decreases as convo deepens
   const buildSys=()=>{
-    const{notes,fcs,qs,hasContent}=buildCtx();
+    const{notes,fcs,qs}=buildCtx();
+    const ctx={notes,fcs,qs};
     const sec=allSections.find(s=>s.id===selSec);
-    const topicLabel=sec?sec.title:`${subj?.name} (${selBoard})`;
-    const imgInstr=`When a diagram, chart or visual aid would genuinely help the student understand a concept, include [IMG: specific descriptive search term] (e.g. [IMG: mitosis stages diagram], [IMG: carbon cycle diagram], [IMG: Macbeth character map]). Only use this for genuinely educational visuals — not decoratively.`;
-    const modeInstr=mode==="homework"
-      ?`HOMEWORK HELP MODE: The student may upload images, PDFs or other files showing their homework. Walk them through the problem step by step with guiding questions — do NOT just give the answer directly. Encourage independent thinking. Celebrate correct steps warmly.`
-      :`TUTOR MODE: Answer questions clearly and enthusiastically. Use examples, analogies and connect to ${selBoard} exam skills. Format responses with headings and bullet points where helpful.`;
-    if(!hasContent)return `You are ReviseIQ AI, a warm and expert GCSE ${subj?.name} tutor (${selBoard}). Topic: "${topicLabel}". IMPORTANT: No revision notes have been added yet — tell the student this briefly and draw on your general ${selBoard} GCSE knowledge. ${modeInstr} ${imgInstr} Use ${selBoard} command words. Keep responses focused and clear.`;
-    return `You are ReviseIQ AI, a warm and expert GCSE ${subj?.name} tutor (${selBoard}). Topic: "${topicLabel}".
-
-IMPORTANT — CONTENT BOUNDARIES: Only draw on the revision content provided below. If the student asks about something not in these notes, say so clearly and offer to cover what IS in their notes. You may use general ${selBoard} GCSE knowledge ONLY to explain or expand on content that IS in the notes.
-
-=== STUDENT'S REVISION NOTES ===
-${notes||"(none added yet)"}
-
-=== FLASHCARDS ===
-${fcs||"(none added yet)"}
-
-=== EXAM QUESTIONS & MARK SCHEMES ===
-${qs||"(none added yet)"}
-
-${modeInstr}
-${imgInstr}
-Style: warm, encouraging, clear. Use ## headings and bullet points to organise longer responses. Reference ${selBoard} mark scheme language when relevant.`;
+    const topicLabel=sec?sec.title:`${subj?.name||"Unknown"} (${selBoard})`;
+    // After 6+ exchanges, student has made retrieval attempts — ease off Socratic probing
+    const effectiveLevel = messages.length >= 12 ? Math.max(0, socraticLevel - 1) : socraticLevel;
+    return buildTutorSystemPrompt(ctx, mode, selBoard, subj?.name||"", topicLabel, effectiveLevel);
   };
 
   const readFile=file=>new Promise((res)=>{
@@ -6462,9 +6836,14 @@ Style: warm, encouraging, clear. Use ## headings and bullet points to organise l
     if(responseText){
       var hcNow=buildCtx();
       var stag=hcNow.hasContent?"notes":"general";
-      var newMsgsArr=[...hist,{role:"assistant",content:responseText,_d:{text:responseText,stag:stag,chips:[]}}];
+      var newMsgsArr=[...hist,{role:"assistant",content:responseText,_d:{text:responseText,stag:stag,chips:[],socraticLevel:socraticLevel}}];
       setMsgs(newMsgsArr);
       saveMemory(newMsgsArr);
+      // Phase 4: After the student has made 2+ meaningful attempts (≥4 messages),
+      // ease from full Socratic to guided mode so they aren't perpetually interrogated
+      var userMsgCount = newMsgsArr.filter(function(m){return m.role==='user';}).length;
+      if(userMsgCount >= 4 && socraticLevel >= 2) setSocraticLevel(1);
+      if(userMsgCount >= 10 && socraticLevel >= 1) setSocraticLevel(0);
       // Fire-and-forget chips (use last/cheapest model)
       var chipModel=TUTOR_MODELS[TUTOR_MODELS.length-1];
       tutorCall(chipModel,'Return ONLY a JSON array of 3 short follow-up questions (max 9 words each). No preamble.',
@@ -6554,6 +6933,14 @@ Style: warm, encouraging, clear. Use ## headings and bullet points to organise l
             </select>
             <div style={{display:"flex",alignItems:"center",gap:6,marginLeft:"auto"}}>
               <span title={`Responding with: ${activeModel.label}`} style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:10,background:D?"rgba(16,185,129,.15)":"#ecfdf5",color:"#059669",cursor:"default"}}>{activeModel.label}</span>
+              {/* Phase 4: Socratic mode indicator + toggle */}
+              <span title={socraticLevel===2?"Socratic: asks guiding questions before explaining":socraticLevel===1?"Guided: explains then prompts recall":"Direct: gives answers immediately"}
+                style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:10,cursor:"pointer",
+                  background:socraticLevel===2?(D?"rgba(99,102,241,.2)":"#eef2ff"):socraticLevel===1?(D?"rgba(245,158,11,.15)":"#fffbeb"):(D?"rgba(16,185,129,.12)":"#ecfdf5"),
+                  color:socraticLevel===2?"#6366f1":socraticLevel===1?"#d97706":"#059669"}}
+                onClick={()=>setSocraticLevel(function(v){return v>0?v-1:2;})}>
+                {socraticLevel===2?"🎓 Socratic":socraticLevel===1?"💬 Guided":"⚡ Direct"}
+              </span>
               {messages.length>0&&<button onClick={reset} style={{fontSize:11,color:mu(D),background:"none",border:`1px solid ${bd2}`,borderRadius:8,padding:"4px 10px",cursor:"pointer"}}>↺ New chat</button>}
             </div>
           </div>
@@ -6567,8 +6954,11 @@ Style: warm, encouraging, clear. Use ## headings and bullet points to organise l
           <div style={{textAlign:"center",padding:"48px 20px",color:mu(D),maxWidth:500,margin:"0 auto"}}>
             <div style={{fontSize:52,marginBottom:12}}>🤖</div>
             <p style={{fontWeight:700,fontSize:16,marginBottom:8,color:tx(D)}}>ReviseIQ AI Tutor</p>
-            <p style={{fontSize:13,marginBottom:10,lineHeight:1.6}}>{mode==="tutor"?"Ask me anything about your selected topic and I'll explain it clearly with examples, diagrams and exam tips.":"Share your homework by uploading a photo, PDF or file, or paste the question below. I'll walk you through it step by step."}</p>
-            <p style={{fontSize:11,color:mu(D)}}>{hasContent?"Drawing from your revision notes and flashcards.":"Using general GCSE knowledge."}</p>
+            <p style={{fontSize:13,marginBottom:10,lineHeight:1.6}}>{mode==="tutor"
+              ?"Start by telling me what you already know about the topic — I'll guide you to fill the gaps."
+              :"Share your homework by uploading a photo, PDF or file, or paste the question below. I'll ask guiding questions to help you reach the answer yourself."}</p>
+            <p style={{fontSize:11,color:mu(D),marginBottom:6}}>{hasContent?"Drawing from your revision notes and flashcards.":"Using general GCSE knowledge."}</p>
+            <p style={{fontSize:10,color:mu(D)}}>{socraticLevel===2?"🎓 Socratic mode — I'll ask what you know first":socraticLevel===1?"💬 Guided mode — I'll explain then prompt recall":"⚡ Direct mode — I'll give complete answers"}</p>
           </div>
         )}
         {messages.map(function(m,i){
@@ -6728,8 +7118,15 @@ function ExamCoachScreen({D,subjects,allSections,boardSels,boardData,onBack}) {
       "- Include a mark allocation (e.g. [6 marks] or [8 marks])\n"+
       "- Make it appropriately challenging for GCSE level\n\n"+
       "Respond ONLY with the question text. No preamble, no explanation.";
-    callGeminiSimple(prompt, 200).then(function(text){
-      setQuestion(text.trim());
+    // Phase 4: _aiWithRetry with deterministic fallback — no dead-end
+    _aiWithRetry(
+      function(){ return callAI(prompt, 200).then(function(t){ if(!t||!t.trim()) throw new Error("Empty"); return t.trim(); }); },
+      2,
+      function(){
+        return selCW+" the key factors that influence [a relevant concept in "+( subjDef?subjDef.name:"this subject")+"]. Use specific evidence to support your answer. [6 marks]";
+      }
+    ).then(function(text){
+      setQuestion(text);
       setPhase("practice");
       setLoadingQ(false);
     }).catch(function(e){
@@ -6742,30 +7139,52 @@ function ExamCoachScreen({D,subjects,allSections,boardSels,boardData,onBack}) {
     const filled = cmdDef.scaffold.map(function(label,i){return label+": "+(scaffold[i]||"");}).join("\n\n");
     if(!filled.replace(/[:\s]/g,"").trim()){setErrMsg("Please fill in at least one section before submitting.");return;}
     setSubmitting(true); setErrMsg("");
-    const notes = getContextNotes();
-    const prompt = "You are a "+board+" GCSE "+( subjDef?subjDef.name:"subject")+" examiner marking a structured practice answer.\n\n"+
-      "Command word: "+selCW+"\n"+
-      "Question: "+question+"\n\n"+
-      "Command word guidance: "+cmdDef.tip+"\n\n"+
-      "Student's structured answer:\n"+filled+"\n\n"+
-      (notes?"Relevant revision content:\n"+notes+"\n\n":"")+
-      "Provide feedback in this EXACT JSON format (no markdown, no backticks):\n"+
-      "{\"overallBand\":\"Developing|Achieving|Exceeding\",\"score\":\"e.g. 5/8\","+
-      "\"strengths\":[\"specific strength 1\",\"specific strength 2\"],"+
-      "\"improvements\":[\"specific improvement 1\",\"specific improvement 2\"],"+
-      "\"commandWordFeedback\":\"Did they use '"+selCW+"' correctly? Be specific.\","+
-      "\"modelAnswer\":\"A concise model answer for this question (3-6 sentences)\","+
-      "\"examTip\":\"One targeted "+board+" exam technique tip\"}";
-    callGeminiSimple(prompt, 1000).then(function(raw){
-      try{
-        var fence="`"+"`"+"`"; var clean=raw.split(fence+"json").join("").split(fence).join("").trim();
-        var s=clean.indexOf("{"), e=clean.lastIndexOf("}");
-        var parsed=JSON.parse(s>=0&&e>=0?clean.slice(s,e+1):clean);
-        setFeedback(parsed); setPhase("feedback");
-      }catch(ex){ setErrMsg("Could not parse feedback. Please try again."); }
+    // Phase 4: use the rubric service with a synthetic question object
+    // Detect mark allocation in question text (e.g. [6 marks])
+    var marksMatch = question.match(/\[(\d+)\s*marks?\]/i);
+    var detectedMarks = marksMatch ? parseInt(marksMatch[1]) : 8;
+    var syntheticQ = {
+      text:       question,
+      marks:      detectedMarks,
+      markScheme: 'Assessment criteria: (1) Correct use of command word "'+selCW+'" — '+cmdDef.tip+
+                  ' (2) Subject accuracy and relevant content. (3) Clear, developed explanation. Award marks proportionally.',
+      sampleAnswer: '',
+      type:       detectedMarks >= 6 ? 'extended' : 'short',
+      board:      board,
+    };
+    // Build a structured answer that incorporates the scaffold labels
+    var structuredAnswer = cmdDef.scaffold.map(function(label,i){
+      var val = (scaffold[i]||'').trim();
+      return val ? label+': '+val : null;
+    }).filter(Boolean).join('\n\n');
+
+    aiServiceFeedbackRubric(syntheticQ, structuredAnswer).then(function(result){
+      // Map rubric service output to the ExamCoach feedback format
+      var scoreNum = result.score || 0;
+      var bandMap = {'Not attempted':'Developing','Developing':'Developing','Achieving':'Achieving','Exceeding':'Exceeding'};
+      var mapped = {
+        overallBand:        bandMap[result.band] || 'Developing',
+        score:              scoreNum+'/'+detectedMarks,
+        strengths:          result.strengths && result.strengths.length ? result.strengths : ['Attempted a structured response'],
+        improvements:       result.missedPoints && result.missedPoints.length ? result.missedPoints : ['Develop your points further with more subject-specific detail'],
+        commandWordFeedback:result.feedback || 'Check you have used the command word "'+selCW+'" correctly.',
+        modelAnswer:        result.modelAnswer || '',
+        examTip:            result.examTip || cmdDef.tip,
+      };
+      setFeedback(mapped); setPhase("feedback");
       setSubmitting(false);
     }).catch(function(e){
-      setErrMsg("Feedback failed: "+e.message);
+      // Deterministic fallback — never a dead-end
+      setFeedback({
+        overallBand: 'Developing',
+        score: '—/'+detectedMarks,
+        strengths: ['Attempted a structured response'],
+        improvements: ['AI feedback unavailable — self-assess using the command word guidance below'],
+        commandWordFeedback: cmdDef.tip,
+        modelAnswer: '',
+        examTip: 'Re-read the mark scheme and identify which scaffold sections need more development.',
+      });
+      setPhase("feedback");
       setSubmitting(false);
     });
   }
@@ -7102,23 +7521,20 @@ function UCSectionModal({D,user,subjId,sec,subjects,onSaveSection,onClose}) {
     var n={id:uid2(),heading:noteHead.trim(),body:noteBody.trim()||noteHead.trim(),images:[],_userCreated:true};
     onSaveSection(subjId,{...sec,notes:[...notes,n]});
     setNoteHead(""); setNoteBody("");
-    // Background diagram suggestion (Change 16)
+    // Phase 4: Background diagram suggestion — _parseAIJson for robust parsing, silent on failure
     if(noteBody.trim().length>60){
       var textContent=noteHead+": "+noteBody.slice(0,400);
       callAI("You are a GCSE revision diagram designer. Analyse this note and return ONLY valid JSON (no markdown) for the best diagram, or return null if no diagram is appropriate.\n\nNote: "+textContent+"\n\nChoose ONE type: process, cycle, hierarchy, comparison, structure, timeline.\nReturn JSON or the exact word: null\n{\"type\":\"process\",\"accent\":\"#059669\",\"data\":{\"steps\":[{\"id\":\"1\",\"label\":\"Step\"}]}}",500)
         .then(function(raw){
           if(!raw||raw.trim()==="null") return;
-          var s=raw.indexOf("{"),e=raw.lastIndexOf("}");
-          if(s>=0&&e>s){
-            try{
-              var diagram=JSON.parse(raw.slice(s,e+1));
-              var updated={...n,diagram};
-              onSaveSection(subjId,{...sec,notes:[...notes,updated]});
-              showToast("📊 Diagram added to your note","success",2000);
-            }catch(_){}
+          var diagram=_parseAIJson(raw);
+          if(diagram&&diagram.type){
+            var updated={...n,diagram};
+            onSaveSection(subjId,{...sec,notes:[...notes,updated]});
+            showToast("📊 Diagram added to your note","success",2000);
           }
         })
-        .catch(function(){}); // Silent failure
+        .catch(function(){}); // Silent — diagram is enhancement only
     }
   }
   function deleteNote(id){onSaveSection(subjId,{...sec,notes:notes.filter(function(n){return n.id!==id;})});}
@@ -7200,9 +7616,11 @@ function UCSectionModal({D,user,subjId,sec,subjects,onSaveSection,onClose}) {
     if(!aiText.trim()) return;
     setAiLoading(true); setAiErr("");
     var subjectName=subj?subj.name:"GCSE";
-    var prompt="";
+    var secSnap=sec; var notesSnap=notes; var fcsSnap=fcs; var qsSnap=qs;
+
     if(aiMode==="notes"){
-      prompt="You are a GCSE "+subjectName+" teacher creating revision notes. "+
+      // Notes: structured prompt with validated output
+      var notesPrompt="You are a GCSE "+subjectName+" teacher creating revision notes. "+
         "From the following content, produce well-structured revision notes with:\n"+
         "- ## headings for each main topic/section\n"+
         "- Bullet points (•) for key facts under each heading\n"+
@@ -7210,48 +7628,66 @@ function UCSectionModal({D,user,subjId,sec,subjects,onSaveSection,onClose}) {
         "- Keep each bullet concise but complete\n"+
         "- Include all definitions, equations, processes and key facts\n\n"+
         "Content:\n"+aiText;
+      _aiWithRetry(
+        function(){ return callAI(notesPrompt, 1600); },
+        2,
+        function(){ return "## AI Generated Notes\n• Notes could not be generated — paste your text and try again."; }
+      ).then(function(raw){
+        var noteBody = (raw||"").trim() || "## Notes\n• Could not generate — try rephrasing your content.";
+        var n={id:uid2(),heading:"AI Generated Notes — "+secSnap.title,body:noteBody,images:[],_userCreated:true};
+        onSaveSection(subjId,{...secSnap,notes:[...notesSnap,n]});
+        setTab("notes"); setAiText(""); setAiLoading(false); setShowAI(false);
+      }).catch(function(err){setAiErr(err.message||"AI error");setAiLoading(false);});
+
     } else if(aiMode==="flashcards"){
-      prompt="You are a GCSE "+subjectName+" teacher. Create 8-12 high-quality flashcard question-answer pairs from the following content. "+
+      // Flashcards: validated JSON schema
+      var fcPrompt="You are a GCSE "+subjectName+" teacher. Create 8-12 high-quality flashcard question-answer pairs from the following content. "+
         "Questions should test key facts, definitions, and processes. "+
         "Return ONLY valid JSON array (no markdown): [{\"q\":\"question text\",\"a\":\"answer text\"}]\n\n"+
         "Content:\n"+aiText;
-    } else {
-      prompt="You are a GCSE "+subjectName+" examiner. Create 4-6 exam-style questions from the following content. "+
-        "Mix question types: short answer, extended response. Include mark allocations. "+
-        "Return ONLY valid JSON array (no markdown): [{\"type\":\"short\",\"text\":\"question\",\"markScheme\":\"model answer\",\"marks\":3}]\n\n"+
-        "Content:\n"+aiText;
-    }
-    callGeminiSimple(prompt,1600).then(function(raw){
-      if(aiMode==="notes"){
-        // Store as a single note with full formatted content
-        var n={id:uid2(),heading:"AI Generated Notes — "+sec.title,body:raw.trim(),images:[],_userCreated:true};
-        onSaveSection(subjId,{...sec,notes:[...notes,n]});
-        setTab("notes");
-      } else if(aiMode==="flashcards"){
-        var s=raw.indexOf("["),e2=raw.lastIndexOf("]");
-        if(s<0||e2<0) throw new Error("Could not parse AI response");
-        var arr=JSON.parse(raw.slice(s,e2+1));
-        var newFCs=arr.map(function(x){return {id:uid2(),q:(x.q||x.front||"").trim(),a:(x.a||x.back||"").trim(),_userCreated:true};}).filter(function(f){return f.q;});
-        // Deduplicate: skip cards whose question already exists (fix #57)
-        var existingQs=new Set((fcs||[]).map(function(f){return (f.q||f.front||"").toLowerCase().trim();}));
+      _aiWithRetry(
+        function(){
+          return callAI(fcPrompt, 1600).then(function(raw){
+            var parsed=_parseAIJson(raw);
+            if(!Array.isArray(parsed)||!parsed.length) throw new Error("No flashcards returned");
+            return parsed;
+          });
+        },
+        2,
+        function(){ return []; }
+      ).then(function(arr){
+        var newFCs=(arr||[]).map(function(x){return {id:uid2(),q:(x.q||x.front||"").trim(),a:(x.a||x.back||"").trim(),_userCreated:true};}).filter(function(f){return f.q&&f.a;});
+        // Deduplicate
+        var existingQs=new Set((fcsSnap||[]).map(function(f){return (f.q||f.front||"").toLowerCase().trim();}));
         var dedupedFCs=newFCs.filter(function(f){return !existingQs.has(f.q.toLowerCase());});
-        onSaveSection(subjId,{...sec,flashcards:[...fcs,...dedupedFCs]});
-        showToast("✓ Added "+dedupedFCs.length+" flashcard"+(dedupedFCs.length!==1?"s":"")+(newFCs.length>dedupedFCs.length?" ("+( newFCs.length-dedupedFCs.length)+" duplicates skipped)":""));
-        setTab("flashcards");
-      } else {
-        var s2=raw.indexOf("["),e3=raw.lastIndexOf("]");
-        if(s2<0||e3<0) throw new Error("Could not parse AI response");
-        var arr2=JSON.parse(raw.slice(s2,e3+1));
-        var newQs=arr2.map(function(x){return {id:uid2(),type:x.type||"short",text:(x.text||"").trim(),markScheme:(x.markScheme||"").trim(),marks:Number(x.marks)||3,_userCreated:true};}).filter(function(q){return q.text;});
-        // Deduplicate questions (fix #57)
-        var existingTexts=new Set((qs||[]).map(function(q){return (q.text||"").toLowerCase().trim();}));
-        var dedupedQs=newQs.filter(function(q){return !existingTexts.has(q.text.toLowerCase());});
-        onSaveSection(subjId,{...sec,questions:[...qs,...dedupedQs]});
-        showToast("✓ Added "+dedupedQs.length+" question"+(dedupedQs.length!==1?"s":""));
-        setTab("questions");
-      }
-      setAiText(""); setAiLoading(false); setShowAI(false);
-    }).catch(function(err){setAiErr(err.message||"AI error — please try again");setAiLoading(false);});
+        onSaveSection(subjId,{...secSnap,flashcards:[...fcsSnap,...dedupedFCs]});
+        if(dedupedFCs.length>0){
+          showToast("✓ Added "+dedupedFCs.length+" flashcard"+(dedupedFCs.length!==1?"s":"")+(newFCs.length>dedupedFCs.length?" ("+( newFCs.length-dedupedFCs.length)+" duplicates skipped)":""));
+        } else {
+          setAiErr("No new flashcards generated — try adding more detailed content.");
+        }
+        setTab("flashcards"); setAiText(""); setAiLoading(false); setShowAI(false);
+      }).catch(function(err){setAiErr(err.message||"AI error — please try again");setAiLoading(false);});
+
+    } else {
+      // Questions: use the Phase 4 question generator service
+      var needed=[{count:3,type:"short",marks:3},{count:1,type:"extended",marks:6}];
+      aiServiceQuestionGenerator(subjectName, "GCSE", aiText, needed, "")
+        .then(function(validated){
+          var newQs=validated.map(function(q){return Object.assign({},q,{id:uid2(),_userCreated:true});});
+          // Deduplicate
+          var existingTexts=new Set((qsSnap||[]).map(function(q){return (q.text||"").toLowerCase().trim();}));
+          var dedupedQs=newQs.filter(function(q){return !existingTexts.has((q.text||"").toLowerCase());});
+          onSaveSection(subjId,{...secSnap,questions:[...qsSnap,...dedupedQs]});
+          if(dedupedQs.length>0){
+            showToast("✓ Added "+dedupedQs.length+" question"+(dedupedQs.length!==1?"s":""));
+          } else {
+            setAiErr("No new questions generated — content may be too similar to existing questions.");
+          }
+          setTab("questions"); setAiText(""); setAiLoading(false); setShowAI(false);
+        })
+        .catch(function(err){setAiErr(err.message||"AI error — please try again");setAiLoading(false);});
+    }
   }
 
   return (
@@ -7676,24 +8112,44 @@ function PersonalSectionScreen({D, subj, topic, user, onBack, onSave}) {
     var topicSnap = topic;
     var notesSnap = notes;
     var flashcardsSnap = flashcards;
-    var p;
     if(tab==="notes"){
-      p = "You are a study assistant. The user has pasted the following text. Extract the key facts and turn them into clear, concise bullet-point notes. Return ONLY the notes as a plain text list, one point per line starting with \u2022.\n\n"+aiText;
-      callGeminiSimple(p, 1200).then(function(result){
-        var ls = result.split("\n").filter(function(l){return l.trim();});
-        var newNotes = ls.map(function(l){return {id:_psId(l),text:l.replace(/^\u2022\s*/,"").trim(),created:Date.now()};});
+      // Phase 4: validated notes generation with _aiWithRetry fallback
+      var pNotes = "You are a study assistant. The user has pasted the following text. Extract the key facts and turn them into clear, concise bullet-point notes. Return ONLY the notes as a plain text list, one point per line starting with •.\n\n"+aiText;
+      _aiWithRetry(
+        function(){ return callAI(pNotes, 1200); },
+        2,
+        function(){ return "• Notes could not be generated — try adding more content."; }
+      ).then(function(result){
+        var ls = (result||"").split("\n").filter(function(l){return l.trim();});
+        var newNotes = ls.length
+          ? ls.map(function(l){return {id:_psId(l),text:l.replace(/^•\s*/,"").trim(),created:Date.now()};}).filter(function(n){return n.text;})
+          : [{id:_psId("fallback"),text:"Could not generate notes — paste more content and try again.",created:Date.now()}];
         onSave(Object.assign({},topicSnap,{notes:notesSnap.concat(newNotes)}));
         setAiText("");
         setAiLoading(false);
       }).catch(function(e){setAiErr(e.message||"AI error — try again");setAiLoading(false);});
     } else {
-      p = "You are a study assistant. The user has pasted the following text. Create 6-10 flashcard question-answer pairs covering the key facts. Return ONLY valid JSON (no markdown): [{\"front\":\"question\",\"back\":\"answer\"}]\n\n"+aiText;
-      callGeminiSimple(p, 1200).then(function(raw){
-        var s=raw.indexOf("["), e2=raw.lastIndexOf("]");
-        if(s<0||e2<0) throw new Error("Could not parse AI response");
-        var arr = JSON.parse(raw.slice(s,e2+1));
-        var newFcs = arr.map(function(item){return {id:_psId(item.front||"fc"),front:(item.front||"").trim(),back:(item.back||"").trim()};});
-        onSave(Object.assign({},topicSnap,{flashcards:flashcardsSnap.concat(newFcs)}));
+      // Phase 4: flashcards use validated JSON parsing via _parseAIJson + _aiWithRetry fallback
+      var pFc = "You are a study assistant. The user has pasted the following text. Create 6-10 flashcard question-answer pairs covering the key facts. Return ONLY valid JSON (no markdown): [{\"front\":\"question\",\"back\":\"answer\"}]\n\n"+aiText;
+      _aiWithRetry(
+        function(){
+          return callAI(pFc, 1200).then(function(raw){
+            var parsed = _parseAIJson(raw);
+            if(!Array.isArray(parsed)||!parsed.length) throw new Error("No flashcards returned");
+            return parsed;
+          });
+        },
+        2,
+        function(){ return []; }
+      ).then(function(arr){
+        var newFcs = (arr||[])
+          .map(function(item){return {id:_psId(item.front||"fc"),front:(item.front||"").trim(),back:(item.back||"").trim()};})
+          .filter(function(f){return f.front&&f.back;});
+        if(newFcs.length>0){
+          onSave(Object.assign({},topicSnap,{flashcards:flashcardsSnap.concat(newFcs)}));
+        } else {
+          setAiErr("No flashcards could be generated — try adding more detailed content.");
+        }
         setAiText("");
         setAiLoading(false);
       }).catch(function(e){setAiErr(e.message||"AI error — try again");setAiLoading(false);});
@@ -8544,6 +9000,24 @@ export default function App() {
     });
     setShowReflection(false);
     showToast("Reflection saved ✓","success");
+    // Phase 4: Fire-and-forget coaching summary — enrich the entry asynchronously
+    const subjName = subjDef ? subjDef.name : (subjectId || '');
+    if (entry && entry.reflections) {
+      aiServiceReflectionSummarizer(entry.reflections, subjName)
+        .then(function(coaching) {
+          if (!coaching || !coaching.summary) return;
+          setJournalData(function(prev) {
+            const cur = prev[subjectId] || [];
+            // Update the most recent entry with coaching data
+            const updated = cur.map(function(e, i) {
+              return i === cur.length - 1 ? Object.assign({}, e, { coaching: coaching }) : e;
+            });
+            window.storage.set(SK_JOURNAL(user, subjectId), JSON.stringify(updated), true).catch(function(){});
+            return Object.assign({}, prev, { [subjectId]: updated });
+          });
+        })
+        .catch(function() {}); // Silent — coaching is enhancement only
+    }
   };
   const saveSessionSetup = async (setup) => {
     setSessionSetup(setup);
@@ -9867,12 +10341,13 @@ const openSessionBlock = (block) => {
                       try{
                         const textContent=note.heading+": "+stripHtml(note.body||"").slice(0,500);
                         const prompt=`You are a GCSE revision diagram designer. Analyse this note and return ONLY valid JSON (no markdown) for the best diagram.\n\nNote: ${textContent}\n\nChoose ONE type: process, cycle, hierarchy, comparison, structure, timeline.\nReturn: {"type":"process","accent":"#059669","data":{"steps":[{"id":"1","label":"Step","sublabel":"detail"}]}}\nRules: labels max 4 words, max 8 items, use subject-appropriate accent colour.`;
-                        const raw=await callAI(prompt,700);
-                        const s=raw.indexOf("{"),e=raw.lastIndexOf("}");
-                        if(s>=0&&e>s){
-                          const diagram=JSON.parse(raw.slice(s,e+1));
-                          const updated={...note,diagram};
-                          editInSection(section.id,"notes",updated);
+                        // Phase 4: _parseAIJson + _aiWithRetry — no dead-end if AI fails
+                        const diagram = await _aiWithRetry(
+                          async()=>{ const raw=await callAI(prompt,700); const p=_parseAIJson(raw); if(!p||!p.type) throw new Error("No diagram"); return p; },
+                          2, null
+                        );
+                        if(diagram){
+                          editInSection(section.id,"notes",{...note,diagram});
                           showToast("Diagram added ✓","success");
                         } else {
                           showToast("Could not generate diagram — try again","error");
