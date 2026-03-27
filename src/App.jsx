@@ -2,6 +2,17 @@ import '../src/storage.js'
 import React, { useState, useEffect, useCallback, useRef } from "react"; 
 import ReactDOM from "react-dom/client";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar, Legend } from "recharts";
+import {
+  buildAiServiceInstruction,
+  buildTodaySessionPlan,
+  buildTutorPedagogyPolicy,
+  calibrateFlashcardRating,
+  computeNextBestActions,
+  getAiServiceFallback,
+  getQuestionSkillVector,
+  getSubjectStrategy,
+  normalizeAiServiceOutput,
+} from "./learningEngine.js";
 
 /* ─── FONTS + KATEX ──────────────────────────────────────────────────────────── */
 const _fl=document.createElement("link");_fl.rel="stylesheet";
@@ -138,6 +149,20 @@ function detectErrorType(questionText, studentAnswer, markScheme, missedPoints){
   if(a.length<25 || !/[.!?]/.test(studentAnswer||"")) return "Communication Error";
   return "Knowledge Gap";
 }
+function updateSkillPerfMap(skillPerf, question, success, marksEarned, marksPossible){
+  try{
+    const vec=getQuestionSkillVector(question?.text||"", question?.type||"short");
+    const key=vec.commandWord+":"+vec.responseType;
+    const cur=(skillPerf&&skillPerf[key])||{attempts:0,success:0,marks:0,maxMarks:0};
+    const next={
+      attempts:(cur.attempts||0)+1,
+      success:(cur.success||0)+(success?1:0),
+      marks:(cur.marks||0)+Number(marksEarned||0),
+      maxMarks:(cur.maxMarks||0)+Math.max(1,Number(marksPossible||1)),
+    };
+    return {...(skillPerf||{}),[key]:next};
+  }catch(_){return skillPerf||{};}
+}
 function incrementErrorPattern(user, subjectId, type){
   if(!user||!subjectId||!type||typeof window==="undefined") return null;
   try{
@@ -162,43 +187,7 @@ function getDominantErrorPattern(user, subjectId){
 }
 // Strategy logic for Feature 21
 function getStrategyRecommendation(subj, allSections, fcHist, calibData, timetableExams, stats) {
-  const secs = allSections.filter(s=>s.subjectId===subj.id);
-  const totalCards = secs.reduce((a,s)=>a+(s.flashcards||[]).length,0);
-  const dueCards = secs.reduce((a,s)=>a+(s.flashcards||[]).filter(c=>{const st=fcHist[c.id];return !st||Date.now()>=st.due;}).length,0);
-  const masteredCards = totalCards>0?totalCards-dueCards:0;
-  const masteryPct = totalCards>0?Math.round((masteredCards/totalCards)*100):0;
-  const ss = stats.subjStats&&stats.subjStats[subj.id];
-  const qPct = ss&&ss.qM>0?Math.round((ss.qS/ss.qM)*100):null;
-  const brierScore = calibData ? calcBrierScore(calibData) : null;
-  const overconfident = brierScore!=null && brierScore>0.25;
-  const daysToExam = (()=>{
-    const ex=(timetableExams||[]).filter(e=>e.subjectId===subj.id).sort((a,b)=>a.date.localeCompare(b.date))[0];
-    if(!ex) return null;
-    return Math.max(0,Math.round((new Date(ex.date+"T00:00:00")-Date.now())/86400000));
-  })();
-  // Decision logic
-  if(totalCards>0 && masteryPct<50) {
-    return {strategy:"flashcards",title:"Spaced Repetition",icon:"🃏",color:"#6366f1",
-      reason:`${dueCards} card${dueCards!==1?"s":""} due. Retrieval practice will cement this content.`};
-  }
-  if(overconfident) {
-    return {strategy:"blurting",title:"Blurting Exercise",icon:"🧠",color:"#d97706",
-      reason:"Your calibration shows you may be overestimating recall. Blurting will reveal real gaps."};
-  }
-  if(daysToExam!=null && daysToExam<=14 && masteryPct>=60) {
-    return {strategy:"questions",title:"Exam Practice",icon:"✏️",color:"#ef4444",
-      reason:`Exam in ${daysToExam} day${daysToExam!==1?"s":""}. High-pressure practice is your priority now.`};
-  }
-  if(qPct!=null && qPct<55) {
-    return {strategy:"weak",title:"Weak Topic Drill",icon:"🎯",color:"#dc2626",
-      reason:"Your question accuracy is below 55%. Target your weakest areas to maximise marks."};
-  }
-  if(masteryPct>75 && (qPct==null||qPct>65)) {
-    return {strategy:"mixed",title:"Mixed Revision",icon:"🔀",color:"#10b981",
-      reason:"Strong foundation detected. Mix flashcards, questions, and blurting to consolidate."};
-  }
-  return {strategy:"flashcards",title:"Flashcard Review",icon:"🃏",color:"#6366f1",
-    reason:"Regular spaced repetition keeps content fresh. Review your due cards now."};
+  return getSubjectStrategy(subj, allSections, fcHist, calibData, timetableExams, stats);
 }
 
 const hashPw = s => btoa(encodeURIComponent(s)).slice(0,32);
@@ -1000,11 +989,14 @@ function mergeTopics(baseTopics, boardCustom, boardExtras) {
 }
 
 async function markAnswer(q, ans) {
-  const prompt = "You are an AQA GCSE examiner. Mark this answer strictly.\n\nQuestion: "+q.text+"\nMax marks: "+q.marks+"\nMark scheme: "+q.markScheme+"\nStudent answer: "+ans+"\n\nRespond ONLY with valid JSON (no markdown):\n{\"score\":0,\"feedback\":\"2-3 sentences\",\"missedPoints\":[\"point\"],\"modelAnswer\":\"ideal answer\",\"examTip\":\"one AQA tip\"}";
-  const raw = await callGeminiSimple(prompt, 800);
-  const fence = "`"+"`"+"`"; const clean = raw.split(fence+"json").join("").split(fence).join("").trim();
-  const s=clean.indexOf("{"), e=clean.lastIndexOf("}");
-  const parsed = JSON.parse(s>=0&&e>=0?clean.slice(s,e+1):clean);
+  const prompt = "You are an AQA GCSE examiner. Mark this answer strictly.\n\nQuestion: "+q.text+"\nMax marks: "+q.marks+"\nMark scheme: "+q.markScheme+"\nStudent answer: "+ans+"\n\n"+buildAiServiceInstruction("answer_marker");
+  let parsed;
+  try{
+    const raw = await callGeminiSimple(prompt, 800);
+    parsed = normalizeAiServiceOutput("answer_marker", raw, { maxMarks: q?.marks||1 });
+  }catch(_){
+    parsed = getAiServiceFallback("answer_marker", { maxMarks: q?.marks||1 });
+  }
   const markPoints = Array.isArray(parsed?.missedPoints) ? parsed.missedPoints : [];
   return {
     ...parsed,
@@ -1702,11 +1694,13 @@ function SketchnoteCanvas({D,user,subjectId}){
 
 
 async function blurtAnalyse(notesText, blurtText) {
-  const prompt = "You are a GCSE revision coach analysing a blurting exercise.\n\nRevision Notes:\n"+notesText+"\n\nStudent's blurt (from memory):\n"+blurtText+"\n\nRespond ONLY with valid JSON (no markdown, no backticks):\n{\"remembered\":[\"well-recalled point\"],\"missed\":[\"key point they forgot\"],\"partial\":[\"partially recalled point\"],\"feedback\":\"2-sentence encouragement + top tip\",\"score\":75}\n\nScore = % of key concepts the student demonstrated (0-100).";
-  const raw = await callGeminiSimple(prompt, 1000);
-  const fence = "`"+"`"+"`"; const clean = raw.split(fence+"json").join("").split(fence).join("").trim();
-  const s=clean.indexOf("{"), e=clean.lastIndexOf("}");
-  return JSON.parse(s>=0&&e>=0?clean.slice(s,e+1):clean);
+  const prompt = "You are a GCSE revision coach analysing a blurting exercise.\n\nRevision Notes:\n"+notesText+"\n\nStudent's blurt (from memory):\n"+blurtText+"\n\n"+buildAiServiceInstruction("blurt_analyser")+"\n\nScore = % of key concepts the student demonstrated (0-100).";
+  try{
+    const raw = await callGeminiSimple(prompt, 1000);
+    return normalizeAiServiceOutput("blurt_analyser", raw);
+  }catch(_){
+    return getAiServiceFallback("blurt_analyser");
+  }
 }
 
 /* ─── GENERATE PARTED PAPER ─────────────────────────────────────────────────── */
@@ -6404,7 +6398,8 @@ function AITutorScreen({D,subjects,allSections,boardSels,boardData,user,googleKe
     const modeInstr=mode==="homework"
       ?`HOMEWORK HELP MODE: The student may upload images, PDFs or other files showing their homework. Walk them through the problem step by step with guiding questions — do NOT just give the answer directly. Encourage independent thinking. Celebrate correct steps warmly.`
       :`TUTOR MODE: Answer questions clearly and enthusiastically. Use examples, analogies and connect to ${selBoard} exam skills. Format responses with headings and bullet points where helpful.`;
-    if(!hasContent)return `You are ReviseIQ AI, a warm and expert GCSE ${subj?.name} tutor (${selBoard}). Topic: "${topicLabel}". IMPORTANT: No revision notes have been added yet — tell the student this briefly and draw on your general ${selBoard} GCSE knowledge. ${modeInstr} ${imgInstr} Use ${selBoard} command words. Keep responses focused and clear.`;
+    const pedagogyPolicy = buildTutorPedagogyPolicy(mode);
+    if(!hasContent)return `You are ReviseIQ AI, a warm and expert GCSE ${subj?.name} tutor (${selBoard}). Topic: "${topicLabel}". IMPORTANT: No revision notes have been added yet — tell the student this briefly and draw on your general ${selBoard} GCSE knowledge. ${modeInstr} ${imgInstr} ${pedagogyPolicy} Use ${selBoard} command words. Keep responses focused and clear.`;
     return `You are ReviseIQ AI, a warm and expert GCSE ${subj?.name} tutor (${selBoard}). Topic: "${topicLabel}".
 
 IMPORTANT — CONTENT BOUNDARIES: Only draw on the revision content provided below. If the student asks about something not in these notes, say so clearly and offer to cover what IS in their notes. You may use general ${selBoard} GCSE knowledge ONLY to explain or expand on content that IS in the notes.
@@ -6420,6 +6415,7 @@ ${qs||"(none added yet)"}
 
 ${modeInstr}
 ${imgInstr}
+${pedagogyPolicy}
 Style: warm, encouraging, clear. Use ## headings and bullet points to organise longer responses. Reference ${selBoard} mark scheme language when relevant.`;
   };
 
@@ -6502,21 +6498,26 @@ Style: warm, encouraging, clear. Use ## headings and bullet points to organise l
       saveMemory(newMsgsArr);
       // Fire-and-forget chips (use last/cheapest model)
       var chipModel=TUTOR_MODELS[TUTOR_MODELS.length-1];
-      tutorCall(chipModel,'Return ONLY a JSON array of 3 short follow-up questions (max 9 words each). No preamble.',
+      tutorCall(chipModel,buildAiServiceInstruction("tutor_followups"),
         [{role:"user",content:"Suggest 3 follow-ups for: "+responseText.slice(0,400)}]
       ).then(function(raw){
         try{
-          var s=raw.indexOf("["),e2=raw.lastIndexOf("]");
-          if(s<0||e2<0)return;
-          var arr=JSON.parse(raw.slice(s,e2+1));
-          if(!Array.isArray(arr))return;
-          var chipsArr=arr.slice(0,3).map(function(x){return String(x).slice(0,70);});
+          var chipsArr=normalizeAiServiceOutput("tutor_followups", raw);
+          if(!chipsArr.length) chipsArr=getAiServiceFallback("tutor_followups");
           setMsgs(function(p){return p.map(function(m,i){return i===p.length-1?Object.assign({},m,{_d:Object.assign({},m._d,{chips:chipsArr})}):m;});});
         }catch(ex){}
       }).catch(function(){});
     }else{
       setErr(lastErr);
-      setMsgs(messages);
+      setMsgs([...hist,{
+        role:"assistant",
+        content:"I’m having trouble reaching AI right now. Try again in a moment, or continue with a non-AI block (flashcards/questions) and come back.",
+        _d:{
+          text:"I’m having trouble reaching AI right now. Try again in a moment, or continue with a non-AI block (flashcards/questions) and come back.",
+          stag:"fallback",
+          chips:getAiServiceFallback("tutor_followups"),
+        }
+      }]);
     }
     }catch(e){setErr(e.message||"Unexpected error");setMsgs(messages);}
     finally{setSending(false);}
@@ -6938,106 +6939,42 @@ function ExamCoachScreen({D,subjects,allSections,boardSels,boardData,onBack}) {
 /* ─── TODAY WIDGET ───────────────────────────────────────────────────────── */
 function TodayWidget({D,subjects,allSections,fcHist,stats,timetableExams,boardSels,
   onNavigateSection,onNavigateBlurt,onMock}) {
-  const now = Date.now();
-  const todayDate = new Date().toISOString().slice(0,10);
-
-  // 1. SM-2 due cards per subject
-  const dueBySubj = {};
-  subjects.forEach(function(s){
-    const secs = allSections.filter(function(sec){return sec.subjectId===s.id;});
-    var count = 0;
-    secs.forEach(function(sec){
-      (sec.flashcards||[]).forEach(function(c){
-        if(isCardDue(fcHist,c.id)) count++;
-      });
-    });
-    if(count>0) dueBySubj[s.id] = count;
+  const plan = computeNextBestActions({subjects,allSections,stats,fcHist,timetableExams});
+  const finalItems = plan.map(function(item){
+    if(item.kind==="flashcards"){
+      const subj = subjects.find(function(s){return s.id===item.subjectId;});
+      const sec = allSections.find(function(s){return s.id===item.sectionId;});
+      return {
+        emoji:"🃏",
+        text:item.label,
+        sub:item.subtitle,
+        color:subj?subj.accent:"#6366f1",
+        action:function(){if(sec)onNavigateSection(sec,"flashcards");}
+      };
+    }
+    if(item.kind==="questions"){
+      const subj = subjects.find(function(s){return s.id===item.subjectId;});
+      const sec = allSections.find(function(s){return s.id===item.sectionId;});
+      return {
+        emoji:"❓",
+        text:item.label,
+        sub:item.subtitle,
+        color:subj?subj.accent:"#ef4444",
+        action:function(){if(sec)onNavigateSection(sec,"questions");}
+      };
+    }
+    if(item.kind==="exam"){
+      const sec = item.sectionId?allSections.find(function(s){return s.id===item.sectionId;}):null;
+      return {
+        emoji:"📅",
+        text:item.label,
+        sub:sec?("Blurting: "+sec.title):item.subtitle,
+        color:item.days<=3?"#ef4444":item.days<=7?"#f59e0b":"#10b981",
+        action:function(){if(sec)onNavigateBlurt(item.subjectId,sec.id);else onMock();}
+      };
+    }
+    return {emoji:"📝",text:"Take a mock exam",sub:"Simulate real exam conditions",color:"#6366f1",action:onMock};
   });
-
-  // 2. Weakest section by question history (worst accuracy with ≥1 attempt)
-  var weakestSec = null; var worstPct = 101;
-  allSections.forEach(function(sec){
-    const wq = stats.weakQ&&stats.weakQ[sec.id];
-    if(!wq||!wq.total) return;
-    const pct = Math.round(((wq.total - wq.wrong)/wq.total)*100);
-    if(pct < worstPct){ worstPct = pct; weakestSec = sec; }
-  });
-
-  // 3. Most urgent upcoming exam (soonest future date)
-  var urgentExam = null; var minDays = Infinity;
-  (timetableExams||[]).forEach(function(exam){
-    const dt = new Date(exam.date+"T00:00:00");
-    const diff = Math.round((dt - now)/(86400000));
-    if(diff>=0 && diff<minDays){ minDays=diff; urgentExam=exam; }
-  });
-
-  // Build prioritised action items
-  const items = [];
-
-  // Flash cards: pick the subject with the most due cards
-  if(Object.keys(dueBySubj).length>0){
-    const topSubjId = Object.keys(dueBySubj).sort(function(a,b){return dueBySubj[b]-dueBySubj[a];})[0];
-    const topSubj = subjects.find(function(s){return s.id===topSubjId;});
-    const count = dueBySubj[topSubjId];
-    // Find the section with the most due cards for this subject
-    var bestSec=null; var bestCount=0;
-    allSections.filter(function(s){return s.subjectId===topSubjId;}).forEach(function(sec){
-      var dc=(sec.flashcards||[]).filter(function(c){return isCardDue(fcHist,c.id);}).length;
-      if(dc>bestCount){bestCount=dc;bestSec=sec;}
-    });
-    items.push({
-      emoji:"🃏",
-      text:"Review "+count+" due "+topSubj.name+" flashcard"+(count!==1?"s":""),
-      sub:bestSec?bestSec.title:topSubj.name,
-      color:topSubj.accent,
-      action:function(){if(bestSec)onNavigateSection(bestSec,"flashcards");}
-    });
-  }
-
-  // Weak questions area
-  if(weakestSec){
-    const sec = weakestSec;
-    const subj = subjects.find(function(s){return s.id===sec.subjectId;});
-    const qCount = (sec.questions||[]).length;
-    items.push({
-      emoji:"❓",
-      text:"Practice "+(qCount>0?qCount+" ":"")+"question"+(qCount!==1?"s":"")+": "+sec.title,
-      sub:"Your weakest area · "+worstPct+"% accuracy",
-      color:subj?subj.accent:"#ef4444",
-      action:function(){onNavigateSection(sec,"questions");}
-    });
-  }
-
-  // Upcoming exam blurt
-  if(urgentExam){
-    const eSubj = subjects.find(function(s){return s.id===urgentExam.subjectId;});
-    const label = urgentExam.label||(eSubj?eSubj.name:"exam");
-    // Find a relevant section for blurting
-    const relSec = urgentExam.sectionId
-      ? allSections.find(function(s){return s.id===urgentExam.sectionId;})
-      : allSections.find(function(s){return s.subjectId===urgentExam.subjectId;});
-    const daysLabel = minDays===0?"today":minDays===1?"tomorrow":"in "+minDays+" days";
-    items.push({
-      emoji:"📅",
-      text:"Quick blurt: "+label+" (exam "+daysLabel+")",
-      sub:relSec?"Blurting: "+relSec.title:"Exam preparation",
-      color:minDays<=3?"#ef4444":minDays<=7?"#f59e0b":"#10b981",
-      action:function(){if(relSec)onNavigateBlurt(urgentExam.subjectId,relSec.id);else onMock();}
-    });
-  }
-
-  // Pad to 3 items if we have fewer — suggest a mock exam
-  if(items.length<3){
-    items.push({
-      emoji:"📝",
-      text:"Take a mock exam",
-      sub:"Simulate real exam conditions",
-      color:"#6366f1",
-      action:onMock
-    });
-  }
-
-  const finalItems = items.slice(0,3);
   if(!finalItems.some(function(i){return i.text!=="Take a mock exam";})) return null; // nothing meaningful to show
 
   return (
@@ -7068,6 +7005,62 @@ function TodayWidget({D,subjects,allSections,fcHist,stats,timetableExams,boardSe
             </button>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+function PracticeSessionScreen({D, session, onBack, onOpenBlock, onComplete, onReset}) {
+  const [done, setDone] = React.useState({});
+  const blocks = session?.blocks || [];
+  const completeCount = blocks.filter(b => done[b.id]).length;
+  const pct = blocks.length ? Math.round((completeCount / blocks.length) * 100) : 0;
+  const bd2=D?"#2a3347":"#e5e7eb";
+
+  function toggleDone(id) {
+    setDone(prev => {
+      const next = {...prev, [id]: !prev[id]};
+      const finished = blocks.length>0 && blocks.every(b => next[b.id]);
+      if (finished) onComplete && onComplete();
+      return next;
+    });
+  }
+
+  return (
+    <div style={{minHeight:"100vh",background:D?"#0f1117":"#f9fafb",color:tx(D)}} className="fade-in">
+      <div style={{maxWidth:820,margin:"0 auto",padding:"32px 24px"}}>
+        <button onClick={onBack} style={{fontSize:13,color:mu(D),background:"none",border:"none",cursor:"pointer",marginBottom:18}}>← Back</button>
+        <h2 style={{fontSize:22,fontWeight:700,marginBottom:4}}>🎯 {session?.missionTitle||"Guided Session"}</h2>
+        <p style={{fontSize:13,color:mu(D),marginBottom:16}}>{session?.missionSubtitle||"Complete your recommended study blocks."}</p>
+        <div style={{height:8,borderRadius:999,background:D?"#1e2537":"#e5e7eb",overflow:"hidden",marginBottom:16}}>
+          <div style={{height:"100%",width:pct+"%",background:"#6366f1",transition:"width .25s ease"}}/>
+        </div>
+        <p style={{fontSize:12,color:mu(D),marginBottom:18}}>{completeCount}/{blocks.length} blocks complete</p>
+
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          {blocks.map((b,idx)=>(
+            <div key={b.id} style={{...C(D),padding:14,borderColor:done[b.id]?"#16a34a":undefined}}>
+              <div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"flex-start"}}>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:11,color:mu(D),marginBottom:4}}>Block {idx+1} · {b.etaMin} min</div>
+                  <div style={{fontWeight:700,fontSize:14,marginBottom:3}}>{b.title}</div>
+                  <div style={{fontSize:12,color:mu(D)}}>{b.detail}</div>
+                </div>
+                <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                  <button onClick={()=>onOpenBlock&&onOpenBlock(b)} style={{...B("#6366f1",false,{fontSize:12,padding:"7px 12px"})}}>Open</button>
+                  <button onClick={()=>toggleDone(b.id)} style={{...B(done[b.id]?"#16a34a":"transparent",!done[b.id],{fontSize:12,padding:"7px 12px",borderColor:done[b.id]?"#16a34a":bd2,color:done[b.id]?"#fff":mu(D)})}}>
+                    {done[b.id]?"Done":"Mark done"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{display:"flex",gap:10,marginTop:18}}>
+          <button onClick={onReset} style={{...B("transparent",true,{padding:"10px 14px",fontSize:13,borderColor:bd2,color:mu(D)})}}>Regenerate Plan</button>
+          <button onClick={onBack} style={{...B("#111827",false,{padding:"10px 14px",fontSize:13})}}>Return Home</button>
+        </div>
       </div>
     </div>
   );
@@ -8185,6 +8178,7 @@ export default function App() {
   const [showPass,setShowPass]= useState(false);
   const [userGoogleKey,setGK]= useState("");
   const [screen,setScreen]   = useState("login");
+  const [todaySession,setTodaySession] = useState(null);
   const [D,setD]             = useState(false);
   const [ready,setReady]     = useState(false);
   const [online,setOnline]   = useState(typeof navigator!=="undefined"?navigator.onLine:true);
@@ -8205,6 +8199,7 @@ export default function App() {
   const [fcIdx,setFcIdx]     = useState(0);
   const [flip,setFlip]       = useState(false);
   const [cramMode,setCramMode] = useState(false);
+  const fcShownAtRef = useRef(Date.now());
   // Section screen extras — must be top-level hooks, not inline in render
   const [noteSearch,setNoteSearch] = useState("");
   const [shuffledCards,setShuffledCards] = useState(null);
@@ -8318,6 +8313,10 @@ export default function App() {
     const merged = mergeTopics(s.topics||[], bd.custom, bd.extras);
     return merged.flatMap(t => t.sections.map(sec => ({...sec, subjectId:s.id})));
   }),[subjects,boardSels,boardData]);
+
+  useEffect(()=>{
+    if(screen==="section"&&tab==="flashcards") fcShownAtRef.current=Date.now();
+  },[screen,tab,secId,fcIdx]);
 
   const getBD = (sId,b) => boardData[`${sId}:${b}`]||{custom:[],extras:{},papers:[]};
   const boardLoadedRef = useRef({});
@@ -8976,6 +8975,27 @@ export default function App() {
 const hProps={user,userDisplayName,D,onDark:()=>setD(!D),onHome:()=>setScreen("home"),onDash:()=>{setScreen("dashboard");trackEvent('screen_view',{screen:'dashboard'});},onTarget:()=>{setTTSubj(null);setScreen("target");trackEvent('screen_view',{screen:'target'});},onTimetable:()=>setScreen("timetable"),onBlurt:()=>{setBlurtSubjId(null);setBlurtSecId2(null);setScreen("blurting");trackEvent('screen_view',{screen:'blurting'});},onMock:()=>{setScreen("mock");trackEvent('screen_view',{screen:'mock'});},onTutor:()=>{setTutorSubjId(null);setScreen("tutor");trackEvent('screen_view',{screen:'tutor'});},onCoach:()=>setScreen("coach"),onLeaderboards:()=>setScreen("friends"),onAccount:()=>setScreen("account"),streak,onSearch:()=>setSearchOpen(true),globalOverlays:_goEl,screen};
 const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=>!s._politics)[0]?.id||null}); };
 
+const openSessionBlock = (block) => {
+  if(!block) return;
+  if(block.type==="mock"){ setScreen("mock"); return; }
+  if(block.type==="blurting"){ setBlurtSubjId(block.subjectId||null); setBlurtSecId2(block.sectionId||null); setScreen("blurting"); return; }
+  if(block.type==="flashcards"||block.type==="questions"){
+    const sec = allSections.find(s=>s.id===block.sectionId);
+    if(!sec){ setScreen("home"); return; }
+    const si=subjects.findIndex(s=>s.id===sec.subjectId);
+    if(si<0){ setScreen("home"); return; }
+    const b=boardSels[subjects[si].id]||DEFAULT_BOARD;
+    ensureBoardLoaded(subjects[si].id,b).then(function(){
+      const bd=boardData[subjects[si].id+":"+b]||{custom:[],extras:{},papers:[]};
+      const merged=mergeTopics(subjects[si].topics||[],bd.custom,bd.extras);
+      const ti=merged.findIndex(t=>t.sections.some(s=>s.id===sec.id));
+      if(ti<0)return;
+      setSubIdx(si);setTopIdx(ti);setSecId(sec.id);setTab(block.type==="questions"?"questions":"flashcards");
+      setScreen("section");
+    });
+  }
+};
+
   // Personal subject routing — handled before the main screen router
   // User content screen (private notes/flashcards/questions)
   if(ucScreen) return (
@@ -9144,6 +9164,22 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
       <TimetableScreen D={D} subjects={subjects} allSections={allSections} user={user} stats={stats} onNav={handleTimetableNav} onBack={()=>setScreen("home")}/>
     </>);
   }
+  if(screen==="practice"&&todaySession){
+    return (
+      <PracticeSessionScreen
+        D={D}
+        session={todaySession}
+        onBack={()=>setScreen("home")}
+        onOpenBlock={openSessionBlock}
+        onComplete={()=>showToast("Great work — guided session complete!","success")}
+        onReset={()=>{
+          const plan = buildTodaySessionPlan({subjects,allSections,stats,fcHist,timetableExams});
+          setTodaySession(plan);
+          showToast("Session regenerated");
+        }}
+      />
+    );
+  }
 
   if(screen==="blurting") return (<>
     <Header {...hProps}/>
@@ -9242,6 +9278,28 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
           <h2 style={{fontSize:24,fontWeight:700,margin:0}}>Hey {userDisplayName||getDisplayName(user)} 👋</h2>
           <button onClick={function(){openMyNotes(null);}} style={{display:"flex",alignItems:"center",gap:6,padding:"8px 16px",borderRadius:10,border:"1.5px solid #6366f1",background:D?"rgba(99,102,241,.12)":"#eef2ff",color:"#6366f1",fontSize:13,fontWeight:600,cursor:"pointer"}}>📓 My Notes &amp; Flashcards</button>
         </div>
+        {(()=>{
+          const guidedPlan = buildTodaySessionPlan({subjects,allSections,stats,fcHist,timetableExams});
+          const b = guidedPlan.primaryBlock || {};
+          return (
+            <div style={{...C(D),padding:"16px 18px",marginBottom:14,borderColor:"#6366f1",borderWidth:1.5}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,flexWrap:"wrap"}}>
+                <div style={{flex:1,minWidth:200}}>
+                  <div style={{fontSize:11,fontWeight:800,color:"#6366f1",letterSpacing:"0.07em",textTransform:"uppercase",marginBottom:4}}>Guided Session</div>
+                  <h3 style={{fontSize:16,fontWeight:700,margin:"0 0 4px"}}>{guidedPlan.missionTitle}</h3>
+                  <p style={{fontSize:12,color:mu(D),margin:0}}>{guidedPlan.missionSubtitle}</p>
+                  <p style={{fontSize:12,margin:"8px 0 0",color:tx(D)}}><strong>Start with:</strong> {b.title}</p>
+                </div>
+                <button onClick={()=>{
+                  setTodaySession(guidedPlan);
+                  setScreen("practice");
+                }} style={{...B("#6366f1",false,{padding:"10px 16px",fontSize:13,fontWeight:700,whiteSpace:"nowrap"})}}>
+                  Start Session →
+                </button>
+              </div>
+            </div>
+          );
+        })()}
         {streak>0&&(
           <div style={{...C(D),padding:"18px 22px",marginBottom:22,background:streak>=7?(D?"#1c0d05":"#fff7ed"):undefined,borderColor:streak>=7?"#f97316":undefined}}>
             <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:12}}>
@@ -9912,12 +9970,15 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
             const doSM2local=(rating)=>{
               if(!fc2)return;
               const cardId=fc2.id;
+              const latencySec=Math.max(1,Math.round((Date.now()-fcShownAtRef.current)/1000));
+              const calibrated=calibrateFlashcardRating({rating,confidence:fcConf,hintLevel:fcHintLvl,latencySec});
+              const effRating=calibrated.rating;
               markTodayActive();
-              enqueueOffline({type:"fsrs",payload:{cardId:cardId,rating:rating,subjectId:subjDef?.id||"",sectionId:section?.id||""}});
+              enqueueOffline({type:"fsrs",payload:{cardId:cardId,rating:effRating,subjectId:subjDef?.id||"",sectionId:section?.id||""}});
               if(!cramMode){
-                setFCH(prevH=>{const ps=getCardState(prevH,cardId);return{...prevH,[cardId]:fsrsNext(ps,rating)};});
+                setFCH(prevH=>{const ps=getCardState(prevH,cardId);return{...prevH,[cardId]:fsrsNext(ps,effRating)};});
               }
-              const correct=rating>=3;
+              const correct=effRating>=3;
               updateLadderLevel(user, ladderTopicId, correct); setLadderTick(v=>v+1);
               // Feature 19: record calibration prediction vs outcome
               if(fcConf!==null){
@@ -9936,9 +9997,13 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                 wfc[section.id]={wrong:(wfc[section.id]?.wrong||0)+(correct?0:1),total:(wfc[section.id]?.total||0)+1};
                 const ss={...s.subjStats};
                 ss[subj.id]={...ss[subj.id],fcC:(ss[subj.id]?.fcC||0)+(correct?1:0),fcT:(ss[subj.id]?.fcT||0)+1};
-                return{...s,fcC:s.fcC+(correct?1:0),fcT:s.fcT+1,weakFC:wfc,subjStats:ss};
+                const met=s.metacog||{samples:0,totalAbsError:0};
+                const pred=fcConf===null?0.5:confToProb(fcConf);
+                const absErr=Math.abs(pred-(correct?1:0));
+                const nextMet={samples:met.samples+1,totalAbsError:met.totalAbsError+absErr};
+                return{...s,fcC:s.fcC+(correct?1:0),fcT:s.fcT+1,weakFC:wfc,subjStats:ss,metacog:nextMet};
               });
-              trackEvent('card_rated', { sectionId: section?.id, subjectId: subjDef?.id, value: rating });
+              trackEvent('card_rated', { sectionId: section?.id, subjectId: subjDef?.id, value: effRating, rawValue:rating, latencySec:latencySec, adjustmentFlags:calibrated.flags.join(",") });
               setFlip(false);setFcConf(null);setFcHintLvl(0);setFcSelfExp("");setFcSelfOpen(false);
               if(correct) setElabOpen(true);
               setFcIdx(i=>{const len=activeCards.length;return len>0?(i<len-1?i+1:0):0;});
@@ -10398,7 +10463,7 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                                 const ok=oi===q.answer;setSelOpt(oi);setQRes(ok?"correct":"wrong");markTodayActive();
                                 updateAdaptiveLevel(user, subj.id, ok);
                                 updateLadderLevel(user, ladderTopicId, ok); setLadderTick(v=>v+1);
-                                setStats(s=>{const wq={...s.weakQ};wq[section.id]={wrong:(wq[section.id]?.wrong||0)+(ok?0:1),total:(wq[section.id]?.total||0)+1};const ss={...s.subjStats};ss[subj.id]={...ss[subj.id],qS:(ss[subj.id]?.qS||0)+(ok?1:0),qM:(ss[subj.id]?.qM||0)+1,fcC:ss[subj.id]?.fcC||0,fcT:ss[subj.id]?.fcT||0};return{...s,qS:s.qS+(ok?1:0),qM:s.qM+1,weakQ:wq,subjStats:ss};});
+                                setStats(s=>{const wq={...s.weakQ};wq[section.id]={wrong:(wq[section.id]?.wrong||0)+(ok?0:1),total:(wq[section.id]?.total||0)+1};const ss={...s.subjStats};ss[subj.id]={...ss[subj.id],qS:(ss[subj.id]?.qS||0)+(ok?1:0),qM:(ss[subj.id]?.qM||0)+1,fcC:ss[subj.id]?.fcC||0,fcT:ss[subj.id]?.fcT||0};const sp=updateSkillPerfMap(s.skillPerf,q,ok,ok?1:0,1);return{...s,qS:s.qS+(ok?1:0),qM:s.qM+1,weakQ:wq,subjStats:ss,skillPerf:sp};});
                               }}}
                                 style={{width:"100%",textAlign:"left",padding:"11px 16px",borderRadius:10,
                                   border:`1.5px solid ${br2}`,background:bg2,cursor:qRes?"default":"pointer",
@@ -10514,7 +10579,7 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                             updateAdaptiveLevel(user, subj.id, pct>=0.5);
                             updateLadderLevel(user, ladderTopicId, pct>=0.5); setLadderTick(v=>v+1);
                             setQRes(r);
-                            setStats(s=>{const wq={...s.weakQ};wq[section.id]={wrong:(wq[section.id]?.wrong||0)+(pct<0.5?1:0),total:(wq[section.id]?.total||0)+1};const ss={...s.subjStats};ss[subj.id]={...ss[subj.id],qS:(ss[subj.id]?.qS||0)+(r.score||0),qM:(ss[subj.id]?.qM||0)+q.marks,fcC:ss[subj.id]?.fcC||0,fcT:ss[subj.id]?.fcT||0};return{...s,qS:s.qS+(r.score||0),qM:s.qM+q.marks,weakQ:wq,subjStats:ss};});
+                            setStats(s=>{const wq={...s.weakQ};wq[section.id]={wrong:(wq[section.id]?.wrong||0)+(pct<0.5?1:0),total:(wq[section.id]?.total||0)+1};const ss={...s.subjStats};ss[subj.id]={...ss[subj.id],qS:(ss[subj.id]?.qS||0)+(r.score||0),qM:(ss[subj.id]?.qM||0)+q.marks,fcC:ss[subj.id]?.fcC||0,fcT:ss[subj.id]?.fcT||0};const sp=updateSkillPerfMap(s.skillPerf,q,pct>=0.5,r.score||0,q.marks||1);return{...s,qS:s.qS+(r.score||0),qM:s.qM+q.marks,weakQ:wq,subjStats:ss,skillPerf:sp};});
                           }catch(e){setQRes({score:"?",feedback:"ReviseIQ AI unavailable — self-mark using the mark scheme below.",missedPoints:[],modelAnswer:q.sampleAnswer||"",examTip:""});}
                           setMark(false);
                         }} disabled={!textAns.trim()||marking}
@@ -11088,7 +11153,7 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                       <button key={oi} onClick={()=>{if(!ttRes){
                         const isCorrect=oi===q.answer;setTTSO(oi);setTTRes(isCorrect?"correct":"wrong");
                         markTodayActive();
-                        setStats(s=>{const wq={...s.weakQ};wq[item.secId]={wrong:(wq[item.secId]?.wrong||0)+(isCorrect?0:1),total:(wq[item.secId]?.total||0)+1};return{...s,qS:s.qS+(isCorrect?1:0),qM:s.qM+1,weakQ:wq};});
+                        setStats(s=>{const wq={...s.weakQ};wq[item.secId]={wrong:(wq[item.secId]?.wrong||0)+(isCorrect?0:1),total:(wq[item.secId]?.total||0)+1};const sp=updateSkillPerfMap(s.skillPerf,q,isCorrect,isCorrect?1:0,1);return{...s,qS:s.qS+(isCorrect?1:0),qM:s.qM+1,weakQ:wq,skillPerf:sp};});
                       }}} style={{textAlign:"left",padding:"11px 16px",borderRadius:10,border:`1.5px solid ${br2}`,background:bg2,cursor:ttRes?"default":"pointer",color:co2,fontSize:13,transition:"all .15s"}}>
                         <span style={{fontFamily:"monospace",marginRight:10,fontSize:11}}>{"ABCD"[oi]}.</span>{opt}
                       </button>
@@ -11108,7 +11173,7 @@ const openMyNotes = (subjId) => { setUCScreen({subjId:subjId||subjects.filter(s=
                   try{
                     const r=await markAnswer(q,ttTextAns);setTTRes(r);
                     const pct=q.marks>0?r.score/q.marks:0;
-                    setStats(s=>{const wq={...s.weakQ};wq[item.secId]={wrong:(wq[item.secId]?.wrong||0)+(pct<0.5?1:0),total:(wq[item.secId]?.total||0)+1};return{...s,qS:s.qS+(r.score||0),qM:s.qM+q.marks,weakQ:wq};});
+                    setStats(s=>{const wq={...s.weakQ};wq[item.secId]={wrong:(wq[item.secId]?.wrong||0)+(pct<0.5?1:0),total:(wq[item.secId]?.total||0)+1};const sp=updateSkillPerfMap(s.skillPerf,q,pct>=0.5,r.score||0,q.marks||1);return{...s,qS:s.qS+(r.score||0),qM:s.qM+q.marks,weakQ:wq,skillPerf:sp};});
                   }catch(e){setTTRes({score:"?",feedback:"ReviseIQ AI unavailable — please try again.",missedPoints:[],modelAnswer:q.sampleAnswer||"",examTip:""});}
                   setTTMk(false);
                 }} disabled={!ttTextAns.trim()||ttMarking}
