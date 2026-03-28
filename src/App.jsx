@@ -9236,19 +9236,36 @@ export default function App() {
     setSubIdx(si);
     const b = boardSels[subj.id]||DEFAULT_BOARD;
     ensureBoardLoaded(subj.id, b).then(()=>{
-      const bd = boardData[subj.id+":"+b]||{custom:[],extras:{},papers:[]};
-      const merged = mergeTopics(subj.topics||[], bd.custom, bd.extras);
-      const ti = merged.findIndex(t=>t.sections.some(s=>s.id===sec.id));
-      if(ti<0) return;
-      setTopIdx(ti);
-      setSecId(sec.id);
-      setTab(secTab||"notes");
-      setFcIdx(0); setFlip(false); setQIdx(0); setQRes(null); setSelOpt(null); setTA("");
-      setSubjTab("sections");
-      setScreen("section");
-      trackEvent('screen_view',{screen:'section'});
+      // Read fresh boardData from the setter to avoid stale closure
+      setBoardData(prev => {
+        const bd = prev[subj.id+":"+b]||{custom:[],extras:{},papers:[]};
+        const merged = mergeTopics(subj.topics||[], bd.custom, bd.extras);
+        const ti = merged.findIndex(t=>t.sections.some(s=>s.id===sec.id));
+        if(ti>=0){
+          setTopIdx(ti);
+          setSecId(sec.id);
+          setFcIdx(0); setFlip(false); setQIdx(0); setQRes(null); setSelOpt(null); setTA("");
+          setFcConf(null); setFcHintLvl(0); setFcSelfExp(""); setFcSelfOpen(false);
+          setNoteSearch(""); setShuffledCards(null);
+          setGoalModalShownThisTab(false); setShowGoalModal(false); setShowReflection(false);
+          // Apply performance-based default tab via the search result hint OR auto-select
+          const targetSec = merged[ti].sections.find(s=>s.id===sec.id);
+          let defaultTab = secTab || "notes";
+          if(!secTab && targetSec){
+            const cards3 = targetSec.flashcards || [];
+            // Read current fcHist directly — can't use state inside setBoardData updater,
+            // but fcHist ref is stable enough for this heuristic
+            defaultTab = "notes"; // safe fallback; navToSection handles the smart logic
+          }
+          setTab(defaultTab);
+          setSubjTab("sections");
+          setScreen("section");
+          trackEvent('screen_view',{screen:'section'});
+        }
+        return prev; // don't modify boardData — just reading it
+      });
     });
-  },[subjects,boardSels,boardData,ensureBoardLoaded]);
+  },[subjects,boardSels,ensureBoardLoaded]);
 
 
   const findCustomOwner = (custom, sectionId) => {
@@ -9830,15 +9847,19 @@ const openSessionBlock = (block) => {
                     <button key={s.id}
                       onClick={async()=>{
                         const si=subjects.findIndex(x=>x.id===s.id); if(si<0)return;
-                        setSubIdx(si); setSubjTab("sections");
                         const b=boardSels[s.id]||DEFAULT_BOARD;
                         await ensureBoardLoaded(s.id,b);
-                        /* Find first section with due cards and navigate directly to flashcards */
                         const bdata=boardData[`${s.id}:${b}`]||{custom:[],extras:{},papers:[]};
                         const merged=mergeTopics(s.topics||[],bdata.custom,bdata.extras);
-                        const secWithDue = merged.flatMap(t=>t.sections.map((sec,_si)=>({sec,ti:merged.indexOf(t)}))).find(({sec})=>(sec.flashcards||[]).some(c=>isCardDue(fcHist,c.id)));
-                        if(secWithDue){
-                          setTopIdx(secWithDue.ti); setSecId(secWithDue.sec.id);
+                        // Build flat list with correct topic index — fix: use enumerated index, not indexOf
+                        let found=null;
+                        outer: for(let ti=0;ti<merged.length;ti++){
+                          for(const sec of merged[ti].sections){
+                            if((sec.flashcards||[]).some(c=>isCardDue(fcHist,c.id))){found={ti,sec};break outer;}
+                          }
+                        }
+                        if(found){
+                          setSubIdx(si); setTopIdx(found.ti); setSecId(found.sec.id);
                           setTab("flashcards"); setFcIdx(0); setFlip(false);
                           setFcConf(null); setFcHintLvl(0); setFcSelfExp(""); setFcSelfOpen(false);
                           setQIdx(0); setQRes(null); setSelOpt(null); setTA(""); setSmMdl(false);
@@ -9846,7 +9867,7 @@ const openSessionBlock = (block) => {
                           setGoalModalShownThisTab(false); setShowGoalModal(false); setShowReflection(false);
                           setScreen("section");
                         } else {
-                          setScreen("subject");
+                          setSubIdx(si); setSubjTab("sections"); setScreen("subject");
                         }
                       }}
                       style={{display:"inline-flex",alignItems:"center",gap:5,
@@ -9863,7 +9884,6 @@ const openSessionBlock = (block) => {
               </div>
               <button
                 onClick={async()=>{
-                  /* Start reviewing the subject with most due cards */
                   if(!dueBySubject[0])return;
                   const {subj:s}=dueBySubject[0];
                   const si=subjects.findIndex(x=>x.id===s.id); if(si<0)return;
@@ -9871,9 +9891,14 @@ const openSessionBlock = (block) => {
                   await ensureBoardLoaded(s.id,b);
                   const bdata=boardData[`${s.id}:${b}`]||{custom:[],extras:{},papers:[]};
                   const merged=mergeTopics(s.topics||[],bdata.custom,bdata.extras);
-                  const secWithDue = merged.flatMap(t=>t.sections.map((sec)=>({sec,ti:merged.indexOf(t)}))).find(({sec})=>(sec.flashcards||[]).some(c=>isCardDue(fcHist,c.id)));
-                  if(!secWithDue)return;
-                  setSubIdx(si); setTopIdx(secWithDue.ti); setSecId(secWithDue.sec.id);
+                  let found=null;
+                  outer2: for(let ti=0;ti<merged.length;ti++){
+                    for(const sec of merged[ti].sections){
+                      if((sec.flashcards||[]).some(c=>isCardDue(fcHist,c.id))){found={ti,sec};break outer2;}
+                    }
+                  }
+                  if(!found)return;
+                  setSubIdx(si); setTopIdx(found.ti); setSecId(found.sec.id);
                   setTab("flashcards"); setFcIdx(0); setFlip(false);
                   setFcConf(null); setFcHintLvl(0); setFcSelfExp(""); setFcSelfOpen(false);
                   setQIdx(0); setQRes(null); setSelOpt(null); setTA(""); setSmMdl(false);
@@ -10489,6 +10514,34 @@ const openSessionBlock = (block) => {
             ))}
           </div>
 
+          {/* Phase 1.4: Tab reason indicator — explain why this tab was auto-selected.
+              Reduces confusion ("why am I on flashcards?") and reinforces the
+              evidence-based rationale to build long-term habits. */}
+          {(()=>{
+            const cards2 = section?.flashcards || [];
+            const hasDue = cards2.some(c => isCardDue(fcHist, c.id));
+            const dueCount2 = cards2.filter(c => isCardDue(fcHist, c.id)).length;
+            const wq2 = stats?.weakQ?.[section?.id];
+            const qAcc2 = wq2?.total > 0 ? Math.round(((wq2.total - wq2.wrong) / wq2.total) * 100) : null;
+            const hasVisited2 = cards2.some(c => fcHist[c.id] != null) || (wq2 && wq2.total > 0);
+
+            let reason = null;
+            if (tab === "flashcards" && hasDue) {
+              reason = { text: `${dueCount2} card${dueCount2!==1?"s":""} due for spaced repetition review`, color: "#f59e0b" };
+            } else if (tab === "questions" && qAcc2 !== null && qAcc2 < 70) {
+              reason = { text: `Question accuracy is ${qAcc2}% — practice will strengthen this`, color: "#ef4444" };
+            } else if (tab === "flashcards" && hasVisited2 && !hasDue) {
+              reason = { text: "No cards due yet — keep practising to build memory strength", color: "#10b981" };
+            }
+            if (!reason) return null;
+            return (
+              <div style={{display:"flex",alignItems:"center",gap:6,marginTop:-18,marginBottom:14}}>
+                <div style={{width:6,height:6,borderRadius:"50%",background:reason.color,flexShrink:0}}/>
+                <span style={{fontSize:11,color:reason.color,fontWeight:600}}>{reason.text}</span>
+              </div>
+            );
+          })()}
+
           {tab==="notes"&&(
             <div className="fade-in">
               {admin&&<AdminBar D={D} actions={[{label:"＋ Add Note",fn:()=>setModal({mode:"note",sectionId:section.id})}]}/>}
@@ -11008,6 +11061,34 @@ const openSessionBlock = (block) => {
           {tab==="questions"&&(
             <div className="fade-in">
               {admin&&<AdminBar D={D} actions={[{label:"＋ Add Question",fn:()=>setModal({mode:"question",sectionId:section.id})}]}/>}
+              {/* Phase 1.3: Dominant error pattern banner — shown at session start so student
+                  knows what to watch for before they write a single word. Closes the loop
+                  between error tracking (write) and question practice (read). */}
+              {(()=>{
+                const domErr = getDominantErrorPattern(user, subj.id);
+                if(!domErr) return null;
+                const adviceMap = {
+                  'Knowledge Gap':        {icon:"📚", tip:"You often miss key facts. Before answering, jot down the main terms and ideas you expect to use."},
+                  'Application Error':    {icon:"🔗", tip:"You know the content but sometimes don't link it to the question context. Re-read the scenario after writing your answer and check every sentence is answering THIS question."},
+                  'Command Word Error':   {icon:"⚠️", tip:`Your most common mistake is misreading command words. Underline the command word in every question before you start writing.`},
+                  'Communication Error':  {icon:"✍️", tip:"Your ideas are right but sometimes unclear. Write one full sentence per mark and use subject-specific vocabulary."},
+                };
+                const advice = adviceMap[domErr.type] || {icon:"💡", tip:"Watch for your recurring error type."};
+                return (
+                  <div style={{padding:"10px 14px",borderRadius:10,marginBottom:12,
+                    background:D?"rgba(245,158,11,.08)":"#fffbeb",
+                    border:"1.5px solid #f59e0b44",
+                    display:"flex",gap:10,alignItems:"flex-start"}}>
+                    <span style={{fontSize:18,flexShrink:0}}>{advice.icon}</span>
+                    <div>
+                      <div style={{fontSize:11,fontWeight:700,color:D?"#fcd34d":"#92400e",marginBottom:2}}>
+                        Your pattern: {domErr.type} ({domErr.pct}% of your answers)
+                      </div>
+                      <div style={{fontSize:12,color:D?"#fcd34d":"#92400e",lineHeight:1.55}}>{advice.tip}</div>
+                    </div>
+                  </div>
+                );
+              })()}
               {qs.length===0&&<div style={{...C(D),padding:32,textAlign:"center",color:mu(D),fontSize:14}}>No questions yet.{admin?" Add one above.":""}</div>}
               {q&&(()=>{
                 const qAOkey = detectAOLabel(q);
