@@ -419,12 +419,31 @@ function _validateRubric(raw, q) {
   };
 }
 
-async function aiServiceFeedbackRubric(q, studentAnswer) {
+async function aiServiceFeedbackRubric(q, studentAnswer, options) {
+  var opts = options || {};
   var maxM    = Number(q.marks) || 1;
   var isMath  = /calculat|show.*work|find the|work out|compute/i.test(q.text || '');
   var isExtd  = q.type === 'extended' || maxM >= 6;
   var board   = _aiStr(q.board, 'GCSE');
   var ms      = _aiStr(q.markScheme || q.sampleAnswer, 'Award marks for accurate, relevant content.');
+
+  /* Phase 1.3: Inject known error pattern so AI gives targeted, personalised feedback.
+     If the student has a dominant error type (≥10 answered questions), the marking
+     prompt explicitly directs the AI to address that weakness in its feedback. */
+  var errorPatternBlock = '';
+  if (opts.dominantErrorType && opts.dominantErrorType.type) {
+    var epType = opts.dominantErrorType.type;
+    var epPct  = opts.dominantErrorType.pct || 0;
+    var epAdvice = {
+      'Knowledge Gap':        'Check whether the student has recalled the relevant content. If key facts are missing, name them explicitly in feedback.',
+      'Application Error':    'This student often recalls correctly but fails to apply knowledge to the specific context. Check whether their answer addresses the actual question scenario, not just the underlying concept.',
+      'Command Word Error':   'This student frequently misreads command words. Check explicitly whether the answer matches the command word used (e.g. "explain" vs "describe" vs "evaluate"). Name the mismatch if present.',
+      'Communication Error':  'This student often has the right ideas but expresses them unclearly. Check sentence structure and whether points are fully developed.',
+    }[epType] || '';
+    errorPatternBlock = '\nSTUDENT WEAKNESS PROFILE: This student\'s most common error type is "' + epType + '" (' + epPct + '% of their marked responses).\n' +
+      'MARKING INSTRUCTION: ' + epAdvice + '\n' +
+      'If this error type is evident in this answer, mention it directly in your feedback field — e.g. "Your main issue here is a ' + epType + '..." — so the student recognises the pattern.\n';
+  }
 
   var schemaLines = [
     '"score": integer 0–' + maxM,
@@ -451,7 +470,8 @@ async function aiServiceFeedbackRubric(q, studentAnswer) {
     '- comparisonTable: map student phrases to the closest mark scheme expectations',
   ].join('\n');
 
-  var prompt = 'You are an experienced ' + board + ' GCSE examiner. Mark this answer with precision.\n\n' +
+  var prompt = 'You are an experienced ' + board + ' GCSE examiner. Mark this answer with precision.\n' +
+    errorPatternBlock + '\n' +
     'QUESTION: ' + (q.text || '') + '\n' +
     'MAX MARKS: ' + maxM + '\n' +
     'MARK SCHEME:\n' + ms + '\n' +
@@ -1366,8 +1386,9 @@ function mergeTopics(baseTopics, boardCustom, boardExtras) {
 
 // Phase 4: markAnswer delegates to aiServiceFeedbackRubric
 // — strict JSON schema, score clamping, contradiction checks, deterministic fallback
-async function markAnswer(q, ans) {
-  return aiServiceFeedbackRubric(q, ans);
+// Phase 1.3: accepts options { dominantErrorType } for personalised AI feedback
+async function markAnswer(q, ans, options) {
+  return aiServiceFeedbackRubric(q, ans, options || {});
 }
 
 function _cleanText(s){return (s||"").toLowerCase().replace(/[^a-z0-9\s]/g," ").replace(/\s+/g," ").trim();}
@@ -5962,6 +5983,9 @@ function MockExamScreen({D,subjects,allSections,boardSels,boardData,user,onBack,
     clearInterval(timerRef.current);setPhase("marking");
     trackEvent('mock_exam_submitted', { subjectId: selSubj, value: answeredCount });
     var fa={...answers};
+    // Phase 1.3: read dominant error pattern for this subject to personalise AI feedback
+    var mockErrPattern = getDominantErrorPattern(user, selSubj);
+    var mockMarkOpts = mockErrPattern ? { dominantErrorType: mockErrPattern } : {};
     // Mark non-parted written questions
     var writtenQs=questions.filter(function(q){return !isParted(q)&&q.type!=="mcq";});
     for(var wi=0;wi<writtenQs.length;wi++){
@@ -5970,7 +5994,7 @@ function MockExamScreen({D,subjects,allSections,boardSels,boardData,user,onBack,
       var ansText=(wa?.textAns||"").trim();
       var hasFile=!!(wa?.fileAns);
       if(ansText||hasFile){
-        try{var wr=await markAnswer(wq,ansText||"[student uploaded image — see mark scheme]");fa[wq.id]={...wa,result:wr};}
+        try{var wr=await markAnswer(wq,ansText||"[student uploaded image — see mark scheme]",mockMarkOpts);fa[wq.id]={...wa,result:wr};}
         catch(e){fa[wq.id]={...(wa||{}),result:{score:0,feedback:"AI marking unavailable — self-mark using the mark scheme."}};}
       }else{fa[wq.id]={...(wa||{}),result:{score:0,feedback:"Not attempted."}};}
     }
@@ -5992,7 +6016,7 @@ function MockExamScreen({D,subjects,allSections,boardSels,boardData,user,onBack,
           if(pText||pFile){
             try{
               var fakeQ={id:part.id,text:part.text,marks:part.marks,markScheme:part.markScheme};
-              var pr=await markAnswer(fakeQ,pText||"[student uploaded image — see mark scheme]");
+              var pr=await markAnswer(fakeQ,pText||"[student uploaded image — see mark scheme]",mockMarkOpts);
               newParts[pi]={...pAns,result:pr};
             }catch(e){newParts[pi]={...pAns,result:{score:0,feedback:"AI marking unavailable — self-mark using mark scheme."}};}
           } else {
@@ -9386,8 +9410,40 @@ export default function App() {
       const unmet=checkPrerequisites(graph,sId,mastery,60);
       if(unmet.length){setPrereqModal({from:unmet[0],to:sId,si,ti});return;}
     }catch(_){}
+
+    /* Phase 1.4: Performance-based default tab.
+       After first visit, land students on the activity that will help them most,
+       rather than always showing notes (passive) first.
+       Priority: due flashcards → weak questions → notes */
+    const targetSec = allSections.find(s => s.id === sId);
+    let defaultTab = "notes";
+    if (targetSec) {
+      const cards = targetSec.flashcards || [];
+      const hasDueCards = cards.some(c => isCardDue(fcHist, c.id));
+      const hasCards = cards.length > 0;
+      const wq = stats?.weakQ?.[sId];
+      const questionAccuracy = (wq && wq.total > 0) ? Math.round(((wq.total - wq.wrong) / wq.total) * 100) : null;
+      const hasQuestions = (targetSec.questions || []).length > 0;
+      const hasVisited = cards.some(c => fcHist[c.id] != null) || (wq && wq.total > 0);
+
+      if (hasCards && hasDueCards) {
+        // Due cards are the highest priority — spaced repetition must be honoured
+        defaultTab = "flashcards";
+      } else if (hasQuestions && questionAccuracy !== null && questionAccuracy < 70) {
+        // Low question accuracy: direct to practice questions
+        defaultTab = "questions";
+      } else if (hasCards && hasVisited) {
+        // Cards reviewed before but none due yet — stay on flashcards so student can cram
+        defaultTab = "flashcards";
+      } else if (hasCards && !hasVisited) {
+        // Brand new section with cards: start with notes for context, then cards
+        defaultTab = "notes";
+      }
+      // else: no cards, no questions, or genuinely new — default notes is fine
+    }
+
     setSubIdx(si);setTopIdx(ti);setSecId(sId);
-    setTab("notes");setFcIdx(0);setFlip(false);
+    setTab(defaultTab);setFcIdx(0);setFlip(false);
     setQIdx(0);setQRes(null);setSelOpt(null);setTA("");setSmMdl(false);
     setNoteSearch(""); setShuffledCards(null);
     setFcConf(null);setFcHintLvl(0);setFcSelfExp("");setFcSelfOpen(false);
@@ -9604,7 +9660,35 @@ const openSessionBlock = (block) => {
         session={todaySession}
         onBack={()=>setScreen("home")}
         onOpenBlock={openSessionBlock}
-        onComplete={()=>showToast("Great work — guided session complete!","success")}
+        onComplete={()=>{
+          /* Phase 1.5: Session completion feeds learning state.
+             Previously nothing happened when a session was marked complete.
+             Now we: mark the day active (feeds streak + heatmap), trigger
+             achievement checks, update the leaderboard score, and show a
+             motivating toast with the day's stats. */
+          markTodayActive();
+          runAchievementCheck(null);
+          // Persist leaderboard score update
+          if(user){
+            const streakNow = calcStreak(new Set([...activityDates, todayStr()]));
+            const score = streakNow*10 + (activityDates.size+1)*3 + (stats.qS||0);
+            const lbKey = "gcse:lb:"+user.replace(/\W/g,"-");
+            window.storage.get(lbKey,true).then(r=>{
+              const existing = r?.value ? JSON.parse(r.value) : {};
+              window.storage.set(lbKey, JSON.stringify({
+                ...existing,
+                username:user,
+                displayName:userDisplayName||getDisplayName(user),
+                score,
+                school:userSchool||existing.school||"",
+              }), true).catch(()=>{});
+            }).catch(()=>{});
+          }
+          const blocksCount = todaySession?.blocks?.length || 0;
+          const mins = todaySession?.totalEta || blocksCount * 12;
+          showToast(`🎉 Session complete! ${blocksCount} block${blocksCount!==1?"s":""} · ~${mins} min — great work!`, "success", 3500);
+          setScreen("home");
+        }}
         onReset={()=>{
           const plan = buildTodaySessionPlan({subjects,allSections,stats,fcHist,timetableExams});
           setTodaySession(plan);
@@ -9711,6 +9795,100 @@ const openSessionBlock = (block) => {
           <h2 style={{fontSize:24,fontWeight:700,margin:0}}>Hey {userDisplayName||getDisplayName(user)} 👋</h2>
           <button onClick={function(){openMyNotes(null);}} style={{display:"flex",alignItems:"center",gap:6,padding:"8px 16px",borderRadius:10,border:"1.5px solid #6366f1",background:D?"rgba(99,102,241,.12)":"#eef2ff",color:"#6366f1",fontSize:13,fontWeight:600,cursor:"pointer"}}>📓 My Notes &amp; Flashcards</button>
         </div>
+
+        {(()=>{
+          /* Phase 1.2: Due cards banner — compute per-subject due counts and surface prominently */
+          const dueBySubject = subjects
+            .map(s => {
+              const secs = allSections.filter(sec => sec.subjectId === s.id);
+              const due = secs.reduce((acc, sec) => acc + (sec.flashcards||[]).filter(c => isCardDue(fcHist, c.id)).length, 0);
+              return { subj: s, due };
+            })
+            .filter(x => x.due > 0)
+            .sort((a, b) => b.due - a.due);
+          const totalDue = dueBySubject.reduce((a, x) => a + x.due, 0);
+          if (!totalDue) return null;
+          return (
+            <div style={{
+              padding:"12px 18px",
+              borderRadius:14,
+              background:D?"linear-gradient(135deg,rgba(245,158,11,.12),rgba(239,68,68,.08))":"linear-gradient(135deg,#fffbeb,#fef2f2)",
+              border:`1.5px solid ${D?"#92400e":"#fde68a"}`,
+              marginBottom:14,
+              display:"flex",
+              alignItems:"center",
+              gap:12,
+              flexWrap:"wrap"
+            }}>
+              <div style={{fontSize:24,flexShrink:0}}>🃏</div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:14,fontWeight:700,color:D?"#fcd34d":"#92400e",marginBottom:3}}>
+                  {totalDue} card{totalDue!==1?"s":""} due for review today
+                </div>
+                <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                  {dueBySubject.map(({subj:s,due})=>(
+                    <button key={s.id}
+                      onClick={async()=>{
+                        const si=subjects.findIndex(x=>x.id===s.id); if(si<0)return;
+                        setSubIdx(si); setSubjTab("sections");
+                        const b=boardSels[s.id]||DEFAULT_BOARD;
+                        await ensureBoardLoaded(s.id,b);
+                        /* Find first section with due cards and navigate directly to flashcards */
+                        const bdata=boardData[`${s.id}:${b}`]||{custom:[],extras:{},papers:[]};
+                        const merged=mergeTopics(s.topics||[],bdata.custom,bdata.extras);
+                        const secWithDue = merged.flatMap(t=>t.sections.map((sec,_si)=>({sec,ti:merged.indexOf(t)}))).find(({sec})=>(sec.flashcards||[]).some(c=>isCardDue(fcHist,c.id)));
+                        if(secWithDue){
+                          setTopIdx(secWithDue.ti); setSecId(secWithDue.sec.id);
+                          setTab("flashcards"); setFcIdx(0); setFlip(false);
+                          setFcConf(null); setFcHintLvl(0); setFcSelfExp(""); setFcSelfOpen(false);
+                          setQIdx(0); setQRes(null); setSelOpt(null); setTA(""); setSmMdl(false);
+                          setNoteSearch(""); setShuffledCards(null);
+                          setGoalModalShownThisTab(false); setShowGoalModal(false); setShowReflection(false);
+                          setScreen("section");
+                        } else {
+                          setScreen("subject");
+                        }
+                      }}
+                      style={{display:"inline-flex",alignItems:"center",gap:5,
+                        padding:"4px 10px",borderRadius:20,
+                        border:`1px solid ${s.accent}55`,
+                        background:s.accent+"18",
+                        color:s.accent,
+                        fontSize:12,fontWeight:700,cursor:"pointer"}}>
+                      <span>{s.icon}</span>
+                      <span>{due} {s.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <button
+                onClick={async()=>{
+                  /* Start reviewing the subject with most due cards */
+                  if(!dueBySubject[0])return;
+                  const {subj:s}=dueBySubject[0];
+                  const si=subjects.findIndex(x=>x.id===s.id); if(si<0)return;
+                  const b=boardSels[s.id]||DEFAULT_BOARD;
+                  await ensureBoardLoaded(s.id,b);
+                  const bdata=boardData[`${s.id}:${b}`]||{custom:[],extras:{},papers:[]};
+                  const merged=mergeTopics(s.topics||[],bdata.custom,bdata.extras);
+                  const secWithDue = merged.flatMap(t=>t.sections.map((sec)=>({sec,ti:merged.indexOf(t)}))).find(({sec})=>(sec.flashcards||[]).some(c=>isCardDue(fcHist,c.id)));
+                  if(!secWithDue)return;
+                  setSubIdx(si); setTopIdx(secWithDue.ti); setSecId(secWithDue.sec.id);
+                  setTab("flashcards"); setFcIdx(0); setFlip(false);
+                  setFcConf(null); setFcHintLvl(0); setFcSelfExp(""); setFcSelfOpen(false);
+                  setQIdx(0); setQRes(null); setSelOpt(null); setTA(""); setSmMdl(false);
+                  setNoteSearch(""); setShuffledCards(null);
+                  setGoalModalShownThisTab(false); setShowGoalModal(false); setShowReflection(false);
+                  setScreen("section");
+                }}
+                style={{padding:"9px 18px",borderRadius:10,border:"none",
+                  background:D?"#d97706":"#f59e0b",
+                  color:"#fff",fontWeight:700,fontSize:13,cursor:"pointer",flexShrink:0,whiteSpace:"nowrap"}}>
+                Review Now →
+              </button>
+            </div>
+          );
+        })()}
         {(()=>{
           const guidedPlan = buildTodaySessionPlan({subjects,allSections,stats,fcHist,timetableExams});
           const b = guidedPlan.primaryBlock || {};
@@ -10523,23 +10701,37 @@ const openSessionBlock = (block) => {
                     Metcalfe & Finn (2008): predicting recall before retrieval,
                     then comparing to actual outcome, creates a metacognitive
                     monitoring loop that calibrates self-knowledge and reduces
-                    the illusion-of-knowing effect significantly. */}
+                    the illusion-of-knowing effect significantly.
+                    Phase 1.1: Confidence gate is MANDATORY — it IS the flip trigger.
+                    The card cannot be flipped without a rating. The confidence section
+                    is styled as the primary action, not an optional overlay. */}
                 {!flip&&fcConf===null&&(
-                  <div style={{marginBottom:12,padding:"12px 16px",borderRadius:12,
-                    background:D?"#1e2537":"#fafafa",border:`1px solid ${D?"#374151":"#e5e7eb"}`}}>
-                    <p style={{fontSize:12,fontWeight:600,color:mu(D),marginBottom:10,textAlign:"center"}}>
-                      Before you flip — how confident are you?
+                  <div style={{marginBottom:12,padding:"16px",borderRadius:14,
+                    background:D?"#1e2537":"#fff",
+                    border:`2px solid ${D?"#4f46e5":"#6366f1"}`,
+                    boxShadow:D?"0 0 0 4px rgba(99,102,241,.15)":"0 0 0 4px rgba(99,102,241,.08)"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
+                      <div style={{width:6,height:6,borderRadius:"50%",background:"#6366f1",
+                        animation:"confidencePop .6s ease infinite alternate"}}/>
+                      <p style={{fontSize:13,fontWeight:700,color:D?"#a5b4fc":"#4338ca",margin:0}}>
+                        Rate your confidence to flip the card
+                      </p>
+                    </div>
+                    <p style={{fontSize:11,color:mu(D),marginBottom:12,lineHeight:1.5}}>
+                      Try to recall the answer first, then select how well you think you know it.
+                      This takes 1 second and improves retention by up to 40%.
                     </p>
                     <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
                       {CONF3.map(opt=>(
                         <button key={opt.v} onClick={()=>setFcConf(opt.v)} className="conf-pop"
-                          style={{padding:"10px 4px",borderRadius:12,border:`2px solid ${opt.color}22`,
-                            background:D?"#161b27":"#fff",cursor:"pointer",textAlign:"center",transition:"border-color .15s"}}
-                          onMouseEnter={e=>{e.currentTarget.style.borderColor=opt.color;e.currentTarget.style.background=opt.color+"15";}}
-                          onMouseLeave={e=>{e.currentTarget.style.borderColor=opt.color+"22";e.currentTarget.style.background=D?"#161b27":"#fff";}}>
-                          <div style={{fontSize:20,marginBottom:3}}>{opt.icon}</div>
-                          <div style={{fontSize:11,fontWeight:700,color:opt.color}}>{opt.label}</div>
-                          <div style={{fontSize:9,color:mu(D),marginTop:1}}>{opt.tip}</div>
+                          style={{padding:"12px 4px",borderRadius:12,border:`2px solid ${opt.color}44`,
+                            background:D?"#161b27":"#f9fafb",cursor:"pointer",textAlign:"center",
+                            transition:"all .15s"}}
+                          onMouseEnter={e=>{e.currentTarget.style.borderColor=opt.color;e.currentTarget.style.background=opt.color+"18";e.currentTarget.style.transform="translateY(-2px)";}}
+                          onMouseLeave={e=>{e.currentTarget.style.borderColor=opt.color+"44";e.currentTarget.style.background=D?"#161b27":"#f9fafb";e.currentTarget.style.transform="";}}>
+                          <div style={{fontSize:22,marginBottom:4}}>{opt.icon}</div>
+                          <div style={{fontSize:12,fontWeight:700,color:opt.color}}>{opt.label}</div>
+                          <div style={{fontSize:10,color:mu(D),marginTop:2,lineHeight:1.3}}>{opt.tip}</div>
                         </button>
                       ))}
                     </div>
@@ -10626,8 +10818,10 @@ const openSessionBlock = (block) => {
                 <div className="fc-scene" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
                   <div className={`fc-card${flip?" flipped":""}`}
                     onClick={()=>{if(fcConf!==null){setFlip(v=>!v);setFcHintLvl(0);}}}
-                    style={{minHeight:isDualCoded?260:180,borderRadius:14,border:`1.5px solid ${flip?subj.accent:bd2}`,
-                      cursor:fcConf!==null?"pointer":"default",opacity:fcConf===null?0.5:1,transition:"opacity .2s"}}>
+                    style={{minHeight:isDualCoded?260:180,borderRadius:14,
+                      border:`1.5px solid ${fcConf===null?(D?"#2a3347":"#e2e8f0"):flip?subj.accent:bd2}`,
+                      cursor:fcConf!==null?"pointer":"not-allowed",
+                      transition:"border-color .2s"}}>
                     {/* FRONT FACE */}
                     <div className="fc-face" style={{background:D?"#161b27":"#fff",padding:"20px 24px",justifyContent:"flex-start"}}>
                       {isDualCoded&&(
@@ -10658,7 +10852,7 @@ const openSessionBlock = (block) => {
                         style={{color:tx(D),textAlign:isDualCoded?"left":"center",width:"100%"}}
                       />
                       {fcConf===null
-                        ?<p style={{fontSize:11,color:mu(D),marginTop:14,alignSelf:"center"}}>↑ Rate your confidence first</p>
+                        ?<p style={{fontSize:11,color:D?"#6366f1":"#4f46e5",marginTop:14,alignSelf:"center",fontWeight:600}}>↑ Select your confidence to flip</p>
                         :<p style={{fontSize:11,color:mu(D),marginTop:14,alignSelf:"center"}}>Tap to reveal · Swipe to navigate</p>}
                     </div>
                     {/* BACK FACE */}
@@ -10994,7 +11188,10 @@ const openSessionBlock = (block) => {
                         <button onClick={async()=>{
                           if(!textAns.trim())return; setMark(true); markTodayActive(); trackEvent('question_submitted', { sectionId: section?.id, subjectId: subjDef?.id, tab: 'questions' });
                           try{
-                            const r=await markAnswer(q,textAns);
+                            // Phase 1.3: read dominant error pattern for personalised AI feedback
+                            const domErr = getDominantErrorPattern(user, subj.id);
+                            const markOpts = domErr ? { dominantErrorType: domErr } : {};
+                            const r=await markAnswer(q,textAns,markOpts);
                             const errType = (typeof classifyError==="function")
                               ? await Promise.resolve(classifyError(q,textAns,q.markScheme)).catch(()=>null)
                               : detectErrorType(q.text,textAns,q.markScheme,r?.missedPoints);
@@ -11598,7 +11795,10 @@ const openSessionBlock = (block) => {
                 {!ttRes&&<button onClick={async()=>{
                   if(!ttTextAns.trim())return; setTTMk(true); markTodayActive();
                   try{
-                    const r=await markAnswer(q,ttTextAns);setTTRes(r);
+                    // Phase 1.3: personalise AI feedback with known error pattern
+                    const ttDomErr = getDominantErrorPattern(user, item.subj?.id);
+                    const ttMarkOpts = ttDomErr ? { dominantErrorType: ttDomErr } : {};
+                    const r=await markAnswer(q,ttTextAns,ttMarkOpts);setTTRes(r);
                     const pct=q.marks>0?r.score/q.marks:0;
                     setStats(s=>{const wq={...s.weakQ};wq[item.secId]={wrong:(wq[item.secId]?.wrong||0)+(pct<0.5?1:0),total:(wq[item.secId]?.total||0)+1};return{...s,qS:s.qS+(r.score||0),qM:s.qM+q.marks,weakQ:wq};});
                   }catch(e){setTTRes({score:"?",feedback:"ReviseIQ AI unavailable — please try again.",missedPoints:[],modelAnswer:q.sampleAnswer||"",examTip:""});}
