@@ -2,7 +2,7 @@ import '../src/storage.js'
 import React, { useState, useEffect, useCallback, useRef } from "react"; 
 import ReactDOM from "react-dom/client";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar, Legend } from "recharts";
-import { computeNextBestActions, getSubjectStrategy } from "./learningEngine.js";
+import { computeNextBestActions, getSubjectStrategy, buildTodaySessionPlan } from "./learningEngine.js";
 
 /* ─── FONTS + KATEX ──────────────────────────────────────────────────────────── */
 const _fl=document.createElement("link");_fl.rel="stylesheet";
@@ -9235,34 +9235,31 @@ export default function App() {
     if(si<0) return;
     setSubIdx(si);
     const b = boardSels[subj.id]||DEFAULT_BOARD;
+    // Load board data, then use the fresh value from state to compute topic index
     ensureBoardLoaded(subj.id, b).then(()=>{
-      // Read fresh boardData from the setter to avoid stale closure
+      // After ensureBoardLoaded resolves, boardData will have been updated via setBoardData.
+      // Use setBoardData with a callback purely to READ the latest value, then schedule
+      // navigation state updates as a separate synchronous batch.
       setBoardData(prev => {
-        const bd = prev[subj.id+":"+b]||{custom:[],extras:{},papers:[]};
-        const merged = mergeTopics(subj.topics||[], bd.custom, bd.extras);
-        const ti = merged.findIndex(t=>t.sections.some(s=>s.id===sec.id));
+        const bd2 = prev[subj.id+":"+b]||{custom:[],extras:{},papers:[]};
+        const merged = mergeTopics(subj.topics||[], bd2.custom, bd2.extras);
+        const ti = merged.findIndex(t=>t.sections.some(s2=>s2.id===sec.id));
         if(ti>=0){
-          setTopIdx(ti);
-          setSecId(sec.id);
-          setFcIdx(0); setFlip(false); setQIdx(0); setQRes(null); setSelOpt(null); setTA("");
-          setFcConf(null); setFcHintLvl(0); setFcSelfExp(""); setFcSelfOpen(false);
-          setNoteSearch(""); setShuffledCards(null);
-          setGoalModalShownThisTab(false); setShowGoalModal(false); setShowReflection(false);
-          // Apply performance-based default tab via the search result hint OR auto-select
-          const targetSec = merged[ti].sections.find(s=>s.id===sec.id);
-          let defaultTab = secTab || "notes";
-          if(!secTab && targetSec){
-            const cards3 = targetSec.flashcards || [];
-            // Read current fcHist directly — can't use state inside setBoardData updater,
-            // but fcHist ref is stable enough for this heuristic
-            defaultTab = "notes"; // safe fallback; navToSection handles the smart logic
-          }
-          setTab(defaultTab);
-          setSubjTab("sections");
-          setScreen("section");
-          trackEvent('screen_view',{screen:'section'});
+          // Use setTimeout(0) to escape the updater function before calling other setters
+          setTimeout(()=>{
+            setTopIdx(ti);
+            setSecId(sec.id);
+            setFcIdx(0); setFlip(false); setQIdx(0); setQRes(null); setSelOpt(null); setTA("");
+            setFcConf(null); setFcHintLvl(0); setFcSelfExp(""); setFcSelfOpen(false);
+            setNoteSearch(""); setShuffledCards(null);
+            setGoalModalShownThisTab(false); setShowGoalModal(false); setShowReflection(false);
+            setTab(secTab||"notes");
+            setSubjTab("sections");
+            setScreen("section");
+            trackEvent('screen_view',{screen:'section'});
+          }, 0);
         }
-        return prev; // don't modify boardData — just reading it
+        return prev; // do not modify boardData
       });
     });
   },[subjects,boardSels,ensureBoardLoaded]);
