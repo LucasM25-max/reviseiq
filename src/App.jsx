@@ -1,10 +1,8 @@
-import '../src/storage.js' 
-import React, { useState, useEffect, useCallback, useRef } from "react"; 
-import ReactDOM from "react-dom/client";
+import "../src/storage.js";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar, Legend } from "recharts";
 import {
   computeNextBestActions,
-  getSubjectStrategy,
   buildTodaySessionPlan,
   getPedagogicalContext,
   computeDerivedSocraticLevel,
@@ -13,172 +11,31 @@ import {
   buildAISessionPrompt,
   applyAISession,
 } from "./learningEngine.js";
-
-/* ─── FONTS + KATEX ──────────────────────────────────────────────────────────── */
-const _fl=document.createElement("link");_fl.rel="stylesheet";
-_fl.href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap";
-document.head.appendChild(_fl);
-const _kl=document.createElement("link");_kl.rel="stylesheet";
-_kl.href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css";
-document.head.appendChild(_kl);
-let _katexReady=typeof window.katex!=="undefined";
-const _katexCallbacks=[];
-window.__onKatexReady=(cb)=>{if(_katexReady)cb();else _katexCallbacks.push(cb);};
-const _ks=document.createElement("script");_ks.async=false;
-_ks.src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js";
-_ks.onload=()=>{_katexReady=true;_katexCallbacks.forEach(cb=>cb());_katexCallbacks.length=0;};
-document.head.appendChild(_ks);
-const _gs=document.createElement("style");
-_gs.textContent=`
-*{font-family:'IBM Plex Sans',sans-serif;box-sizing:border-box;margin:0;padding:0}
-textarea,input,select{font-family:'IBM Plex Sans',sans-serif!important}
-@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-@keyframes streakPop{0%{transform:scale(1)}50%{transform:scale(1.25)}100%{transform:scale(1)}}
-@keyframes toastIn{from{opacity:0;transform:translateY(12px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
-@keyframes toastOut{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(8px)}}
-.fade-in{animation:fadeIn .22s ease forwards}
-.slide-up{animation:slideUp .25s ease forwards}
-.streak-pop{animation:streakPop .35s ease}
-.toast-in{animation:toastIn .2s ease forwards}
-.toast-out{animation:toastOut .2s ease forwards}
-/* Flashcard 3-D flip */
-.fc-scene{perspective:900px}
-.fc-card{width:100%;min-height:170px;position:relative;transform-style:preserve-3d;transition:transform .4s cubic-bezier(.4,0,.2,1)}
-.fc-card.flipped{transform:rotateY(180deg)}
-.fc-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:14px;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:32px 24px;text-align:center;cursor:pointer}
-.fc-back{transform:rotateY(180deg)}
-::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:4px}
-.ann-handle{cursor:move;user-select:none}
-.rich-body{outline:none;min-height:80px;line-height:1.75;font-size:13px}
-.rich-body b,.rich-body strong{font-weight:700}
-.rich-body i,.rich-body em{font-style:italic}
-.rich-body u{text-decoration:underline}
-.rich-body ul,.rich-body ol{padding-left:20px;margin:3px 0}
-.rich-body li{margin-bottom:2px}
-.rich-body h3{font-size:14px;font-weight:700;margin:6px 0 3px}
-.rich-display{line-height:1.75;font-size:13px}
-.rich-display b,.rich-display strong{font-weight:700}
-.rich-display i,.rich-display em{font-style:italic}
-.rich-display u{text-decoration:underline}
-.rich-display ul,.rich-display ol{padding-left:20px;margin:4px 0}
-.rich-display li{margin-bottom:2px}
-.rich-display h3{font-size:14px;font-weight:700;margin:6px 0 3px}
-/* ── Evidence-based learning UI enhancements ── */
-@keyframes sectionReveal{from{opacity:0;max-height:0;padding-top:0;padding-bottom:0}to{opacity:1;max-height:3000px}}
-@keyframes confidencePop{0%{transform:scale(.88)}65%{transform:scale(1.08)}100%{transform:scale(1)}}
-@keyframes hintSlide{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
-.note-reveal{animation:sectionReveal .28s ease forwards;overflow:hidden}
-.conf-pop{animation:confidencePop .2s ease forwards}
-.hint-slide{animation:hintSlide .18s ease forwards}
-/* keyterm chips in notes */
-.keyterm{display:inline-flex;align-items:center;background:rgba(99,102,241,.13);color:#4f46e5;border-radius:5px;padding:1px 6px;font-weight:600;font-size:.92em}
-.keyterm-d{background:rgba(165,180,252,.15);color:#a5b4fc}
-/* AO badges */
-.ao-badge{display:inline-flex;align-items:center;border-radius:20px;padding:2px 9px;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
-/* image lightbox overlay */
-.img-lb{position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:zoom-out;padding:20px}
-@keyframes diagramPulse{0%{transform:scale(1)}50%{transform:scale(1.18)}100%{transform:scale(1)}}
-.diagram-pulse{animation:diagramPulse .3s ease}
-`;
-document.head.appendChild(_gs);
-
-const ADMIN_USER = "lucasm_25@outlook.com";
-const isAdmin    = u => u === ADMIN_USER;
-// Extract display name from account key (email or plain username)
-function getDisplayName(key) {
-  if(!key) return "";
-  if(key.indexOf("@")!==-1){
-    var local=(key.split("@")[0])||key;
-    var m=local.match(/^([A-Za-z]+)/);
-    if(m) return m[1].charAt(0).toUpperCase()+m[1].slice(1).toLowerCase();
-    return local.slice(0,20);
-  }
-  return key; // plain username — return whole thing
-}
-const EXAM_BOARDS = ["AQA","Edexcel","Eduqas","OCR","WJEC"];
-const DEFAULT_BOARD = "AQA";
-
-// Personal subjects key — stored in personal (non-shared) storage per user
-const SK_PERSONAL = u => "gcse:ps:"+u.replace(/\W/g,"-");
-const SK_UC = (u,sId) => "gcse:uc:"+u.replace(/\W/g,"-")+":"+sId; // user-created content per subject
-
-const SK = {
-  ACCOUNTS:  "gcse:accounts",
-  PROG:      u => `gcse:prog:${u.replace(/\W/g,"-")}`,
-  PREFS:     u => `gcse:prefs:${u.replace(/\W/g,"-")}`,
-  CUSTOM:    (sId,b) => `gcse:c:${sId}:${b}`,
-  EXTRAS:    (sId,b) => `gcse:e:${sId}:${b}`,
-  PAPERS:    (sId,b) => `gcse:p:${sId}:${b}`,
-  TIMETABLE: u => `gcse:tt:${u.replace(/\W/g,"-")}`,
-  FRIENDS:   u => `gcse:fr:${u.replace(/\W/g,"-")}`,
-  FREQS:     u => `gcse:frq:${u.replace(/\W/g,"-")}`,
-};
-// ── Wave 5 storage keys ──────────────────────────────────────────────────────
-const SK_SESSION     = u => `gcse:session:${u.replace(/\W/g,"-")}`;
-const SK_JOURNAL     = (u,sId) => `gcse:journal:${u.replace(/\W/g,"-")}:${sId}`;
-const SK_CALIBRATION = (u,sId) => `gcse:cal:${u.replace(/\W/g,"-")}:${sId}`;
-const SK_ERROR_PATTERNS = (u,sId) => `gcse:errorPatterns:${(u||"").replace(/\W/g,"-")}:${(sId||"")}`;
-const SK_GRAPH = (u,sId) => `gcse:graph:${(u||"").replace(/\W/g,"-")}:${sId}`;
-const SK_SVG_ASSETS = u => `gcse:svgAssets:${(u||"").replace(/\W/g,"-")}`;
-
-// Brier score helper: mean((prediction - outcome)^2), lower = better
-function calcBrierScore(predictions) {
-  if(!predictions||!predictions.length) return null;
-  const sum = predictions.reduce((acc,p) => acc + Math.pow(p.pred - p.outcome, 2), 0);
-  return sum / predictions.length;
-}
-// Confidence level (1-3) → probability
-function confToProb(conf) {
-  if(conf===1) return 0.2;
-  if(conf===2) return 0.5;
-  if(conf===3) return 0.85;
-  return 0.5;
-}
-function detectErrorType(questionText, studentAnswer, markScheme, missedPoints){
-  var q=(questionText||"").toLowerCase();
-  var a=(studentAnswer||"").toLowerCase();
-  var ms=((markScheme||"")+" "+(missedPoints||[]).join(" ")).toLowerCase();
-  var cmdWords=["describe","explain","compare","evaluate","analyse","calculate","justify","assess"];
-  var hasCmd=cmdWords.some(function(w){return q.includes(w);});
-  var keyTerms=(ms.match(/\b[a-z]{5,}\b/g)||[]).slice(0,10);
-  var termHits=keyTerms.filter(function(t){return a.includes(t);}).length;
-  if(keyTerms.length>3 && termHits<=1) return "Knowledge Gap";
-  if(hasCmd && /(state|list|define)\b/.test(a) && /(explain|evaluate|compare|assess|justify)/.test(q)) return "Command Word Error";
-  if(a.length>40 && /(because|therefore|so|leads to|results? in)/.test(a) && termHits>=2 && (missedPoints||[]).length>0) return "Application Error";
-  if(a.length<25 || !/[.!?]/.test(studentAnswer||"")) return "Communication Error";
-  return "Knowledge Gap";
-}
-function incrementErrorPattern(user, subjectId, type){
-  if(!user||!subjectId||!type||typeof window==="undefined") return null;
-  try{
-    var key=SK_ERROR_PATTERNS(user,subjectId);
-    var cur=JSON.parse(localStorage.getItem(key)||"{}");
-    var base={"Knowledge Gap":0,"Application Error":0,"Command Word Error":0,"Communication Error":0};
-    var next={...base,...cur,[type]:(cur[type]||0)+1};
-    localStorage.setItem(key,JSON.stringify(next));
-    return next;
-  }catch(_){return null;}
-}
-function getDominantErrorPattern(user, subjectId){
-  if(!user||!subjectId||typeof window==="undefined") return null;
-  try{
-    var obj=JSON.parse(localStorage.getItem(SK_ERROR_PATTERNS(user,subjectId))||"{}");
-    var vals=Object.entries({"Knowledge Gap":obj["Knowledge Gap"]||0,"Application Error":obj["Application Error"]||0,"Command Word Error":obj["Command Word Error"]||0,"Communication Error":obj["Communication Error"]||0});
-    var total=vals.reduce((a,v)=>a+v[1],0);
-    if(total<10) return null;
-    vals.sort((a,b)=>b[1]-a[1]);
-    return {type:vals[0][0], pct:Math.round((vals[0][1]/total)*100), total};
-  }catch(_){return null;}
-}
-// Strategy logic for Feature 21
-function getStrategyRecommendation(subj, allSections, fcHist, calibData, timetableExams, stats) {
-  return getSubjectStrategy(subj, allSections, fcHist, calibData, timetableExams, stats);
-}
-
-const hashPw = s => btoa(encodeURIComponent(s)).slice(0,32);
-const ADMIN_PASS_HASH = hashPw("ReviseIQAdmin");
-const ADMIN_SCHOOL = "Gordon's School";
+import "./app/initAssets.js";
+import {
+  ADMIN_USER,
+  isAdmin,
+  getDisplayName,
+  EXAM_BOARDS,
+  DEFAULT_BOARD,
+  SK_PERSONAL,
+  SK_UC,
+  SK,
+  SK_SESSION,
+  SK_JOURNAL,
+  SK_CALIBRATION,
+  SK_ERROR_PATTERNS,
+  SK_GRAPH,
+  SK_SVG_ASSETS,
+  calcBrierScore,
+  confToProb,
+  detectErrorType,
+  incrementErrorPattern,
+  getDominantErrorPattern,
+  getStrategyRecommendation,
+  ADMIN_PASS_HASH,
+  ADMIN_SCHOOL,
+} from "./app/coreConfig.js";
 
 // ── AI: Groq via Vercel proxy (/api/ai) ──────────────────────────────────────
 // API key lives in Vercel Environment Variables as GROQ_API_KEY — never in browser code.
