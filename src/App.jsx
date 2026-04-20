@@ -11,75 +11,882 @@ import {
   buildAISessionPrompt,
   applyAISession,
 } from "./learningEngine.js";
-import "./app/initAssets.js";
-import {
-  ADMIN_USER,
-  isAdmin,
-  getDisplayName,
-  EXAM_BOARDS,
-  DEFAULT_BOARD,
-  SK_PERSONAL,
-  SK_UC,
-  SK,
-  SK_SESSION,
-  SK_JOURNAL,
-  SK_CALIBRATION,
-  SK_ERROR_PATTERNS,
-  SK_GRAPH,
-  SK_SVG_ASSETS,
-  calcBrierScore,
-  confToProb,
-  detectErrorType,
-  incrementErrorPattern,
-  getDominantErrorPattern,
-  getStrategyRecommendation,
-  ADMIN_PASS_HASH,
-  ADMIN_SCHOOL,
-} from "./app/coreConfig.js";
-import {
-  fsrsNext,
-  getCardState,
-  isCardDue,
-  previewIntervals,
-  getRetrievability,
-  todayStr,
-  calcStreak,
-  calcLongestStreak,
-  inferDifficulty,
-  selectAdaptiveQuestions,
-  updateAdaptiveLevel,
-  getLadderLevel,
-  updateLadderLevel,
-  verifyExplanation,
-  generateTransferQuestion,
-  getWeekKey,
-  generateWeeklyPlan,
-  generateSessionOptions,
-  getVariantStorageKey,
-  simpleParaphrase,
-  readCardVariants,
-  ensureCardVariantCached,
-  maybeUseVariantText,
-  generateInterleavedSession,
-  useOfflineQueue,
-  registerReviseIQServiceWorker,
-  buildProgressSummary,
-  generateProgressReport,
-  getGroupKey,
-  loadGroup,
-  saveGroup,
-  upsertGroupScore,
-  createPeerQuiz,
-  submitPeerQuiz,
-} from "./app/learningHelpers.js";
-import {
-  SchoolLeaderboard,
-  mergeTopics,
-  ClozeCard,
-  SequenceCard,
-  QuestionFigure,
-  generateWhyPrompt,
-} from "./app/studyBlocks.jsx";
+
+// Inlined from src/app/coreConfig.js
+
+
+
+// Inlined from src/app/learningHelpers.js
+const FSRS_PARAMS = {
+  w: [0.4072,1.1829,3.1262,15.4722,7.2102,0.5316,1.0651,0.0589,1.5330,
+      0.1544,1.0070,1.9395,0.1100,0.2900,2.2700,0.1500,2.9898,0.5100,0.1400],
+  requestRetention: 0.90,
+  maximumInterval: 36500,
+};
+
+function fsrsInitialStability(g) {
+  return Math.max(FSRS_PARAMS.w[g - 1], 0.1);
+}
+
+function fsrsInitialDifficulty(g) {
+  return Math.min(Math.max(
+    FSRS_PARAMS.w[4] - Math.exp(FSRS_PARAMS.w[5] * (g - 1)) + 1,
+    1), 10);
+}
+
+function fsrsRetrievability(stability, elapsedDays) {
+  if (!stability || stability <= 0) return 0;
+  return Math.pow(1 + elapsedDays / (9 * stability), -1);
+}
+
+function fsrsNextInterval(stability) {
+  const { requestRetention, maximumInterval } = FSRS_PARAMS;
+  const interval = (stability / Math.log(requestRetention)) * Math.log(0.9);
+  return Math.min(Math.max(Math.round(Math.abs(interval)), 1), maximumInterval);
+}
+
+function fsrsNextDifficulty(d, g) {
+  const w = FSRS_PARAMS.w;
+  const delta = -w[6] * (g - 3);
+  return Math.min(Math.max(
+    d + delta * ((10 - d) / 9),
+    1), 10);
+}
+
+function fsrsNextStabilityAfterRecall(d, s, r, g) {
+  const w = FSRS_PARAMS.w;
+  return s * (
+    Math.exp(w[8]) *
+    (11 - d) *
+    Math.pow(s, -w[9]) *
+    (Math.exp(w[10] * (1 - r)) - 1) *
+    (g === 2 ? w[15] : 1) *
+    (g === 4 ? w[16] : 1) + 1
+  );
+}
+
+function fsrsNextStabilityAfterForgetting(d, s, r) {
+  const w = FSRS_PARAMS.w;
+  return w[11] *
+    Math.pow(d, -w[12]) *
+    (Math.pow(s + 1, w[13]) - 1) *
+    Math.exp(w[14] * (1 - r));
+}
+
+function fsrsNext(prevState, rating) {
+  const now = Date.now();
+  if (!prevState || !prevState.stability) {
+    const s = fsrsInitialStability(rating);
+    const d = fsrsInitialDifficulty(rating);
+    const interval = rating === 1 ? 1 : rating === 2 ? 1 : fsrsNextInterval(s);
+    return {
+      stability: s, difficulty: d, reps: 1, lapses: 0,
+      state: rating === 1 ? 1 : 2,
+      lastReview: now, due: now + interval * 86400000, interval, lastRating: rating,
+    };
+  }
+  const { stability, difficulty, reps, lapses, lastReview } = prevState;
+  const elapsedDays = Math.max(0, (now - (lastReview || now)) / 86400000);
+  const r = fsrsRetrievability(stability, elapsedDays);
+  const d = fsrsNextDifficulty(difficulty || 5, rating);
+  let nextStability, nextInterval, nextState, nextLapses;
+  if (rating === 1) {
+    nextStability = fsrsNextStabilityAfterForgetting(d, stability, r);
+    nextInterval = 1; nextState = 3; nextLapses = (lapses || 0) + 1;
+  } else {
+    nextStability = fsrsNextStabilityAfterRecall(d, stability, r, rating);
+    nextInterval = fsrsNextInterval(nextStability);
+    nextState = 2; nextLapses = lapses || 0;
+  }
+  return {
+    stability: Math.max(nextStability, 0.1), difficulty: d,
+    reps: (reps || 0) + 1, lapses: nextLapses, state: nextState,
+    lastReview: now, due: now + nextInterval * 86400000,
+    interval: nextInterval, lastRating: rating,
+  };
+}
+
+function getCardState(fcHist, cardId) {
+  const v = fcHist[cardId];
+  if (v === undefined || v === null) return null;
+  if (typeof v === 'boolean') return null;
+  return v;
+}
+
+function isCardDue(fcHist, cardId) {
+  const s = getCardState(fcHist, cardId);
+  if (!s) return true;
+  return Date.now() >= s.due;
+}
+
+function previewIntervals(state) {
+  return [1, 2, 3, 4].map(rating => {
+    const next = fsrsNext(state, rating);
+    const d = next.interval;
+    if (d <= 1) return 'today';
+    if (d < 7) return `${d}d`;
+    if (d < 30) return `${Math.round(d / 7)}w`;
+    return `${Math.round(d / 30)}mo`;
+  });
+}
+
+function getRetrievability(fcHist, cardId) {
+  const s = getCardState(fcHist, cardId);
+  if (!s || !s.stability) return null;
+  const elapsedDays = (Date.now() - (s.lastReview || Date.now())) / 86400000;
+  return Math.round(fsrsRetrievability(s.stability, elapsedDays) * 100);
+}
+
+
+function todayStr() { return new Date().toISOString().slice(0,10); }
+function calcStreak(activityDates) {
+  let streak = 0;
+  const today = new Date();
+  for (let i = 0; i < 365; i++) {
+    const d = new Date(today); d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0,10);
+    if (activityDates.has(key)) streak++;
+    else if (i > 0) break;
+  }
+  return streak;
+}
+function calcLongestStreak(activityDates) {
+  if (!activityDates.size) return 0;
+  const sorted = [...activityDates].sort();
+  let best = 1, cur = 1;
+  for (let i = 1; i < sorted.length; i++) {
+    const prev = new Date(sorted[i-1]), curr = new Date(sorted[i]);
+    const diff = (curr - prev) / 86400000;
+    if (diff === 1) { cur++; best = Math.max(best, cur); } else cur = 1;
+  }
+  return best;
+}
+
+
+function inferDifficulty(q){
+  if(q?.difficulty>=1&&q?.difficulty<=5) return q.difficulty;
+  var m=Number(q?.marks||1);
+  var t=(q?.text||"").toLowerCase();
+  var d=m>=8?5:m>=6?4:m>=4?3:m>=2?2:1;
+  if(/evaluate|assess|justify/.test(t)) d=Math.min(5,d+1);
+  if(/describe|explain|analyse|compare/.test(t)) d=Math.min(5,d+0.5);
+  return Math.max(1,Math.min(5,Math.round(d)));
+}
+function selectAdaptiveQuestions(list,user,subjectId){
+  var arr=(list||[]).map(function(q){return {...q,difficulty:inferDifficulty(q)};});
+  if(!user||!subjectId) return arr;
+  try{
+    var key="gcse:difficultyLevel:"+user.replace(/\W/g,"-")+":"+subjectId;
+    var lv=Number(localStorage.getItem(key)||3); if(!lv) lv=3;
+    var easy=arr.filter(q=>q.difficulty<lv), mid=arr.filter(q=>q.difficulty===lv), hard=arr.filter(q=>q.difficulty>lv);
+    var pick=[],max=Math.min(20,arr.length);
+    while(pick.length<max&&(easy.length||mid.length||hard.length)){
+      var r=Math.random();
+      var pool=r<0.2?easy:r<0.9?mid:hard;
+      if(!pool.length) pool=mid.length?mid:(hard.length?hard:easy);
+      if(!pool.length) break;
+      pick.push(pool.shift());
+    }
+    return pick.length?pick:arr;
+  }catch(_){return arr;}
+}
+function updateAdaptiveLevel(user,subjectId,isCorrect){
+  if(!user||!subjectId) return;
+  try{
+    var kH="gcse:difficultyHist:"+user.replace(/\W/g,"-")+":"+subjectId;
+    var hist=JSON.parse(localStorage.getItem(kH)||"[]");
+    hist=[...hist.slice(-19),isCorrect?1:0];
+    localStorage.setItem(kH,JSON.stringify(hist));
+    var acc=hist.reduce((a,b)=>a+b,0)/Math.max(hist.length,1);
+    var key="gcse:difficultyLevel:"+user.replace(/\W/g,"-")+":"+subjectId;
+    var lv=Number(localStorage.getItem(key)||3)||3;
+    if(acc>=0.7) lv=Math.min(5,lv+1); else if(acc<0.45) lv=Math.max(1,lv-1);
+    localStorage.setItem(key,String(lv));
+  }catch(_){}
+}
+function getLadderLevel(user,topicId){
+  if(!user||!topicId) return 1;
+  try{return Math.max(1,Math.min(5,Number(localStorage.getItem("gcse:ladder:"+user.replace(/\W/g,"-")+":"+topicId)||1)||1));}catch(_){return 1;}
+}
+function updateLadderLevel(user,topicId,correct){
+  if(!user||!topicId) return 1;
+  var cur=getLadderLevel(user,topicId);
+  var next=Math.max(1,Math.min(5,cur+(correct?1:-1)));
+  try{localStorage.setItem("gcse:ladder:"+user.replace(/\W/g,"-")+":"+topicId,String(next));}catch(_){}
+  return next;
+}
+function verifyExplanation(content, studentExplanation){
+  if(typeof window!=="undefined"&&typeof window.verifyExplanation==="function"){
+    try{return window.verifyExplanation(content, studentExplanation);}catch(_){}
+  }
+  var c=_cleanText(stripHtml(content||"")); var s=_cleanText(studentExplanation||"");
+  var kws=[...new Set(c.split(" ").filter(w=>w.length>4))].slice(0,10);
+  var hit=kws.filter(k=>s.includes(k));
+  return {
+    correct: s.length>30 ? "You explained key ideas clearly." : "Good start.",
+    missing: hit.length<Math.max(2,Math.floor(kws.length/3)) ? "Add detail on: "+kws.slice(0,3).join(", ") : "Add one concrete example."
+  };
+}
+function generateTransferQuestion(originalQuestion){
+  if(typeof window!=="undefined"&&typeof window.generateTransferQuestion==="function"){
+    try{return window.generateTransferQuestion(originalQuestion);}catch(_){}
+  }
+  var q={...(originalQuestion||{})};
+  var t=(q.text||"").replace(/\b(\d+)\b/g,function(m){return String(Number(m)+1);});
+  return {...q,id:"tr-"+uid(),text:"Apply It: "+(t||"Use this idea in a new context."),_transfer:true};
+}
+function getWeekKey(d){
+  var dt=new Date(d||Date.now()); var onejan=new Date(dt.getFullYear(),0,1); var day=Math.floor((dt-onejan)/86400000);
+  return dt.getFullYear()+"-W"+Math.ceil((day+onejan.getDay()+1)/7);
+}
+function generateWeeklyPlan(user, subjects, allSections, fcHist, stats, timetableExams){
+  var week=getWeekKey();
+  var key="gcse:weeklyPlan:"+(user||"").replace(/\W/g,"-")+":"+week;
+  try{var ex=JSON.parse(localStorage.getItem(key)||"null"); if(ex&&Array.isArray(ex)) return ex;}catch(_){}
+  var due=allSections.flatMap(s=>(s.flashcards||[]).filter(c=>isCardDue(fcHist,c.id)).map(()=>s.title)).slice(0,3);
+  var weak=Object.entries(stats?.weakQ||{}).sort((a,b)=>(b[1]?.wrong||0)-(a[1]?.wrong||0)).slice(0,3).map(x=>x[0]);
+  var examSoon=(timetableExams||[]).slice().sort((a,b)=>a.date.localeCompare(b.date))[0];
+  var base=["Review due flashcards"+(due[0]?" ("+due[0]+")":""),"Do 10 mixed questions"+(weak[0]?" on "+weak[0]:""),examSoon?"Exam prep for "+(examSoon.label||"upcoming exam"):"Revise weakest topic"];
+  var days=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+  var plan=days.map(function(d,i){return {day:d,tasks:[base[i%base.length]]};});
+  try{localStorage.setItem(key,JSON.stringify(plan));}catch(_){}
+  return plan;
+}
+function generateSessionOptions(user, subjectId, allSections, stats, fcHist){
+  var secs=allSections.filter(s=>s.subjectId===subjectId);
+  var due=secs.find(s=>(s.flashcards||[]).some(c=>isCardDue(fcHist,c.id)));
+  var weakId=Object.entries(stats?.weakQ||{}).sort((a,b)=>(b[1]?.wrong||0)-(a[1]?.wrong||0))[0]?.[0];
+  var weak=secs.find(s=>s.id===weakId)||secs[0];
+  return [
+    {title:"Due Card Sprint",description:"Clear due flashcards in "+(due?.title||"this topic"),action:{type:"flashcards",sectionId:due?.id}},
+    {title:"Weak Spot Drill",description:"Target weaker questions in "+(weak?.title||"your topic"),action:{type:"questions",sectionId:weak?.id}},
+    {title:"Mixed Focus",description:"Blend flashcards + exam questions",action:{type:"target"}},
+    {title:"Interleaved Session",description:"Round-robin mixed topics for stronger transfer",action:{type:"interleaved",subjectId:subjectId}}
+  ];
+}
+function getVariantStorageKey(user, cardId){
+  return "gcse:variants:"+String(user||"anon").replace(/\W/g,"-")+":"+String(cardId||"");
+}
+function simpleParaphrase(text){
+  var s=String(text||"");
+  var map={
+    "explain":"describe","describe":"outline","define":"state clearly","because":"since","therefore":"so","important":"significant",
+    "process":"sequence","increase":"rise","decrease":"fall","difference":"distinction","causes":"leads to","effect":"impact"
+  };
+  Object.keys(map).forEach(function(k){
+    var re=new RegExp("\\b"+k+"\\b","gi");
+    s=s.replace(re,function(m){ return m===m.toUpperCase()?map[k].toUpperCase():map[k];});
+  });
+  return s;
+}
+async function generateParaphrasedCard(card){
+  var base=String(card?.q||card?.text||"");
+  if(!base.trim()) return "";
+  if(typeof window!=="undefined"&&typeof window.generateParaphrase==="function"){
+    try{
+      var ai=await window.generateParaphrase(base, card);
+      if(ai&&String(ai).trim()) return String(ai).trim();
+    }catch(_){}
+  }
+  return simpleParaphrase(base);
+}
+function readCardVariants(user, cardId){
+  try{
+    var arr=JSON.parse(localStorage.getItem(getVariantStorageKey(user,cardId))||"[]");
+    return Array.isArray(arr)?arr:[];
+  }catch(_){return [];}
+}
+async function ensureCardVariantCached(user, card, reviewCount, stability){
+  if(!card||reviewCount<3||Number(stability||0)<=7) return null;
+  var existing=readCardVariants(user, card.id);
+  if(existing.length) return existing[0];
+  var text=await generateParaphrasedCard(card);
+  if(!text||text.trim()===String(card.q||card.text||"").trim()) return null;
+  var variant={text:text,createdAt:new Date().toISOString()};
+  try{ localStorage.setItem(getVariantStorageKey(user,card.id), JSON.stringify([variant])); }catch(_){}
+  return variant;
+}
+function maybeUseVariantText(user, card, reviewCount, stability){
+  if(!card||reviewCount<3||Number(stability||0)<=7) return null;
+  var variants=readCardVariants(user,card.id);
+  if(!variants.length) return null;
+  var p=Math.random();
+  if(p<0.3 || p>0.5) return null;
+  return variants[0]?.text||null;
+}
+function generateInterleavedSession(subjectId, allSections){
+  var secs=(allSections||[]).filter(function(s){return s.subjectId===subjectId;});
+  var byTopic={};
+  secs.forEach(function(sec){
+    var t=sec.topicId||sec.id;
+    if(!byTopic[t]) byTopic[t]=[];
+    (sec.flashcards||[]).forEach(function(c){byTopic[t].push({kind:"flashcard",sectionId:sec.id,topicId:t,item:c});});
+    (sec.questions||[]).forEach(function(q){byTopic[t].push({kind:"question",sectionId:sec.id,topicId:t,item:q});});
+  });
+  var topicIds=Object.keys(byTopic).filter(function(t){return byTopic[t].length>0;}).slice(0,8);
+  if(topicIds.length<3) return [];
+  var idx=0; var out=[]; var lastTopic=null; var guard=0;
+  while(guard<2000){
+    guard++;
+    var nonEmpty=topicIds.filter(function(t){return byTopic[t]&&byTopic[t].length;});
+    if(!nonEmpty.length) break;
+    var pick=nonEmpty[idx%nonEmpty.length];
+    idx++;
+    if(pick===lastTopic&&nonEmpty.length>1){
+      pick=nonEmpty.find(function(t){return t!==lastTopic;})||pick;
+    }
+    var next=(byTopic[pick]||[]).shift();
+    if(!next) continue;
+    out.push(next);
+    lastTopic=pick;
+  }
+  return out;
+}
+function createIDBHelpers(){
+  var dbName="reviseiq";
+  var storeName="offlineQueue";
+  function openDb(){
+    return new Promise(function(resolve,reject){
+      try{
+        var req=indexedDB.open(dbName,1);
+        req.onupgradeneeded=function(){
+          var db=req.result;
+          if(!db.objectStoreNames.contains(storeName)){
+            db.createObjectStore(storeName,{keyPath:"id"});
+          }
+        };
+        req.onsuccess=function(){resolve(req.result);};
+        req.onerror=function(){reject(req.error||new Error("idb_open_failed"));};
+      }catch(e){reject(e);}
+    });
+  }
+  async function withStore(mode, fn){
+    var db=await openDb();
+    return new Promise(function(resolve,reject){
+      var tx=db.transaction(storeName,mode);
+      var store=tx.objectStore(storeName);
+      Promise.resolve(fn(store,tx)).then(resolve).catch(reject);
+      tx.onerror=function(){reject(tx.error||new Error("idb_tx_failed"));};
+      tx.oncomplete=function(){ db.close(); };
+    });
+  }
+  return {
+    enqueue: async function(item){
+      return withStore("readwrite",function(store){ store.put(item); });
+    },
+    all: async function(){
+      return withStore("readonly",function(store){
+        return new Promise(function(resolve,reject){
+          var req=store.getAll();
+          req.onsuccess=function(){resolve(req.result||[]);};
+          req.onerror=function(){reject(req.error||new Error("idb_getall_failed"));};
+        });
+      });
+    },
+    removeMany: async function(ids){
+      return withStore("readwrite",function(store){ (ids||[]).forEach(function(id){store.delete(id);}); });
+    }
+  };
+}
+const IDB_QUEUE = createIDBHelpers();
+async function syncOfflineQueue(){
+  if(typeof window==="undefined") return {ok:0,failed:0};
+  var lockKey="gcse:offlineSyncLock";
+  if(window.__reviseiqSyncing) return {ok:0,failed:0,locked:true};
+  window.__reviseiqSyncing=true;
+  try{
+    if(localStorage.getItem(lockKey)==="1") return {ok:0,failed:0,locked:true};
+    localStorage.setItem(lockKey,"1");
+    var rows=[];
+    try{ rows=await IDB_QUEUE.all(); }catch(_){ rows=JSON.parse(localStorage.getItem("gcse:offlineQueue:backup")||"[]"); }
+    if(!rows.length) return {ok:0,failed:0};
+    var okIds=[]; var failed=0;
+    for(var i=0;i<rows.length;i++){
+      var row=rows[i];
+      try{
+        if(typeof window.applyOfflineAction==="function"){ await window.applyOfflineAction(row); }
+        else{
+          var k="gcse:offlineApplied";
+          var ex=JSON.parse(localStorage.getItem(k)||"[]");
+          ex.push({id:row.id,type:row.type,timestamp:row.timestamp});
+          localStorage.setItem(k,JSON.stringify(ex.slice(-500)));
+        }
+        okIds.push(row.id);
+      }catch(_){ failed++; }
+    }
+    if(okIds.length){
+      try{ await IDB_QUEUE.removeMany(okIds); }catch(_){
+        var backup=rows.filter(function(r){return okIds.indexOf(r.id)<0;});
+        localStorage.setItem("gcse:offlineQueue:backup",JSON.stringify(backup));
+      }
+    }
+    return {ok:okIds.length,failed:failed};
+  }finally{
+    localStorage.removeItem(lockKey);
+    window.__reviseiqSyncing=false;
+  }
+}
+function useOfflineQueue(user, online){
+  const enqueue = React.useCallback(async function(action){
+    var row={id:(Date.now()+"-"+Math.random().toString(36).slice(2)),type:action?.type||"unknown",payload:action?.payload||{},timestamp:Date.now(),user:user||"anon"};
+    if(online){
+      try{
+        if(typeof window.applyOfflineAction==="function"){ await window.applyOfflineAction(row); return row.id; }
+      }catch(_){}
+    }
+    try{ await IDB_QUEUE.enqueue(row); }
+    catch(_){
+      var key="gcse:offlineQueue:backup";
+      var arr=JSON.parse(localStorage.getItem(key)||"[]"); arr.push(row);
+      localStorage.setItem(key,JSON.stringify(arr.slice(-1000)));
+    }
+    return row.id;
+  },[online,user]);
+  React.useEffect(function(){
+    function onOnline(){ syncOfflineQueue(); }
+    window.addEventListener("online", onOnline);
+    return function(){ window.removeEventListener("online", onOnline); };
+  },[]);
+  return {enqueue, syncOfflineQueue};
+}
+function registerReviseIQServiceWorker(){
+  if(typeof window==="undefined"||!("serviceWorker" in navigator)||window.__reviseiqSWRegistered) return;
+  try{
+    var swCode='const CACHE=\"reviseiq-shell-v1\";self.addEventListener(\"install\",e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll([\"/\"]).catch(()=>{})));self.skipWaiting();});self.addEventListener(\"activate\",e=>{e.waitUntil(self.clients.claim());});self.addEventListener(\"fetch\",e=>{const r=e.request;const u=new URL(r.url);if(r.method!==\"GET\")return;e.respondWith((async()=>{if(u.origin===location.origin&&(u.pathname.endsWith(\".js\")||u.pathname.endsWith(\".css\")||u.pathname===\"/\")){const c=await caches.match(r);if(c)return c;try{const n=await fetch(r);const cache=await caches.open(CACHE);cache.put(r,n.clone());return n;}catch(_){return caches.match(\"/\");}}try{return await fetch(r);}catch(_){const c=await caches.match(r);if(c)return c;return new Response(\"Offline\",{status:503,headers:{\"Content-Type\":\"text/plain\"}});}})());});';
+    var blob=new Blob([swCode],{type:"text/javascript"});
+    var url=URL.createObjectURL(blob);
+    navigator.serviceWorker.register(url).catch(function(){});
+    window.__reviseiqSWRegistered=true;
+  }catch(_){}
+}
+function buildProgressSummary(userData){
+  if(typeof window!=="undefined"&&typeof window.generateSummary==="function"){
+    try{ return window.generateSummary(userData); }catch(_){}
+  }
+  var weak=(userData.weakestTopics||[]).slice(0,3).join(", ")||"None identified";
+  return "You are on a "+(userData.streak||0)+" day streak, studied "+(userData.totalDaysStudied||0)+" days, attempted "+(userData.questionsAttempted||0)+" questions, and your readiness score is "+(userData.readinessScore||0)+"%. Focus next on: "+weak+".";
+}
+function generateProgressReport(userData){
+  var summary=buildProgressSummary(userData);
+  var w=window.open("","_blank","width=900,height=700");
+  if(!w) return false;
+  var html='<!doctype html><html><head><title>ReviseIQ Progress Report</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#111}h1{margin-bottom:0}table{border-collapse:collapse;width:100%;margin-top:14px}td,th{border:1px solid #ddd;padding:8px;text-align:left}.muted{color:#666}</style></head><body><h1>ReviseIQ Progress Report</h1><p class=\"muted\">Generated '+new Date().toLocaleString()+'</p><table><tr><th>Metric</th><th>Value</th></tr><tr><td>Current streak</td><td>'+(userData.streak||0)+'</td></tr><tr><td>Total days studied</td><td>'+(userData.totalDaysStudied||0)+'</td></tr><tr><td>Questions attempted</td><td>'+(userData.questionsAttempted||0)+'</td></tr><tr><td>Weakest topics</td><td>'+((userData.weakestTopics||[]).join(", ")||"None")+'</td></tr><tr><td>Readiness score</td><td>'+(userData.readinessScore||0)+'%</td></tr></table><h3>Summary</h3><p>'+String(summary).replace(/</g,"&lt;")+'</p></body></html>';
+  w.document.open(); w.document.write(html); w.document.close();
+  setTimeout(function(){try{w.print();}catch(_){}},120);
+  return true;
+}
+function getGroupKey(groupId){ return "gcse:groups:"+String(groupId||"default").replace(/\W/g,"-"); }
+function loadGroup(groupId){
+  try{
+    var g=JSON.parse(localStorage.getItem(getGroupKey(groupId))||"null");
+    if(g&&Array.isArray(g.members)&&Array.isArray(g.leaderboard)) return g;
+  }catch(_){}
+  return {members:[],leaderboard:[]};
+}
+function saveGroup(groupId, group){
+  try{localStorage.setItem(getGroupKey(groupId),JSON.stringify(group));}catch(_){}
+}
+function upsertGroupScore(groupId, user, deltaQuestions, streak){
+  var g=loadGroup(groupId);
+  if(g.members.indexOf(user)<0) g.members.push(user);
+  var lb=g.leaderboard||[];
+  var i=lb.findIndex(function(x){return x.user===user;});
+  if(i<0) lb.push({user:user,totalQuestions:Math.max(0,deltaQuestions||0),streak:Math.max(0,streak||0)});
+  else{
+    lb[i]={...lb[i],totalQuestions:Math.max(0,(lb[i].totalQuestions||0)+(deltaQuestions||0)),streak:Math.max(lb[i].streak||0,streak||0)};
+  }
+  lb.sort(function(a,b){ return (b.totalQuestions-a.totalQuestions) || (b.streak-a.streak); });
+  g.leaderboard=lb;
+  saveGroup(groupId,g);
+  return g;
+}
+function createPeerQuiz(data){
+  var id="pq-"+uid();
+  var row={id:id,creator:data.creator||"",recipient:data.recipient||"",questions:Array.isArray(data.questions)?data.questions:[],answers:[],score:null,timeTaken:null,createdAt:new Date().toISOString()};
+  try{localStorage.setItem("gcse:peerQuiz:"+id,JSON.stringify(row));}catch(_){}
+  return id;
+}
+function submitPeerQuiz(id, answers, score, timeTaken){
+  var key="gcse:peerQuiz:"+id;
+  try{
+    var row=JSON.parse(localStorage.getItem(key)||"null");
+    if(!row) return false;
+    row.answers=Array.isArray(answers)?answers:[];
+    row.score=Number(score||0);
+    row.timeTaken=Number(timeTaken||0);
+    row.completedAt=new Date().toISOString();
+    localStorage.setItem(key,JSON.stringify(row));
+    return true;
+  }catch(_){return false;}
+}
+
+// Inlined from src/app/studyBlocks.jsx
+
+function useSchoolLeaderboard(user, school) {
+  const [entries, setEntries] = useState([]);
+  const [loading, setLoading] = useState(false);
+  useEffect(() => {
+    if (!school) return;
+    setLoading(true);
+    (async () => {
+      try {
+        const res = await window.storage.list("gcse:lb:", true);
+        if (!res?.keys?.length) { setLoading(false); return; }
+        const fetched = await Promise.allSettled(res.keys.map(k => window.storage.get(k, true)));
+        const all = fetched.filter(r => r.status === "fulfilled" && r.value?.value)
+          .map(r => { try { return JSON.parse(r.value.value); } catch(e){ return null; } })
+          .filter(e => e && e.username && e.school);
+        // Filter to only active accounts
+        let activeUsernames = new Set();
+        try{const ar2=await window.storage.get("gcse:accounts",true);if(ar2?.value){const accs2=JSON.parse(ar2.value);Object.keys(accs2).forEach(k=>activeUsernames.add(k.toLowerCase()));}}catch(_){}
+        const schoolNorm = school.trim().toLowerCase();
+        const filtered = activeUsernames.size>0
+          ? all.filter(e => e.school.trim().toLowerCase() === schoolNorm && activeUsernames.has(e.username.toLowerCase()))
+          : all.filter(e => e.school.trim().toLowerCase() === schoolNorm);
+        setEntries(filtered.sort((a, b) => (b.score||0) - (a.score||0)));
+      } catch (_) {}
+      setLoading(false);
+    })();
+  }, [school]);
+  return { entries, loading };
+}
+
+function SchoolLeaderboard({ user, school, D }) {
+  const { entries, loading } = useSchoolLeaderboard(user, school);
+  if (!school) return (
+    <div style={{marginTop:14,padding:"10px 14px",borderRadius:10,background:D?"#1e2537":"#f3f4f6",fontSize:12,color:D?"#9ca3af":"#6b7280"}}>
+      🏫 Add your school during sign-up to see how you rank among classmates.
+    </div>
+  );
+  if (loading) return <div style={{marginTop:14,fontSize:12,color:D?"#8896b3":"#9ca3af"}}>Loading school leaderboard…</div>;
+  if (!entries.length) return (
+    <div style={{marginTop:14,padding:"10px 14px",borderRadius:10,background:D?"#1e2537":"#f3f4f6",fontSize:12,color:D?"#9ca3af":"#6b7280"}}>
+      🏆 No other students from <strong>{school}</strong> yet — invite your classmates!
+    </div>
+  );
+  const mu2 = D ? "#8896b3" : "#9ca3af";
+  const tx2 = D ? "#e8ecf4" : "#111827";
+  return (
+    <div style={{marginTop:14}}>
+      <p style={{fontSize:11,fontWeight:600,color:mu2,textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:8}}>🏫 {school} Leaderboard</p>
+      <div style={{display:"flex",flexDirection:"column",gap:4,maxHeight:340,overflowY:"auto",paddingRight:2}}>
+        {entries.map((e,i) => {
+          const isMe = e.username === user;
+          const medal = i===0?"🥇":i===1?"🥈":i===2?"🥉":null;
+          const name = e.displayName || e.username || "";
+          return (
+            <div key={e.username} style={{display:"flex",alignItems:"center",gap:10,padding:"7px 12px",borderRadius:8,
+              background:isMe?(D?"rgba(99,102,241,.2)":"#eef2ff"):(D?"#1f2937":"#f9fafb"),
+              border:isMe?"1.5px solid #6366f1":"1.5px solid transparent",flexShrink:0}}>
+              <span style={{fontSize:13,width:22,textAlign:"center"}}>{medal||<span style={{fontSize:11,color:mu2,fontFamily:"monospace"}}>#{i+1}</span>}</span>
+              <span style={{flex:1,fontSize:13,fontWeight:isMe?700:400,color:isMe?"#6366f1":tx2}}>{name}{isMe?" (you)":""}</span>
+              <span style={{fontSize:12,fontWeight:600,color:mu2}}>{e.score||0} pts</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function mergeTopics(baseTopics, boardCustom, boardExtras) {
+  function expandAdminTopic(cs) {
+    const subs = cs.subtopics||[];
+    if (subs.length > 0) {
+      return subs.map(st => ({
+        id: st.id, title: st.title, src: "admin",
+        _parentTopicId: cs.id, _parentTopicTitle: cs.title, _isSubtopic: true,
+        notes: [...(st.notes||[]), ...(boardExtras[st.id]?.notes||[])],
+        flashcards: [...(st.flashcards||[]), ...(boardExtras[st.id]?.flashcards||[])],
+        questions: [...(st.questions||[]), ...(boardExtras[st.id]?.questions||[])],
+      }));
+    }
+    return [{ ...cs, _parentTopicId: cs.id, _parentTopicTitle: cs.title, _isSubtopic: false,
+      notes: [...(cs.notes||[]), ...(boardExtras[cs.id]?.notes||[])],
+      flashcards: [...(cs.flashcards||[]), ...(boardExtras[cs.id]?.flashcards||[])],
+      questions: [...(cs.questions||[]), ...(boardExtras[cs.id]?.questions||[])],
+    }];
+  }
+  const topicMap = (baseTopics||[]).map(topic => ({
+    ...topic,
+    sections: [
+      ...topic.sections.map(sec => ({
+        ...sec,
+        notes: [...(sec.notes||[]), ...(boardExtras[sec.id]?.notes||[])],
+        flashcards: [...(sec.flashcards||[]), ...(boardExtras[sec.id]?.flashcards||[])],
+        questions: [...(sec.questions||[]), ...(boardExtras[sec.id]?.questions||[])],
+      })),
+      ...(boardCustom||[]).filter(cs => cs.topicId === topic.id).flatMap(expandAdminTopic),
+    ]
+  }));
+  const loose = (boardCustom||[]).filter(cs => !cs.topicId || !(baseTopics||[]).find(t => t.id === cs.topicId));
+  if (loose.length > 0) {
+    const groups = [];
+    for (const cs of loose) { const expanded = expandAdminTopic(cs); groups.push({ _adminTopicId: cs.id, _adminTopicTitle: cs.title, sections: expanded }); }
+    topicMap.push({ id:"_admin", number:"", title:"Topics", sections: groups.flatMap(g=>g.sections), _adminGroups: groups });
+  }
+  return topicMap;
+}
+
+function _cleanText(s){return (s||"").toLowerCase().replace(/[^a-z0-9\s]/g," ").replace(/\s+/g," ").trim();}
+function _clozeLooseMatch(correct, input){
+  const a=_cleanText(correct), b=_cleanText(input);
+  if(!a||!b) return false;
+  if(a===b) return true;
+  if(a.replace(/s$/,"")===b.replace(/s$/,"")) return true;
+  return a.includes(b) || b.includes(a);
+}
+function parseClozeText(text){
+  const parts=[]; let i=0; let bi=0;
+  const src=String(text||"");
+  while(i<src.length){
+    const s=src.indexOf("{{",i);
+    if(s===-1){parts.push({type:"text",value:src.slice(i)});break;}
+    if(s>i) parts.push({type:"text",value:src.slice(i,s)});
+    const e=src.indexOf("}}",s+2);
+    if(e===-1){parts.push({type:"text",value:src.slice(s)});break;}
+    const ans=src.slice(s+2,e).trim();
+    parts.push({type:"blank",answer:ans,index:bi++});
+    i=e+2;
+  }
+  return parts;
+}
+
+function ClozeCard({ card, D, onSubmit, DiagramRendererComp }) {
+  const parts = React.useMemo(()=>parseClozeText(card?.text||card?.q||""), [card?.text, card?.q]);
+  const blanks = React.useMemo(()=>parts.filter(p=>p.type==="blank"), [parts]);
+  const [vals,setVals]=React.useState(function(){
+    const obj={}; blanks.forEach(function(b){obj[b.index]="";}); return obj;
+  });
+  const [result,setResult]=React.useState(null);
+  React.useEffect(()=>{const obj={}; blanks.forEach(function(b){obj[b.index]="";}); setVals(obj); setResult(null);}, [card?.id, blanks.length]);
+  const submit=async()=>{
+    const rows = blanks.map(function(b){
+      const user=(vals[b.index]||"").trim();
+      const correct=(b.answer||"").trim();
+      const exact=_cleanText(user)===_cleanText(correct);
+      return {user,correct,ok:exact || _clozeLooseMatch(correct,user)};
+    });
+    const allCorrect = rows.every(r=>r.ok);
+    const score = rows.length?Math.round((rows.filter(r=>r.ok).length/rows.length)*100):0;
+    const out={allCorrect,score,rows};
+    setResult(out);
+    if(onSubmit) onSubmit(out);
+  };
+  return (
+    <div style={{borderRadius:12,border:`1.5px solid ${D?"#374151":"#e5e7eb"}`,padding:16,background:D?"#161b27":"#fff"}}>
+      {card?.diagram&&<div style={{marginBottom:10}}><DiagramRendererComp diagram={card.diagram} D={D} width={420}/></div>}
+      <div style={{lineHeight:2,fontSize:15,color:D?"#e5e7eb":"#111827"}}>
+        {parts.map(function(p,idx){
+          if(p.type==="text") return <span key={idx}>{p.value}</span>;
+          return <input key={idx} value={vals[p.index]||""} onChange={e=>setVals(v=>({...v,[p.index]:e.target.value}))}
+            style={{display:"inline-block",minWidth:120,padding:"4px 8px",margin:"0 5px",borderRadius:8,border:`1.5px solid ${D?"#4b5563":"#cbd5e1"}`,background:D?"#0f172a":"#f8fafc",color:D?"#fff":"#111"}}/>;
+        })}
+      </div>
+      <button onClick={submit} style={{marginTop:12,padding:"8px 14px",borderRadius:8,border:"none",background:"#6366f1",color:"#fff",cursor:"pointer",fontWeight:700}}>Check answers</button>
+      {result&&<div style={{marginTop:10,fontSize:12,color:result.allCorrect?"#16a34a":"#d97706"}}>{result.allCorrect?"✓ All correct":"Score: "+result.score+"%"}</div>}
+    </div>
+  );
+}
+
+function SequenceCard({ card, D, onSubmit }) {
+  const base = React.useMemo(()=>Array.isArray(card?.items)?card.items.filter(Boolean):[], [card?.items]);
+  const [order,setOrder]=React.useState([]);
+  const [dragIdx,setDragIdx]=React.useState(null);
+  const [result,setResult]=React.useState(null);
+  React.useEffect(()=>{
+    const arr=[...base].sort(()=>Math.random()-0.5);
+    setOrder(arr); setResult(null); setDragIdx(null);
+  }, [card?.id, base.join("|")]);
+  const onDropAt=(idx)=>{
+    if(dragIdx===null||dragIdx===idx) return;
+    setOrder(prev=>{
+      const n=[...prev]; const [m]=n.splice(dragIdx,1); n.splice(idx,0,m); return n;
+    });
+    setDragIdx(null);
+  };
+  const grade=()=>{
+    const correctPositions = order.reduce((a,it,i)=>a + (it===base[i]?1:0),0);
+    const score = base.length?correctPositions/base.length:0;
+    const status = score===1 ? "correct" : score>=0.5 ? "partial" : "incorrect";
+    const out={status,score,correctPositions,total:base.length};
+    setResult(out);
+    if(onSubmit) onSubmit(out);
+  };
+  return (
+    <div style={{borderRadius:12,border:`1.5px solid ${D?"#374151":"#e5e7eb"}`,padding:16,background:D?"#161b27":"#fff"}}>
+      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+        {order.map(function(it,idx){return (
+          <div key={it+"-"+idx} draggable
+            onDragStart={()=>setDragIdx(idx)} onDragOver={e=>e.preventDefault()} onDrop={()=>onDropAt(idx)}
+            style={{padding:"10px 12px",borderRadius:10,border:`1px solid ${D?"#4b5563":"#d1d5db"}`,background:D?"#0f172a":"#f9fafb",cursor:"grab"}}>
+            {it}
+          </div>
+        );})}
+      </div>
+      <button onClick={grade} style={{marginTop:12,padding:"8px 14px",borderRadius:8,border:"none",background:"#6366f1",color:"#fff",cursor:"pointer",fontWeight:700}}>Check order</button>
+      {result&&(
+        <div style={{marginTop:10,fontSize:12}}>
+          <div style={{fontWeight:700,color:result.status==="correct"?"#16a34a":result.status==="partial"?"#d97706":"#dc2626"}}>
+            {result.status.toUpperCase()} · {Math.round(result.score*100)}%
+          </div>
+          <div style={{marginTop:6,color:D?"#cbd5e1":"#374151"}}>{base.map(function(x,i){return (i+1)+". "+x;}).join(" → ")}</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function QuestionFigure({ figure, D, figureNumber=1, DiagramRendererComp }) {
+  if(!figure) return null;
+  const w=figure.data?.width||520, h=figure.data?.height||220, pad=28;
+  const pts=Array.isArray(figure.data?.points)?figure.data.points:[];
+  const minX=Math.min(...pts.map(p=>Number(p.x)||0),0), maxX=Math.max(...pts.map(p=>Number(p.x)||0),1);
+  const minY=Math.min(...pts.map(p=>Number(p.y)||0),0), maxY=Math.max(...pts.map(p=>Number(p.y)||0),1);
+  const sx=x=>pad+((x-minX)/(maxX-minX||1))*(w-pad*2), sy=y=>h-pad-((y-minY)/(maxY-minY||1))*(h-pad*2);
+  const chart = (function(){
+    if(figure.type==="photo") return <img src={figure.data?.src||""} alt={figure.caption||"figure"} style={{maxWidth:"100%",borderRadius:10}}/>;
+    if(figure.type==="table") return (
+      <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+        <thead><tr>{(figure.data?.headers||[]).map((h2,i)=><th key={i} style={{border:"1px solid #cbd5e1",padding:6,background:D?"#0f172a":"#f8fafc"}}>{h2}</th>)}</tr></thead>
+        <tbody>{(figure.data?.rows||[]).map((r,ri)=><tr key={ri}>{r.map((c,ci)=><td key={ci} style={{border:"1px solid #cbd5e1",padding:6}}>{String(c)}</td>)}</tr>)}</tbody>
+      </table>
+    );
+    if(figure.type==="svg"&&figure.data) return <DiagramRendererComp diagram={figure.data} D={D} width={520}/>;
+    if(figure.type==="bar"){
+      const bars=Array.isArray(figure.data?.bars)?figure.data.bars:[];
+      const m=Math.max(...bars.map(b=>Number(b.value)||0),1);
+      return <svg viewBox={`0 0 ${w} ${h}`} style={{width:"100%",height:"auto"}}>{bars.map((b,i)=>{const bw=(w-pad*2)/Math.max(bars.length,1)-8; const x=pad+i*(bw+8); const hh=((Number(b.value)||0)/m)*(h-pad*2); return <g key={i}><rect x={x} y={h-pad-hh} width={bw} height={hh} fill="#6366f1"/><text x={x+bw/2} y={h-pad+14} textAnchor="middle" fontSize="10">{b.label||i+1}</text></g>;})}<line x1={pad} y1={h-pad} x2={w-pad} y2={h-pad} stroke="#94a3b8"/></svg>;
+    }
+    if(figure.type==="line"){
+      const lp=Array.isArray(figure.data?.points)?figure.data.points:[];
+      const d=lp.map((p,i)=>(i?"L":"M")+sx(Number(p.x)||0)+" "+sy(Number(p.y)||0)).join(" ");
+      return <svg viewBox={`0 0 ${w} ${h}`} style={{width:"100%",height:"auto"}}><line x1={pad} y1={h-pad} x2={w-pad} y2={h-pad} stroke="#94a3b8"/><line x1={pad} y1={pad} x2={pad} y2={h-pad} stroke="#94a3b8"/><path d={d} fill="none" stroke="#6366f1" strokeWidth="2"/></svg>;
+    }
+    if(figure.type==="scatter"){
+      const ps=pts;
+      return <svg viewBox={`0 0 ${w} ${h}`} style={{width:"100%",height:"auto"}}><line x1={pad} y1={h-pad} x2={w-pad} y2={h-pad} stroke="#94a3b8"/><line x1={pad} y1={pad} x2={pad} y2={h-pad} stroke="#94a3b8"/>{ps.map((p,i)=><circle key={i} cx={sx(Number(p.x)||0)} cy={sy(Number(p.y)||0)} r="4" fill={p.anomaly?"#ef4444":"#6366f1"}/>)}</svg>;
+    }
+    return null;
+  })();
+  return (
+    <div style={{marginBottom:12,padding:10,borderRadius:10,border:`1px solid ${D?"#374151":"#e5e7eb"}`,background:D?"#111827":"#fff"}}>
+      <div style={{fontSize:12,fontWeight:700,marginBottom:6}}>Figure {figureNumber}: {figure.caption||"Untitled"}</div>
+      {chart}
+      {figure.source&&<div style={{fontSize:11,color:D?"#9ca3af":"#6b7280",marginTop:6}}>Source: {figure.source}</div>}
+    </div>
+  );
+}
+
+function generateWhyPrompt(card){
+  if(typeof window!=="undefined"&&typeof window.generateWhyPrompt==="function"){
+    try{return window.generateWhyPrompt(card);}catch(_){}
+  }
+  var src=stripHtml(card?.a||card?.text||card?.q||"");
+  var key=(src.split(/\s+/).filter(Boolean).slice(0,4).join(" "))||"this concept";
+  return "Why is "+key+" important?";
+}
+// Inlined from src/app/initAssets.js
+const ASSET_INIT_FLAG = "__reviseiqAssetsInit";
+
+function initializeKatexAndFonts() {
+  if (typeof document === "undefined") return;
+
+  const fontLink = document.createElement("link");
+  fontLink.rel = "stylesheet";
+  fontLink.href = "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap";
+  document.head.appendChild(fontLink);
+
+  const katexCss = document.createElement("link");
+  katexCss.rel = "stylesheet";
+  katexCss.href = "https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css";
+  document.head.appendChild(katexCss);
+
+  let katexReady = typeof window.katex !== "undefined";
+  const katexCallbacks = [];
+  window.__onKatexReady = (cb) => {
+    if (katexReady) cb();
+    else katexCallbacks.push(cb);
+  };
+
+  const katexScript = document.createElement("script");
+  katexScript.async = false;
+  katexScript.src = "https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js";
+  katexScript.onload = () => {
+    katexReady = true;
+    katexCallbacks.forEach((cb) => cb());
+    katexCallbacks.length = 0;
+  };
+  document.head.appendChild(katexScript);
+}
+
+function injectGlobalStyles() {
+  const globalStyle = document.createElement("style");
+  globalStyle.textContent = `
+*{font-family:'IBM Plex Sans',sans-serif;box-sizing:border-box;margin:0;padding:0}
+textarea,input,select{font-family:'IBM Plex Sans',sans-serif!important}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes streakPop{0%{transform:scale(1)}50%{transform:scale(1.25)}100%{transform:scale(1)}}
+@keyframes toastIn{from{opacity:0;transform:translateY(12px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes toastOut{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(8px)}}
+.fade-in{animation:fadeIn .22s ease forwards}
+.slide-up{animation:slideUp .25s ease forwards}
+.streak-pop{animation:streakPop .35s ease}
+.toast-in{animation:toastIn .2s ease forwards}
+.toast-out{animation:toastOut .2s ease forwards}
+/* Flashcard 3-D flip */
+.fc-scene{perspective:900px}
+.fc-card{width:100%;min-height:170px;position:relative;transform-style:preserve-3d;transition:transform .4s cubic-bezier(.4,0,.2,1)}
+.fc-card.flipped{transform:rotateY(180deg)}
+.fc-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:14px;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:32px 24px;text-align:center;cursor:pointer}
+.fc-back{transform:rotateY(180deg)}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:4px}
+.ann-handle{cursor:move;user-select:none}
+.rich-body{outline:none;min-height:80px;line-height:1.75;font-size:13px}
+.rich-body b,.rich-body strong{font-weight:700}
+.rich-body i,.rich-body em{font-style:italic}
+.rich-body u{text-decoration:underline}
+.rich-body ul,.rich-body ol{padding-left:20px;margin:3px 0}
+.rich-body li{margin-bottom:2px}
+.rich-body h3{font-size:14px;font-weight:700;margin:6px 0 3px}
+.rich-display{line-height:1.75;font-size:13px}
+.rich-display b,.rich-display strong{font-weight:700}
+.rich-display i,.rich-display em{font-style:italic}
+.rich-display u{text-decoration:underline}
+.rich-display ul,.rich-display ol{padding-left:20px;margin:4px 0}
+.rich-display li{margin-bottom:2px}
+.rich-display h3{font-size:14px;font-weight:700;margin:6px 0 3px}
+/* ── Evidence-based learning UI enhancements ── */
+@keyframes sectionReveal{from{opacity:0;max-height:0;padding-top:0;padding-bottom:0}to{opacity:1;max-height:3000px}}
+@keyframes confidencePop{0%{transform:scale(.88)}65%{transform:scale(1.08)}100%{transform:scale(1)}}
+@keyframes hintSlide{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+.note-reveal{animation:sectionReveal .28s ease forwards;overflow:hidden}
+.conf-pop{animation:confidencePop .2s ease forwards}
+.hint-slide{animation:hintSlide .18s ease forwards}
+/* keyterm chips in notes */
+.keyterm{display:inline-flex;align-items:center;background:rgba(99,102,241,.13);color:#4f46e5;border-radius:5px;padding:1px 6px;font-weight:600;font-size:.92em}
+.keyterm-d{background:rgba(165,180,252,.15);color:#a5b4fc}
+/* AO badges */
+.ao-badge{display:inline-flex;align-items:center;border-radius:20px;padding:2px 9px;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+/* image lightbox overlay */
+.img-lb{position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:zoom-out;padding:20px}
+@keyframes diagramPulse{0%{transform:scale(1)}50%{transform:scale(1.18)}100%{transform:scale(1)}}
+.diagram-pulse{animation:diagramPulse .3s ease}
+`;
+  document.head.appendChild(globalStyle);
+}
+
+function initializeAppAssets() {
+  if (typeof window === "undefined") return;
+  if (window[ASSET_INIT_FLAG]) return;
+
+  initializeKatexAndFonts();
+  injectGlobalStyles();
+  window[ASSET_INIT_FLAG] = true;
+}
+
+initializeAppAssets();
 
 // ── AI: Groq via Vercel proxy (/api/ai) ──────────────────────────────────────
 // API key lives in Vercel Environment Variables as GROQ_API_KEY — never in browser code.
