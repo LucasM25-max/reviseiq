@@ -1,9 +1,20 @@
-// Shared utility functions used by the learning logic
+// Generic utilities
 export const uid = () => (typeof crypto!=="undefined"&&crypto.randomUUID) ? crypto.randomUUID().replace(/-/g,"").slice(0,9) : Math.random().toString(36).slice(2,9);
 export const stripHtml = s => (s||"").replace(/<[^>]*>/g,"").trim();
 export function _cleanText(s){return (s||"").toLowerCase().replace(/[^a-z0-9\s]/g," ").replace(/\s+/g," ").trim();}
 
-// FSRS Algorithm Parameters & Logic
+// Account format helpers (supports both legacy string and new {h,gki} object)
+export function getAccHash(acc){return typeof acc==="string"?acc:acc?.h;}
+export function getAccGki(acc){return typeof acc==="string"?null:(acc?.gki??null);}
+export function getAccDisplayName(acc){return (acc&&typeof acc==="object"&&acc.displayName)||"";}
+
+export const GRADES = ["U","1","2","3","4","5","6","7","8","9"];
+export const pctToGrade = pct => pct>=90?"9":pct>=80?"8":pct>=70?"7":pct>=60?"6":pct>=50?"5":pct>=40?"4":pct>=30?"3":pct>=20?"2":pct>=10?"1":"U";
+
+// Generates a stable ID from a string for personal subjects
+export function _psId(s){ return (s||"").toLowerCase().replace(/[^a-z0-9]/g,"-").replace(/-+/g,"-").slice(0,30)+"-"+Math.random().toString(36).slice(2,6); }
+
+// ── FSRS 4.5 Algorithm ──
 export const FSRS_PARAMS = {
   w: [0.4072,1.1829,3.1262,15.4722,7.2102,0.5316,1.0651,0.0589,1.5330,
       0.1544,1.0070,1.9395,0.1100,0.2900,2.2700,0.1500,2.9898,0.5100,0.1400],
@@ -124,7 +135,7 @@ export function getRetrievability(fcHist, cardId) {
   return Math.round(fsrsRetrievability(s.stability, elapsedDays) * 100);
 }
 
-// Streak Calculations
+// ── Streaks & Dates ──
 export function todayStr() { return new Date().toISOString().slice(0,10); }
 
 export function calcStreak(activityDates) {
@@ -151,7 +162,7 @@ export function calcLongestStreak(activityDates) {
   return best;
 }
 
-// Adaptive Learning & Question Selection
+// ── Adaptive & Ladder Logic ──
 export function inferDifficulty(q){
   if(q?.difficulty>=1&&q?.difficulty<=5) return q.difficulty;
   var m=Number(q?.marks||1);
@@ -231,7 +242,7 @@ export function generateTransferQuestion(originalQuestion){
   return {...q,id:"tr-"+uid(),text:"Apply It: "+(t||"Use this idea in a new context."),_transfer:true};
 }
 
-// Session & Timetable Planners
+// ── Session Generation ──
 export function getWeekKey(d){
   var dt=new Date(d||Date.now()); var onejan=new Date(dt.getFullYear(),0,1); var day=Math.floor((dt-onejan)/86400000);
   return dt.getFullYear()+"-W"+Math.ceil((day+onejan.getDay()+1)/7);
@@ -264,6 +275,36 @@ export function generateSessionOptions(user, subjectId, allSections, stats, fcHi
   ];
 }
 
+export function generateInterleavedSession(subjectId, allSections){
+  var secs=(allSections||[]).filter(function(s){return s.subjectId===subjectId;});
+  var byTopic={};
+  secs.forEach(function(sec){
+    var t=sec.topicId||sec.id;
+    if(!byTopic[t]) byTopic[t]=[];
+    (sec.flashcards||[]).forEach(function(c){byTopic[t].push({kind:"flashcard",sectionId:sec.id,topicId:t,item:c});});
+    (sec.questions||[]).forEach(function(q){byTopic[t].push({kind:"question",sectionId:sec.id,topicId:t,item:q});});
+  });
+  var topicIds=Object.keys(byTopic).filter(function(t){return byTopic[t].length>0;}).slice(0,8);
+  if(topicIds.length<3) return [];
+  var idx=0; var out=[]; var lastTopic=null; var guard=0;
+  while(guard<2000){
+    guard++;
+    var nonEmpty=topicIds.filter(function(t){return byTopic[t]&&byTopic[t].length;});
+    if(!nonEmpty.length) break;
+    var pick=nonEmpty[idx%nonEmpty.length];
+    idx++;
+    if(pick===lastTopic&&nonEmpty.length>1){
+      pick=nonEmpty.find(function(t){return t!==lastTopic;})||pick;
+    }
+    var next=(byTopic[pick]||[]).shift();
+    if(!next) continue;
+    out.push(next);
+    lastTopic=pick;
+  }
+  return out;
+}
+
+// ── Card Variants ──
 export function getVariantStorageKey(user, cardId){
   return "gcse:variants:"+String(user||"anon").replace(/\W/g,"-")+":"+String(cardId||"");
 }
@@ -320,36 +361,7 @@ export function maybeUseVariantText(user, card, reviewCount, stability){
   return variants[0]?.text||null;
 }
 
-export function generateInterleavedSession(subjectId, allSections){
-  var secs=(allSections||[]).filter(function(s){return s.subjectId===subjectId;});
-  var byTopic={};
-  secs.forEach(function(sec){
-    var t=sec.topicId||sec.id;
-    if(!byTopic[t]) byTopic[t]=[];
-    (sec.flashcards||[]).forEach(function(c){byTopic[t].push({kind:"flashcard",sectionId:sec.id,topicId:t,item:c});});
-    (sec.questions||[]).forEach(function(q){byTopic[t].push({kind:"question",sectionId:sec.id,topicId:t,item:q});});
-  });
-  var topicIds=Object.keys(byTopic).filter(function(t){return byTopic[t].length>0;}).slice(0,8);
-  if(topicIds.length<3) return [];
-  var idx=0; var out=[]; var lastTopic=null; var guard=0;
-  while(guard<2000){
-    guard++;
-    var nonEmpty=topicIds.filter(function(t){return byTopic[t]&&byTopic[t].length;});
-    if(!nonEmpty.length) break;
-    var pick=nonEmpty[idx%nonEmpty.length];
-    idx++;
-    if(pick===lastTopic&&nonEmpty.length>1){
-      pick=nonEmpty.find(function(t){return t!==lastTopic;})||pick;
-    }
-    var next=(byTopic[pick]||[]).shift();
-    if(!next) continue;
-    out.push(next);
-    lastTopic=pick;
-  }
-  return out;
-}
-
-// Progress and Leaderboard Data
+// ── Progress Reports & Groups ──
 export function buildProgressSummary(userData){
   if(typeof window!=="undefined"&&typeof window.generateSummary==="function"){
     try{ return window.generateSummary(userData); }catch(_){}
@@ -416,4 +428,155 @@ export function submitPeerQuiz(id, answers, score, timeTaken){
     localStorage.setItem(key,JSON.stringify(row));
     return true;
   }catch(_){return false;}
+}
+
+export function mergeTopics(baseTopics, boardCustom, boardExtras) {
+  function expandAdminTopic(cs) {
+    const subs = cs.subtopics||[];
+    if (subs.length > 0) {
+      return subs.map(st => ({
+        id: st.id, title: st.title, src: "admin",
+        _parentTopicId: cs.id, _parentTopicTitle: cs.title, _isSubtopic: true,
+        notes: [...(st.notes||[]), ...(boardExtras[st.id]?.notes||[])],
+        flashcards: [...(st.flashcards||[]), ...(boardExtras[st.id]?.flashcards||[])],
+        questions: [...(st.questions||[]), ...(boardExtras[st.id]?.questions||[])],
+      }));
+    }
+    return [{ ...cs, _parentTopicId: cs.id, _parentTopicTitle: cs.title, _isSubtopic: false,
+      notes: [...(cs.notes||[]), ...(boardExtras[cs.id]?.notes||[])],
+      flashcards: [...(cs.flashcards||[]), ...(boardExtras[cs.id]?.flashcards||[])],
+      questions: [...(cs.questions||[]), ...(boardExtras[cs.id]?.questions||[])],
+    }];
+  }
+  const topicMap = (baseTopics||[]).map(topic => ({
+    ...topic,
+    sections: [
+      ...topic.sections.map(sec => ({
+        ...sec,
+        notes: [...(sec.notes||[]), ...(boardExtras[sec.id]?.notes||[])],
+        flashcards: [...(sec.flashcards||[]), ...(boardExtras[sec.id]?.flashcards||[])],
+        questions: [...(sec.questions||[]), ...(boardExtras[sec.id]?.questions||[])],
+      })),
+      ...(boardCustom||[]).filter(cs => cs.topicId === topic.id).flatMap(expandAdminTopic),
+    ]
+  }));
+  const loose = (boardCustom||[]).filter(cs => !cs.topicId || !(baseTopics||[]).find(t => t.id === cs.topicId));
+  if (loose.length > 0) {
+    const groups = [];
+    for (const cs of loose) { const expanded = expandAdminTopic(cs); groups.push({ _adminTopicId: cs.id, _adminTopicTitle: cs.title, sections: expanded }); }
+    topicMap.push({ id:"_admin", number:"", title:"Topics", sections: groups.flatMap(g=>g.sections), _adminGroups: groups });
+  }
+  return topicMap;
+}
+
+export function _clozeLooseMatch(correct, input){
+  const a=_cleanText(correct), b=_cleanText(input);
+  if(!a||!b) return false;
+  if(a===b) return true;
+  if(a.replace(/s$/,"")===b.replace(/s$/,"")) return true;
+  return a.includes(b) || b.includes(a);
+}
+
+export function parseClozeText(text){
+  const parts=[]; let i=0; let bi=0;
+  const src=String(text||"");
+  while(i<src.length){
+    const s=src.indexOf("{{",i);
+    if(s===-1){parts.push({type:"text",value:src.slice(i)});break;}
+    if(s>i) parts.push({type:"text",value:src.slice(i,s)});
+    const e=src.indexOf("}}",s+2);
+    if(e===-1){parts.push({type:"text",value:src.slice(s)});break;}
+    const ans=src.slice(s+2,e).trim();
+    parts.push({type:"blank",answer:ans,index:bi++});
+    i=e+2;
+  }
+  return parts;
+}
+
+export function getNodePositions(nodes,w=560,h=360){
+  const r=Math.min(w,h)*0.36,cx=w/2,cy=h/2;
+  return (nodes||[]).map(function(n,i){
+    const a=(Math.PI*2*i)/Math.max(nodes.length,1)-Math.PI/2;
+    return {...n,x:cx+r*Math.cos(a),y:cy+r*Math.sin(a)};
+  });
+}
+
+export function calculateFrontier(graph, masteryMap){
+  const m=masteryMap||{};
+  const edges=(graph?.edges||[]);
+  return (graph?.nodes||[]).filter(function(n){
+    const mn=Number(m[n.id]??n.mastery??0);
+    if(mn>=70) return false;
+    return edges.some(function(e){
+      const other=e.from===n.id?e.to:e.to===n.id?e.from:null;
+      if(!other) return false;
+      const mo=Number(m[other]||0);
+      return mo>=70;
+    });
+  }).map(n=>n.id);
+}
+
+export function checkPrerequisites(graph, topicId, masteryMap, threshold){
+  const t=threshold==null?60:threshold;
+  const edges=(graph?.edges||[]).filter(e=>e.to===topicId&&e.type==="requires");
+  const unmet=edges.filter(e=>Number(masteryMap?.[e.from]||0)<t).map(e=>e.from);
+  return unmet;
+}
+
+export function masteryColor(p){return p>=70?"#16a34a":p>=40?"#f59e0b":"#9ca3af";}
+
+export function buildTreemap(nodes,width,height){
+  const arr=[...(nodes||[])].filter(n=>n&&n.contentSize>0).sort((a,b)=>b.contentSize-a.contentSize);
+  if(!arr.length) return [];
+  const total=arr.reduce((a,n)=>a+n.contentSize,0)||1;
+  let x=0,y=0,w=width,h=height,dir=0;
+  return arr.map((n,i)=>{
+    const frac=n.contentSize/total;
+    let rw=w,rh=h;
+    if(dir%2===0){rw=Math.max(1,width*frac); const r={...n,x,y,w:rw,h}; x+=rw; w=Math.max(0,width-x); dir++; return r;}
+    rh=Math.max(1,height*frac); const r={...n,x,y,w,h:rh}; y+=rh; h=Math.max(0,height-y); dir++; return r;
+  });
+}
+
+export function detectCardType(q) {
+  const t = (q||"").toLowerCase();
+  if(/calculat|how many|work out|find the|compute|show.*work/.test(t)) return {label:"Calculate",color:"#7c3aed",icon:"🔢"};
+  if(/why|explain|because|reason|suggest why/.test(t))                 return {label:"Explain",  color:"#0891b2",icon:"💡"};
+  if(/compare|difference|similar|contrast/.test(t))                    return {label:"Compare",  color:"#d97706",icon:"⚖️"};
+  if(/predict|suggest|what would|likely|effect of/.test(t))            return {label:"Apply",    color:"#16a34a",icon:"🔬"};
+  if(/evaluat|assess|extent|justify|argue/.test(t))                    return {label:"Evaluate", color:"#dc2626",icon:"⭐"};
+  return {label:"Recall",color:"#6366f1",icon:"📝"};
+}
+
+// Note: CW_MAP and AO_COLORS are moved to uiPrimitives.js in the next step, but detect functions stay here.
+export function detectCW(text, cwMap) {
+  const t = (text||"").toLowerCase();
+  for (const [cw,data] of Object.entries(cwMap)) {
+    if (t.startsWith(cw+" ")||t.includes(" "+cw+" ")||t.includes("\n"+cw+" "))
+      return {word:cw,...data};
+  }
+  return null;
+}
+
+export function detectAOLabel(q, cwMap, aoColors) {
+  if (q.ao && aoColors[q.ao]) return q.ao;
+  const cw = detectCW(q.text||"", cwMap);
+  if (cw) return cw.ao;
+  if (q.type==="extended") return "AO3";
+  if (q.type==="short")    return "AO2";
+  return "AO1";
+}
+
+export function autoHints(q, cwMap) {
+  if (q.hints && Array.isArray(q.hints) && q.hints.length>=3) return q.hints;
+  const cw = detectCW(q.text||"", cwMap);
+  const h1 = cw?`Strategy: ${cw.tip}`:"Think carefully: what command word is used and what type of answer does it require?";
+  const msLines = (q.markScheme||"").split("\n").filter(l=>l.trim()&&!l.match(/^Level|^Award|^Do not/i));
+  const h2 = msLines.length>0
+    ? `Subject clue: think about — ${msLines[0].replace(/[•()\[\]0-9.]+/g,"").trim().slice(0,90)}`
+    : "Review your notes on this topic before attempting.";
+  const h3 = msLines.length>0
+    ? `First mark: ${msLines[0].replace(/[•()\[\]0-9.]+/g,"").trim()}`
+    : q.markScheme?`Mark scheme starts: ${q.markScheme.slice(0,100)}…`:"Check key definitions in your notes.";
+  return [h1,h2,h3];
 }
