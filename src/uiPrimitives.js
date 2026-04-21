@@ -31,7 +31,220 @@ export const SEMANTIC_COLORS = {
   example:     { bg_l:"#faf5ff", bg_d:"rgba(147,51,234,.1)", border:"#9333EA", label_l:"#7e22ce", label_d:"#d8b4fe", icon:"💡" },
 };
 
-// ── SVG DIAGRAM TEMPLATES ────────────────────────────────────────────────────
+export const MOCK_SPECS={
+  "maths:AQA":[
+    {n:"Paper 1 – Non-Calculator",d:90,m:80,paperType:"parted",numGroups:22,
+     markDist:"Target EXACTLY 80 marks total. Start with 4–6 groups of 1–3 mark questions (recall/method), then 8–10 groups of 3–5 marks (application/multi-step), finish with 4–6 groups of 5–8 marks (problem-solving/proof). A single 6-mark question should appear at least once.",
+     specGuide:"AQA GCSE Maths Higher Tier — Paper 1 Non-Calculator. Cover: Number (fractions, surds, indices, standard form, HCF/LCM), Algebra (expanding brackets, factorising, solving equations/inequalities, sequences, simultaneous equations, quadratics, functions, proof), Ratio/Proportion/Rates (percentage change, direct/inverse proportion, compound interest), Geometry/Measures (angles, area, volume, circle theorems, transformations, vectors, Pythagoras), Probability, Statistics (averages, cumulative frequency, histograms). All questions require written working. At least: one algebraic proof, one geometry question with circle theorems, one statistics interpretation. NO MCQs. Show method marks clearly.",
+     desc:"1h 30min, 80 marks. No calculator allowed.",
+     skills:["Algebraic proof","Circle theorems","Show-that questions"]},
+    {n:"Paper 2 – Calculator",d:90,m:80,paperType:"parted",numGroups:22,
+     markDist:"Target EXACTLY 80 marks. Mix 1-mark retrieval, 3-4 mark method, 5-6 mark multi-step reasoning. At least two questions with 5+ marks.",
+     specGuide:"AQA GCSE Maths Higher Tier — Paper 2 Calculator. Include: trigonometry (sin/cos/tan, sine rule, cosine rule, 3D trig), bounds and error intervals, financial maths (compound/simple interest, depreciation), graph interpretation (distance-time, velocity-time, quadratic/cubic), reverse percentage, direct/inverse proportion, scatter graphs with correlation, similarity and congruence. Real-world context questions required. All written working shown.",
+     desc:"1h 30min, 80 marks. Calculator allowed.",
+     skills:["Trigonometry","Bounds","Graph interpretation"]},
+    {n:"Paper 3 – Calculator",d:90,m:80,paperType:"parted",numGroups:22,
+     markDist:"Target EXACTLY 80 marks. Synoptic — mix topics across questions. At least two 6-mark questions requiring extended multi-step reasoning.",
+     specGuide:"AQA GCSE Maths Higher Tier — Paper 3 Calculator. Synoptic paper — questions deliberately mix topics. Include: simultaneous equations (graphical and algebraic), circle theorems, vectors, enlargement/similar shapes, transformations, data analysis (box plots, cumulative frequency, histograms), algebraic fractions, iteration, further quadratics. At least two 6-mark problem-solving questions. Heavier weighting on multi-step reasoning requiring 4+ method steps.",
+     desc:"1h 30min, 80 marks. Calculator allowed.",
+     skills:["Circle theorems","Vectors","Multi-step reasoning"]},
+  ],
+  "maths:Edexcel":[
+    {n:"Paper 1 – Non-Calculator",d:90,m:80,paperType:"parted",numGroups:22,
+     markDist:"Target EXACTLY 80 marks. Start with short 1–2 mark recall questions; build to 4–6 mark problem-solving. Each group should list marks clearly.",
+     specGuide:"Edexcel GCSE Maths Higher Tier — Paper 1 Non-Calculator. Cover: indices and surds, algebraic manipulation (expanding, factorising), solving linear and quadratic equations, sequences (nth term arithmetic and geometric), angles (parallel lines, polygons, circle theorems), area and volume (composite shapes, sector/arc), probability trees, averages from frequency tables. At least two groups should start with a 1-mark recall part before extending. NO MCQs.",
+     desc:"1h 30min, 80 marks. No calculator allowed.",
+     skills:["Surds","Algebraic fractions","Angle proofs"]},
+    {n:"Paper 2 – Calculator",d:90,m:80,paperType:"parted",numGroups:22,
+     markDist:"Target EXACTLY 80 marks. Include a balance of short (1–3 mark) and longer (4–6 mark) questions.",
+     specGuide:"Edexcel GCSE Maths Higher Tier — Paper 2 Calculator. Include: Pythagoras theorem in 2D and 3D, trigonometric ratios and graphs, cumulative frequency and box plots, scatter graphs and lines of best fit, ratio and proportion (recipe problems, map scales), standard form calculations, percentage change and reverse percentages, surface area and volume of prisms/cylinders/cones/spheres.",
+     desc:"1h 30min, 80 marks. Calculator allowed.",
+     skills:["3D Pythagoras","Cumulative frequency","Standard form"]},
+    {n:"Paper 3 – Calculator",d:90,m:80,paperType:"parted",numGroups:22,
+     markDist:"Target EXACTLY 80 marks. More 5–6 mark multi-step questions than Papers 1 and 2.",
+     specGuide:"Edexcel GCSE Maths Higher Tier — Paper 3 Calculator. More demanding questions. Include: circle theorems (tangent, chord, alternate segment), similar shapes and scale factors (area/volume scale factors), 3D trigonometry, conditional probability and Venn diagrams, set notation, further algebraic proof, transformations of graphs, iteration to find roots. Questions should require students to select and chain methods.",
+     desc:"1h 30min, 80 marks. Calculator allowed.",
+     skills:["Circle theorems","Conditional probability","Graph transformations"]},
+  ],
+  "bio:AQA":[
+    {n:"Paper 1",d:105,m:100,paperType:"parted",numGroups:9,
+     markDist:"Target EXACTLY 100 marks. Section A: one group of exactly 4 MCQ parts (1 mark each, use type:mcq). Section B: 8 groups of structured questions mixing 1-mark recall, 2-mark describe, 3-4 mark explain, ending each group with one 6-mark extended writing question (level-based mark scheme with L1/L2/L3 descriptors). Total MCQ = 4 marks; structured = 96 marks.",
+     specGuide:"AQA GCSE Biology Paper 1. Duration 1h 45min. Topics 1–4 only: (1) Cell Biology — cell structure (animal/plant/bacterial), microscopy calculations, mitosis, cell cycle, stem cells, diffusion/osmosis/active transport with calculations; (2) Organisation — digestive system enzymes, food tests, heart/circulatory system, coronary heart disease, cancer, plant tissue/transport; (3) Infection and Response — communicable diseases, bacteria/viruses/fungi/protists, immune system, vaccination, antibiotics, drug development; (4) Bioenergetics — photosynthesis (word/symbol equation, factors, uses of glucose), aerobic/anaerobic respiration, exercise effects, metabolism. Required practicals: osmosis in potatoes, enzyme rate experiments, iodine test, Benedict's test. Include at least 2 maths questions (percentage change, magnification formula). Each group ends with a 6-mark level-based extended writing question.",
+     desc:"1h 45min, 100 marks. Topics 1–4: Cell Biology, Organisation, Infection & Response, Bioenergetics.",
+     skills:["Extended writing (6 marks)","Maths skills","Required practicals"]},
+    {n:"Paper 2",d:105,m:100,paperType:"parted",numGroups:9,
+     markDist:"Target EXACTLY 100 marks. Section A: one group of 4 MCQ parts. Section B: 8 groups of structured questions, each ending with one 6-mark extended writing question.",
+     specGuide:"AQA GCSE Biology Paper 2. Duration 1h 45min. Topics 5–7 only: (5) Homeostasis and Response — nervous system (CNS/receptors/effectors/reflex arc), hormones (endocrine system, ADH, blood glucose regulation, insulin/glucagon, diabetes, thermoregulation, menstrual cycle, fertility treatment, contraception, plant hormones/tropisms); (6) Inheritance, Variation and Evolution — DNA/genes/chromosomes/alleles, Mendel, genetic diagrams (monohybrid cross, Punnett square, sex determination), variation, mutation, natural selection, Darwin/Wallace, extinction, selective breeding, genetic engineering, cloning; (7) Ecology — ecosystems, food webs/chains, biotic/abiotic factors, adaptations, competition, sampling methods, human impacts on biodiversity, maintaining biodiversity, carbon/water/nitrogen cycles, decomposition, global warming. Include at least 2 maths questions. Each group ends with a 6-mark extended writing question.",
+     desc:"1h 45min, 100 marks. Topics 5–7: Homeostasis, Inheritance, Ecology.",
+     skills:["Genetic diagrams","Homeostasis mechanisms","Ecology calculations"]},
+  ],
+  "chem:AQA":[
+    {n:"Paper 1",d:105,m:100,paperType:"parted",numGroups:9,
+     markDist:"Target EXACTLY 100 marks. One group of 4 MCQ parts (type:mcq). Eight groups of structured questions, each ending with one 6-mark extended writing question. Include at least 3 maths calculation questions.",
+     specGuide:"AQA GCSE Chemistry Paper 1. Duration 1h 45min. Topics 1–5: (1) Atomic Structure and Periodic Table — atomic model history, subatomic particles, electron configuration, periodic table groups/periods, Group 1/7/0 properties, transition metals; (2) Bonding/Structure/Properties — ionic/covalent/metallic bonding, giant ionic/simple molecular/giant covalent/metallic structures, allotropes of carbon, polymer properties; (3) Quantitative Chemistry — relative formula mass (Mr), moles, balancing equations, mole calculations (mass/Mr), limiting reactants, % yield, atom economy calculations; (4) Chemical Changes — reactivity series, displacement reactions, extraction of metals, reduction, electrolysis (products at electrodes), acids/bases/neutralisation, making salts; (5) Energy Changes — exothermic/endothermic reactions, bond energies, reaction profiles. Required practicals: electrolysis, titration, temperature change. Maths: at least 2 mole calculation groups.",
+     desc:"1h 45min, 100 marks. Topics 1–5: Atomic structure, Bonding, Quantitative chemistry, Chemical changes, Energy.",
+     skills:["Mole calculations","Electrolysis","6-mark extended writing"]},
+    {n:"Paper 2",d:105,m:100,paperType:"parted",numGroups:9,
+     markDist:"Target EXACTLY 100 marks. One group of 4 MCQ parts. Eight structured groups ending each with a 6-mark extended writing question.",
+     specGuide:"AQA GCSE Chemistry Paper 2. Duration 1h 45min. Topics 6–10: (6) Rate and Extent of Chemical Change — collision theory, factors affecting rate (temperature/concentration/surface area/catalysts), rate calculations, reversible reactions, Le Chatelier's principle; (7) Organic Chemistry — crude oil/fractional distillation, alkanes (combustion), cracking, alkenes (addition reactions, bromine water test), alcohols, carboxylic acids, condensation polymers, addition polymers; (8) Chemical Analysis — pure substances, paper chromatography (Rf values), gas tests (O2/CO2/H2/Cl2/NH3), flame tests, precipitate tests; (9) Atmospheric Science — evolution of Earth's atmosphere, greenhouse effect, air pollutants; (10) Using Resources — finite/renewable resources, water treatment, Haber process (conditions/equilibrium), life cycle assessment, carbon footprint, alternatives to plastics. Include Rf value calculation and rate of reaction graph analysis.",
+     desc:"1h 45min, 100 marks. Topics 6–10: Rates, Organic chemistry, Analysis, Atmosphere, Resources.",
+     skills:["Organic chemistry naming","Rate calculations","Haber process"]},
+  ],
+  "phys:AQA":[
+    {n:"Paper 1",d:105,m:100,paperType:"parted",numGroups:9,
+     markDist:"Target EXACTLY 100 marks. One group of 4 MCQ parts. Eight structured groups; each group must include at least one calculation with formula/substitution/answer/units. Each group ends with one 6-mark extended writing question.",
+     specGuide:"AQA GCSE Physics Paper 1. Duration 1h 45min. Topics 1–4: (1) Energy — energy stores and transfers, conservation of energy, kinetic/gravitational/elastic potential energy calculations (KE=½mv², GPE=mgh, Ee=½ke²), power (P=E/t, P=W/t), efficiency calculations, thermal conductivity, specific heat capacity (Q=mcΔT), required practical; (2) Electricity — current/potential difference/resistance (V=IR), series/parallel circuits, electrical power (P=IV, P=I²R), energy transfer (E=Pt, E=QV), static electricity, electric fields, mains supply, national grid, transformers (Vp/Vs=np/ns); (3) Particle Model of Matter — density (ρ=m/V), states of matter, internal energy, specific heat capacity, specific latent heat (Q=mL), gas pressure/temperature/volume (pV=const, p/T=const); (4) Atomic Structure — nuclear model history, atomic structure, isotopes, radioactive decay (alpha/beta/gamma), nuclear equations, half-life calculations, fission and fusion. Every group MUST show: formula stated → substitution → working → answer with units.",
+     desc:"1h 45min, 100 marks. Topics 1–4: Energy, Electricity, Particle model, Atomic structure.",
+     skills:["Multi-step calculations","Nuclear equations","Energy efficiency"]},
+    {n:"Paper 2",d:105,m:100,paperType:"parted",numGroups:9,
+     markDist:"Target EXACTLY 100 marks. One group of 4 MCQ parts. Eight structured groups each with at least one calculation and one 6-mark extended writing question.",
+     specGuide:"AQA GCSE Physics Paper 2. Duration 1h 45min. Topics 5–8: (5) Forces — scalar/vector, resultant forces, moments (M=Fd), pressure (p=F/A, p=hρg), distance/speed/velocity/acceleration (v=u+at, v²=u²+2as, s=ut+½at²), Newton's laws, inertia, momentum (p=mv, conservation of momentum), stopping distances, drag; (6) Waves — transverse/longitudinal, wave equation (v=fλ), reflection/refraction/TIR, EM spectrum (properties/uses/dangers), sound, required practical (ripple tank/waves on string); (7) Magnetism and Electromagnetism — magnetic fields, motor effect (F=BIL), Fleming's left-hand rule, induced EMF (generator effect), AC generator, transformers; (8) Space Physics — solar system, life cycle of stars, orbital motion, red-shift/Big Bang evidence. Every calculation group: formula → substitution → working → answer with units.",
+     desc:"1h 45min, 100 marks. Topics 5–8: Forces, Waves, Electromagnetism, Space.",
+     skills:["Momentum calculations","EM spectrum","Wave equations"]},
+  ],
+  "bio:Edexcel":[
+    {n:"Paper 1",d:105,m:100,paperType:"parted",numGroups:7,
+     markDist:"Target EXACTLY 100 marks. Section A: one group of exactly 10 MCQ parts (1 mark each, use type:mcq). Section B: 6 groups of structured questions totalling 90 marks. Mix of 2-mark describe, 3-mark explain, 4-mark analysis, 6-mark extended writing.",
+     specGuide:"Edexcel GCSE Biology Paper 1. Duration 1h 45min. Topics 1–5: Key concepts of biology (cells, microscopy, diffusion, osmosis, enzymes), Cells and control (mitosis, cell cycle, stem cells, cancer), Genetics (DNA, meiosis, genetic inheritance, mutation), Natural selection and genetic modification (adaptation, evolution, selective breeding, GMOs), Health, disease and the development of medicines (communicable diseases, non-communicable diseases, drug development). Section A must be exactly 10 MCQs. Section B groups start with short recall and build to 6-mark extended writing. Include at least 2 practical-based questions.",
+     desc:"1h 45min, 100 marks. Topics 1–5. Section A: 10 MCQs. Section B: structured questions.",
+     skills:["10 MCQs","Genetic inheritance","Extended writing"]},
+    {n:"Paper 2",d:105,m:100,paperType:"parted",numGroups:7,
+     markDist:"Target EXACTLY 100 marks. One group of 10 MCQ parts. Six structured groups totalling 90 marks. Final group should be a synoptic question linking multiple topics.",
+     specGuide:"Edexcel GCSE Biology Paper 2. Duration 1h 45min. Topics 1–7 synoptic: Plant structures and their functions (photosynthesis, transpiration, plant hormones), Animal coordination, control and homeostasis (endocrine system, blood glucose regulation, thermoregulation, kidney/water balance), Exchange and transport in animals (circulatory system, heart, gas exchange, lung structure), Ecosystems and material cycles (food chains/webs, population size, carbon cycle, water cycle, decomposition, biodiversity). Synoptic questions should link topics from Papers 1 and 2. Include data analysis. Section A: 10 MCQs. At least one 6-mark extended writing question.",
+     desc:"1h 45min, 100 marks. Topics 1–7 synoptic. Section A: 10 MCQs.",
+     skills:["Synoptic questions","Data analysis","Homeostasis"]},
+    {n:"Paper 3",d:75,m:70,paperType:"parted",numGroups:5,
+     markDist:"Target EXACTLY 70 marks. One group of 5 MCQ parts. Four structured groups; include extended analysis and evaluation questions.",
+     specGuide:"Edexcel GCSE Biology Paper 3. Duration 1h 15min. Synoptic — focuses on practical skills, data analysis, and experimental evaluation. Questions reference all 7 topic areas. Section A: 5 MCQs. Section B: 4 structured groups each based on a data set or experimental scenario. Students must: describe patterns in data, suggest explanations, evaluate methods, calculate means/percentages/rates, and draw conclusions. Include at least one question on planning an investigation (variables, controls, reliability).",
+     desc:"1h 15min, 70 marks. Synoptic — practical skills and data analysis.",
+     skills:["Data analysis","Experimental design","Synoptic reasoning"]},
+  ],
+  "chem:Edexcel":[
+    {n:"Paper 1",d:105,m:100,paperType:"parted",numGroups:7,
+     markDist:"Target EXACTLY 100 marks. One group of 10 MCQs. Six structured groups mixing short-answer and calculation questions. At least 3 calculation questions (moles, Mr, percentage yield).",
+     specGuide:"Edexcel GCSE Chemistry Paper 1. Duration 1h 45min. Topics 1–6: Atomic structure (Bohr model, electron configuration, isotopes), Periodic Table (groups/periods, Group 1/7/0 properties, transition metals), Structure, bonding and properties of matter (ionic/covalent/metallic, giant/simple structures, allotropes), Quantitative chemistry (moles, Mr, mole calculations, limiting reactants, percentage yield, concentration of solutions), Chemical and ionic equations (balancing, state symbols), Electrolysis (products at electrodes, half equations). Section A: 10 MCQs. Section B: mole calculation questions MUST show formula → substitution → answer → unit.",
+     desc:"1h 45min, 100 marks. Topics 1–6. Section A: 10 MCQs. Section B: structured.",
+     skills:["Mole calculations","Electrolysis half-equations","Bonding structures"]},
+    {n:"Paper 2",d:105,m:100,paperType:"parted",numGroups:7,
+     markDist:"Target EXACTLY 100 marks. One group of 10 MCQs. Six structured groups synoptic. Include rate calculations and organic chemistry naming.",
+     specGuide:"Edexcel GCSE Chemistry Paper 2. Duration 1h 45min. Topics 1–9 synoptic: Acids, bases and salts (neutralisation, preparing salts, pH), Obtaining and using metals (reactivity series, extracting iron in blast furnace, aluminium by electrolysis, life cycle assessment), Reversible reactions and equilibria (Le Chatelier's principle, Haber process conditions/equilibrium), Organic chemistry (homologous series, alkanes/alkenes/alcohols/carboxylic acids/esters, addition/condensation polymerisation, cracking), Chemical analysis (chromatography Rf values, gas tests, flame tests, precipitate tests), Earth and atmospheric science (atmosphere composition, greenhouse effect, global warming, air pollution). Section A: 10 MCQs. Rf calculation and rate graph interpretation required.",
+     desc:"1h 45min, 100 marks. Topics 1–9 synoptic. Section A: 10 MCQs.",
+     skills:["Organic naming","Rf calculations","Haber process equilibrium"]},
+  ],
+  "phys:Edexcel":[
+    {n:"Paper 1",d:105,m:100,paperType:"parted",numGroups:7,
+     markDist:"Target EXACTLY 100 marks. One group of 10 MCQs. Six structured groups. Every calculation MUST show: formula → substitution → working → answer with units.",
+     specGuide:"Edexcel GCSE Physics Paper 1. Duration 1h 45min. Topics 1–6: Motion (distance/displacement/speed/velocity/acceleration, s-t and v-t graphs, equations of motion v=u+at, v²=u²+2as, s=½(u+v)t), Forces and motion (Newton's laws, resultant force, F=ma, weight W=mg, friction, momentum p=mv, conservation of momentum, stopping distances), Conservation of energy (kinetic KE=½mv², gravitational GPE=mgh, elastic Ee=½ke², efficiency, power P=W/t), Waves (wave equation v=fλ, reflection, refraction, EM spectrum, sound), Light and the EM spectrum (absorption/reflection/transmission, colour, uses of EM waves), Radioactivity (atomic structure, nuclear decay, half-life, uses of radiation). Section A: 10 MCQs. All calculations show full working.",
+     desc:"1h 45min, 100 marks. Topics 1–6. Section A: 10 MCQs.",
+     skills:["Equations of motion","Energy calculations","Half-life"]},
+    {n:"Paper 2",d:105,m:100,paperType:"parted",numGroups:7,
+     markDist:"Target EXACTLY 100 marks. One group of 10 MCQs. Six structured groups including at least 2 electricity calculation groups and one space/astronomy group.",
+     specGuide:"Edexcel GCSE Physics Paper 2. Duration 1h 45min. Topics 1–8 including Astronomy: Astronomy (solar system, lifecycle of stars, red-shift, Big Bang), Energy — resources (renewable/non-renewable, advantages/disadvantages, power station efficiency), Electric circuits (current/voltage/resistance V=IR, series/parallel circuits, power P=IV and P=I²R, energy E=Pt), Static electricity (charge, electric fields, sparking), Magnetism and the motor effect (magnetic fields, F=BIL, Fleming's left-hand rule), Electromagnetic induction (generator effect, AC generator, transformer equation Vp/Vs=np/ns), Particle model (density ρ=m/V, SHC Q=mcΔT, SLH Q=mL, gas laws). Section A: 10 MCQs. All calculations: formula → substitution → answer → unit.",
+     desc:"1h 45min, 100 marks. Topics 1–8 including Astronomy. Section A: 10 MCQs.",
+     skills:["Transformer calculations","Circuit analysis","Gas laws"]},
+  ],
+  "eng-lang:AQA":[
+    {n:"Paper 1 – Explorations in Creative Reading & Writing",d:105,m:80,paperType:"structured",
+     paperPrompt:"eng-lang-p1",
+     desc:"1h 45min, 80 marks. Section A: 4 reading questions (40 marks). Section B: creative writing (40 marks).",
+     skills:["Reading comprehension","Language analysis","Creative writing"],
+     configFields:[]},
+    {n:"Paper 2 – Writers' Viewpoints & Perspectives",d:105,m:80,paperType:"comingSoon",
+     desc:"Coming soon — non-fiction reading & transactional writing.",skills:[]},
+  ],
+  "eng-lit:AQA":[
+    {n:"Paper 1 – Shakespeare & 19th-Century Novel",d:105,m:64,paperType:"structured",
+     paperPrompt:"eng-lit-p1",
+     desc:"1h 45min, 64 marks. Section A: Shakespeare (34 marks). Section B: 19th-century novel (30 marks).",
+     skills:["Shakespeare analysis","19th-century prose","Level-based mark schemes"],
+     configFields:[
+       {id:"shakespeare",label:"Shakespeare text",type:"select",options:["Macbeth","Romeo and Juliet","The Tempest","The Merchant of Venice","Much Ado About Nothing","Julius Caesar"],default:"Macbeth"},
+       {id:"novel",label:"19th-century novel",type:"select",options:["A Christmas Carol","The Strange Case of Dr Jekyll and Mr Hyde","Great Expectations","Jane Eyre","Frankenstein","Pride and Prejudice","The Sign of Four"],default:"A Christmas Carol"},
+     ]},
+    {n:"Paper 2 – Modern Texts & Poetry",d:135,m:96,paperType:"comingSoon",
+     desc:"Coming soon — modern prose/drama + poetry anthology.",skills:[]},
+  ],
+  "history:AQA":[
+    {n:"Paper 1 – Understanding the Modern World",d:105,m:84,paperType:"comingSoon",
+     desc:"Coming soon — Germany, Cold War, and conflict topics.",skills:[]},
+    {n:"Paper 2 – Shaping the Nation (Elizabethan England)",d:105,m:40,paperType:"structured",
+     paperPrompt:"history-p2-elizabethan",
+     desc:"1h 45min, 40 marks. Section B: Elizabethan England c1568–1603 (interpretation, explain, account, historic environment).",
+     skills:["Interpretation analysis","Explain significance","Historic environment"],
+     configFields:[
+       {id:"britishStudy",label:"British depth study",type:"select",options:["Elizabethan England c1568-1603"],default:"Elizabethan England c1568-1603"},
+       {id:"examYear",label:"Exam year (affects historic environment question)",type:"select",options:["2026","2027","2028"],default:"2026"},
+     ]},
+  ],
+  "geography:AQA":[
+    {n:"Paper 1 – Living with the Physical Environment",d:90,m:88,paperType:"parted",numGroups:4,
+     markDist:"Target EXACTLY 88 marks across 3 sections (3 groups of questions + 1 final evaluation). Section A (Natural Hazards) ~30 marks, Section B (Living World) ~30 marks, Section C (UK Physical Landscapes) ~28 marks. Include: 1-mark name/state, 2-mark describe, 4-mark explain, 6-mark extended, and one 9-mark essay with SPaG marks.",
+     specGuide:"AQA GCSE Geography Paper 1. 1h 30min, 88 marks. THREE compulsory sections: SECTION A — The Challenge of Natural Hazards: tectonic hazards (plate tectonics, earthquakes, volcanoes — causes, effects, responses, prediction), weather hazards (tropical storms — distribution, causes, effects, responses), climate change (causes, effects, managing). SECTION B — The Living World: ecosystems (food webs, nutrient cycles), tropical rainforests (structure, biodiversity, deforestation causes/effects, sustainable management), hot deserts (adaptations, opportunities, challenges, desertification) OR cold environments. SECTION C — Physical Landscapes in the UK: either coastal landscapes (erosion processes, landforms — headlands/bays/caves/arches/stacks/beaches, coastal management) OR river landscapes (erosion/transportation/deposition, meanders/oxbow lakes/floodplains/deltas, flood management). MUST include: at least one figure-based question ('Describe what Figure X shows'), AQA command words (name/state/describe/explain/assess/to what extent), one 9-mark essay with 3 SPaG marks, one 6-mark evaluation question.",
+     desc:"1h 30min, 88 marks. Three sections: Natural Hazards, Living World, UK Physical Landscapes.",
+     skills:["Figure analysis","6-mark extended writing","9-mark essay + SPaG"]},
+    {n:"Paper 2 – Challenges in the Human Environment",d:90,m:88,paperType:"parted",numGroups:4,
+     markDist:"Target EXACTLY 88 marks. Three sections: Section A (Urban Issues) ~30 marks, Section B (Changing Economic World) ~30 marks, Section C (Resource Management) ~28 marks. Same mark distribution pattern as Paper 1 — 1-mark, 2-mark, 4-mark, 6-mark, 9-mark questions.",
+     specGuide:"AQA GCSE Geography Paper 2. 1h 30min, 88 marks. THREE compulsory sections: SECTION A — Urban Issues and Challenges: urbanisation trends, megacities, Rio de Janeiro (growth, opportunities/challenges, favelas, improvements) OR UK city case study (regeneration, migration, suburbanisation), sustainable urban development. SECTION B — The Changing Economic World: development gap (measures of development, DTM, Rostow), causes of uneven development, LICs/NEEs (Nigeria case study: location, context, TNCs, international aid, political/social/economic changes), UK economy (post-industrial, science parks, quaternary sector). SECTION C — The Challenge of Resource Management: global distribution of food/water/energy, food supply issues (increasing food production, sustainable food), water supply (deficit/surplus, water transfer, sustainable water), energy supply (fossil fuels vs renewables, UK energy mix). Include case study questions requiring named examples. One 9-mark essay + 3 SPaG marks.",
+     desc:"1h 30min, 88 marks. Three sections: Urban Issues, Changing Economic World, Resource Management.",
+     skills:["Case study questions","Development gap","9-mark essay + SPaG"]},
+    {n:"Paper 3 – Geographical Applications",d:75,m:76,paperType:"parted",numGroups:3,
+     markDist:"Target EXACTLY 76 marks. Section A (Issue Evaluation) ~36 marks: starts with 3-4 short questions about a fictional resource booklet then a 12-mark decision/evaluation question. Section B (Fieldwork) ~40 marks: 2 sections on physical and human fieldwork — data collection, presentation techniques, analysis, evaluation. Final question 8 marks.",
+     specGuide:"AQA GCSE Geography Paper 3. 1h 15min, 76 marks. SECTION A — Issue Evaluation: create a brief fictional 'pre-release resource booklet' (3 figures: map, graph, photograph description) on an environmental or human geography issue (e.g. coastal management, urban regeneration, sustainable energy). Questions progress: describe Figure 1 (2 marks), explain an issue shown (4 marks), use figures to assess the situation (6 marks), 12-mark decision-making question ('To what extent should [decision]? Use evidence from the resources and your own knowledge' — 9 marks + 3 SPaG). SECTION B — Fieldwork: questions on physical fieldwork (methods of data collection, health/safety, data presentation) and human fieldwork (hypothesis, sampling strategy, data analysis, reliability and validity). Include at least one question requiring students to sketch a graph or describe how they would present data.",
+     desc:"1h 15min, 76 marks. Section A: Issue evaluation. Section B: Fieldwork methods.",
+     skills:["Resource interpretation","Fieldwork evaluation","12-mark decision question"]},
+  ],
+  "business:AQA":[
+    {n:"Paper 1",d:105,m:90,paperType:"parted",numGroups:5,
+     markDist:"Target EXACTLY 90 marks. Group 1: exactly 5 MCQ parts (1 mark each, type:mcq). Groups 2–5: structured questions. Include: one 3-mark question, two 6-mark 'Explain' questions, one 9-mark 'Analyse' question, one 12-mark 'Evaluate/Justify' question with level-based mark scheme (4 levels).",
+     specGuide:"AQA GCSE Business Paper 1. 1h 45min, 90 marks. Four topic areas: (1) Business in the Real World — business aims/objectives, stakeholders, business ownership types (sole trader/partnership/ltd/plc/franchise/social enterprise), business plans, location decisions, business growth; (2) Influences on Business — technology impacts, ethical trading, environmental considerations, economic climate, competitive environment, legislation (employment/consumer); (3) Business Operations — production methods (job/batch/flow), lean production (just in time/kaizen/cell production), quality management, procurement, supply chain management; (4) Human Resources — organisational structures (hierarchies, span of control), recruitment and selection, training (on-the-job/off-the-job), motivation theories (Taylor/Maslow/Herzberg), leadership styles, employment law. Group 1: 5 MCQs on key terms. Remaining groups: structured using a named fictional business context. 12-mark evaluation must include: 2+ justified points for, 2+ against, supported overall judgement.",
+     desc:"1h 45min, 90 marks. Business operations, HR, and wider influences.",
+     skills:["12-mark evaluate question","Motivation theories","Business contexts"]},
+    {n:"Paper 2",d:105,m:90,paperType:"parted",numGroups:5,
+     markDist:"Target EXACTLY 90 marks. Group 1: 5 MCQs. Groups 2–5: structured. Include financial calculations (revenue/profit/break-even/ARR), one 9-mark 'Analyse', one 12-mark 'Evaluate'.",
+     specGuide:"AQA GCSE Business Paper 2. 1h 45min, 90 marks. Three topic areas: (5) Finance — revenue (price × quantity), costs (fixed/variable/total), profit and loss, break-even (contribution/break-even point/margin of safety calculations and graphs), cash flow forecasts, sources of finance (internal/external — loans, shares, retained profit, crowdfunding, trade credit), financial statements (balance sheets, income statements); (6) Marketing — market research (primary/secondary, qualitative/quantitative), segmentation (demographic/geographic/psychographic), marketing mix (4Ps — product lifecycle, pricing strategies, distribution channels, promotional methods), use of digital marketing; (7) External Influences — economic climate (recession/growth, inflation, interest rates, unemployment, exchange rates effect on imports/exports), legislation (consumer law, employment law), environmental and ethical issues, globalisation and international trade. Financial calculations must show formula → working → answer → unit. Break-even point = fixed costs ÷ contribution per unit.",
+     desc:"1h 45min, 90 marks. Finance, marketing, external influences.",
+     skills:["Break-even calculations","Marketing mix","12-mark evaluate"]},
+  ],
+  "computing:AQA":[
+    {n:"Paper 1 – Computational Thinking & Programming",d:150,m:90,paperType:"parted",numGroups:6,
+     markDist:"Target EXACTLY 90 marks. Groups mix: 1-mark recall, 2-mark describe, 4-mark application, 8-mark extended. At least one trace table question, one pseudocode-writing question, one algorithm design question.",
+     specGuide:"AQA GCSE Computer Science Paper 1. 2h 30min, 90 marks. Topics: (1) Fundamentals of Algorithms — algorithm design (flowcharts, pseudocode), trace tables (show step-by-step variable changes), searching (linear vs binary — comparison), sorting (bubble, merge, insertion — steps and comparisons), Big O notation (awareness); (2) Programming Fundamentals — variables/constants, data types (integer/real/Boolean/string/char), sequence/selection/iteration, nested structures, string manipulation (length, substring, concatenation), file handling (open/read/write/close), exception handling; (3) Producing Robust Programs — defensive design (input validation, authentication), testing (normal/boundary/erroneous test data, trace tables to detect errors), syntax vs logic errors; (4) Boolean Logic — truth tables (AND/OR/NOT), logic diagrams; (5) Programming Languages — high vs low-level, compilers vs interpreters, IDEs (editor/debugger/translator). Use AQA pseudocode syntax EXACTLY: assignment uses ←, output uses OUTPUT, input uses USERINPUT, loops: FOR i ← 1 TO n, WHILE condition DO, IF/ELSE/ENDIF. Trace table questions MUST show exact column headers and cell values.",
+     desc:"2h 30min, 90 marks. Algorithms, programming, Boolean logic, languages.",
+     skills:["Trace tables","Pseudocode writing","Algorithm design"]},
+    {n:"Paper 2 – Computer Systems",d:90,m:90,paperType:"parted",numGroups:6,
+     markDist:"Target EXACTLY 90 marks. Mix 1-mark, 2-mark, 4-mark and 8-mark questions. Include at least one binary/hex conversion calculation and one networking scenario question.",
+     specGuide:"AQA GCSE Computer Science Paper 2. 1h 30min, 90 marks. Topics: (1) Systems Architecture — Von Neumann architecture (CPU, ALU, CU, registers: PC/MAR/MDR/ACC), fetch-decode-execute cycle (step by step), factors affecting CPU performance (cores/cache/clock speed), embedded systems; (2) Memory and Storage — RAM vs ROM (volatile/non-volatile), types of secondary storage (HDD/SSD/optical/magnetic), file sizes calculation (bits/bytes/KB/MB/GB), data representation: binary (denary↔binary↔hex conversions, binary addition, overflow, two's complement), character encoding (ASCII/Unicode), images (pixels/colour depth/resolution, file size = width×height×colour depth), sound (sample rate/bit depth/file size); (3) Computer Networks — types (LAN/WAN/PAN), topologies (bus/star/mesh), wired vs wireless, hardware (NIC/hub/switch/router/WAP), protocols (TCP/IP, HTTP/HTTPS, FTP, SMTP, DNS), packet switching (packets/headers/routing), the Internet vs World Wide Web; (4) Network Security — threats (malware/phishing/social engineering/brute force/denial of service/SQL injection), prevention (firewalls/encryption/strong passwords/2FA/access levels); (5) Systems Software — operating system functions (memory management, process management, file management, user interface), utility software; (6) Ethical, Legal, Cultural and Environmental Impacts — Data Protection Act 2018/GDPR, Computer Misuse Act 1990, Copyright Designs and Patents Act 1988, Freedom of Information Act, environmental impact, ethical issues (AI, privacy). Binary/hex questions MUST show full working.",
+     desc:"1h 30min, 90 marks. Systems architecture, networks, cybersecurity, data representation, ethics.",
+     skills:["Binary/hex conversions","Network protocols","Data Protection Act"]},
+  ],
+  "dt:AQA":[
+    {n:"Paper 1 – Core Technical Principles",d:90,m:100,paperType:"parted",numGroups:5,
+     markDist:"Target EXACTLY 100 marks. Group 1: exactly 20 MCQ parts (1 mark each, type:mcq) = 20 marks. Groups 2–5: extended structured questions totalling 80 marks — include 4-mark, 6-mark, and 8-mark questions.",
+     specGuide:"AQA GCSE Design and Technology Paper 1. 1h 30min, 100 marks. SECTION A (20 marks): exactly 20 MCQ questions (type:mcq) covering all core technical principles — materials (timber: hardwood/softwood/manufactured boards; metals: ferrous/non-ferrous/alloys; polymers: thermoplastic/thermosetting; textiles: natural/synthetic/blended; papers/boards), forces and stresses (tension/compression/torsion/bending/shear), physical/working/aesthetic properties, scales of production (one-off/batch/mass/continuous), CAD/CAM (CNC router/laser cutter/3D printer — advantages/disadvantages), QA and QC, tolerances. SECTION B (80 marks across 4 groups): (B1) New and emerging technologies — 4 and 6-mark questions on automation, robotics, flexible manufacturing, biotechnology, nano-materials, smart materials, global vs local production, FabLabs; (B2) Energy generation and storage — renewable/non-renewable, energy storage, sustainability, carbon footprint, life cycle assessment; (B3) Designing and making principles — ergonomics, anthropometrics, inclusive design, user-centred design, 8-mark design question (sketch/annotate a product for a given brief); (B4) Material properties and selection — comparing materials for a given application, sustainability (reduce/reuse/recycle), finishes (paint/varnish/electroplating/anodising). The 8-mark design question requires a sketched annotated design solution.",
+     desc:"1h 30min, 100 marks. Section A: 20 MCQs. Section B: core technical principles.",
+     skills:["20 MCQs","8-mark design question","Material selection"]},
+    {n:"Paper 2 – Specialist Technical Principles",d:60,m:80,paperType:"parted",numGroups:4,
+     markDist:"Target EXACTLY 80 marks. Group 1: exactly 5 MCQ parts (type:mcq) = 5 marks. Groups 2–4: 3 structured groups totalling 75 marks, mixing 2-mark, 4-mark, 6-mark and 8-mark questions.",
+     specGuide:"AQA GCSE Design and Technology Paper 2. 1h, 80 marks. Specialist focus on one materials area (generate questions appropriate for either timber/metals/polymers/textiles/papers/boards/electronic systems). SECTION A (5 marks): 5 MCQ parts on specialist material properties, manufacturing processes, and tools. SECTION B (75 marks across 3 groups): (B1) Specialist material knowledge — properties (physical: density/strength/conductivity/malleability; working: machinability/weldability; aesthetic), selection criteria for a given application, 2-mark and 4-mark questions; (B2) Manufacturing processes for specialist area — forming (casting/forging/press forming for metals; injection moulding/blow moulding for polymers; warp/weft/weaving for textiles), cutting (marking out, sawing, chiselling for timber), joining (welding/soldering/adhesives/screws/bolts), finishing (sanding/painting/lacquering/plating), 4-mark and 6-mark questions; (B3) Evaluation question — 8-mark question: 'Evaluate the suitability of [specialist material] for [given product], considering its properties, manufacturing process, cost and sustainability. Justify your choice.' Level-based mark scheme L1(1-2), L2(3-4), L3(5-6), L4(7-8).",
+     desc:"1h, 80 marks. Specialist material focus. Section A: 5 MCQs. Section B: extended.",
+     skills:["5 MCQs","Material properties","8-mark evaluate"]},
+  ],
+  "combined-sci:AQA":[
+    {n:"All papers",d:75,m:70,paperType:"comingSoon",desc:"Coming soon — Combined Science Trilogy and Synergy papers.",skills:[]},
+  ],
+  "drama:AQA":[
+    {n:"Written Exam",d:105,m:80,paperType:"comingSoon",desc:"Coming soon — Drama written exam.",skills:[]},
+  ],
+  "music:AQA":[
+    {n:"Written Exam",d:90,m:80,paperType:"comingSoon",desc:"Coming soon — Music written exam.",skills:[]},
+  ],
+};
+
+export const C  = D => ({background:D?"#161b27":"#fff", border:`1px solid ${D?"#2a3347":"#e5e7eb"}`, borderRadius:14});
+export const I  = (D,x={}) => ({width:"100%",background:D?"#1e2537":"#fff",border:`1.5px solid ${D?"#374151":"#d1d5db"}`,borderRadius:10,padding:"10px 14px",fontSize:13,outline:"none",color:D?"#e8ecf4":"#111827",...x});
+export const B  = (color,outline,extra={}) => ({padding:"9px 16px",borderRadius:10,border:outline?`1.5px solid ${color}`:"none",background:outline?"transparent":color,color:outline?color:"#fff",cursor:"pointer",fontSize:13,fontWeight:600,...extra});
+export const mu = D => D?"#8896b3":"#9ca3af";
+export const tx = D => D?"#e8ecf4":"#111827";
 
 export function useAttentionLayer() {
   const [activeId, setActiveId] = React.useState(null);
@@ -394,10 +607,3 @@ export function DiagramRenderer({ diagram, D=false, width=560 }) {
     </div>
   );
 }
-
-// ── CONSTANTS & STYLES ───────────────────────────────────────────────────────
-export const C  = D => ({background:D?"#161b27":"#fff", border:`1px solid ${D?"#2a3347":"#e5e7eb"}`, borderRadius:14});
-export const I  = (D,x={}) => ({width:"100%",background:D?"#1e2537":"#fff",border:`1.5px solid ${D?"#374151":"#d1d5db"}`,borderRadius:10,padding:"10px 14px",fontSize:13,outline:"none",color:D?"#e8ecf4":"#111827",...x});
-export const B  = (color,outline,extra={}) => ({padding:"9px 16px",borderRadius:10,border:outline?`1.5px solid ${color}`:"none",background:outline?"transparent":color,color:outline?color:"#fff",cursor:"pointer",fontSize:13,fontWeight:600,...extra});
-export const mu = D => D?"#8896b3":"#9ca3af";
-export const tx = D => D?"#e8ecf4":"#111827";
