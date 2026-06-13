@@ -598,3 +598,307 @@ export function applyAISession(aiSession, fallback) {
     _aiPersonalised: true,
   };
 }
+
+
+// ============================================================================
+// UNIFIED EVENT LOG + SINGLE-GOAL DIRECTION (the "learning engine" brain)
+// ----------------------------------------------------------------------------
+// Every meaningful thing the student does is recorded as an event. The engine
+// summarises those events and turns the whole picture into ONE next goal so the
+// app can always tell the student exactly what to do next and where to go.
+// ============================================================================
+
+export const EVENT_TYPES = {
+  CARD_RATED: "card_rated", // { subjectId, sectionId, cardId, conf, correct }
+  QUESTION_ANSWERED: "question_answered", // { subjectId, sectionId, qId, correct, marks, type }
+  NOTE_READ: "note_read", // { subjectId, sectionId, noteId }
+  BLURT_DONE: "blurt_done", // { subjectId, sectionId, score }
+  MOCK_DONE: "mock_done", // { subjectId, score }
+  TUTOR_MSG: "tutor_msg", // { subjectId, sectionId }
+  COACH_SUBMIT: "coach_submit", // { subjectId, sectionId, score }
+  SESSION_START: "session_start", // { blockKind, subjectId, sectionId }
+  SESSION_DONE: "session_done", // { blockKind, subjectId, sectionId }
+  GOAL_DONE: "goal_done", // { goalId }
+  NAV: "nav", // { screen }
+};
+
+const EVENT_CAP = 800;
+
+function sane(x) {
+  return String(x == null ? "" : x).replace(/\s+/g, "_");
+}
+function eventsKey(user) {
+  return "gcse:events:" + sane(user);
+}
+
+// Append one event to the persisted log. Fire-and-forget; safe if storage is
+// unavailable. Returns the constructed event so callers can also keep it in
+// React state for instant reactivity.
+export function makeEvent(type, payload = {}, nowTs = Date.now()) {
+  return { t: type, ts: nowTs, ...payload };
+}
+
+export async function loadLearningEvents(user) {
+  if (!user || typeof window === "undefined" || !window.storage) return [];
+  try {
+    const r = await window.storage.get(eventsKey(user), true);
+    if (r && r.value) {
+      const arr = JSON.parse(r.value);
+      return Array.isArray(arr) ? arr : [];
+    }
+  } catch (_) {}
+  return [];
+}
+
+export async function persistLearningEvents(user, events) {
+  if (!user || typeof window === "undefined" || !window.storage) return;
+  const capped = (events || []).slice(-EVENT_CAP);
+  try {
+    await window.storage.set(eventsKey(user), JSON.stringify(capped), true);
+  } catch (_) {}
+}
+
+// Append a single event to the persisted log (read-modify-write).
+export async function logLearningEvent(user, type, payload = {}) {
+  const ev = makeEvent(type, payload);
+  if (!user || typeof window === "undefined" || !window.storage) return ev;
+  try {
+    const prev = await loadLearningEvents(user);
+    prev.push(ev);
+    await persistLearningEvents(user, prev);
+  } catch (_) {}
+  return ev;
+}
+
+// Aggregate the raw event stream into a compact signal object the engine and
+// UI can read synchronously.
+export function summarizeEvents(events = [], nowTs = Date.now()) {
+  const dayMs = 86400000;
+  const todayStart = new Date(nowTs);
+  todayStart.setHours(0, 0, 0, 0);
+  const todayTs = todayStart.getTime();
+
+  const byType = {};
+  const bySubject = {};
+  let todayCount = 0;
+  let last7 = 0;
+  let lastEventTs = 0;
+  let cardsToday = 0;
+  let questionsToday = 0;
+  let correctRecent = 0;
+  let answeredRecent = 0;
+  const activeDays = new Set();
+
+  for (const e of events) {
+    if (!e || !e.t) continue;
+    byType[e.t] = (byType[e.t] || 0) + 1;
+    if (e.subjectId) bySubject[e.subjectId] = (bySubject[e.subjectId] || 0) + 1;
+    if (e.ts > lastEventTs) lastEventTs = e.ts;
+    if (e.ts >= todayTs) {
+      todayCount++;
+      if (e.t === EVENT_TYPES.CARD_RATED) cardsToday++;
+      if (e.t === EVENT_TYPES.QUESTION_ANSWERED) questionsToday++;
+    }
+    if (nowTs - e.ts <= 7 * dayMs) {
+      last7++;
+      activeDays.add(Math.floor((e.ts - 0) / dayMs));
+    }
+    if (
+      e.t === EVENT_TYPES.QUESTION_ANSWERED &&
+      nowTs - e.ts <= 3 * dayMs &&
+      typeof e.correct === "boolean"
+    ) {
+      answeredRecent++;
+      if (e.correct) correctRecent++;
+    }
+  }
+
+  // Time-of-day pattern: when does this student usually study?
+  const hourBuckets = new Array(24).fill(0);
+  for (const e of events) {
+    if (!e || !e.ts) continue;
+    hourBuckets[new Date(e.ts).getHours()]++;
+  }
+  let peakHour = null,
+    peakVal = 0;
+  hourBuckets.forEach((v, h) => {
+    if (v > peakVal) {
+      peakVal = v;
+      peakHour = h;
+    }
+  });
+
+  return {
+    total: events.length,
+    byType,
+    bySubject,
+    todayCount,
+    last7,
+    activeDays7: activeDays.size,
+    lastEventTs,
+    cardsToday,
+    questionsToday,
+    recentAccuracy:
+      answeredRecent > 0 ? Math.round((correctRecent / answeredRecent) * 100) : null,
+    peakHour,
+    studiedToday: todayCount > 0,
+    mostActiveSubjectId:
+      Object.entries(bySubject).sort((a, b) => b[1] - a[1])[0]?.[0] || null,
+  };
+}
+
+// Map an action "kind" to where the student should be sent and how to frame it.
+const GOAL_FRAMES = {
+  flashcards: {
+    icon: "\uD83C\uDCCF",
+    verb: "Review",
+    screen: "section",
+    mode: "flashcards",
+    instruction: "Rate each card honestly — the engine schedules the next review from your confidence.",
+  },
+  questions: {
+    icon: "\u270F\uFE0F",
+    verb: "Practise",
+    screen: "section",
+    mode: "questions",
+    instruction: "Answer in exam style. Every answer feeds your accuracy and error profile.",
+  },
+  blurting: {
+    icon: "\uD83E\uDDE0",
+    verb: "Blurt",
+    screen: "blurting",
+    mode: "blurting",
+    instruction: "Write everything you remember from memory, then check the gaps.",
+  },
+  exam: {
+    icon: "\u23F1\uFE0F",
+    verb: "Prepare",
+    screen: "blurting",
+    mode: "blurting",
+    instruction: "Your exam is close — focus on active recall under light time pressure.",
+  },
+  mock: {
+    icon: "\uD83D\uDCDD",
+    verb: "Sit",
+    screen: "mock",
+    mode: "mock",
+    instruction: "Simulate real exam conditions to pressure-test what you know.",
+  },
+};
+
+/**
+ * getNextGoal — the single source of "what should I do right now?".
+ * Combines content availability, the rule-based next-best-actions, calibration,
+ * dominant error type, streak and the event summary into ONE directive goal.
+ *
+ * Returns: {
+ *   id, icon, title, instruction, reason, etaMin, blockKind,
+ *   route: { subjectId, sectionId, mode } | null,
+ *   screen, action?: { type, ... }
+ * }
+ */
+export function getNextGoal({
+  subjects = [],
+  allSections = [],
+  stats = {},
+  fcHist = {},
+  calibrationData = {},
+  errorPatterns = {},
+  timetableExams = [],
+  streak = 0,
+  events = [],
+  nowTs = Date.now(),
+} = {}) {
+  const summary = summarizeEvents(events, nowTs);
+
+  // 0) No content authored / available yet → the one goal is to set up subjects.
+  const totalItems = allSections.reduce(
+    (a, s) =>
+      a +
+      (s.flashcards || []).length +
+      (s.questions || []).length +
+      (s.notes || []).length,
+    0,
+  );
+  if (totalItems === 0) {
+    return {
+      id: "setup",
+      icon: "\uD83E\uDDED",
+      title: "Set up your subjects",
+      instruction:
+        "Choose the subjects you're studying so your coach can build a plan around them.",
+      reason: "There's no study content loaded yet.",
+      etaMin: 2,
+      blockKind: "setup",
+      route: null,
+      screen: "account",
+      action: { type: "editSubjects" },
+    };
+  }
+
+  const actions = computeNextBestActions({
+    subjects,
+    allSections,
+    stats,
+    fcHist,
+    timetableExams,
+    nowTs,
+  });
+  const top = actions[0] || { kind: "mock", label: "Take a mock exam", subtitle: "" };
+  const frame = GOAL_FRAMES[top.kind] || GOAL_FRAMES.mock;
+
+  const subject = subjects.find((s) => s.id === top.subjectId) || null;
+  const section = allSections.find((s) => s.id === top.sectionId) || null;
+  const subjName = subject ? subject.name : "";
+
+  // Build a human reason that reflects the live learning state.
+  const reasons = [];
+  if (top.subtitle) reasons.push(top.subtitle);
+  const allPreds = Object.values(calibrationData || {}).flat();
+  if (allPreds.length >= 5) {
+    const brier =
+      allPreds.reduce(
+        (a, p) => a + Math.pow(safeNum(p.pred, 0.5) - safeNum(p.outcome, 0), 2),
+        0,
+      ) / allPreds.length;
+    if (brier > 0.25)
+      reasons.push("your confidence is running ahead of your accuracy");
+  }
+  if (summary.recentAccuracy != null && summary.recentAccuracy < 50)
+    reasons.push(`recent accuracy is ${summary.recentAccuracy}%`);
+  if (streak > 0 && summary.studiedToday === false)
+    reasons.push(`keep your ${streak}-day streak alive`);
+
+  const title =
+    top.kind === "mock"
+      ? "Sit a mock exam"
+      : `${frame.verb} ${subjName || ""}`.trim() +
+        (section ? `: ${section.title}` : "");
+
+  const etaMin =
+    top.kind === "flashcards"
+      ? 12
+      : top.kind === "questions"
+        ? 15
+        : top.kind === "mock"
+          ? 25
+          : 12;
+
+  return {
+    id: top.sectionId
+      ? `${top.kind}:${top.sectionId}`
+      : `${top.kind}:${top.subjectId || "any"}`,
+    icon: frame.icon,
+    title,
+    instruction: frame.instruction,
+    reason: reasons.length
+      ? reasons[0].charAt(0).toUpperCase() + reasons[0].slice(1) + "."
+      : "This is your highest-leverage next step.",
+    etaMin,
+    blockKind: top.kind,
+    route: top.subjectId
+      ? { subjectId: top.subjectId, sectionId: top.sectionId || null, mode: frame.mode }
+      : null,
+    screen: frame.screen,
+  };
+}

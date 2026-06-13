@@ -21,6 +21,7 @@ export function Header({
   onCoach,
   onLeaderboards,
   onAccount,
+  onContact,
   streak,
   onSearch,
   globalOverlays,
@@ -38,7 +39,8 @@ export function Header({
     { id: "dashboard", icon: "📊", label: "Progress", fn: onDash },
     { id: "friends", icon: "🏆", label: "Leaderboards", fn: onLeaderboards },
     { id: "account", icon: "👤", label: "Account", fn: onAccount },
-  ];
+    { id: "contact", icon: "✉️", label: "Help & Contact", fn: onContact },
+  ].filter((n) => typeof n.fn === "function");
   const displayName = userDisplayName || getDisplayName(user);
   const curItem = allNavItems.find(function (n) {
     return n.id === screen;
@@ -234,7 +236,10 @@ export function Header({
             lineHeight: 1,
             flexShrink: 0,
           }}
-        ></button>
+          aria-label="Open menu"
+        >
+          ☰
+        </button>
       </div>
       {menuOpen && (
         <div
@@ -325,7 +330,7 @@ export function AccountScreen({
   var [pwErr, setPwErr] = React.useState("");
   var [groupId, setGroupId] = React.useState("default");
   var [groupData, setGroupData] = React.useState(loadGroup("default"));
-  var isAdmin = user && user.toLowerCase().indexOf("admin") !== -1;
+  var isAdmin = false; // Admin role removed from ReviseIQ.
   var isEmail = user && user.indexOf("@") !== -1;
   var bd2 = D ? "#262844" : "#e5e7eb";
   var handleSave = function () {

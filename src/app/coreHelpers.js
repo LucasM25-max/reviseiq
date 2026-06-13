@@ -23,9 +23,11 @@ export function hashPw(pw) {
 // Default admin password is "admin" (hash compared on login).
 export const ADMIN_PASS_HASH = hashPw("admin");
 
-export function isAdmin(u) {
-  if (!u) return false;
-  return String(u).toLowerCase() === ADMIN_USER.toLowerCase();
+// Admin functionality has been fully removed from ReviseIQ. This stub remains
+// only so existing imports keep resolving; it always reports false so no admin
+// affordance can ever render.
+export function isAdmin() {
+  return false;
 }
 
 // Build a friendly display name from a username or email.
@@ -62,6 +64,8 @@ export function SK_CALIBRATION(user, sId) { return KP + "calib:" + sane(user) + 
 export function SK_JOURNAL(user, sId) { return KP + "journal:" + sane(user) + ":" + sId; }
 export function SK_GRAPH(user, sId) { return KP + "graph:" + sane(user) + ":" + sId; }
 export function SK_ERROR_PATTERNS(user, sId) { return KP + "errpat:" + sane(user) + ":" + sId; }
+// Unified learning-engine event log (one capped list per user).
+export function SK_EVENTS(user) { return KP + "events:" + sane(user); }
 
 // ---- Calibration / confidence ----
 // Map a 1-3 confidence rating (CONF3) to a predicted probability of being correct.

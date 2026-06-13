@@ -814,7 +814,13 @@ export function TimelineDiagram({
   );
 }
 
-export function DiagramRenderer({ diagram, D = false, width = 560 }) {
+export function DiagramRenderer() {
+  // Auto-generated concept diagrams have been removed from ReviseIQ.
+  return null;
+  // eslint-disable-next-line no-unreachable
+  const diagram = null,
+    D = false,
+    width = 560;
   if (!diagram || !diagram.type) return null;
   const { type, data, accent } = diagram;
   const itemCount = data
@@ -1159,6 +1165,9 @@ export function GraphCard({ card, D }) {
 }
 
 export async function generateSVGDiagram(content, user) {
+  // SVG diagram generation removed from ReviseIQ.
+  return "";
+  // eslint-disable-next-line no-unreachable
   const key = SK_SVG_ASSETS(user);
   const hash = btoa(unescape(encodeURIComponent(content || ""))).slice(0, 40);
   try {

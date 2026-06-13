@@ -28,6 +28,8 @@ import { ContentBlock, SmartNoteCard } from "./richText.jsx";
 import { calcLongestStreak, calcStreak, ensureCardVariantCached, generateInterleavedSession, generateSessionOptions, generateTransferQuestion, generateWeeklyPlan, getLadderLevel, maybeUseVariantText, selectAdaptiveQuestions, todayStr, updateAdaptiveLevel, updateLadderLevel, verifyExplanation } from "./scheduling.js";
 import { SubjectSelectionScreen } from "./searchOnboard.jsx";
 import { SchoolLeaderboard, mergeTopics, upsertGroupScore } from "./social.jsx";
+import { GENERATED_CONTENT, getGeneratedTopics } from "./generatedContent.js";
+import { getNextGoal, logLearningEvent, loadLearningEvents } from "./learningEngine.js";
 import { CalibrationGauge, ForecastBar, MasteryRing, MemoryDecayChart, PastPapersTab, PostSessionReflection, SRInfoTooltip, SessionGoalModal, StrategyRecommendation, StudyJournalTab } from "./studyWidgets.jsx";
 import { ALL_SUBJECTS } from "./subjects.js";
 import { TimetableScreen } from "./timetable.jsx";
@@ -169,13 +171,42 @@ export default function App() {
   const [showSubjectSelection, setShowSubjectSelection] = useState(false);
   const [prefsReady, setPrefsReady] = useState(false);
 
+  // Unified learning-engine event log. Every meaningful user action is pushed
+  // here (in-memory for instant reactivity + persisted via logLearningEvent),
+  // and the engine reads it to decide the single next goal.
+  const [engineEvents, setEngineEvents] = useState([]);
+  const logEvent = useCallback(
+    (type, payload = {}) => {
+      const ev = { t: type, ts: Date.now(), ...payload };
+      setEngineEvents((prev) => [...prev, ev].slice(-800));
+      if (user) logLearningEvent(user, type, payload);
+    },
+    [user],
+  );
+  useEffect(() => {
+    if (!user) {
+      setEngineEvents([]);
+      return;
+    }
+    let alive = true;
+    loadLearningEvents(user).then((evs) => {
+      if (alive) setEngineEvents(evs);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [user]);
+
   const subjects = React.useMemo(() => {
-    if (selectedSubjectIds === null) return ALL_SUBJECTS;
+    // Attach in-code curriculum content (notes/flashcards/questions) to each
+    // subject. Content now lives in generatedContent.js, not in an admin store.
+    const withContent = (s) => ({ ...s, topics: getGeneratedTopics(s.id) });
+    if (selectedSubjectIds === null) return ALL_SUBJECTS.map(withContent);
     if (selectedSubjectIds.length === 0)
-      return ALL_SUBJECTS.filter((s) => s._politics);
+      return ALL_SUBJECTS.filter((s) => s._politics).map(withContent);
     return ALL_SUBJECTS.filter(
       (s) => s._politics || selectedSubjectIds.includes(s.id),
-    );
+    ).map(withContent);
   }, [selectedSubjectIds]);
   const admin = isAdmin(user);
   const subjDef = subIdx != null ? subjects[subIdx] : null;
@@ -288,28 +319,7 @@ export default function App() {
         if (r?.value) accs = JSON.parse(r.value);
       } catch (_) {}
 
-      accs = { ...accs, [ADMIN_USER]: { h: ADMIN_PASS_HASH, gki: 0 } };
-      try {
-        await window.storage.set(SK.ACCOUNTS, JSON.stringify(accs), true);
-      } catch (_) {}
-
-      try {
-        const lbKey = `gcse:lb:${ADMIN_USER.replace(/\W/g, "-")}`;
-        const prev = await window.storage.get(lbKey, true);
-        const existing = prev?.value ? JSON.parse(prev.value) : {};
-        if (existing.school !== ADMIN_SCHOOL) {
-          await window.storage.set(
-            lbKey,
-            JSON.stringify({
-              ...existing,
-              username: ADMIN_USER,
-              school: ADMIN_SCHOOL,
-              score: existing.score || 0,
-            }),
-            true,
-          );
-        }
-      } catch (_) {}
+      // Admin account seeding removed — ReviseIQ no longer has an admin role.
       setAccs(accs);
       setReady(true);
     })();
@@ -1572,10 +1582,41 @@ export default function App() {
     onCoach: () => setScreen("coach"),
     onLeaderboards: () => setScreen("friends"),
     onAccount: () => setScreen("account"),
+    onContact: () => setScreen("contact"),
     streak,
     onSearch: () => setSearchOpen(true),
     globalOverlays: _goEl,
     screen,
+  };
+  const goToGoal = (goal) => {
+    if (!goal) return;
+    logEvent("session_start", {
+      blockKind: goal.blockKind,
+      subjectId: goal.route ? goal.route.subjectId : null,
+      sectionId: goal.route ? goal.route.sectionId : null,
+    });
+    if (goal.action && goal.action.type === "editSubjects") {
+      setShowSubjectSelection(true);
+      setScreen("account");
+      return;
+    }
+    if (goal.route) {
+      const mode = goal.route.mode;
+      openSessionBlock({
+        type:
+          mode === "questions"
+            ? "questions"
+            : mode === "flashcards"
+              ? "flashcards"
+              : mode === "mock"
+                ? "mock"
+                : "blurting",
+        subjectId: goal.route.subjectId,
+        sectionId: goal.route.sectionId,
+      });
+      return;
+    }
+    if (goal.screen) setScreen(goal.screen);
   };
   const openMyNotes = (subjId) => {
     setUCScreen({
@@ -1703,10 +1744,6 @@ export default function App() {
       const u = isEmail ? idLower : idTrim.trim().replace(/ +/g, " ");
       const dn = displayNameIn.trim() || getDisplayName(u);
       if (authMode === "signup") {
-        if (u === ADMIN_USER) {
-          setAuthE("That identifier is reserved.");
-          return;
-        }
         if (accounts[u]) {
           setAuthE(
             "An account with that " +
@@ -1715,10 +1752,7 @@ export default function App() {
           );
           return;
         }
-        const nonAdminCount = Object.keys(accounts).filter(
-          (k) => k !== ADMIN_USER,
-        ).length;
-        const gki = (nonAdminCount % 10) + 1;
+        const gki = (Object.keys(accounts).length % 10) + 1;
         const n = {
           ...accounts,
           [u]: { h: hashPw(passIn), gki, displayName: dn },
@@ -2360,6 +2394,7 @@ export default function App() {
     const _greet = _hh < 12 ? "Good morning" : _hh < 18 ? "Good afternoon" : "Good evening";
     const guidedPlan = buildTodaySessionPlan({ subjects, allSections, stats, fcHist, timetableExams });
     const gb = guidedPlan.primaryBlock || {};
+    const nextGoal = getNextGoal({ subjects, allSections, stats, fcHist, calibrationData, timetableExams, streak, events: engineEvents });
     const sid0 = subjects[0] ? subjects[0].id : null;
     const opts = sid0 ? generateSessionOptions(user, sid0, allSections, stats, fcHist) : [];
 
@@ -2467,20 +2502,19 @@ export default function App() {
             <div style={heroGlow} />
             <div style={heroInner}>
               <div style={heroCol}>
-                <div style={heroKicker}>Today’s mission</div>
-                <h3 style={heroTitle}>{guidedPlan.missionTitle}</h3>
-                <p style={heroSub}>{guidedPlan.missionSubtitle}</p>
+                <div style={heroKicker}>Your next goal {nextGoal.icon}</div>
+                <h3 style={heroTitle}>{nextGoal.title}</h3>
+                <p style={heroSub}>{nextGoal.instruction}</p>
                 <div style={heroRow}>
-                  {gb.title ? <span style={startWith}>Start with: {gb.title}</span> : null}
-                  {guidedPlan._aiPersonalised ? <span style={heroBadge}>AI personalised</span> : null}
-                  {guidedPlan.closingTip ? <span style={startWith} title={guidedPlan.closingTip}>Coach tip</span> : null}
+                  <span style={startWith}>Why now: {nextGoal.reason}</span>
+                  <span style={heroBadge}>≈ {nextGoal.etaMin} min</span>
                 </div>
               </div>
               <button
-                onClick={() => { setTodaySession(guidedPlan); setScreen("practice"); }}
+                onClick={() => goToGoal(nextGoal)}
                 style={startBtn}
               >
-                Start session →
+                Start →
               </button>
             </div>
           </div>
@@ -2542,19 +2576,7 @@ export default function App() {
             </div>
           ) : null}
 
-          {admin ? (
-            <div style={adminBar}>
-              <div style={adminHead}>
-                <span style={adminTag}>Admin mode</span>
-                <span style={adminHint}>Navigate into a subject to add topics, notes, flashcards, questions and past papers.</span>
-              </div>
-              <div style={adminBtns}>
-                <button onClick={() => setImportOpen(true)} style={adminBtn}>Import Data</button>
-                <button onClick={() => setManageAccountsOpen(true)} style={adminBtn}>Manage Accounts</button>
-                <button onClick={viewAnalytics} style={adminBtn}>Analytics</button>
-              </div>
-            </div>
-          ) : null}
+          {null}
 
           <TodayWidget
             D={D}
@@ -4105,6 +4127,7 @@ grade${parseInt(target) - parseInt(predicted) !== 1 ? "s" : ""} to go`}
         });
       }
       const correct = rating >= 3;
+      logEvent("card_rated", { subjectId: subj.id, sectionId: section.id, cardId, conf: rating, correct });
       updateLadderLevel(user, ladderTopicId, correct);
       setLadderTick((v) => v + 1);
       if (correct) {
@@ -6392,6 +6415,7 @@ ${getRetrievability(fcHist, fc2.id) ?? "—"}% recall`}</span>
                                           ok,
                                         );
                                         setLadderTick((v) => v + 1);
+                                        logEvent("question_answered", { subjectId: subj.id, sectionId: section.id, correct: ok });
                                         setStats((s) => {
                                           const wq = { ...s.weakQ };
                                           wq[section.id] = {
