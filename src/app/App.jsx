@@ -4,7 +4,7 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart
 import { buildTodaySessionPlan, getPedagogicalContext, selectCommandWordQuestions } from "./learningEngine.js";
 import { ImportModal, ManageAccountsModal } from "./accountModals.jsx";
 import { _aiWithRetry, _parseAIJson, aiServiceReflectionSummarizer, buildAIPersonalisedSession, callAI, detectErrorType, getAccDisplayName, getAccHash, markAnswer } from "./aiService.js";
-import { ADMIN_PASS_HASH, ADMIN_SCHOOL, ADMIN_USER, DEFAULT_BOARD, SK, SK_CALIBRATION, SK_ERROR_PATTERNS, SK_GRAPH, SK_JOURNAL, SK_PERSONAL, SK_SESSION, classifyError, confToProb, getDisplayName, hashPw, incrementErrorPattern, isAdmin } from "./coreHelpers.js";
+import { ADMIN_PASS_HASH, ADMIN_SCHOOL, ADMIN_USER, DEFAULT_BOARD, SK, SK_CALIBRATION, SK_ERROR_PATTERNS, SK_GRAPH, SK_JOURNAL, SK_PERSONAL, SK_SESSION, calcBrierScore, classifyError, confToProb, getDisplayName, hashPw, incrementErrorPattern, isAdmin } from "./coreHelpers.js";
 import { AnnotatedImage } from "./annotation.jsx";
 import { BlurtingScreen } from "./blurtingScreen.jsx";
 import { ClozeCard, QuestionFigure, SequenceCard, generateWhyPrompt } from "./cards.jsx";
@@ -20,6 +20,7 @@ import { ACHIEVEMENTS, AchievementToast, ExamReadinessGauge, MasteryPanel, Maste
 import { MockExamScreen } from "./mockExam.jsx";
 import { registerReviseIQServiceWorker, syncOfflineQueue, useOfflineQueue } from "./offline.js";
 import { GlobalOverlays } from "./overlays.jsx";
+import { CalibrationDial, Figure, MasteryConstellation, Ring, SessionRecap, StatTile } from "./lumen.jsx";
 import { AppFooter, CreatePersonalSubjectModal, PersonalSubjectScreen, SubjMyNotesTab } from "./personalSubjects.jsx";
 import { PracticeSessionScreen, TodayWidget } from "./practice.jsx";
 import { AO_COLORS, autoHints, detectAOLabel, detectCW, detectCardType } from "./questionMeta.js";
@@ -2440,6 +2441,14 @@ export default function App() {
     const choiceIn = function (e) { e.currentTarget.style.borderColor = D ? "#a78bfa" : "#7c3aed"; e.currentTarget.style.transform = "translateY(-2px)"; };
     const choiceOut = function (e) { e.currentTarget.style.borderColor = line; e.currentTarget.style.transform = ""; };
 
+    const _subjReadiness = subjects.map(function (s) { try { return calculateExamReadiness(s.id, allSections, fcHist, stats, calibrationData[s.id], timetableExams)?.score ?? 0; } catch (e) { return 0; } });
+    const overallReadiness = _subjReadiness.length ? Math.round(_subjReadiness.reduce(function (a, b) { return a + b; }, 0) / _subjReadiness.length) : 0;
+    const readyCardWrap = { display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap", padding: 22, borderRadius: 22, background: glassBg, border: "1px solid " + line, boxShadow: cardSh, backdropFilter: "blur(12px)" };
+    const readyLbl = { fontSize: 12.5, fontWeight: 800, letterSpacing: ".1em", textTransform: "uppercase", color: sub };
+    const readyTextWrap = { minWidth: 0, flex: 1 };
+    const readyFigWrap = { marginTop: 8 };
+    const readyP = { margin: "8px 0 0", fontSize: 13.5, color: sub, lineHeight: 1.5, maxWidth: 480 };
+
     return (
       <div style={pageShell} className="fade-in">
         <Header {...hProps} />
@@ -2475,6 +2484,19 @@ export default function App() {
               </button>
             </div>
           </div>
+
+          {subjects.length > 0 ? (
+            <div style={readyCardWrap}>
+              <Ring value={overallReadiness / 100} size={104} stroke={11} label={overallReadiness + "%"} sub="ready" D={D} />
+              <div style={readyTextWrap}>
+                <div style={readyLbl}>Exam readiness</div>
+                <div style={readyFigWrap}>
+                  <Figure size={28} D={D} gradient>{overallReadiness >= 70 ? "On track" : overallReadiness >= 50 ? "Building momentum" : "Getting started"}</Figure>
+                </div>
+                <p style={readyP}>A blended signal across {subjects.length} subject{subjects.length === 1 ? "" : "s"} — retention, accuracy, coverage, calibration and spacing combined.</p>
+              </div>
+            </div>
+          ) : null}
 
           {streak > 0 ? (
             <div style={statStrip}>
@@ -7542,6 +7564,53 @@ mark${q.marks !== 1 ? "s" : ""}]`}
           <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 22 }}>
             Progress Dashboard
           </h2>
+          {(function () {
+            const _preds = Object.values(calibrationData || {}).flat();
+            const _brier = _preds.length >= 3 ? calcBrierScore(_preds) : null;
+            const _calVal = _brier != null ? Math.max(0, Math.min(1, 1 - _brier / 0.35)) : 0.5;
+            const _mp = _preds.length ? _preds.reduce(function (a, d) { return a + Number((d && d.pred) || 0); }, 0) / _preds.length : 0;
+            const _mo = _preds.length ? _preds.reduce(function (a, d) { return a + Number((d && d.outcome) || 0); }, 0) / _preds.length : 0;
+            const _bias = _mp - _mo;
+            const _rd = subjects.map(function (s) { try { return calculateExamReadiness(s.id, allSections, fcHist, stats, calibrationData[s.id], timetableExams)?.score ?? 0; } catch (e) { return 0; } });
+            const _readiness = _rd.length ? Math.round(_rd.reduce(function (a, b) { return a + b; }, 0) / _rd.length) : 0;
+            const _topics = subjects.map(function (s) { let sc = 50, tt = 0; try { sc = calculateExamReadiness(s.id, allSections, fcHist, stats, calibrationData[s.id], timetableExams)?.score ?? 50; } catch (e) {} try { tt = (calculateMastery(s.id, allSections, fcHist, stats) || {}).totalTopics || 0; } catch (e) {} return { id: s.id, name: (s.name || "").split(" ")[0], retention: sc / 100, size: Math.min(1, tt / 12) }; });
+            const wrapSt = { margin: "24px 0 8px" };
+            const kicker = { fontSize: 12.5, fontWeight: 800, letterSpacing: ".1em", textTransform: "uppercase", color: D ? "#98a2bd" : "#5b6478", marginBottom: 12 };
+            const tileGrid = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12 };
+            const panelGrid = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 14, marginTop: 14 };
+            const panelCard = { padding: 20, borderRadius: 22, background: D ? "rgba(255,255,255,.04)" : "#fff", border: "1px solid " + (D ? "rgba(255,255,255,.07)" : "rgba(16,24,40,.06)"), display: "flex", flexDirection: "column", gap: 10, alignItems: "center" };
+            const panelTitle = { alignSelf: "flex-start", fontSize: 13, fontWeight: 800, letterSpacing: ".06em", textTransform: "uppercase", color: D ? "#98a2bd" : "#5b6478" };
+            const emptyP = { fontSize: 13, color: D ? "#98a2bd" : "#5b6478", lineHeight: 1.5, textAlign: "center", margin: "20px 0" };
+            return (
+              <section style={wrapSt}>
+                <div style={kicker}>Your signal</div>
+                <div style={tileGrid}>
+                  <StatTile icon="🔥" figure={streak} caption="Day streak" accent="#f59e0b" D={D} />
+                  <StatTile icon="🎯" figure={qPct + "%"} caption="Question accuracy" accent="#5b54f0" D={D} />
+                  <StatTile icon="🃏" figure={fcPct + "%"} caption="Flashcard recall" accent="#8b5cf6" D={D} />
+                  <StatTile icon="🚀" figure={_readiness + "%"} caption="Exam readiness" accent="#d946ef" D={D} />
+                </div>
+                <div style={panelGrid}>
+                  <div style={panelCard}>
+                    <div style={panelTitle}>Calibration</div>
+                    {_preds.length >= 3 ? (
+                      <CalibrationDial value={_calVal} bias={_bias} size={220} D={D} />
+                    ) : (
+                      <p style={emptyP}>Rate your confidence on a few flashcards to see how well it predicts your actual performance.</p>
+                    )}
+                  </div>
+                  <div style={panelCard}>
+                    <div style={panelTitle}>Mastery constellation</div>
+                    {_topics.length ? (
+                      <MasteryConstellation topics={_topics} width={520} height={300} D={D} onSelect={function (n) { const idx = subjects.findIndex(function (s) { return s.id === n.id; }); if (idx >= 0) { setSubIdx(idx); setScreen("subject"); } }} />
+                    ) : (
+                      <p style={emptyP}>Add subjects to map your topic mastery as a living constellation.</p>
+                    )}
+                  </div>
+                </div>
+              </section>
+            );
+          })()}
           <LearningTimeline
             D={D}
             sessions={Object.keys(activityCounts || {})
@@ -9105,6 +9174,25 @@ mark${q.marks !== 1 ? "s" : ""}]`}
             margin: "0 auto",
           }}
         >
+          {(function () {
+            const _s = section || {};
+            const _q = (stats.weakQ && stats.weakQ[_s.id]) || null;
+            const _f = (stats.weakFC && stats.weakFC[_s.id]) || null;
+            const _qT = _q ? _q.total || 0 : 0;
+            const _fT = _f ? _f.total || 0 : 0;
+            const _reviewed = _qT + _fT;
+            if (!_reviewed) return null;
+            const _mins = Math.max(1, Math.round((_qT * 180 + _fT * 30) / 60));
+            const _wrong = _q ? _q.wrong || 0 : 0;
+            const _acc = _qT ? (_qT - _wrong) / _qT : 1;
+            const _nm = _s.name || (subjDef && subjDef.name) || "this topic";
+            const _recapWrap = { maxWidth: 460, margin: "0 auto 14px" };
+            return (
+              <div style={_recapWrap}>
+                <SessionRecap D={D} minutes={_mins} reviewed={_reviewed} strengthened={_acc >= 0.7 ? [_nm] : []} shaky={_acc < 0.7 ? [_nm] : []} nextNudge={sessionSetup && sessionSetup.goal ? ("Next: " + sessionSetup.goal) : ("Revisit " + _nm + " in a couple of days to lock it in.")} />
+              </div>
+            );
+          })()}
           <PostSessionReflection
             D={D}
             sessionGoal={sessionSetup?.goal}
