@@ -30,7 +30,7 @@ export function TodayWidget({
         return s.id === item.sectionId;
       });
       return {
-        emoji: "💡",
+        emoji: "\u{1F9E0}",
         text: item.label,
         sub: item.subtitle,
         color: subj ? subj.accent : "#7c3aed",
@@ -47,7 +47,7 @@ export function TodayWidget({
         return s.id === item.sectionId;
       });
       return {
-        emoji: "💡",
+        emoji: "\u270D\uFE0F",
         text: item.label,
         sub: item.subtitle,
         color: subj ? subj.accent : "#ef4444",
@@ -63,7 +63,7 @@ export function TodayWidget({
           })
         : null;
       return {
-        emoji: "💡",
+        emoji: "\u{1F525}",
         text: item.label,
         sub: sec ? "Blurting: " + sec.title : item.subtitle,
         color:
@@ -75,9 +75,9 @@ export function TodayWidget({
       };
     }
     return {
-      emoji: "📝",
+      emoji: "\u{1F4DD}",
       text: "Take a mock exam",
-      sub: "Simulate real examconditions",
+      sub: "Simulate real exam conditions",
       color: "#7c3aed",
       action: onMock,
     };
@@ -89,107 +89,112 @@ export function TodayWidget({
   )
     return null;
 
+  const txc = D ? "#eef1fb" : "#0f1729";
+  const muc = D ? "#98a2bd" : "#5b6478";
+  const cardBg = D ? "rgba(255,255,255,.04)" : "#ffffff";
+  const hairline = D ? "rgba(255,255,255,.08)" : "rgba(16,24,40,.07)";
+
+  const hero = finalItems[0];
+  const rest = finalItems.slice(1);
+
+  const wrap = { display: "flex", flexDirection: "column", gap: 14 };
+  const head = { display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" };
+  const headTitle = { fontSize: 19, fontWeight: 800, color: txc, letterSpacing: "-.01em", fontFamily: "var(--riq-display, inherit)" };
+  const headSub = { fontSize: 13, color: muc, fontWeight: 600 };
+
+  const heroCard = {
+    position: "relative", overflow: "hidden", textAlign: "left", cursor: "pointer",
+    display: "flex", alignItems: "center", gap: 16, width: "100%",
+    padding: "20px 22px", borderRadius: 20, border: "1px solid " + hairline,
+    background: "linear-gradient(135deg, rgba(124,58,237,.16), rgba(217,70,239,.10))",
+    boxShadow: "0 18px 40px -24px rgba(124,58,237,.55)",
+    transition: "transform .18s cubic-bezier(.22,1,.36,1), box-shadow .18s ease",
+  };
+  const heroBadge = {
+    flexShrink: 0, width: 56, height: 56, borderRadius: 16, display: "flex",
+    alignItems: "center", justifyContent: "center", fontSize: 28,
+    background: D ? "rgba(255,255,255,.06)" : "#fff",
+    boxShadow: "0 6px 18px -8px " + (hero.color || "#7c3aed"),
+  };
+  const heroBody = { flex: 1, minWidth: 0 };
+  const heroKicker = { fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: "#7c3aed", marginBottom: 4 };
+  const heroText = { fontSize: 17, fontWeight: 800, color: txc, lineHeight: 1.25 };
+  const heroSub = { fontSize: 13.5, color: muc, marginTop: 3, fontWeight: 600 };
+  const heroCta = {
+    flexShrink: 0, alignSelf: "center", fontSize: 14, fontWeight: 800, color: "#fff",
+    padding: "10px 16px", borderRadius: 12, whiteSpace: "nowrap", border: "none",
+    background: "linear-gradient(135deg, #7c3aed, #d946ef)",
+    boxShadow: "0 10px 22px -10px rgba(124,58,237,.8)",
+  };
+
+  const list = { display: "flex", flexDirection: "column", gap: 8 };
+  const rowBtn = { display: "flex", alignItems: "center", gap: 14, width: "100%", textAlign: "left", cursor: "pointer", padding: "13px 16px", borderRadius: 14, border: "1px solid " + hairline, background: cardBg, transition: "transform .16s cubic-bezier(.22,1,.36,1), border-color .16s ease" };
+  const rowEmoji = { flexShrink: 0, fontSize: 20, width: 30, textAlign: "center" };
+  const rowBody = { flex: 1, minWidth: 0 };
+  const rowText = { fontSize: 14.5, fontWeight: 700, color: txc, display: "flex", gap: 7, alignItems: "baseline" };
+  const rowSub = { fontSize: 12.5, color: muc, marginTop: 2 };
+  const numStyle = function (c) { return { fontSize: 12.5, fontWeight: 800, color: c }; };
+  const chevStyle = function (c) { return { flexShrink: 0, fontSize: 18, color: c, fontWeight: 700 }; };
+
   return (
-    <div style={{ marginBottom: 22 }}>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          marginBottom: 10,
+    <div style={wrap}>
+      <div style={head}>
+        <span style={headTitle}>Today</span>
+        <span style={headSub}>Your focused plan</span>
+      </div>
+
+      <button
+        onClick={hero.action}
+        style={heroCard}
+        onMouseEnter={function (e) {
+          e.currentTarget.style.transform = "translateY(-2px)";
+          e.currentTarget.style.boxShadow = "0 26px 50px -22px rgba(124,58,237,.7)";
+        }}
+        onMouseLeave={function (e) {
+          e.currentTarget.style.transform = "";
+          e.currentTarget.style.boxShadow = "0 18px 40px -24px rgba(124,58,237,.55)";
         }}
       >
-        <span style={{ fontSize: 16 }}> </span>
+        <div style={heroBadge}>{hero.emoji}</div>
+        <div style={heroBody}>
+          <div style={heroKicker}>Start here</div>
+          <div style={heroText}>{hero.text}</div>
+          <div style={heroSub}>{hero.sub}</div>
+        </div>
+        <span style={heroCta}>Start →</span>
+      </button>
 
-        <span style={{ fontSize: 14, fontWeight: 700 }}>
-          What to revise today
-        </span>
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {finalItems.map(function (item, i) {
-          return (
-            <button
-              key={i}
-              onClick={item.action}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-                padding: "12px 16px",
-                borderRadius: 12,
-                background: D ? "#13131f" : "#fff",
-                border: "1.5px solid " + (D ? "#262844" : "#e5e7eb"),
-                cursor: "pointer",
-                textAlign: "left",
-                width: "100%",
-                transition: "border-color .15s,transform .1s",
-              }}
-              onMouseEnter={function (e) {
-                e.currentTarget.style.borderColor = item.color;
-                e.currentTarget.style.transform = "translateY(-1px)";
-              }}
-              onMouseLeave={function (e) {
-                e.currentTarget.style.borderColor = D ? "#262844" : "#e5e7eb";
-                e.currentTarget.style.transform = "";
-              }}
-            >
-              <div
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 8,
-                  background: item.color + "22",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 16,
-                  flexShrink: 0,
+      {rest.length > 0 ? (
+        <div style={list}>
+          {rest.map(function (item, i) {
+            return (
+              <button
+                key={i}
+                onClick={item.action}
+                style={rowBtn}
+                onMouseEnter={function (e) {
+                  e.currentTarget.style.borderColor = item.color;
+                  e.currentTarget.style.transform = "translateX(2px)";
+                }}
+                onMouseLeave={function (e) {
+                  e.currentTarget.style.borderColor = hairline;
+                  e.currentTarget.style.transform = "";
                 }}
               >
-                {item.emoji}
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div
-                  style={{
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: D ? "#e8ecf4" : "#111827",
-                    marginBottom: 1,
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  <span
-                    style={{
-                      color: item.color,
-                      marginRight: 5,
-                      fontWeight: 700,
-                    }}
-                  >
-                    {i + 1}.
-                  </span>
-                  {item.text}
+                <div style={rowEmoji}>{item.emoji}</div>
+                <div style={rowBody}>
+                  <div style={rowText}>
+                    <span style={numStyle(item.color)}>{i + 2}.</span>
+                    {item.text}
+                  </div>
+                  <div style={rowSub}>{item.sub}</div>
                 </div>
-                <div
-                  style={{
-                    fontSize: 11,
-                    color: D ? "#9ca3af" : "#6b7280",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {item.sub}
-                </div>
-              </div>
-              <span
-                style={{ fontSize: 12, color: item.color, flexShrink: 0 }}
-              ></span>
-            </button>
-          );
-        })}
-      </div>
+                <span style={chevStyle(item.color)}>→</span>
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
     </div>
   );
 }
