@@ -372,7 +372,7 @@ export function ForecastBar({ cards, fcHist, D, accent }) {
                 background:
                   count > 0 ? accent || "#6366f1" : D ? "#2a3347" : "#e5e7eb",
                 height: Math.max(4, Math.round((count / max) * 28)),
-                transition: "height.2s",
+                transition: "height .2s",
                 opacity: i === 0 ? 1 : 0.7,
               }}
             />

@@ -3,16 +3,16 @@
 export function detectCardType(q) {
   const t = (q || "").toLowerCase();
   if (/calculat|how many|work out|find the|compute|show.*work/.test(t))
-    return { label: "Calculate", color: "#7c3aed", icon: " " };
+    return { label: "Calculate", color: "#7c3aed", icon: "🧮" };
   if (/why|explain|because|reason|suggest why/.test(t))
-    return { label: "Explain", color: "#0891b2", icon: " " };
+    return { label: "Explain", color: "#0891b2", icon: "💡" };
   if (/compare|difference|similar|contrast/.test(t))
-    return { label: "Compare", color: "#d97706", icon: " " };
+    return { label: "Compare", color: "#d97706", icon: "⚖️" };
   if (/predict|suggest|what would|likely|effect of/.test(t))
-    return { label: "Apply", color: "#16a34a", icon: " " };
+    return { label: "Apply", color: "#16a34a", icon: "🔧" };
   if (/evaluat|assess|extent|justify|argue/.test(t))
-    return { label: "Evaluate", color: "#dc2626", icon: " " };
-  return { label: "Recall", color: "#6366f1", icon: " " };
+    return { label: "Evaluate", color: "#dc2626", icon: "🧠" };
+  return { label: "Recall", color: "#6366f1", icon: "🧠" };
 }
 
 export const AO_COLORS = {

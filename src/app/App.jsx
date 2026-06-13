@@ -1808,7 +1808,7 @@ export default function App() {
     var idPlaceholder =
       authMode === "signup"
         ? "Username or email (optional email)"
-        : "Email orusername";
+        : "Email or username";
     var idHint =
       authMode === "signup"
         ? isEmail
@@ -1840,7 +1840,7 @@ export default function App() {
           }}
         >
           <div style={{ textAlign: "center", marginBottom: 28 }}>
-            <div style={{ fontSize: 48, marginBottom: 12 }}> </div>
+            <div style={{ fontSize: 48, marginBottom: 12 }}>🧠</div>
             <h1
               style={{
                 fontSize: 22,
@@ -2003,7 +2003,7 @@ export default function App() {
               fontSize: 14,
               fontWeight: 700,
               cursor: canSubmit ? "pointer" : "default",
-              transition: "background.2s",
+              transition: "background .2s",
               letterSpacing: "0.02em",
             }}
           >
@@ -5099,7 +5099,7 @@ timeline.\nReturn:
 
               const cardType2 = fc2
                 ? detectCardType(fc2.q || "")
-                : { label: "Recall", color: "#6366f1", icon: " " };
+                : { label: "Recall", color: "#6366f1", icon: "🧠" };
 
               const fcHints2 = fc2
                 ? [
@@ -5226,21 +5226,21 @@ ${cardType2.label === "Calculate" ? "Start by writing theformula." : cardType2.l
                 {
                   v: 1,
                   label: "Not sure",
-                  icon: " ",
+                  icon: "😕",
                   color: "#ef4444",
                   tip: "I'll need to see this again",
                 },
                 {
                   v: 2,
                   label: "Maybe",
-                  icon: " ",
+                  icon: "🙂",
                   color: "#f59e0b",
                   tip: "I kind of knew it",
                 },
                 {
                   v: 3,
                   label: "Got it",
-                  icon: " ",
+                  icon: "😎",
                   color: "#10b981",
                   tip: "I know this well",
                 },
@@ -5908,7 +5908,7 @@ ${getRetrievability(fcHist, fc2.id) ?? "—"}% recall`}</span>
                                     width: "100%",
                                     marginBottom: 12,
                                     opacity: 0.75,
-                                    transition: "opacity.3s",
+                                    transition: "opacity .3s",
                                   }}
                                 >
                                   {fc2.cardImage ? (
@@ -7006,7 +7006,7 @@ ${getRetrievability(fcHist, fc2.id) ?? "—"}% recall`}</span>
                                       cursor: qRes ? "default" : "pointer",
                                       color: co2,
                                       fontSize: 13,
-                                      transition: "all.15s",
+                                      transition: "all .15s",
                                       display: "flex",
                                       alignItems: "center",
                                       gap: 10,
@@ -8240,10 +8240,10 @@ mark${q.marks !== 1 ? "s" : ""}]`}
               }}
             >
               {[
-                { icon: " ", val: longestStreak, label: "Longeststreak" },
-                { icon: " ", val: activityDates.size, label: "Daysstudied" },
-                { icon: " ", val: streak, label: "Current streak" },
-                { icon: " ", val: estLabel || "0m", label: "Studytime est." },
+                { icon: "🏆", val: longestStreak, label: "Longest streak" },
+                { icon: "📅", val: activityDates.size, label: "Days studied" },
+                { icon: "🔥", val: streak, label: "Current streak" },
+                { icon: "📚", val: estLabel || "0m", label: "Study time est." },
               ].map(function (s) {
                 return (
                   <div key={s.label} style={{ textAlign: "center" }}>
@@ -8420,10 +8420,10 @@ mark${q.marks !== 1 ? "s" : ""}]`}
             }}
           >
             {[
-              { icon: " ", val: ALL_SUBJECTS.length, label: "Subjects" },
-              { icon: " ", val: stats.fcT, label: "Cards reviewed" },
-              { icon: " ", val: totalCustom, label: "Topics added" },
-              { icon: " ", val: totalPapers, label: "Past papers" },
+              { icon: "📚", val: ALL_SUBJECTS.length, label: "Subjects" },
+              { icon: "🗂️", val: stats.fcT, label: "Cards reviewed" },
+              { icon: "➕", val: totalCustom, label: "Topics added" },
+              { icon: "➕", val: totalPapers, label: "Past papers" },
             ].map(function (s, i) {
               return (
                 <div
@@ -8788,7 +8788,7 @@ mark${q.marks !== 1 ? "s" : ""}]`}
                               fontWeight: sel ? 800 : 500,
                               fontSize: 11,
                               cursor: "pointer",
-                              transition: "all.15s",
+                              transition: "all .15s",
                             }}
                           >
                             {g}
@@ -9244,7 +9244,7 @@ mark${q.marks !== 1 ? "s" : ""}]`}
                           cursor: ttRes ? "default" : "pointer",
                           color: co2,
                           fontSize: 13,
-                          transition: "all.15s",
+                          transition: "all .15s",
                         }}
                       >
                         <span

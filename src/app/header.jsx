@@ -28,16 +28,16 @@ export function Header({
 }) {
   const [menuOpen, setMenuOpen] = React.useState(false);
   const allNavItems = [
-    { id: "home", icon: " ", label: "Home", fn: onHome },
-    { id: "timetable", icon: " ", label: "Timetable", fn: onTimetable },
-    { id: "blurting", icon: " ", label: "Blurting", fn: onBlurt },
-    { id: "mock", icon: " ", label: "Mock Exam", fn: onMock },
-    { id: "tutor", icon: " ", label: "AI Tutor", fn: onTutor },
-    { id: "coach", icon: " ", label: "Exam Coach", fn: onCoach },
-    { id: "target", icon: " ", label: "Target", fn: onTarget },
-    { id: "dashboard", icon: " ", label: "Progress", fn: onDash },
-    { id: "friends", icon: " ", label: "Leaderboards", fn: onLeaderboards },
-    { id: "account", icon: " ", label: "Account", fn: onAccount },
+    { id: "home", icon: "🏠", label: "Home", fn: onHome },
+    { id: "timetable", icon: "📅", label: "Timetable", fn: onTimetable },
+    { id: "blurting", icon: "🧠", label: "Blurting", fn: onBlurt },
+    { id: "mock", icon: "📝", label: "Mock Exam", fn: onMock },
+    { id: "tutor", icon: "🤖", label: "AI Tutor", fn: onTutor },
+    { id: "coach", icon: "🧑‍🏫", label: "Exam Coach", fn: onCoach },
+    { id: "target", icon: "🎯", label: "Target", fn: onTarget },
+    { id: "dashboard", icon: "📊", label: "Progress", fn: onDash },
+    { id: "friends", icon: "🏆", label: "Leaderboards", fn: onLeaderboards },
+    { id: "account", icon: "👤", label: "Account", fn: onAccount },
   ];
   const displayName = userDisplayName || getDisplayName(user);
   const curItem = allNavItems.find(function (n) {
@@ -544,7 +544,7 @@ export function AccountScreen({
               fontSize: 14,
               fontWeight: 700,
               cursor: "pointer",
-              transition: "all.2s",
+              transition: "all .2s",
               marginTop: 20,
             }}
           >

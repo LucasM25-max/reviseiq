@@ -30,7 +30,7 @@ export function TodayWidget({
         return s.id === item.sectionId;
       });
       return {
-        emoji: " ",
+        emoji: "💡",
         text: item.label,
         sub: item.subtitle,
         color: subj ? subj.accent : "#6366f1",
@@ -47,7 +47,7 @@ export function TodayWidget({
         return s.id === item.sectionId;
       });
       return {
-        emoji: " ",
+        emoji: "💡",
         text: item.label,
         sub: item.subtitle,
         color: subj ? subj.accent : "#ef4444",
@@ -63,7 +63,7 @@ export function TodayWidget({
           })
         : null;
       return {
-        emoji: " ",
+        emoji: "💡",
         text: item.label,
         sub: sec ? "Blurting: " + sec.title : item.subtitle,
         color:
@@ -75,7 +75,7 @@ export function TodayWidget({
       };
     }
     return {
-      emoji: " ",
+      emoji: "📝",
       text: "Take a mock exam",
       sub: "Simulate real examconditions",
       color: "#6366f1",
@@ -122,7 +122,7 @@ export function TodayWidget({
                 cursor: "pointer",
                 textAlign: "left",
                 width: "100%",
-                transition: "border-color .15s,transform.1s",
+                transition: "border-color .15s,transform .1s",
               }}
               onMouseEnter={function (e) {
                 e.currentTarget.style.borderColor = item.color;

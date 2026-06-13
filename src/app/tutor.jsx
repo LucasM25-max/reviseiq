@@ -523,7 +523,7 @@ student has shared this file with you]`,
     var userMsg = {
       role: "user",
       content: "Quiz me on this topic!",
-      _d: { text: "Quiz me on thistopic!", files: [], stag: null, chips: [] },
+      _d: { text: "Quiz me on this topic!", files: [], stag: null, chips: [] },
     };
     var hist2 = [...messages, userMsg];
     setMsgs(hist2);

@@ -145,10 +145,10 @@ export function MobileBottomNav({ screen, onHome, onStudy, onProgress, onTutor, 
   }, []);
   if (!isMobile) return null;
   const items = [
-    { id: "home", icon: " ", label: "Home", fn: onHome },
-    { id: "study", icon: " ", label: "Study", fn: onStudy },
-    { id: "progress", icon: " ", label: "Progress", fn: onProgress },
-    { id: "tutor", icon: " ", label: "Tutor", fn: onTutor },
+    { id: "home", icon: "🏠", label: "Home", fn: onHome },
+    { id: "study", icon: "📚", label: "Study", fn: onStudy },
+    { id: "progress", icon: "📊", label: "Progress", fn: onProgress },
+    { id: "tutor", icon: "🤖", label: "Tutor", fn: onTutor },
   ];
   return (
     <div

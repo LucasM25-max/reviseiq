@@ -42,7 +42,7 @@ export function SearchModal({
             type: "note",
             label: n.heading || "Note",
             sub,
-            icon: " ",
+            icon: "📝",
             subj,
             sec,
           });

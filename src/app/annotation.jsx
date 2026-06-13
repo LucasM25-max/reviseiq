@@ -11,8 +11,8 @@ export const ANN_COLORS = [
 ];
 
 export const ANN_TOOLS = [
-  { id: "label", icon: " ", tip: "Label" },
-  { id: "arrow", icon: " ", tip: "Arrow" },
+  { id: "label", icon: "🏷️", tip: "Label" },
+  { id: "arrow", icon: "➡️", tip: "Arrow" },
   { id: "text", icon: "T", tip: "Text" },
 ];
 

@@ -2701,7 +2701,7 @@ export function MockExamScreen({
                     height: 9,
                     borderRadius: "50%",
                     cursor: "pointer",
-                    transition: "background.15s",
+                    transition: "background .15s",
                     flexShrink: 0,
                     background:
                       i === qIdx
@@ -2947,7 +2947,7 @@ export function MockExamScreen({
                                 cursor: "pointer",
                                 fontSize: 13,
                                 color: sel ? "#6366f1" : tx(D),
-                                transition: "border-color.15s,background .15s",
+                                transition: "border-color .15s,background .15s",
                               }}
                             >
                               <span
@@ -3065,7 +3065,7 @@ export function MockExamScreen({
                           cursor: "pointer",
                           fontSize: 13,
                           color: sel ? "#6366f1" : tx(D),
-                          transition: "border-color.15s,background .15s",
+                          transition: "border-color .15s,background .15s",
                         }}
                       >
                         <span

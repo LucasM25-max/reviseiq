@@ -891,7 +891,7 @@ export const SEMANTIC_COLORS = {
     border: "#0891B2",
     label_l: "#0e7490",
     label_d: "#67e8f9",
-    icon: " ",
+    icon: "📖",
   },
   process: {
     bg_l: "#ecfdf5",
@@ -899,7 +899,7 @@ export const SEMANTIC_COLORS = {
     border: "#059669",
     label_l: "#065f46",
     label_d: "#6ee7b7",
-    icon: " ",
+    icon: "🔄",
   },
   equation: {
     bg_l: "#f5f3ff",
@@ -907,7 +907,7 @@ export const SEMANTIC_COLORS = {
     border: "#7C3AED",
     label_l: "#6d28d9",
     label_d: "#c4b5fd",
-    icon: " ",
+    icon: "➗",
   },
   mistake: {
     bg_l: "#fffbeb",
@@ -915,7 +915,7 @@ export const SEMANTIC_COLORS = {
     border: "#D97706",
     label_l: "#b45309",
     label_d: "#fcd34d",
-    icon: " ",
+    icon: "⚠️",
   },
   evaluation: {
     bg_l: "#fff1f2",
@@ -923,7 +923,7 @@ export const SEMANTIC_COLORS = {
     border: "#E11D48",
     label_l: "#be123c",
     label_d: "#fda4af",
-    icon: " ",
+    icon: "⚖️",
   },
   practical: {
     bg_l: "#f0fdf4",
@@ -931,7 +931,7 @@ export const SEMANTIC_COLORS = {
     border: "#16A34A",
     label_l: "#15803d",
     label_d: "#86efac",
-    icon: " ",
+    icon: "🔬",
   },
   example: {
     bg_l: "#faf5ff",
@@ -939,7 +939,7 @@ export const SEMANTIC_COLORS = {
     border: "#9333EA",
     label_l: "#7e22ce",
     label_d: "#d8b4fe",
-    icon: " ",
+    icon: "✨",
   },
 };
 

@@ -551,7 +551,7 @@ export function MD({ text, D }) {
 
 export const NOTE_SEC_DEFS = {
   "CORE CONTENT": {
-    icon: " ",
+    icon: "📘",
     border: "#6366f1",
     bg_l: "#eef2ff",
     bg_d: "rgba(99,102,241,.08)",
@@ -587,7 +587,7 @@ export const NOTE_SEC_DEFS = {
     selfCheck: false,
   },
   "SELF-CHECK": {
-    icon: " ",
+    icon: "✅",
     border: "#10b981",
     bg_l: "#ecfdf5",
     bg_d: "rgba(16,185,129,.08)",
@@ -623,7 +623,7 @@ export const NOTE_SEC_DEFS = {
     selfCheck: false,
   },
   MNEMONIC: {
-    icon: " ",
+    icon: "🧠",
     border: "#ec4899",
     bg_l: "#fdf2f8",
     bg_d: "rgba(236,72,153,.08)",
@@ -645,7 +645,7 @@ export function parseNoteBody(body) {
       const hdKey = line.slice(3).trim().toUpperCase();
 
       const def = NOTE_SEC_DEFS[hdKey] || {
-        icon: " ",
+        icon: "🧠",
         border: "#6b7280",
         bg_l: "#f9fafb",
         bg_d: "#1f2937",

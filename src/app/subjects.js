@@ -4,7 +4,7 @@ export const ALL_SUBJECTS = [
   {
     id: "maths",
     name: "Maths",
-    icon: " ",
+    icon: "📐",
     accent: "#0ea5e9",
     light: "#f0f9ff",
     mid: "#e0f2fe",
@@ -13,7 +13,7 @@ export const ALL_SUBJECTS = [
   {
     id: "eng-lang",
     name: "English Language",
-    icon: " ",
+    icon: "✍️",
     accent: "#f59e0b",
     light: "#fffbeb",
     mid: "#fef3c7",
@@ -22,7 +22,7 @@ export const ALL_SUBJECTS = [
   {
     id: "eng-lit",
     name: "English Literature",
-    icon: " ",
+    icon: "📖",
     accent: "#ec4899",
     light: "#fdf2f8",
     mid: "#fce7f3",
@@ -31,7 +31,7 @@ export const ALL_SUBJECTS = [
   {
     id: "bio",
     name: "Biology",
-    icon: " ",
+    icon: "🧬",
     accent: "#10b981",
     light: "#ecfdf5",
     mid: "#d1fae5",
@@ -41,7 +41,7 @@ export const ALL_SUBJECTS = [
   {
     id: "chem",
     name: "Chemistry",
-    icon: " ",
+    icon: "🧪",
     accent: "#3b82f6",
     light: "#eff6ff",
     mid: "#dbeafe",
@@ -50,7 +50,7 @@ export const ALL_SUBJECTS = [
   {
     id: "phys",
     name: "Physics",
-    icon: " ",
+    icon: "⚛️",
     accent: "#8b5cf6",
     light: "#f5f3ff",
     mid: "#ede9fe",
@@ -59,7 +59,7 @@ export const ALL_SUBJECTS = [
   {
     id: "combined-sci",
     name: "Combined Science",
-    icon: " ",
+    icon: "🔬",
     accent: "#14b8a6",
     light: "#f0fdfa",
     mid: "#ccfbf1",
@@ -68,7 +68,7 @@ export const ALL_SUBJECTS = [
   {
     id: "history",
     name: "History",
-    icon: " ",
+    icon: "🏛️",
     accent: "#d97706",
     light: "#fffbeb",
     mid: "#fef3c7",
@@ -77,7 +77,7 @@ export const ALL_SUBJECTS = [
   {
     id: "geography",
     name: "Geography",
-    icon: " ",
+    icon: "🌍",
     accent: "#16a34a",
     light: "#f0fdf4",
     mid: "#dcfce7",
@@ -86,7 +86,7 @@ export const ALL_SUBJECTS = [
   {
     id: "french",
     name: "French",
-    icon: " ",
+    icon: "🇫🇷",
     accent: "#2563eb",
     light: "#eff6ff",
     mid: "#dbeafe",
@@ -95,7 +95,7 @@ export const ALL_SUBJECTS = [
   {
     id: "spanish",
     name: "Spanish",
-    icon: " ",
+    icon: "🇪🇸",
     accent: "#dc2626",
     light: "#fef2f2",
     mid: "#fee2e2",
@@ -104,7 +104,7 @@ export const ALL_SUBJECTS = [
   {
     id: "german",
     name: "German",
-    icon: " ",
+    icon: "🇩🇪",
     accent: "#ef4444",
     light: "#fef2f2",
     mid: "#fee2e2",
@@ -113,7 +113,7 @@ export const ALL_SUBJECTS = [
   {
     id: "business",
     name: "Business",
-    icon: " ",
+    icon: "💼",
     accent: "#0891b2",
     light: "#ecfeff",
     mid: "#cffafe",
@@ -122,7 +122,7 @@ export const ALL_SUBJECTS = [
   {
     id: "computing",
     name: "Computing",
-    icon: " ",
+    icon: "💻",
     accent: "#6366f1",
     light: "#eef2ff",
     mid: "#e0e7ff",
@@ -131,7 +131,7 @@ export const ALL_SUBJECTS = [
   {
     id: "dt",
     name: "Design & Technology",
-    icon: " ",
+    icon: "🛠️",
     accent: "#ea580c",
     light: "#fff7ed",
     mid: "#ffedd5",
@@ -140,7 +140,7 @@ export const ALL_SUBJECTS = [
   {
     id: "drama",
     name: "Drama",
-    icon: " ",
+    icon: "🎭",
     accent: "#a855f7",
     light: "#faf5ff",
     mid: "#f3e8ff",
@@ -149,7 +149,7 @@ export const ALL_SUBJECTS = [
   {
     id: "music",
     name: "Music",
-    icon: " ",
+    icon: "🎵",
     accent: "#f43f5e",
     light: "#fff1f2",
     mid: "#ffe4e6",
@@ -158,7 +158,7 @@ export const ALL_SUBJECTS = [
   {
     id: "politics",
     name: "Politics",
-    icon: " ",
+    icon: "🗳️",
     accent: "#0f766e",
     light: "#f0fdfa",
     mid: "#ccfbf1",

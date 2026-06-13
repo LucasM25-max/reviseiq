@@ -147,61 +147,61 @@ export const ACHIEVEMENTS = [
   {
     id: "first_card",
     title: "First Steps",
-    icon: " ",
+    icon: "👣",
     desc: "Complete your first flashcard review",
   },
   {
     id: "first_session",
     title: "Session Starter",
-    icon: " ",
+    icon: "🚀",
     desc: "Complete your first timed studysession",
   },
   {
     id: "streak_7",
     title: "Week Warrior",
-    icon: " ",
+    icon: "🔥",
     desc: "Maintain a 7-day study streak",
   },
   {
     id: "streak_30",
     title: "Monthly Master",
-    icon: " ",
+    icon: "📆",
     desc: "Maintain a 30-day study streak",
   },
   {
     id: "cards_100",
     title: "Centurion",
-    icon: " ",
+    icon: "💯",
     desc: "Review 100 flashcards",
   },
   {
     id: "perfect_cal",
     title: "Mind Reader",
-    icon: " ",
+    icon: "🔮",
     desc: "Achieve Brier score below 0.15",
   },
   {
     id: "all_rings",
     title: "Triple Crown",
-    icon: " ",
+    icon: "👑",
     desc: "All three mastery rings reach 80%+",
   },
   {
     id: "mastery_topic",
     title: "Topic Expert",
-    icon: " ",
+    icon: "🎓",
     desc: "Fully master your first topic",
   },
   {
     id: "questions_50",
     title: "Practice Makes Perfect",
-    icon: " ",
+    icon: "✍️",
     desc: "Answer 50 examquestions",
   },
   {
     id: "readiness_80",
     title: "Exam Ready",
-    icon: " ",
+    icon: "✅",
     desc: "Achieve Exam Readiness scoreof 80+",
   },
 ];
@@ -317,7 +317,7 @@ export function MasteryPanel({ D, mastery, subjectName }) {
       label: "Flashcard Mastery",
       val: fm,
       color: "#6366f1",
-      icon: " ",
+      icon: "🗂️",
       desc: `Cards with stability >14
 days`,
     },
@@ -325,7 +325,7 @@ days`,
       label: "Question Accuracy",
       val: qa,
       color: "#10b981",
-      icon: " ",
+      icon: "🎯",
       desc: `First-attempt question
 scores`,
     },
@@ -333,7 +333,7 @@ scores`,
       label: "Topic Coverage",
       val: cov,
       color: "#f59e0b",
-      icon: " ",
+      icon: "📚",
       desc: `Topics with any review
 activity`,
     },
@@ -641,7 +641,7 @@ export function ExamReadinessGauge({ D, readiness, subjectName, accent }) {
 
 export function AchievementToast({ achievement, D, onClose }) {
   const def = ACHIEVEMENTS.find((a) => a.id === achievement) || {
-    icon: " ",
+    icon: "🏅",
     title: achievement,
     desc: "",
   };
