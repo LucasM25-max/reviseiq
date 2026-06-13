@@ -431,7 +431,7 @@ export function MockExamScreen({
           }
         }
         if (!result || !result.questions || !result.questions.length)
-          throw new Error("No questionsgenerated.");
+          throw new Error("No questions generated.");
         setExtract(result.extract || null);
         setExtract2(result.extract2 || null);
         setQuestions(result.questions);
@@ -573,7 +573,7 @@ export function MockExamScreen({
       const final = picked.filter(Boolean).sort(() => Math.random() - 0.5);
       if (!final.length) {
         setGE(
-          "No questions available for this paper yet. Add questions in thesubject's Flashcards & Questions section, or try a different paper.",
+          "No questions available for this paper yet. Add questions in the subject's Flashcards & Questions section, or try a different paper.",
         );
         setPhase("setup");
         return;
@@ -642,7 +642,7 @@ export function MockExamScreen({
         try {
           var wr = await markAnswer(
             wq,
-            ansText || "[student uploaded image — see markscheme]",
+            ansText || "[student uploaded image — see mark scheme]",
           );
           fa[wq.id] = { ...wa, result: wr };
         } catch (e) {
@@ -651,7 +651,7 @@ export function MockExamScreen({
             result: {
               score: 0,
               feedback:
-                "AI marking unavailable — self-markusing the mark scheme.",
+                "AI marking unavailable — self-mark using the mark scheme.",
             },
           };
         }
@@ -686,7 +686,7 @@ export function MockExamScreen({
               };
               var pr = await markAnswer(
                 fakeQ,
-                pText || "[student uploaded image — see markscheme]",
+                pText || "[student uploaded image — see mark scheme]",
               );
               newParts[pi] = { ...pAns, result: pr };
             } catch (e) {

@@ -61,23 +61,23 @@ export const CW_MAP = {
   outline: { ao: "AO1", tip: "Brief summary covering the main points only." },
   explain: {
     ao: "AO2",
-    tip: "Say WHY — link cause → effect using 'because', 'therefore', 'thismeans'.",
+    tip: "Say WHY — link cause → effect using 'because', 'therefore', 'this means'.",
   },
   suggest: {
     ao: "AO2",
-    tip: "Apply knowledge to an unfamiliar context. More than one answermay be accepted.",
+    tip: "Apply knowledge to an unfamiliar context. More than one answer may be accepted.",
   },
   calculate: {
     ao: "AO2",
-    tip: "Formula → substitution → working → answer WITH units. Missingunits loses marks.",
+    tip: "Formula → substitution → working → answer WITH units. Missing units loses marks.",
   },
   compare: {
     ao: "AO2",
-    tip: "Similarity AND difference. Use 'whereas' to link directly — nottwo separate accounts.",
+    tip: "Similarity AND difference. Use 'whereas' to link directly — not two separate accounts.",
   },
   predict: {
     ao: "AO2",
-    tip: "What will happen AND why — use your subject knowledge tojustify.",
+    tip: "What will happen AND why — use your subject knowledge to justify.",
   },
   analyse: {
     ao: "AO3",
@@ -89,19 +89,19 @@ export const CW_MAP = {
   },
   justify: {
     ao: "AO3",
-    tip: "Strong reasons for a decision — show why alternatives areweaker.",
+    tip: "Strong reasons for a decision — show why alternatives are weaker.",
   },
   assess: {
     ao: "AO3",
-    tip: "Weigh evidence and reach a reasoned judgement aboutsignificance or validity.",
+    tip: "Weigh evidence and reach a reasoned judgement about significance or validity.",
   },
   "to what extent": {
     ao: "AO3",
-    tip: "Take a position: 'largely', 'to a limited extent', 'primarily'. Neverjust 'it depends'.",
+    tip: "Take a position: 'largely', 'to a limited extent', 'primarily'. Never just 'it depends'.",
   },
   discuss: {
     ao: "AO3",
-    tip: "Multiple perspectives + evidence, evaluate their merit, thensynthesise a conclusion.",
+    tip: "Multiple perspectives + evidence, evaluate their merit, then synthesise a conclusion.",
   },
 };
 
@@ -133,7 +133,7 @@ export function autoHints(q) {
 
   const h1 = cw
     ? `Strategy: ${cw.tip}`
-    : "Think carefully: what command word is used and whattype of answer does it require?";
+    : "Think carefully: what command word is used and what type of answer does it require?";
   const msLines = (q.markScheme || "")
     .split("\n")
     .filter((l) => l.trim() && !l.match(/^Level|^Award|^Do not/i));
@@ -149,6 +149,6 @@ export function autoHints(q) {
       ? `First mark: ${msLines[0].replace(/[•()\[\]0-9.]+/g, "").trim()}`
       : q.markScheme
         ? `Mark scheme starts: ${q.markScheme.slice(0, 100)}…`
-        : "Check keydefinitions in your notes.";
+        : "Check key definitions in your notes.";
   return [h1, h2, h3];
 }

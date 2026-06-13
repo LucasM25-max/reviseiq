@@ -154,7 +154,7 @@ export const ACHIEVEMENTS = [
     id: "first_session",
     title: "Session Starter",
     icon: "🚀",
-    desc: "Complete your first timed studysession",
+    desc: "Complete your first timed study session",
   },
   {
     id: "streak_7",
@@ -196,13 +196,13 @@ export const ACHIEVEMENTS = [
     id: "questions_50",
     title: "Practice Makes Perfect",
     icon: "✍️",
-    desc: "Answer 50 examquestions",
+    desc: "Answer 50 exam questions",
   },
   {
     id: "readiness_80",
     title: "Exam Ready",
     icon: "✅",
-    desc: "Achieve Exam Readiness scoreof 80+",
+    desc: "Achieve Exam Readiness score of 80+",
   },
 ];
 

@@ -14,13 +14,13 @@ export function buildProgressSummary(userData) {
   return (
     "You are on a " +
     (userData.streak || 0) +
-    " day streak, studied" +
+    " day streak, studied " +
     (userData.totalDaysStudied || 0) +
     " days, attempted " +
     (userData.questionsAttempted || 0) +
-    "questions, and your readiness score is " +
+    " questions, and your readiness score is " +
     (userData.readinessScore || 0) +
-    "%. Focus next on:" +
+    "%. Focus next on: " +
     weak +
     "."
   );

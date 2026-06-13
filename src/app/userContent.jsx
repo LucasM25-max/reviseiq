@@ -268,7 +268,7 @@ export function UCSectionModal({
           {
             role: "user",
             _d: {
-              text: "Please extract all revision content from this image and format it as structured noteswith ## headings and • bullet points.",
+              text: "Please extract all revision content from this image and format it as structured notes with ## headings and • bullet points.",
               files: [
                 {
                   isImage: true,
@@ -304,7 +304,7 @@ export function UCSectionModal({
           var updatedSec = { ...sec, notes: [...notes, imgNote] };
           onSaveSection(subjId, updatedSec);
           setAiErr(
-            "AI text extraction unavailable — image saved directly to your notes instead. Youcan add notes manually in the ＋ Add tab.",
+            "AI text extraction unavailable — image saved directly to your notes instead. You can add notes manually in the ＋ Add tab.",
           );
           setImgLoading(false);
           setTab("notes");
@@ -438,7 +438,7 @@ export function UCSectionModal({
           setShowAI(false);
         })
         .catch(function (err) {
-          setAiErr(err.message || "AI error — please tryagain");
+          setAiErr(err.message || "AI error — please try again");
           setAiLoading(false);
         });
     } else {
@@ -483,7 +483,7 @@ export function UCSectionModal({
           setShowAI(false);
         })
         .catch(function (err) {
-          setAiErr(err.message || "AI error — please tryagain");
+          setAiErr(err.message || "AI error — please try again");
           setAiLoading(false);
         });
     }
@@ -666,7 +666,7 @@ export function UCSectionModal({
                 setAiText(e.target.value);
               }}
               rows={5}
-              placeholder="Paste text, notes, or textbook content here — or upload an image aboveto auto-populate…"
+              placeholder="Paste text, notes, or textbook content here — or upload an image above to auto-populate…"
               style={{
                 ...I(D, { resize: "vertical", marginBottom: 8, fontSize: 12 }),
               }}

@@ -747,7 +747,7 @@ export async function aiServiceReflectionSummarizer(reflections, subjectName) {
     return _reflectionFallback(reflections || {});
   }
   var prompt =
-    "You are a warm, evidence-informed GCSE study coach. A student justcompleted a revision session on " +
+    "You are a warm, evidence-informed GCSE study coach. A student just completed a revision session on " +
     (subjectName || "their subject") +
     " and reflected as follows.\n\n" +
     "Understood well: " +
@@ -806,7 +806,7 @@ export function buildTutorSystemPrompt(
       "HOMEWORK HELP MODE — STRICT RULES:\n" +
       "- NEVER state the final answer outright\n" +
       '- Open with "What does the question ask you to find?" or "What information is given?"\n' +
-      '- After each student response, celebrate correct steps: "Exactly — now what comesnext?"\n' +
+      '- After each student response, celebrate correct steps: "Exactly — now what comes next?"\n' +
       "- Guide to the method step by step; let the student reach the answer themselves\n" +
       "- Only reveal the complete worked answer if the student has made 3+ genuine attempts\n";
   } else if (lvl >= 2) {
@@ -841,7 +841,7 @@ export function buildTutorSystemPrompt(
       (ctx.qs
         ? "=== PAST QUESTIONS ===\n" + ctx.qs.slice(0, 600) + "\n\n"
         : "") +
-      "CONTENT BOUNDARY: Draw primarily from the content above. If asked about somethingnot covered, say so clearly and offer to help with what IS in the notes. Use general " +
+      "CONTENT BOUNDARY: Draw primarily from the content above. If asked about something not covered, say so clearly and offer to help with what IS in the notes. Use general " +
       board +
       "GCSE knowledge only to clarify or expand content already present in the notes."
     : "KNOWLEDGE SOURCE: No revision notes added for this selection yet. Draw on accurate " +

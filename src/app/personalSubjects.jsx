@@ -665,7 +665,7 @@ export function PersonalSectionScreen({ D, subj, topic, user, onBack, onSave }) 
     var flashcardsSnap = flashcards;
     if (tab === "notes") {
       var pNotes =
-        "You are a study assistant. The user has pasted the following text. Extract thekey facts and turn them into clear, concise bullet-point notes. Return ONLY the notes as a plaintext list, one point per line starting with •.\n\n" +
+        "You are a study assistant. The user has pasted the following text. Extract the key facts and turn them into clear, concise bullet-point notes. Return ONLY the notes as a plaintext list, one point per line starting with •.\n\n" +
         aiText;
       _aiWithRetry(
         function () {
@@ -695,7 +695,7 @@ export function PersonalSectionScreen({ D, subj, topic, user, onBack, onSave }) 
             : [
                 {
                   id: _psId("fallback"),
-                  text: "Could not generate notes — paste more content and tryagain.",
+                  text: "Could not generate notes — paste more content and try again.",
                   created: Date.now(),
                 },
               ];

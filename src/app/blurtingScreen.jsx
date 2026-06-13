@@ -496,7 +496,7 @@ export const ACT_DEFS = {
     icon: "📝",
     label: "Active Note Review",
     navTab: "notes",
-    tip: "Passive re-reading hasnegligible effect on retention. Instead: pause after each heading, cover the notes, and recite keypoints aloud.",
+    tip: "Passive re-reading has negligible effect on retention. Instead: pause after each heading, cover the notes, and recite key points aloud.",
     goal: "Read each section of notes, then cover and recite at least 3 key points per heading from memory",
   },
   target: {

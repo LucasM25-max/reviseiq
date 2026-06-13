@@ -101,7 +101,7 @@ export function ManageAccountsModal({ D, accounts, adminUser, onClose, onDelete 
                   onClick={function () {
                     if (
                       window.confirm(
-                        "Delete account for " + u + "? This cannotbe undone.",
+                        "Delete account for " + u + "? This cannot be undone.",
                       )
                     )
                       onDelete(u);

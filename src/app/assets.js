@@ -55,12 +55,9 @@ toastOut{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translate
 .toast-out{animation:toastOut .2s ease forwards}
 /* Flashcard 3-D flip */
 .fc-scene{perspective:900px}
-.fc-card{width:100%;min-height:170px;position:relative;transform-style:preserve-3d;transition:tra
-nsform .4s cubic-bezier(.4,0,.2,1)}
+.fc-card{width:100%;min-height:170px;position:relative;transform-style:preserve-3d;transition:transform .4s cubic-bezier(.4,0,.2,1)}
 .fc-card.flipped{transform:rotateY(180deg)}
-.fc-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;bor
-der-radius:14px;display:flex;flex-direction:column;justify-content:center;align-items:center;paddi
-ng:32px 24px;text-align:center;cursor:pointer}
+.fc-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:14px;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:32px 24px;text-align:center;cursor:pointer}
 .fc-back{transform:rotateY(180deg)}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:4px}
 .ann-handle{cursor:move;user-select:none}
@@ -80,8 +77,7 @@ ng:32px 24px;text-align:center;cursor:pointer}
 .rich-display h3{font-size:14px;font-weight:700;margin:6px 0 3px}
 /* ── Evidence-based learning UI enhancements ── */
 @keyframes
-sectionReveal{from{opacity:0;max-height:0;padding-top:0;padding-bottom:0}to{opacity:1;max-h
-eight:3000px}}
+sectionReveal{from{opacity:0;max-height:0;padding-top:0;padding-bottom:0}to{opacity:1;max-height:3000px}}
 @keyframes
 confidencePop{0%{transform:scale(.88)}65%{transform:scale(1.08)}100%{transform:scale(1)}}
 @keyframes
@@ -91,15 +87,13 @@ hintSlide{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:trans
 
 .hint-slide{animation:hintSlide .18s ease forwards}
 /* keyterm chips in notes */
-.keyterm{display:inline-flex;align-items:center;background:rgba(99,102,241,.13);color:#6d28d9;b
-order-radius:5px;padding:1px 6px;font-weight:600;font-size:.92em}
+.keyterm{display:inline-flex;align-items:center;background:rgba(99,102,241,.13);color:#6d28d9;border-radius:5px;padding:1px 6px;font-weight:600;font-size:.92em}
 .keyterm-d{background:rgba(165,180,252,.15);color:#c4b5fd}
 /* AO badges */
 .ao-badge{display:inline-flex;align-items:center;border-radius:20px;padding:2px
 9px;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
 /* image lightbox overlay */
-.img-lb{position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:9999;display:flex;align-items:cen
-ter;justify-content:center;cursor:zoom-out;padding:20px}
+.img-lb{position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:zoom-out;padding:20px}
 @keyframes
 diagramPulse{0%{transform:scale(1)}50%{transform:scale(1.18)}100%{transform:scale(1)}}
 .diagram-pulse{animation:diagramPulse .3s ease}

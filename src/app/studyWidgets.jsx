@@ -51,7 +51,7 @@ export function PastPapersTab({
             {subjectName} · {board}
           </p>
           <p style={{ fontSize: 13, color: mu(D) }}>
-            No past papers added yet.{admin ? " Add oneabove." : ""}
+            No past papers added yet.{admin ? " Add one above." : ""}
           </p>
         </div>
       ) : (
@@ -710,7 +710,7 @@ export function PostSessionReflection({ D, sessionGoal, subjectId, onSave, onSki
             label: "What is still unclear?",
             val: unclear,
             set: setC,
-            ph: "e.g. Why ATP isneeded",
+            ph: "e.g. Why ATP is needed",
           },
           {
             key: "improve",

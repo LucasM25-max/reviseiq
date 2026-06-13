@@ -4510,7 +4510,7 @@ timeline.\nReturn:
                       `Think: the answer relates to "${(fc2.a || "").split(" ").slice(0, 5).join(" ")}…"`,
                     fc2.hint2 ||
                       `This is a ${cardType2.icon} ${cardType2.label} card.
-${cardType2.label === "Calculate" ? "Start by writing theformula." : cardType2.label === "Explain" ? "Use 'because' or 'therefore' in your answer." : "Thinkabout the key term or process being tested."}`,
+${cardType2.label === "Calculate" ? "Start by writing the formula." : cardType2.label === "Explain" ? "Use 'because' or 'therefore' in your answer." : "Think about the key term or process being tested."}`,
                   ]
                 : [
                     "Think carefully before flipping.",
@@ -5856,7 +5856,7 @@ ${getRetrievability(fcHist, fc2.id) ?? "—"}% recall`}</span>
                             onChange={(e) => setExplainText(e.target.value)}
                             rows={2}
                             style={{ ...I(D, { marginTop: 6, fontSize: 12 }) }}
-                            placeholder="Explain this card in your ownwords…"
+                            placeholder="Explain this card in your own words…"
                           />
                           <button
                             onClick={() =>
@@ -6056,11 +6056,11 @@ ${getRetrievability(fcHist, fc2.id) ?? "—"}% recall`}</span>
                 const pct = Math.round((sorted[0][1] / epTotal) * 100);
                 const tips = {
                   "Knowledge Gap":
-                    "Focus on recall — state definitions and key facts beforeexplaining.",
+                    "Focus on recall — state definitions and key facts before explaining.",
                   "Command Word Error":
                     "Check the command word first. Evaluate = argue bothsides + conclude. Explain = WHY, not WHAT.",
                   "Application Error":
-                    "Apply knowledge to the specific context. Link your answer tothe scenario given.",
+                    "Apply knowledge to the specific context. Link your answer to the scenario given.",
                   "Communication Error":
                     "Write in full sentences. Use PEEL: Point → Evidence →Explanation → Link.",
                 };
@@ -6467,7 +6467,7 @@ ${getRetrievability(fcHist, fc2.id) ?? "—"}% recall`}</span>
                                         <>
                                           <strong> Correct.</strong>{" "}
                                           {q.explanation ||
-                                            "This is the rightanswer."}
+                                            "This is the right answer."}
                                         </>
                                       ) : (
                                         <>
@@ -6791,7 +6791,7 @@ mark${q.marks !== 1 ? "s" : ""}]`}
                                     setQRes({
                                       score: "?",
                                       feedback:
-                                        "ReviseIQ AI unavailable — self-markusing the mark scheme below.",
+                                        "ReviseIQ AI unavailable — self-mark using the mark scheme below.",
                                       missedPoints: [],
                                       modelAnswer: q.sampleAnswer || "",
                                       examTip: "",
@@ -8724,7 +8724,7 @@ mark${q.marks !== 1 ? "s" : ""}]`}
                           setTTRes({
                             score: "?",
                             feedback:
-                              "ReviseIQ AI unavailable — please tryagain.",
+                              "ReviseIQ AI unavailable — please try again.",
                             missedPoints: [],
                             modelAnswer: q.sampleAnswer || "",
                             examTip: "",

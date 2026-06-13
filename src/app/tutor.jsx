@@ -755,7 +755,7 @@ student has shared this file with you]`,
               <span
                 title={
                   socraticLevel === 2
-                    ? "Socratic: asks guiding questions beforeexplaining"
+                    ? "Socratic: asks guiding questions before explaining"
                     : socraticLevel === 1
                       ? "Guided: explains then prompts recall"
                       : "Direct: gives answersimmediately"
@@ -870,7 +870,7 @@ student has shared this file with you]`,
             </p>
             <p style={{ fontSize: 13, marginBottom: 10, lineHeight: 1.6 }}>
               {mode === "tutor"
-                ? "Start by telling me what you already know about the topic — I'll guide you to fill thegaps."
+                ? "Start by telling me what you already know about the topic — I'll guide you to fill the gaps."
                 : "Share your homework by uploading a photo, PDF or file, or paste the question below.I'll ask guiding questions to help you reach the answer yourself."}
             </p>
             <p style={{ fontSize: 11, color: mu(D), marginBottom: 6 }}>
@@ -880,7 +880,7 @@ student has shared this file with you]`,
             </p>
             <p style={{ fontSize: 10, color: mu(D) }}>
               {socraticLevel === 2
-                ? "Socratic mode — I'll askwhat you know first"
+                ? "Socratic mode — I'll ask what you know first"
                 : socraticLevel === 1
                   ? "Guided mode — I'll explain then prompt recall"
                   : "Direct mode — I'll give complete answers"}
@@ -1272,7 +1272,7 @@ student has shared this file with you]`,
                 listening
                   ? "Listening…"
                   : mode === "homework"
-                    ? "Ask a question or describeyour homework…"
+                    ? "Ask a question or describe your homework…"
                     : "Ask about this topic…"
               }
               style={{

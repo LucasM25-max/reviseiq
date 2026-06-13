@@ -670,7 +670,7 @@ name","sublabel":"optional"}]}}\nKeep labels under 4 words. Max 7 items.`;
                     />
                     <input
                       style={{ ...I(D, { marginTop: 6, fontSize: 12 }) }}
-                      placeholder="Caption for answerside (optional)"
+                      placeholder="Caption for answer side (optional)"
                       value={f.cardImageCaption || ""}
                       onChange={(e) => set("cardImageCaption", e.target.value)}
                     />

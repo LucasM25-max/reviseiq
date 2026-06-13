@@ -142,7 +142,7 @@ export function verifyExplanation(content, studentExplanation) {
     correct: s.length > 30 ? "You explained key ideas clearly." : "Good start.",
     missing:
       hit.length < Math.max(2, Math.floor(kws.length / 3))
-        ? "Add detail on:" + kws.slice(0, 3).join(", ")
+        ? "Add detail on: " + kws.slice(0, 3).join(", ")
         : "Add one concrete example.",
   };
 }
@@ -187,7 +187,7 @@ export function generateWeeklyPlan(
   var key = "gcse:weeklyPlan:" + (user || "").replace(/\W/g, "-") + ":" + week;
   try {
     var ex = JSON.parse(localStorage.getItem(key) || "null");
-    if (ex && Array.isArray(ex)) return;
+    if (ex && Array.isArray(ex)) return ex;
   } catch (_) {}
   var due = allSections.flatMap((s) =>
     (s.flashcards || [])
@@ -203,9 +203,9 @@ export function generateWeeklyPlan(
 
   var base = [
     "Review due flashcards" + (due[0] ? " (" + due[0] + ")" : ""),
-    "Do 10 mixedquestions" + (weak[0] ? " on " + weak[0] : ""),
+    "Do 10 mixed questions" + (weak[0] ? " on " + weak[0] : ""),
     examSoon
-      ? "Exam prep for" + (examSoon.label || "upcoming exam")
+      ? "Exam prep for " + (examSoon.label || "upcoming exam")
       : "Revise weakest topic",
   ];
   var days = [
@@ -273,7 +273,7 @@ export function simpleParaphrase(text) {
   var map = {
     explain: "describe",
     describe: "outline",
-    define: "stateclearly",
+    define: "state clearly",
     because: "since",
     therefore: "so",
     important: "significant",
@@ -281,7 +281,7 @@ export function simpleParaphrase(text) {
     increase: "rise",
     decrease: "fall",
     difference: "distinction",
-    causes: "leadsto",
+    causes: "leads to",
     effect: "impact",
   };
   Object.keys(map).forEach(function (k) {

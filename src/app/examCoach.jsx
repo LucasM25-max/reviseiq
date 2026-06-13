@@ -38,7 +38,7 @@ export const COMMAND_WORDS = [
     scaffold: [
       "Similarity",
       "Difference",
-      "Evidence foreach",
+      "Evidence for each",
       "Overall comparison",
     ],
   },
@@ -51,7 +51,7 @@ export const COMMAND_WORDS = [
   {
     word: "Assess",
     boards: ["AQA", "Edexcel", "OCR"],
-    tip: "Weigh up the relative importance orvalidity. Consider criteria: how much? how significant? how reliable? Reach a reasonedconclusion.",
+    tip: "Weigh up the relative importance or validity. Consider criteria: how much? how significant? how reliable? Reach a reasoned conclusion.",
     scaffold: [
       "Claim",
       "Supporting evidence",
@@ -62,18 +62,18 @@ export const COMMAND_WORDS = [
   {
     word: "Discuss",
     boards: ["AQA", "Edexcel", "OCR", "WJEC"],
-    tip: "Present multiple perspectiveswith evidence. Don't just list views — evaluate their merit. A conclusion that synthesises thedebate gains top marks.",
+    tip: "Present multiple perspectives with evidence. Don't just list views — evaluate their merit. A conclusion that synthesises the debate gains top marks.",
     scaffold: [
       "View 1 + evidence",
       "View 2 + evidence",
-      "Evaluation ofboth",
+      "Evaluation of both",
       "Synthesised conclusion",
     ],
   },
   {
     word: "Justify",
     boards: ["AQA", "Edexcel", "OCR"],
-    tip: "Give strong reasons for a decision orposition. Anticipate objections and explain why your reasoning outweighsthem.",
+    tip: "Give strong reasons for a decision or position. Anticipate objections and explain why your reasoning outweighs them.",
     scaffold: [
       "Decision / position",
       "Reason 1 + evidence",
@@ -84,7 +84,7 @@ export const COMMAND_WORDS = [
   {
     word: "Examine",
     boards: ["AQA", "Edexcel"],
-    tip: "Investigate carefully, looking at differentaspects. Similar to Analyse — go beyond surface description to probe causes, effects andsignificance.",
+    tip: "Investigate carefully, looking at different aspects. Similar to Analyse — go beyond surface description to probe causes, effects and significance.",
     scaffold: [
       "Aspect 1 — detail",
       "Aspect 2 — detail",
@@ -95,7 +95,7 @@ export const COMMAND_WORDS = [
   {
     word: "To what extent",
     boards: ["AQA", "Edexcel", "OCR", "WJEC"],
-    tip: "Always take a clearposition. Structure: agree partially, then qualify. Your extent should be explicit: 'largely', 'to alimited extent', 'primarily because…'",
+    tip: "Always take a clear position. Structure: agree partially, then qualify. Your extent should be explicit: 'largely', 'to a limited extent', 'primarily because…'",
     scaffold: [
       "Main argument (extent)",
       "Supportingevidence",
