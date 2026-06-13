@@ -2543,6 +2543,11 @@ export default function App() {
     const _dn = userDisplayName || getDisplayName(user);
     const _hh = new Date().getHours();
     const _greet = _hh < 12 ? "Good morning" : _hh < 18 ? "Good afternoon" : "Good evening";
+    const _nowMs = Date.now();
+    const _upExams = (timetableExams || []).filter((e) => e && e.date && new Date(e.date + "T00:00:00").getTime() >= _nowMs - 86400000).sort((a, b) => a.date.localeCompare(b.date));
+    const _nextExam = _upExams[0] || null;
+    const _nextExamSubj = _nextExam ? (subjects.find((s) => s.id === _nextExam.subjectId) || null) : null;
+    const _nextExamDays = _nextExam ? Math.max(0, Math.round((new Date(_nextExam.date + "T00:00:00").getTime() - _nowMs) / 86400000)) : null;
     const guidedPlan = buildTodaySessionPlan({ subjects, allSections, stats, fcHist, timetableExams });
     const gb = guidedPlan.primaryBlock || {};
     const nextGoal = getNextGoal({ subjects, allSections, stats, fcHist, calibrationData, timetableExams, streak, events: engineEvents });
@@ -2553,6 +2558,7 @@ export default function App() {
     const sub = D ? "#9aa3c2" : "#5b6478";
     const glassBg = D ? "rgba(255,255,255,.045)" : "rgba(255,255,255,.72)";
     const line = D ? "rgba(255,255,255,.09)" : "rgba(16,24,40,.08)";
+    const examChip = { display: "inline-flex", alignItems: "center", gap: 8, padding: "8px 14px", borderRadius: 999, border: "1px solid " + line, background: glassBg, color: ink, fontSize: 13, fontWeight: 700, cursor: "pointer", marginTop: 12 };
     const cardSh = D ? "0 20px 50px -34px rgba(0,0,0,.85)" : "0 20px 50px -34px rgba(76,29,149,.35)";
     const auroraBg = D
       ? "radial-gradient(1200px 820px at 12% -12%, rgba(124,58,237,.20), transparent 60%), radial-gradient(1000px 720px at 102% 4%, rgba(217,70,239,.14), transparent 55%), radial-gradient(900px 700px at 50% 120%, rgba(59,130,246,.10), transparent 55%), #0a0a14"
@@ -2642,6 +2648,11 @@ export default function App() {
           <div style={greetRow}>
             <div>
               <h2 style={greetH}>{_greet}, {_dn}</h2>
+              {_nextExam && (
+                <button style={examChip} onClick={() => setScreen("timetable")}>
+                  📅 {_nextExamDays === 0 ? "Exam today" : _nextExamDays + (_nextExamDays === 1 ? " day to " : " days to ") + (_nextExamSubj && _nextExamSubj.name ? _nextExamSubj.name.split(" ")[0] : "next exam")}
+                </button>
+              )}
               <p style={greetSub}>Here’s your focused plan for today — one clear step at a time.</p>
             </div>
             <button onClick={function () { openMyNotes(null); }} style={ghostBtn}>
