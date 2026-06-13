@@ -1,47 +1,52 @@
 import React, { useState, useEffect } from "react";
 
 export const C = (D) => ({
-  background: D ? "#161b27" : "#ffffff",
-  border: `1px solid ${D ? "#252d3f" : "#eceef2"}`,
-  borderRadius: 18,
+  background: D
+    ? "linear-gradient(180deg, rgba(32,36,56,.72), rgba(17,19,30,.74))"
+    : "linear-gradient(180deg, #ffffff, #fbfbfe)",
+  border: `1px solid ${D ? "rgba(255,255,255,.07)" : "rgba(16,24,40,.06)"}`,
+  borderRadius: 22,
   boxShadow: D
-    ? "0 1px 2px rgba(0,0,0,.4), 0 10px 30px -16px rgba(0,0,0,.7)"
-    : "0 1px 2px rgba(16,24,40,.04), 0 14px 34px -18px rgba(16,24,40,.14)",
+    ? "inset 0 1px 0 rgba(255,255,255,.04), 0 26px 64px -30px rgba(0,0,0,.85)"
+    : "0 1px 2px rgba(16,24,40,.03), 0 26px 60px -34px rgba(16,24,40,.20)",
+  backdropFilter: "blur(14px) saturate(1.2)",
+  WebkitBackdropFilter: "blur(14px) saturate(1.2)",
 });
 
 export const I = (D, x = {}) => ({
   width: "100%",
-  background: D ? "#1a2133" : "#fff",
-  border: `1.5px solid ${D ? "#2f3a52" : "#dde1e9"}`,
-  borderRadius: 12,
-  padding: "11px 14px",
-  fontSize: 14,
+  background: D ? "rgba(20,24,38,.85)" : "#ffffff",
+  border: `1.5px solid ${D ? "rgba(255,255,255,.10)" : "#e4e7f0"}`,
+  borderRadius: 14,
+  padding: "12px 15px",
+  fontSize: 14.5,
   outline: "none",
-  color: D ? "#e8ecf4" : "#111827",
-  transition: "border-color .18s ease, box-shadow .18s ease",
+  color: D ? "#eef1fb" : "#0f1729",
+  transition:
+    "border-color .18s var(--riq-ease, ease), box-shadow .18s var(--riq-ease, ease), background .18s var(--riq-ease, ease)",
   boxSizing: "border-box",
   ...x,
 });
 
 export const B = (color, outline, extra = {}) => ({
-  padding: "10px 18px",
-  borderRadius: 12,
+  padding: "11px 20px",
+  borderRadius: 14,
   border: outline ? `1.5px solid ${color}` : "1px solid transparent",
   background: outline ? "transparent" : color,
   color: outline ? color : "#fff",
   cursor: "pointer",
-  fontSize: 14,
+  fontSize: 14.5,
   fontWeight: 700,
-  letterSpacing: ".01em",
+  letterSpacing: ".005em",
   transition:
-    "transform .15s ease, box-shadow .15s ease, filter .15s ease, background .15s ease",
-  boxShadow: outline || !color ? "none" : `0 1px 2px rgba(16,24,40,.14), 0 8px 18px -10px ${color}`,
+    "transform .15s var(--riq-ease, ease), box-shadow .2s var(--riq-ease, ease), filter .15s var(--riq-ease, ease), background .15s var(--riq-ease, ease)",
+  boxShadow: outline || !color ? "none" : `0 1px 2px rgba(16,24,40,.14), 0 12px 26px -12px ${color}`,
   ...extra,
 });
 
-export const mu = (D) => (D ? "#94a3c4" : "#6b7280");
+export const mu = (D) => (D ? "#98a2bd" : "#5b6478");
 
-export const tx = (D) => (D ? "#eef2fb" : "#0f172a");
+export const tx = (D) => (D ? "#eef1fb" : "#0f1729");
 
 export const uid = () =>
   typeof crypto !== "undefined" && crypto.randomUUID
