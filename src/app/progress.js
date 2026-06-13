@@ -31,21 +31,20 @@ export function generateProgressReport(userData) {
   var w = window.open("", "_blank", "width=900,height=700");
   if (!w) return false;
   var html =
-    '<!doctype html><html><head><title>ReviseIQ ProgressReport</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#111}h1{margin-bottom:0}table{border-collapse:collapse;width:100%;margin-top:14px}td,th{border:1px solid#ddd;padding:8px;text-align:left}.muted{color:#666}</style></head><body><h1>ReviseIQProgress Report</h1><p class=\"muted\">Generated ' +
+    '<!doctype html><html><head><title>ReviseIQ Progress Report</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#111}h1{margin-bottom:0}table{border-collapse:collapse;width:100%;margin-top:14px}td,th{border:1px solid#ddd;padding:8px;text-align:left}.muted{color:#666}</style></head><body><h1>ReviseIQ Progress Report</h1><p class=\"muted\">Generated ' +
     new Date().toLocaleString() +
-    "</p><table><tr><th>Metric</th><th>Value</th></tr><tr><td>Currentstreak</td><td>" +
+    "</p><table><tr><th>Metric</th><th>Value</th></tr><tr><td>Current streak</td><td>" +
     (userData.streak || 0) +
-    "</td></tr><tr><td>Total daysstudied</td><td>" +
+    "</td></tr><tr><td>Total days studied</td><td>" +
     (userData.totalDaysStudied || 0) +
-    "</td></tr><tr><td>Questionsattempted</td><td>" +
+    "</td></tr><tr><td>Questions attempted</td><td>" +
     (userData.questionsAttempted || 0) +
-    "</td></tr><tr><td>Weakesttopics</td><td>" +
+    "</td></tr><tr><td>Weakest topics</td><td>" +
     ((userData.weakestTopics || []).join(", ") || "None") +
-    "</td></tr><tr><td>Readinessscore</td><td>" +
+    "</td></tr><tr><td>Readiness score</td><td>" +
     (userData.readinessScore || 0) +
     "%</td></tr></table><h3>Summary</h3><p>" +
-    S;
-  tring(summary).replace(/</g, "&lt;") + "</p></body></html>";
+    String(summary).replace(/</g, "&lt;") + "</p></body></html>";
   w.document.open();
   w.document.write(html);
   w.document.close();
