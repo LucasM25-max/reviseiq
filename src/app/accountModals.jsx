@@ -27,7 +27,7 @@ export function ManageAccountsModal({ D, accounts, adminUser, onClose, onDelete 
           e.stopPropagation();
         }}
         style={{
-          background: D ? "#1e2537" : "#fff",
+          background: D ? "#191a2b" : "#fff",
           borderRadius: 16,
           width: 500,
           maxWidth: "96vw",
@@ -78,7 +78,7 @@ export function ManageAccountsModal({ D, accounts, adminUser, onClose, onDelete 
                   borderRadius: 10,
                   border: "1px solid" + bd,
                   marginBottom: 8,
-                  background: D ? "#161b27" : "#f9fafb",
+                  background: D ? "#13131f" : "#f9fafb",
                 }}
               >
                 <div>
@@ -304,7 +304,7 @@ export function ImportModal({ D, subjects, onClose, onDone }) {
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: D ? "#1e2537" : "#fff",
+          background: D ? "#191a2b" : "#fff",
           borderRadius: 16,
           width: 600,
           maxWidth: "96vw",
@@ -364,7 +364,7 @@ export function ImportModal({ D, subjects, onClose, onDone }) {
                 marginTop: 4,
                 padding: "8px 12px",
                 borderRadius: 8,
-                background: D ? "#161b27" : "#f3f4f6",
+                background: D ? "#13131f" : "#f3f4f6",
                 fontSize: 11,
                 overflow: "auto",
               }}
@@ -381,7 +381,7 @@ export function ImportModal({ D, subjects, onClose, onDone }) {
               minHeight: 200,
               borderRadius: 10,
               border: `1px solid ${D ? "#374151" : "#d1d5db"}`,
-              background: D ? "#161b27" : "#f9fafb",
+              background: D ? "#13131f" : "#f9fafb",
               color: D ? "#e8ecf4" : "#111827",
               padding: "10px 14px",
               fontSize: 12,
@@ -435,7 +435,7 @@ export function ImportModal({ D, subjects, onClose, onDone }) {
               padding: "9px 22px",
               borderRadius: 10,
               border: "none",
-              background: loading || !raw.trim() ? "#a5b4fc" : "#6366f1",
+              background: loading || !raw.trim() ? "#c4b5fd" : "#7c3aed",
               color: "#fff",
               cursor: loading || !raw.trim() ? "not-allowed" : "pointer",
               fontSize: 13,
@@ -459,7 +459,7 @@ export function OfflineBanner() {
         left: 0,
         right: 0,
         zIndex: 9999,
-        background: "#1f2937",
+        background: "#1c1d30",
         color: "#fff",
         textAlign: "center",
         fontSize: 12,
@@ -509,7 +509,7 @@ export function ShortcutModal({ D, onClose }) {
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: D ? "#1e2537" : "#fff",
+          background: D ? "#191a2b" : "#fff",
           borderRadius: 16,
           padding: 28,
           width: 320,
@@ -555,7 +555,7 @@ export function ShortcutModal({ D, onClose }) {
                 fontSize: 10,
                 fontWeight: 700,
                 letterSpacing: "0.08em",
-                color: "#6366f1",
+                color: "#7c3aed",
                 textTransform: "uppercase",
                 marginTop: i > 0 ? 14 : 0,
                 marginBottom: 4,
@@ -581,7 +581,7 @@ export function ShortcutModal({ D, onClose }) {
                   borderRadius: 6,
                   fontSize: 12,
                   fontFamily: "monospace",
-                  color: D ? "#e8ecf4" : "#1f2937",
+                  color: D ? "#e8ecf4" : "#1c1d30",
                   minWidth: 28,
                   textAlign: "center",
                 }}

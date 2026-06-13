@@ -46,7 +46,7 @@ export function ProcessFlowDiagram({
   for (let i = 0; i < steps.length; i += perRow)
     rows.push(steps.slice(i, i + perRow));
   const svgH = rows.length * (stepH + 40) + 20;
-  const bg = D ? "#161b27" : "#fff";
+  const bg = D ? "#13131f" : "#fff";
   const textCol = D ? "#e8ecf4" : "#111827";
   const subCol = D ? "#8896b3" : "#6b7280";
   return (
@@ -184,7 +184,7 @@ export function CycleDiagram({
     r = size * 0.33,
     nodeR = size * 0.095,
     n = steps.length;
-  const bg = D ? "#161b27" : "#fff";
+  const bg = D ? "#13131f" : "#fff";
   const textCol = D ? "#e8ecf4" : "#111827";
   const subCol = D ? "#8896b3" : "#6b7280";
   const positions = steps.map((_, i) => {
@@ -290,7 +290,7 @@ export function HierarchyTree({
 }) {
   const { props: attn, isActive } = useAttentionLayer();
   if (!root) return null;
-  const bg = D ? "#161b27" : "#fff";
+  const bg = D ? "#13131f" : "#fff";
   const textCol = D ? "#e8ecf4" : "#111827";
   const nodeW = 100,
     nodeH = 36,
@@ -408,11 +408,11 @@ export function ComparisonGrid({
     headerH = 42;
   const gridW = labelW + columns.length * cellW + 2;
   const gridH = headerH + rows.length * cellH + 2;
-  const bg = D ? "#161b27" : "#fff";
+  const bg = D ? "#13131f" : "#fff";
   const hdrBg = D ? accent + "33" : accent + "18";
   const textCol = D ? "#e8ecf4" : "#111827";
   const subCol = D ? "#8896b3" : "#6b7280";
-  const borderCol = D ? "#2a3347" : "#e2e8f0";
+  const borderCol = D ? "#262844" : "#e2e8f0";
   return (
     <svg
       viewBox={`0 0 ${gridW} ${gridH}`}
@@ -600,7 +600,7 @@ export function LabelledStructure({
             width: "100%",
             display: "block",
             borderRadius: 8,
-            border: `1px solid ${D ? "#2a3347" : "#e5e7eb"}`,
+            border: `1px solid ${D ? "#262844" : "#e5e7eb"}`,
           }}
         />
       ) : (
@@ -609,7 +609,7 @@ export function LabelledStructure({
             width: "100%",
             height: imgH,
             borderRadius: 8,
-            background: D ? "#1e2537" : "#f3f4f6",
+            background: D ? "#191a2b" : "#f3f4f6",
             border: `1.
 5px dashed ${D ? "#374151" : "#d1d5db"}`,
             display: "flex",
@@ -658,7 +658,7 @@ export function LabelledStructure({
                   padding: "2px 4px",
                   borderRadius: 4,
                   border: `1.5px solid ${labelAccent}`,
-                  background: D ? "#161b27" : "#fff",
+                  background: D ? "#13131f" : "#fff",
                   color: D ? "#e8ecf4" : "#111827",
                   outline: "none",
                 }}
@@ -707,7 +707,7 @@ export function TimelineDiagram({
 }) {
   const { props: attn, isActive, isPulsing } = useAttentionLayer();
   if (!events.length) return null;
-  const bg = D ? "#161b27" : "#fff";
+  const bg = D ? "#13131f" : "#fff";
   const textCol = D ? "#e8ecf4" : "#111827";
   const subCol = D ? "#8896b3" : "#6b7280";
   const lineY = 80,
@@ -964,7 +964,7 @@ export function ProgressiveDiagram({ steps = [], D }) {
             padding: "6px 12px",
             borderRadius: 8,
             border: "none",
-            background: "#6366f1",
+            background: "#7c3aed",
             color: "#fff",
           }}
         >
@@ -982,15 +982,15 @@ export function ConceptMap({ x, y, relation, D }) {
         cx="70"
         cy="60"
         r="32"
-        fill={D ? "#1e293b" : "#eef2ff"}
-        stroke="#6366f1"
+        fill={D ? "#1e293b" : "#f5f3ff"}
+        stroke="#7c3aed"
       />
       <circle
         cx="290"
         cy="60"
         r="32"
-        fill={D ? "#1e293b" : "#eef2ff"}
-        stroke="#6366f1"
+        fill={D ? "#1e293b" : "#f5f3ff"}
+        stroke="#7c3aed"
       />
       <text x="70" y="64" textAnchor="middle" fontSize="12">
         {x || "X"}
@@ -1003,7 +1003,7 @@ export function ConceptMap({ x, y, relation, D }) {
         y1="60"
         x2="256"
         y2="60"
-        stroke="#6366f1"
+        stroke="#7c3aed"
         markerEnd="url(#arr)"
       />
       <defs>
@@ -1015,7 +1015,7 @@ export function ConceptMap({ x, y, relation, D }) {
           refY="3"
           orient="auto"
         >
-          <polygon points="0 0, 8 3, 0 6" fill="#6366f1" />
+          <polygon points="0 0, 8 3, 0 6" fill="#7c3aed" />
         </marker>
       </defs>
       <text x="180" y="48" textAnchor="middle" fontSize="11">
@@ -1078,7 +1078,7 @@ export function ProcessCard({ card, D }) {
           padding: "6px 10px",
           borderRadius: 8,
           border: "none",
-          background: "#6366f1",
+          background: "#7c3aed",
           color: "#fff",
         }}
       >
@@ -1128,7 +1128,7 @@ export function SketchCanvas({ D }) {
       style={{
         border: "1px solid #94a3b8",
         borderRadius: 8,
-        background: D ? "#0f172a" : "#fff",
+        background: D ? "#0a0a14" : "#fff",
         width: "100%",
         maxWidth: 340,
       }}
@@ -1149,7 +1149,7 @@ export function GraphCard({ card, D }) {
       )}
       <p style={{ fontSize: 13, marginBottom: 8 }}>{card?.question || ""}</p>
       {card?.annotation && (
-        <div style={{ fontSize: 12, color: "#6366f1" }}>
+        <div style={{ fontSize: 12, color: "#7c3aed" }}>
           {" "}
           {card.annotation.label || "Key point"}
         </div>
@@ -1175,16 +1175,16 @@ export async function generateSVGDiagram(content, user) {
     }
     if (!svg || !String(svg).includes("<svg"))
       svg = `<svg xmlns="http://www.w3.org/2000/svg"
-width="360" height="140"><rect x="10" y="10" width="340" height="120" fill="#eef2ff"
-stroke="#6366f1"/><text x="24" y="75" font-size="14"
-fill="#1f2937">${(content || "Diagram").slice(0, 36)}</text></svg>`;
+width="360" height="140"><rect x="10" y="10" width="340" height="120" fill="#f5f3ff"
+stroke="#7c3aed"/><text x="24" y="75" font-size="14"
+fill="#1c1d30">${(content || "Diagram").slice(0, 36)}</text></svg>`;
     cache[hash] = svg;
     localStorage.setItem(key, JSON.stringify(cache));
     return svg;
   } catch (_) {
     return `<svg xmlns="http://www.w3.org/2000/svg" width="360" height="140"><rect
-x="10" y="10" width="340" height="120" fill="#eef2ff" stroke="#6366f1"/><text x="24" y="75"
-font-size="14" fill="#1f2937">Diagram</text></svg>`;
+x="10" y="10" width="340" height="120" fill="#f5f3ff" stroke="#7c3aed"/><text x="24" y="75"
+font-size="14" fill="#1c1d30">Diagram</text></svg>`;
   }
 }
 
@@ -1241,7 +1241,7 @@ export function KnowledgeGraph({
         Knowledge Graph
       </h3>
       <svg viewBox="0 0 560 360" style={{ width: "100%", maxWidth: 560 }}>
-        <circle cx="280" cy="180" r="26" fill="#6366f1" />
+        <circle cx="280" cy="180" r="26" fill="#7c3aed" />
         <text x="280" y="185" textAnchor="middle" fill="#fff" fontSize="11">
           Subject
         </text>
@@ -1280,7 +1280,7 @@ export function KnowledgeGraph({
                 cy={n.y}
                 r="18"
                 fill={col}
-                stroke={isFront ? "#3b82f6" : "#1f2937"}
+                stroke={isFront ? "#3b82f6" : "#1c1d30"}
                 strokeWidth={isFront ? 3 : 1.5}
               />
               <text
@@ -1499,7 +1499,7 @@ export function MasteryTreemap({ nodes = [], D, onSelect }) {
             right: 10,
             top: 10,
             fontSize: 11,
-            background: D ? "#0f172a" : "#fff",
+            background: D ? "#0a0a14" : "#fff",
             border: "1px solid #cbd5e1",
             padding: "5px 8px",
             borderRadius: 6,
@@ -1554,7 +1554,7 @@ export function LearningTimeline({
           const subj = subjects.find(
             (x) => x.name === s.subject || x.id === s.subjectId,
           );
-          const col = subj?.accent || "#6366f1";
+          const col = subj?.accent || "#7c3aed";
           return (
             <rect
               key={i}
@@ -1733,7 +1733,7 @@ export function SketchnoteCanvas({ D, user, subjectId }) {
                 cy={n.y}
                 r="24"
                 fill="#dbeafe"
-                stroke={sel === n.id ? "#6366f1" : "#1e3a8a"}
+                stroke={sel === n.id ? "#7c3aed" : "#1e3a8a"}
               />
             ) : n.type === "cloud" ? (
               <path

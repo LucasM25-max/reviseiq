@@ -12,7 +12,7 @@ export function ContactScreen({ D, user, isAdmin, onBack }) {
   var [readIds, setReadIds] = useState(new Set());
   var [replyText, setReplyText] = useState({});
   var [replyingSending, setRS] = useState({});
-  var bd = D ? "#1f2937" : "#e5e7eb";
+  var bd = D ? "#1c1d30" : "#e5e7eb";
   var SK_READ = "gcse:contact-read:" + (user || "").replace(/\W/g, "-");
   useEffect(function () {
     loadMsgs();
@@ -232,8 +232,8 @@ export function ContactScreen({ D, user, isAdmin, onBack }) {
                   style={{
                     padding: "7px 18px",
                     borderRadius: 8,
-                    border: "1.5px solid" + (tab === t ? "#6366f1" : bd),
-                    background: tab === t ? "#6366f1" : "none",
+                    border: "1.5px solid" + (tab === t ? "#7c3aed" : bd),
+                    background: tab === t ? "#7c3aed" : "none",
                     color: tab === t ? "#fff" : D ? "#d1d5db" : "#374151",
                     fontWeight: 600,
                     fontSize: 13,
@@ -262,7 +262,7 @@ export function ContactScreen({ D, user, isAdmin, onBack }) {
         {tab === "send" && (
           <div
             style={{
-              background: D ? "#1e2537" : "#fff",
+              background: D ? "#191a2b" : "#fff",
               border: "1px solid" + bd,
               borderRadius: 14,
               padding: 24,
@@ -292,7 +292,7 @@ export function ContactScreen({ D, user, isAdmin, onBack }) {
                     padding: "8px 20px",
                     borderRadius: 8,
                     border: "none",
-                    background: "#6366f1",
+                    background: "#7c3aed",
                     color: "#fff",
                     fontWeight: 600,
                     fontSize: 13,
@@ -332,7 +332,7 @@ export function ContactScreen({ D, user, isAdmin, onBack }) {
                       padding: "9px 12px",
                       borderRadius: 8,
                       border: "1px solid" + bd,
-                      background: D ? "#161b27" : "#f9fafb",
+                      background: D ? "#13131f" : "#f9fafb",
                       color: D ? "#e8ecf4" : "#111827",
                       fontSize: 13,
                     }}
@@ -364,7 +364,7 @@ export function ContactScreen({ D, user, isAdmin, onBack }) {
                       padding: "9px 12px",
                       borderRadius: 8,
                       border: "1px solid" + bd,
-                      background: D ? "#161b27" : "#f9fafb",
+                      background: D ? "#13131f" : "#f9fafb",
                       color: D ? "#e8ecf4" : "#111827",
                       fontSize: 13,
                       resize: "vertical",
@@ -378,7 +378,7 @@ export function ContactScreen({ D, user, isAdmin, onBack }) {
                     padding: "10px 24px",
                     borderRadius: 8,
                     border: "none",
-                    background: !msg.trim() ? "#9ca3af" : "#6366f1",
+                    background: !msg.trim() ? "#9ca3af" : "#7c3aed",
                     color: "#fff",
                     fontWeight: 700,
                     fontSize: 14,
@@ -403,7 +403,7 @@ export function ContactScreen({ D, user, isAdmin, onBack }) {
                 <div
                   key={m.id}
                   style={{
-                    background: D ? "#1e2537" : "#fff",
+                    background: D ? "#191a2b" : "#fff",
                     border: "1px solid" + bd,
                     borderRadius: 14,
                     padding: 20,
@@ -469,7 +469,7 @@ export function ContactScreen({ D, user, isAdmin, onBack }) {
                       <div
                         key={ri}
                         style={{
-                          borderLeft: "3px solid #6366f1",
+                          borderLeft: "3px solid #7c3aed",
                           paddingLeft: 12,
                           marginBottom: 8,
                           marginLeft: 8,
@@ -479,7 +479,7 @@ export function ContactScreen({ D, user, isAdmin, onBack }) {
                           style={{
                             fontSize: 11,
                             fontWeight: 700,
-                            color: "#6366f1",
+                            color: "#7c3aed",
                             marginBottom: 3,
                           }}
                         >
@@ -519,7 +519,7 @@ export function ContactScreen({ D, user, isAdmin, onBack }) {
                         padding: "7px 10px",
                         borderRadius: 8,
                         border: "1px solid" + bd,
-                        background: D ? "#161b27" : "#f9fafb",
+                        background: D ? "#13131f" : "#f9fafb",
                         color: D ? "#e8ecf4" : "#111827",
                         fontSize: 12,
                         resize: "none",
@@ -539,7 +539,7 @@ export function ContactScreen({ D, user, isAdmin, onBack }) {
                         padding: "016px",
                         borderRadius: 8,
                         border: "none",
-                        background: "#6366f1",
+                        background: "#7c3aed",
                         color: "#fff",
                         fontWeight: 600,
                         fontSize: 12,
@@ -584,7 +584,7 @@ export function ContactScreen({ D, user, isAdmin, onBack }) {
                 <div
                   key={m.id}
                   style={{
-                    background: D ? "#1e2537" : "#fff",
+                    background: D ? "#191a2b" : "#fff",
                     border: "1px solid" + bd,
                     borderRadius: 12,
                     padding: 18,

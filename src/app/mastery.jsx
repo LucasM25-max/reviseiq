@@ -250,7 +250,7 @@ export function checkNewAchievements(
 export function MasteryRings({ mastery, accent, size = 60, D }) {
   const { flashcardMastery: fm, questionAccuracy: qa, coverage: cov } = mastery;
   const rings = [
-    { pct: fm, color: "#6366f1", r: 26, label: "FC" },
+    { pct: fm, color: "#7c3aed", r: 26, label: "FC" },
     { pct: qa, color: "#10b981", r: 18, label: "Q" },
     { pct: cov, color: "#f59e0b", r: 10, label: "Cv" },
   ];
@@ -271,7 +271,7 @@ export function MasteryRings({ mastery, accent, size = 60, D }) {
               cy={30}
               r={r}
               fill="none"
-              stroke={D ? "#2a3347" : "#e5e7eb"}
+              stroke={D ? "#262844" : "#e5e7eb"}
               strokeWidth={4}
             />
             <circle
@@ -316,7 +316,7 @@ export function MasteryPanel({ D, mastery, subjectName }) {
     {
       label: "Flashcard Mastery",
       val: fm,
-      color: "#6366f1",
+      color: "#7c3aed",
       icon: "🗂️",
       desc: `Cards with stability >14
 days`,
@@ -414,7 +414,7 @@ activity`,
               style={{
                 height: 6,
                 borderRadius: 6,
-                background: D ? "#2a3347" : "#e5e7eb",
+                background: D ? "#262844" : "#e5e7eb",
                 overflow: "hidden",
               }}
             >
@@ -448,8 +448,8 @@ activity`,
       >
         <span
           style={{
-            background: "#6366f122",
-            color: "#6366f1",
+            background: "#7c3aed22",
+            color: "#7c3aed",
             padding: "2px 7px",
             borderRadius: 8,
           }}
@@ -496,7 +496,7 @@ export function ExamReadinessGauge({ D, readiness, subjectName, accent }) {
     score >= 80
       ? "#10b981"
       : score >= 60
-        ? "#6366f1"
+        ? "#7c3aed"
         : score >= 40
           ? "#f59e0b"
           : "#ef4444";
@@ -528,7 +528,7 @@ export function ExamReadinessGauge({ D, readiness, subjectName, accent }) {
               cy={50}
               r={r}
               fill="none"
-              stroke={D ? "#2a3347" : "#e5e7eb"}
+              stroke={D ? "#262844" : "#e5e7eb"}
               strokeWidth={8}
               strokeDasharray={`${arc} ${circ - arc}`}
               strokeDashoffset={-offset}
@@ -605,7 +605,7 @@ export function ExamReadinessGauge({ D, readiness, subjectName, accent }) {
                     flex: 1,
                     height: 4,
                     borderRadius: 4,
-                    background: D ? "#2a3347" : "#e5e7eb",
+                    background: D ? "#262844" : "#e5e7eb",
                     overflow: "hidden",
                   }}
                 >
@@ -654,7 +654,7 @@ export function AchievementToast({ achievement, D, onClose }) {
         left: "50%",
         transform: "translateX(-50%)",
         zIndex: 9999,
-        background: "linear-gradient(135deg,#6366f1,#8b5cf6)",
+        background: "linear-gradient(135deg,#7c3aed,#8b5cf6)",
         color: "#fff",
         borderRadius: 16,
         padding: "14px 20px",
@@ -734,7 +734,7 @@ export function TrophyGrid({ D, achievementIds }) {
               padding: 14,
               textAlign: "center",
               opacity: earned ? 1 : 0.35,
-              borderColor: earned ? "#6366f1" : undefined,
+              borderColor: earned ? "#7c3aed" : undefined,
               transition: "opacity .2s",
             }}
           >
@@ -757,7 +757,7 @@ export function TrophyGrid({ D, achievementIds }) {
                 style={{
                   marginTop: 6,
                   fontSize: 9,
-                  color: "#6366f1",
+                  color: "#7c3aed",
                   fontWeight: 700,
                 }}
               >

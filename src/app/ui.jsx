@@ -21,7 +21,7 @@ export const I = (D, x = {}) => ({
   padding: "12px 15px",
   fontSize: 14.5,
   outline: "none",
-  color: D ? "#eef1fb" : "#0f1729",
+  color: D ? "#eef1fb" : "#0a0a14",
   transition:
     "border-color .18s var(--riq-ease, ease), box-shadow .18s var(--riq-ease, ease), background .18s var(--riq-ease, ease)",
   boxSizing: "border-box",
@@ -46,7 +46,7 @@ export const B = (color, outline, extra = {}) => ({
 
 export const mu = (D) => (D ? "#98a2bd" : "#5b6478");
 
-export const tx = (D) => (D ? "#eef1fb" : "#0f1729");
+export const tx = (D) => (D ? "#eef1fb" : "#0a0a14");
 
 export const uid = () =>
   typeof crypto !== "undefined" && crypto.randomUUID
@@ -163,8 +163,8 @@ export function MobileBottomNav({ screen, onHome, onStudy, onProgress, onTutor, 
         left: 0,
         right: 0,
         zIndex: 60,
-        background: D ? "#161b27" : "#fff",
-        borderTop: `1px solid ${D ? "#2a3347" : "#e5e7eb"}`,
+        background: D ? "#13131f" : "#fff",
+        borderTop: `1px solid ${D ? "#262844" : "#e5e7eb"}`,
         display: "flex",
         paddingBottom: "env(safe-area-inset-bottom)",
         boxShadow: "0 -4px 20px rgba(0,0,0,.08)",
@@ -194,7 +194,7 @@ export function MobileBottomNav({ screen, onHome, onStudy, onProgress, onTutor, 
               style={{
                 fontSize: 10,
                 fontWeight: active ? 700 : 400,
-                color: active ? "#6366f1" : D ? "#8896b3" : "#9ca3af",
+                color: active ? "#7c3aed" : D ? "#8896b3" : "#9ca3af",
               }}
             >
               {item.label}
@@ -205,7 +205,7 @@ export function MobileBottomNav({ screen, onHome, onStudy, onProgress, onTutor, 
                   width: 4,
                   height: 4,
                   borderRadius: "50%",
-                  background: "#6366f1",
+                  background: "#7c3aed",
                   marginTop: 1,
                 }}
               />

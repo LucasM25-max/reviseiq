@@ -345,7 +345,7 @@ ${s.name}`,
                         style={{
                           fontSize: 11,
                           fontWeight: 600,
-                          color: "#6366f1",
+                          color: "#7c3aed",
                         }}
                       >
                         {f.diagram.type}
@@ -414,7 +414,7 @@ Keep labels short (2-4 words). Maximum 8 items. Use appropriate accent colour.`;
                       }
                     }}
                     style={{
-                      ...B("#6366f1", true, {
+                      ...B("#7c3aed", true, {
                         fontSize: 12,
                         padding: "7px 14px",
                       }),
@@ -447,7 +447,7 @@ Keep labels short (2-4 words). Maximum 8 items. Use appropriate accent colour.`;
                           height: 56,
                           objectFit: "cover",
                           borderRadius: 6,
-                          border: `1px solid ${D ? "#2a3347" : "#e5e7eb"}`,
+                          border: `1px solid ${D ? "#262844" : "#e5e7eb"}`,
                         }}
                       />
                       <button
@@ -566,7 +566,7 @@ Keep labels short (2-4 words). Maximum 8 items. Use appropriate accent colour.`;
                 >
                   <label
                     style={{
-                      ...B("#6366f1", true, {
+                      ...B("#7c3aed", true, {
                         fontSize: 12,
                         padding: "6px 12px",
                         cursor: "pointer",
@@ -629,7 +629,7 @@ name","sublabel":"optional"}]}}\nKeep labels under 4 words. Max 7 items.`;
                       }
                     }}
                     style={{
-                      ...B("#6366f1", true, {
+                      ...B("#7c3aed", true, {
                         fontSize: 12,
                         padding: "6px 12px",
                       }),
@@ -665,7 +665,7 @@ name","sublabel":"optional"}]}}\nKeep labels under 4 words. Max 7 items.`;
                         maxHeight: 160,
                         borderRadius: 8,
                         display: "block",
-                        border: `1px solid ${D ? "#2a3347" : "#e5e7eb"}`,
+                        border: `1px solid ${D ? "#262844" : "#e5e7eb"}`,
                       }}
                     />
                     <input
@@ -690,7 +690,7 @@ name","sublabel":"optional"}]}}\nKeep labels under 4 words. Max 7 items.`;
                         style={{
                           fontSize: 11,
                           fontWeight: 600,
-                          color: "#6366f1",
+                          color: "#7c3aed",
                         }}
                       >
                         {f.diagram.type}
@@ -769,7 +769,7 @@ name","sublabel":"optional"}]}}\nKeep labels under 4 words. Max 7 items.`;
                           checked={f.answer === i}
                           onChange={() => set("answer", i)}
                           style={{
-                            accentColor: "#6366f1",
+                            accentColor: "#7c3aed",
                             width: 14,
                             height: 14,
                           }}
@@ -892,7 +892,7 @@ name","sublabel":"optional"}]}}\nKeep labels under 4 words. Max 7 items.`;
                         height: 56,
                         objectFit: "cover",
                         borderRadius: 6,
-                        border: `1px solid ${D ? "#2a3347" : "#e5e7eb"}`,
+                        border: `1px solid ${D ? "#262844" : "#e5e7eb"}`,
                       }}
                     />
                     <button
@@ -983,7 +983,7 @@ solid ${D ? "#374151" : "#d1d5db"}`,
             onClick={save}
             disabled={!valid()}
             style={{
-              ...B("#6366f1", false, {
+              ...B("#7c3aed", false, {
                 flex: 2,
                 padding: "10px 0",
                 opacity: valid() ? 1 : 0.4,

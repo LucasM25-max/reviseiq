@@ -14,7 +14,7 @@ export function PastPapersTab({
   board,
   subjectName,
 }) {
-  const bd = D ? "#2a3347" : "#e5e7eb";
+  const bd = D ? "#262844" : "#e5e7eb";
   return (
     <div className="fade-in">
       {admin && (
@@ -26,18 +26,18 @@ export function PastPapersTab({
             padding: "10px 14px",
             borderRadius: 12,
             background: D ? "#1a1a2e" : "#f5f3ff",
-            border: "1.5px solid #6366f1",
+            border: "1.5px solid #7c3aed",
             marginBottom: 18,
           }}
         >
-          <span style={{ fontSize: 11, fontWeight: 700, color: "#6366f1" }}>
+          <span style={{ fontSize: 11, fontWeight: 700, color: "#7c3aed" }}>
             ADMIN
           </span>
 
           <button
             onClick={onAdd}
             style={{
-              ...B("#6366f1", true, { fontSize: 12, padding: "5px 12px" }),
+              ...B("#7c3aed", true, { fontSize: 12, padding: "5px 12px" }),
             }}
           >
             ＋ Add Past Paper
@@ -65,7 +65,7 @@ export function PastPapersTab({
               }}
             >
               <thead>
-                <tr style={{ background: D ? "#1e2537" : "#f9fafb" }}>
+                <tr style={{ background: D ? "#191a2b" : "#f9fafb" }}>
                   {[
                     "Year / Paper",
                     "PastPaper",
@@ -99,7 +99,7 @@ export function PastPapersTab({
                     style={{ borderBottom: `1px solid ${bd}` }}
                     onMouseEnter={(e) =>
                       (e.currentTarget.style.background = D
-                        ? "#1f2937"
+                        ? "#1c1d30"
                         : "#f9fafb")
                     }
                     onMouseLeave={(e) =>
@@ -227,7 +227,7 @@ export function SRInfoTooltip({ D }) {
           border: "none",
           cursor: "pointer",
           fontSize: 12,
-          color: "#6366f1",
+          color: "#7c3aed",
           padding: "0 2px",
           lineHeight: 1,
         }}
@@ -249,7 +249,7 @@ export function SRInfoTooltip({ D }) {
             left: "50%",
             transform: "translateX(-50%)",
             zIndex: 8001,
-            background: D ? "#1e2537" : "#fff",
+            background: D ? "#191a2b" : "#fff",
             border: `1px solid ${D ? "#374151" : "#e5e7eb"}`,
             borderRadius: 10,
             padding: "12px 14px",
@@ -260,7 +260,7 @@ export function SRInfoTooltip({ D }) {
             color: D ? "#e5e7eb" : "#374151",
           }}
         >
-          <div style={{ fontWeight: 700, marginBottom: 6, color: "#6366f1" }}>
+          <div style={{ fontWeight: 700, marginBottom: 6, color: "#7c3aed" }}>
             Spaced Repetition
           </div>
           <p style={{ margin: 0 }}>
@@ -320,8 +320,8 @@ export function ForecastBar({ cards, fcHist, D, accent }) {
         marginTop: 10,
         padding: "10px 14px",
         borderRadius: 10,
-        background: D ? "#161b27" : "#f9fafb",
-        border: `1px solid ${D ? "#2a3347" : "#e5e7eb"}`,
+        background: D ? "#13131f" : "#f9fafb",
+        border: `1px solid ${D ? "#262844" : "#e5e7eb"}`,
       }}
     >
       <div
@@ -359,7 +359,7 @@ export function ForecastBar({ cards, fcHist, D, accent }) {
               style={{
                 fontSize: 9,
                 color:
-                  count > 0 ? accent || "#6366f1" : D ? "#4b5563" : "#d1d5db",
+                  count > 0 ? accent || "#7c3aed" : D ? "#4b5563" : "#d1d5db",
                 fontWeight: count > 0 ? 700 : 400,
               }}
             >
@@ -370,7 +370,7 @@ export function ForecastBar({ cards, fcHist, D, accent }) {
                 width: "100%",
                 borderRadius: 3,
                 background:
-                  count > 0 ? accent || "#6366f1" : D ? "#2a3347" : "#e5e7eb",
+                  count > 0 ? accent || "#7c3aed" : D ? "#262844" : "#e5e7eb",
                 height: Math.max(4, Math.round((count / max) * 28)),
                 transition: "height .2s",
                 opacity: i === 0 ? 1 : 0.7,
@@ -419,7 +419,7 @@ export function SessionGoalModal({ D, onStart, onSkip }) {
     >
       <div
         style={{
-          background: D ? "#161b27" : "#fff",
+          background: D ? "#13131f" : "#fff",
           borderRadius: 20,
           width: "100%",
           maxWidth: 440,
@@ -473,7 +473,7 @@ export function SessionGoalModal({ D, onStart, onSkip }) {
                 padding: "10px 14px",
                 borderRadius: 10,
                 border: `1.5px solid ${bd2}`,
-                background: D ? "#1e2537" : "#f9fafb",
+                background: D ? "#191a2b" : "#f9fafb",
                 color: D ? "#e8ecf4" : "#111827",
                 fontSize: 13,
                 outline: "none",
@@ -504,8 +504,8 @@ export function SessionGoalModal({ D, onStart, onSkip }) {
                     flex: 1,
                     padding: "8px 4px",
                     borderRadius: 10,
-                    border: `2px solid ${confidence === v ? "#6366f1" : bd2}`,
-                    background: confidence === v ? "#6366f1" : "transparent",
+                    border: `2px solid ${confidence === v ? "#7c3aed" : bd2}`,
+                    background: confidence === v ? "#7c3aed" : "transparent",
                     color:
                       confidence === v ? "#fff" : D ? "#9ca3af" : "#6b7280",
                     cursor: "pointer",
@@ -521,7 +521,7 @@ export function SessionGoalModal({ D, onStart, onSkip }) {
             <div
               style={{
                 fontSize: 11,
-                color: "#6366f1",
+                color: "#7c3aed",
                 textAlign: "center",
                 marginTop: 4,
                 fontWeight: 600,
@@ -554,8 +554,8 @@ export function SessionGoalModal({ D, onStart, onSkip }) {
                     minWidth: 44,
                     padding: "8px 4px",
                     borderRadius: 9,
-                    border: `2px solid ${duration === t ? "#6366f1" : bd2}`,
-                    background: duration === t ? "#6366f1" : "transparent",
+                    border: `2px solid ${duration === t ? "#7c3aed" : bd2}`,
+                    background: duration === t ? "#7c3aed" : "transparent",
                     color: duration === t ? "#fff" : D ? "#9ca3af" : "#6b7280",
                     cursor: "pointer",
                     fontSize: 12,
@@ -599,7 +599,7 @@ export function SessionGoalModal({ D, onStart, onSkip }) {
               padding: "11px 0",
               borderRadius: 12,
               border: "none",
-              background: "#6366f1",
+              background: "#7c3aed",
               color: "#fff",
               fontWeight: 700,
               fontSize: 14,
@@ -638,7 +638,7 @@ export function PostSessionReflection({ D, sessionGoal, subjectId, onSave, onSki
         ...C(D),
         marginTop: 16,
         overflow: "hidden",
-        border: "1.5px solid #6366f1",
+        border: "1.5px solid #7c3aed",
       }}
       className="slide-up"
     >
@@ -650,7 +650,7 @@ export function PostSessionReflection({ D, sessionGoal, subjectId, onSave, onSki
           alignItems: "center",
           gap: 10,
           padding: "12px 16px",
-          background: D ? "rgba(99,102,241,.1)" : "#eef2ff",
+          background: D ? "rgba(99,102,241,.1)" : "#f5f3ff",
           border: "none",
           cursor: "pointer",
           textAlign: "left",
@@ -658,14 +658,14 @@ export function PostSessionReflection({ D, sessionGoal, subjectId, onSave, onSki
       >
         <span style={{ fontSize: 18 }}> </span>
         <span
-          style={{ flex: 1, fontSize: 13, fontWeight: 700, color: "#6366f1" }}
+          style={{ flex: 1, fontSize: 13, fontWeight: 700, color: "#7c3aed" }}
         >
           Session Reflection
           <span
             style={{
               fontSize: 11,
               fontWeight: 400,
-              color: D ? "#a5b4fc" : "#4338ca",
+              color: D ? "#c4b5fd" : "#5b21b6",
             }}
           >
             (optional — 2 mins)
@@ -673,7 +673,7 @@ export function PostSessionReflection({ D, sessionGoal, subjectId, onSave, onSki
         </span>
 
         <span
-          style={{ fontSize: 11, color: "#6366f1", fontWeight: 700 }}
+          style={{ fontSize: 11, color: "#7c3aed", fontWeight: 700 }}
         ></span>
       </button>
       <div
@@ -689,7 +689,7 @@ export function PostSessionReflection({ D, sessionGoal, subjectId, onSave, onSki
             style={{
               padding: "8px 12px",
               borderRadius: 8,
-              background: D ? "#1e2537" : "#f9fafb",
+              background: D ? "#191a2b" : "#f9fafb",
               fontSize: 12,
               color: D ? "#9ca3af" : "#6b7280",
             }}
@@ -742,7 +742,7 @@ export function PostSessionReflection({ D, sessionGoal, subjectId, onSave, onSki
                 padding: "8px 12px",
                 borderRadius: 8,
                 border: `1px solid ${bd2}`,
-                background: D ? "#1e2537" : "#f9fafb",
+                background: D ? "#191a2b" : "#f9fafb",
                 color: D ? "#e8ecf4" : "#111827",
                 fontSize: 12,
                 resize: "none",
@@ -776,7 +776,7 @@ solid ${bd2}`,
               padding: "9px 0",
               borderRadius: 10,
               border: "none",
-              background: "#6366f1",
+              background: "#7c3aed",
               color: "#fff",
               fontWeight: 700,
               fontSize: 13,
@@ -822,7 +822,7 @@ export function StudyJournalTab({ D, entries, mu2, tx2 }) {
                 width: 10,
                 height: 10,
                 borderRadius: "50%",
-                background: "#6366f1",
+                background: "#7c3aed",
                 flexShrink: 0,
                 marginTop: 4,
               }}
@@ -832,7 +832,7 @@ export function StudyJournalTab({ D, entries, mu2, tx2 }) {
                 style={{
                   width: 2,
                   flex: 1,
-                  background: D ? "#2a3347" : "#e5e7eb",
+                  background: D ? "#262844" : "#e5e7eb",
                   marginTop: 4,
                 }}
               />
@@ -853,7 +853,7 @@ export function StudyJournalTab({ D, entries, mu2, tx2 }) {
               <div
                 style={{
                   fontSize: 12,
-                  color: "#6366f1",
+                  color: "#7c3aed",
                   fontWeight: 600,
                   marginBottom: 6,
                 }}
@@ -893,9 +893,9 @@ export function StudyJournalTab({ D, entries, mu2, tx2 }) {
                   style={{
                     padding: "8px 12px",
                     borderRadius: 8,
-                    background: D ? "rgba(99,102,241,.08)" : "#eef2ff",
+                    background: D ? "rgba(99,102,241,.08)" : "#f5f3ff",
                     fontSize: 12,
-                    color: D ? "#a5b4fc" : "#4338ca",
+                    color: D ? "#c4b5fd" : "#5b21b6",
                   }}
                 >
                   <strong>Next time:</strong> {entry.reflections.improve}
@@ -908,7 +908,7 @@ export function StudyJournalTab({ D, entries, mu2, tx2 }) {
                     padding: "10px 14px",
                     borderRadius: 10,
                     background: D ? "rgba(99,102,241,.06)" : "#f8f7ff",
-                    border: "1px solid" + (D ? "#4f46e522" : "#c7d2fe"),
+                    border: "1px solid" + (D ? "#6d28d922" : "#ddd6fe"),
                     marginTop: 2,
                   }}
                 >
@@ -916,7 +916,7 @@ export function StudyJournalTab({ D, entries, mu2, tx2 }) {
                     style={{
                       fontSize: 10,
                       fontWeight: 700,
-                      color: "#6366f1",
+                      color: "#7c3aed",
                       textTransform: "uppercase",
                       letterSpacing: "0.07em",
                       marginBottom: 6,
@@ -928,7 +928,7 @@ export function StudyJournalTab({ D, entries, mu2, tx2 }) {
                     <p
                       style={{
                         fontSize: 12,
-                        color: D ? "#c7d2fe" : "#3730a3",
+                        color: D ? "#ddd6fe" : "#4c1d95",
                         marginBottom: 4,
                         lineHeight: 1.55,
                       }}
@@ -953,7 +953,7 @@ export function StudyJournalTab({ D, entries, mu2, tx2 }) {
                       style={{
                         fontSize: 11,
                         fontStyle: "italic",
-                        color: D ? "#a5b4fc" : "#4338ca",
+                        color: D ? "#c4b5fd" : "#5b21b6",
                       }}
                     >
                       {entry.coaching.encouragement}
@@ -1025,7 +1025,7 @@ export function CalibrationGauge({ D, calibData, subjectName }) {
             <path
               d={`M 12 56 A ${r} ${r} 0 0 1 100 56`}
               fill="none"
-              stroke={D ? "#2a3347" : "#e5e7eb"}
+              stroke={D ? "#262844" : "#e5e7eb"}
               strokeWidth={10}
               strokeLinecap="round"
             />
@@ -1191,8 +1191,8 @@ export function MemoryDecayChart({ D, cardState, accent }) {
         marginBottom: 8,
         padding: "10px 14px",
         borderRadius: 10,
-        background: D ? "#161b27" : "#f9fafb",
-        border: `1px solid ${D ? "#2a3347" : "#e5e7eb"}`,
+        background: D ? "#13131f" : "#f9fafb",
+        border: `1px solid ${D ? "#262844" : "#e5e7eb"}`,
       }}
     >
       <div
@@ -1241,7 +1241,7 @@ export function MemoryDecayChart({ D, cardState, accent }) {
           />
           <Tooltip
             contentStyle={{
-              background: D ? "#1e2537" : "#fff",
+              background: D ? "#191a2b" : "#fff",
               border: `1px solid ${D ? "#374151" : "#e5e7eb"}`,
               borderRadius: 6,
               fontSize: 10,

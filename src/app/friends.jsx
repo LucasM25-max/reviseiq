@@ -10,7 +10,7 @@ export function FriendsPanel({ user, D }) {
   const [busy, setBusy] = useState(false);
   const FRKEY = (u) => `gcse:fr:${u.replace(/\W/g, "-")}`;
   const FQKEY = (u) => `gcse:frq:${u.replace(/\W/g, "-")}`;
-  const bd2 = D ? "#2a3347" : "#e5e7eb";
+  const bd2 = D ? "#262844" : "#e5e7eb";
   const loadFD = async () => {
     let base = { friends: [], incoming: [], sent: [] };
     try {
@@ -232,8 +232,8 @@ Requests${
               fontSize: 11,
               padding: "4px 10px",
               borderRadius: 20,
-              border: `1.5px solid ${t === tab ? "#6366f1" : bd2}`,
-              background: t === tab ? "#6366f1" : "transparent",
+              border: `1.5px solid ${t === tab ? "#7c3aed" : bd2}`,
+              background: t === tab ? "#7c3aed" : "transparent",
               color: t === tab ? "#fff" : mu(D),
               cursor: "pointer",
               fontWeight: t === tab ? 600 : 400,
@@ -283,12 +283,12 @@ Requests${
                     background: isMe
                       ? D
                         ? "rgba(99,102,241,.2)"
-                        : "#eef2ff"
+                        : "#f5f3ff"
                       : D
-                        ? "#1f2937"
+                        ? "#1c1d30"
                         : "#f9fafb",
                     border: isMe
-                      ? "1.5px solid #6366f1"
+                      ? "1.5px solid #7c3aed"
                       : "1.5px solid transparent",
                   }}
                 >
@@ -306,7 +306,7 @@ Requests${
                       flex: 1,
                       fontSize: 12,
                       fontWeight: isMe ? 700 : 400,
-                      color: isMe ? "#6366f1" : tx(D),
+                      color: isMe ? "#7c3aed" : tx(D),
                     }}
                   >
                     {name}
@@ -362,7 +362,7 @@ Requests${
               onClick={sendReq}
               disabled={busy || !search.trim()}
               style={{
-                ...B("#6366f1", false, {
+                ...B("#7c3aed", false, {
                   padding: "8px 14px",
                   fontSize: 12,
                   opacity: busy || !search.trim() ? 0.4 : 1,
@@ -414,7 +414,7 @@ Requests${
                       width: 28,
                       height: 28,
                       borderRadius: "50%",
-                      background: "linear-gradient(135deg,#6366f1,#8b5cf6)",
+                      background: "linear-gradient(135deg,#7c3aed,#8b5cf6)",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -480,7 +480,7 @@ Requests${
                 gap: 8,
                 padding: "8px 10px",
                 borderRadius: 8,
-                background: D ? "#1e2537" : "#f9fafb",
+                background: D ? "#191a2b" : "#f9fafb",
                 marginBottom: 6,
               }}
             >

@@ -33,7 +33,7 @@ export function TodayWidget({
         emoji: "💡",
         text: item.label,
         sub: item.subtitle,
-        color: subj ? subj.accent : "#6366f1",
+        color: subj ? subj.accent : "#7c3aed",
         action: function () {
           if (sec) onNavigateSection(sec, "flashcards");
         },
@@ -78,7 +78,7 @@ export function TodayWidget({
       emoji: "📝",
       text: "Take a mock exam",
       sub: "Simulate real examconditions",
-      color: "#6366f1",
+      color: "#7c3aed",
       action: onMock,
     };
   });
@@ -117,8 +117,8 @@ export function TodayWidget({
                 gap: 12,
                 padding: "12px 16px",
                 borderRadius: 12,
-                background: D ? "#161b27" : "#fff",
-                border: "1.5px solid " + (D ? "#2a3347" : "#e5e7eb"),
+                background: D ? "#13131f" : "#fff",
+                border: "1.5px solid " + (D ? "#262844" : "#e5e7eb"),
                 cursor: "pointer",
                 textAlign: "left",
                 width: "100%",
@@ -129,7 +129,7 @@ export function TodayWidget({
                 e.currentTarget.style.transform = "translateY(-1px)";
               }}
               onMouseLeave={function (e) {
-                e.currentTarget.style.borderColor = D ? "#2a3347" : "#e5e7eb";
+                e.currentTarget.style.borderColor = D ? "#262844" : "#e5e7eb";
                 e.currentTarget.style.transform = "";
               }}
             >
@@ -209,7 +209,7 @@ export function PracticeSessionScreen({
   const pct = blocks.length
     ? Math.round((completeCount / blocks.length) * 100)
     : 0;
-  const bd2 = D ? "#2a3347" : "#e5e7eb";
+  const bd2 = D ? "#262844" : "#e5e7eb";
   function toggleDone(id) {
     setDone((prev) => {
       const next = { ...prev, [id]: !prev[id] };
@@ -222,7 +222,7 @@ export function PracticeSessionScreen({
     <div
       style={{
         minHeight: "100vh",
-        background: D ? "#0f1117" : "#f9fafb",
+        background: D ? "radial-gradient(1200px 820px at 12% -12%, rgba(124,58,237,.20), transparent 60%), radial-gradient(1000px 720px at 102% 4%, rgba(217,70,239,.14), transparent 55%), radial-gradient(900px 700px at 50% 120%, rgba(59,130,246,.10), transparent 55%), #0a0a14" : "radial-gradient(1100px 780px at 10% -10%, rgba(124,58,237,.10), transparent 60%), radial-gradient(940px 660px at 104% 2%, rgba(217,70,239,.08), transparent 55%), radial-gradient(820px 640px at 50% 116%, rgba(59,130,246,.06), transparent 55%), #f6f6fc",
         color: tx(D),
       }}
       className="fade-in"
@@ -252,7 +252,7 @@ export function PracticeSessionScreen({
           style={{
             height: 8,
             borderRadius: 999,
-            background: D ? "#1e2537" : "#e5e7eb",
+            background: D ? "#191a2b" : "#e5e7eb",
             overflow: "hidden",
             marginBottom: 16,
           }}
@@ -261,7 +261,7 @@ export function PracticeSessionScreen({
             style={{
               height: "100%",
               width: pct + "%",
-              background: "#6366f1",
+              background: "#7c3aed",
               transition: "width .25sease",
             }}
           />
@@ -306,7 +306,7 @@ export function PracticeSessionScreen({
                   <button
                     onClick={() => onOpenBlock && onOpenBlock(b)}
                     style={{
-                      ...B("#6366f1", false, {
+                      ...B("#7c3aed", false, {
                         fontSize: 12,
                         padding: "7px 12px",
                       }),

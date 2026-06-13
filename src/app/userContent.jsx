@@ -5,7 +5,7 @@ import { B, C, I, mu, showToast, tx } from "./ui.jsx";
 
 export function UCNewSectionModal({ D, onClose, onSave }) {
   var [name, setName] = React.useState("");
-  var bd2 = D ? "#2a3347" : "#e5e7eb";
+  var bd2 = D ? "#262844" : "#e5e7eb";
   return (
     <div
       style={{
@@ -79,7 +79,7 @@ export function UCNewSectionModal({ D, onClose, onSave }) {
             disabled={!name.trim()}
             style={{
               flex: 1,
-              ...B("#6366f1", false, {
+              ...B("#7c3aed", false, {
                 padding: "10px 0",
                 fontSize: 13,
                 fontWeight: 700,
@@ -142,7 +142,7 @@ export function UCSectionModal({
   var [aiLoading, setAiLoading] = React.useState(false);
   var [aiErr, setAiErr] = React.useState("");
   var [imgLoading, setImgLoading] = React.useState(false);
-  var bd2 = D ? "#2a3347" : "#e5e7eb";
+  var bd2 = D ? "#262844" : "#e5e7eb";
   var subj =
     subjects.find(function (s) {
       return s.id === subjId;
@@ -532,7 +532,7 @@ export function UCSectionModal({
               width: 38,
               height: 38,
               borderRadius: 10,
-              background: "#6366f1" + "22",
+              background: "#7c3aed" + "22",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -545,7 +545,7 @@ export function UCSectionModal({
             <div style={{ fontWeight: 700, fontSize: 16, color: tx(D) }}>
               {sec.title}
             </div>
-            <div style={{ fontSize: 11, color: "#6366f1", fontWeight: 600 }}>
+            <div style={{ fontSize: 11, color: "#7c3aed", fontWeight: 600 }}>
               {subj.name} · My Notes (Private)
             </div>
           </div>
@@ -580,13 +580,13 @@ export function UCSectionModal({
             style={{
               padding: "6px 12px",
               borderRadius: 8,
-              border: "1px solid #6366f1",
+              border: "1px solid #7c3aed",
               background: showAI
                 ? D
                   ? "rgba(99,102,241,.2)"
-                  : "#eef2ff"
+                  : "#f5f3ff"
                 : "transparent",
-              color: "#6366f1",
+              color: "#7c3aed",
               fontSize: 12,
               fontWeight: 600,
               cursor: "pointer",
@@ -642,14 +642,14 @@ export function UCSectionModal({
                       padding: "6px 14px",
                       borderRadius: 7,
                       border:
-                        "1.5px solid" + (aiMode === p[0] ? "#6366f1" : bd2),
+                        "1.5px solid" + (aiMode === p[0] ? "#7c3aed" : bd2),
                       background:
                         aiMode === p[0]
                           ? D
                             ? "rgba(99,102,241,.15)"
-                            : "#eef2ff"
+                            : "#f5f3ff"
                           : "transparent",
-                      color: aiMode === p[0] ? "#6366f1" : mu(D),
+                      color: aiMode === p[0] ? "#7c3aed" : mu(D),
                       fontSize: 12,
                       fontWeight: aiMode === p[0] ? 600 : 400,
                       cursor: "pointer",
@@ -681,7 +681,7 @@ export function UCSectionModal({
                 onClick={generateFromText}
                 disabled={!aiText.trim() || aiLoading}
                 style={{
-                  ...B("#6366f1", false, {
+                  ...B("#7c3aed", false, {
                     padding: "9px 20px",
                     fontSize: 13,
                     fontWeight: 700,
@@ -737,13 +737,13 @@ export function UCSectionModal({
                   padding: "11px 14px",
                   fontSize: 12,
                   fontWeight: tab === pair[0] ? 600 : 400,
-                  color: tab === pair[0] ? "#6366f1" : mu(D),
+                  color: tab === pair[0] ? "#7c3aed" : mu(D),
                   background: "none",
                   border: "none",
                   cursor: "pointer",
                   borderBottom:
                     tab === pair[0]
-                      ? "2px solid #6366f1"
+                      ? "2px solid #7c3aed"
                       : "2px solid transparent",
                   marginBottom: -1,
                   whiteSpace: "nowrap",
@@ -801,7 +801,7 @@ export function UCSectionModal({
                         <span
                           style={{
                             fontSize: 9,
-                            background: "#6366f1",
+                            background: "#7c3aed",
                             color: "#fff",
                             padding: "2px 6px",
                             borderRadius: 4,
@@ -900,7 +900,7 @@ export function UCSectionModal({
                       alignItems: "center",
                       justifyContent: "center",
                       marginBottom: 12,
-                      borderColor: "#6366f1",
+                      borderColor: "#7c3aed",
                       borderWidth: 1.5,
                     }}
                   >
@@ -1051,7 +1051,7 @@ export function UCSectionModal({
                       <span
                         style={{
                           fontSize: 9,
-                          background: "#6366f1",
+                          background: "#7c3aed",
                           color: "#fff",
                           padding: "2px 6px",
                           borderRadius: 4,
@@ -1208,7 +1208,7 @@ export function UCSectionModal({
                   onClick={saveNote}
                   disabled={!noteHead.trim()}
                   style={{
-                    ...B("#6366f1", false, {
+                    ...B("#7c3aed", false, {
                       padding: "9px 20px",
                       fontSize: 13,
                       fontWeight: 600,
@@ -1277,7 +1277,7 @@ export function UCSectionModal({
                   onClick={saveFC}
                   disabled={!fcFront.trim() || !fcBack.trim()}
                   style={{
-                    ...B("#6366f1", false, {
+                    ...B("#7c3aed", false, {
                       padding: "9px 20px",
                       fontSize: 13,
                       fontWeight: 600,
@@ -1328,14 +1328,14 @@ export function UCSectionModal({
                           padding: "6px 14px",
                           borderRadius: 7,
                           border:
-                            "1.5px solid" + (qType === p[0] ? "#6366f1" : bd2),
+                            "1.5px solid" + (qType === p[0] ? "#7c3aed" : bd2),
                           background:
                             qType === p[0]
                               ? D
                                 ? "rgba(99,102,241,.15)"
-                                : "#eef2ff"
+                                : "#f5f3ff"
                               : "transparent",
-                          color: qType === p[0] ? "#6366f1" : mu(D),
+                          color: qType === p[0] ? "#7c3aed" : mu(D),
                           fontSize: 12,
                           fontWeight: qType === p[0] ? 600 : 400,
                           cursor: "pointer",
@@ -1424,7 +1424,7 @@ export function UCSectionModal({
                   onClick={saveQ}
                   disabled={!qText.trim()}
                   style={{
-                    ...B("#6366f1", false, {
+                    ...B("#7c3aed", false, {
                       padding: "9px 20px",
                       fontSize: 13,
                       fontWeight: 600,
@@ -1454,7 +1454,7 @@ export function UserContentScreen({
 }) {
   var [selSubj, setSelSubj] = React.useState(subjects[0]?.id || "");
   var [modal, setModal] = React.useState(null);
-  var bd2 = D ? "#2a3347" : "#e5e7eb";
+  var bd2 = D ? "#262844" : "#e5e7eb";
   var subj =
     subjects.find(function (s) {
       return s.id === selSubj;
@@ -1529,7 +1529,7 @@ export function UserContentScreen({
             setModal({ mode: "new" });
           }}
           style={{
-            ...B("#6366f1", false, {
+            ...B("#7c3aed", false, {
               padding: "7px 16px",
               fontSize: 12,
               fontWeight: 600,
@@ -1562,7 +1562,7 @@ export function UserContentScreen({
             <div
               key={sec.id}
               style={{
-                border: "1.5px solid #6366f1",
+                border: "1.5px solid #7c3aed",
                 borderRadius: 12,
                 overflow: "hidden",
                 background: D ? "rgba(99,102,241,.04)" : "#fafaff",
@@ -1602,7 +1602,7 @@ export function UserContentScreen({
               <div
                 style={{
                   display: "flex",
-                  borderTop: "1px solid " + (D ? "#374151" : "#e0e7ff"),
+                  borderTop: "1px solid " + (D ? "#374151" : "#ede9fe"),
                 }}
               >
                 <button
@@ -1616,7 +1616,7 @@ export function UserContentScreen({
                     background: "none",
                     border: "none",
                     cursor: "pointer",
-                    color: "#6366f1",
+                    color: "#7c3aed",
                     fontWeight: 600,
                   }}
                 >
@@ -1636,7 +1636,7 @@ export function UserContentScreen({
                     cursor: "pointer",
                     color: "#ef4444",
                     fontWeight: 600,
-                    borderLeft: "1px solid " + (D ? "#374151" : "#e0e7ff"),
+                    borderLeft: "1px solid " + (D ? "#374151" : "#ede9fe"),
                   }}
                 >
                   {" "}

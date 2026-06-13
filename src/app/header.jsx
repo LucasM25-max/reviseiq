@@ -61,7 +61,7 @@ export function Header({
       data-riq-hdr="1"
       style={{
         background: D ? "#0d1117" : "#fff",
-        borderBottom: "1px solid" + (D ? "#2a3347" : "#e5e7eb"),
+        borderBottom: "1px solid" + (D ? "#262844" : "#e5e7eb"),
         position: "sticky",
         top: 0,
         zIndex: 50,
@@ -112,7 +112,7 @@ export function Header({
         <button
           onClick={onSearch}
           style={{
-            background: D ? "#1e2537" : "#f3f4f6",
+            background: D ? "#191a2b" : "#f3f4f6",
             border: "1px solid" + (D ? "#374151" : "#e5e7eb"),
             borderRadius: 8,
             padding: "5px 10px",
@@ -182,7 +182,7 @@ export function Header({
             gap: 6,
             padding: "4px 10px",
             borderRadius: 20,
-            background: D ? "#1e2537" : "#f3f4f6",
+            background: D ? "#191a2b" : "#f3f4f6",
             border: "1px solid" + (D ? "#374151" : "#e5e7eb"),
             flexShrink: 0,
           }}
@@ -205,7 +205,7 @@ export function Header({
               style={{
                 fontSize: 9,
                 fontWeight: 700,
-                background: "#6366f1",
+                background: "#7c3aed",
                 color: "#fff",
                 padding: "1px 6px",
                 borderRadius: 10,
@@ -243,7 +243,7 @@ export function Header({
             top: 54,
             right: 0,
             minWidth: 220,
-            background: D ? "#161b27" : "#fff",
+            background: D ? "#13131f" : "#fff",
             border: "1px solid " + (D ? "#374151" : "#e5e7eb"),
             borderTop: "none",
             borderRadius: "0 0 14px 14px",
@@ -271,12 +271,12 @@ export function Header({
                   background: active
                     ? D
                       ? "rgba(99,102,241,.18)"
-                      : "#eef2ff"
+                      : "#f5f3ff"
                     : "transparent",
                   border: "none",
                   borderRadius: 8,
                   cursor: "pointer",
-                  color: active ? "#6366f1" : tx(D),
+                  color: active ? "#7c3aed" : tx(D),
                   fontWeight: active ? 700 : 400,
                   fontSize: 13,
                   textAlign: "left",
@@ -327,7 +327,7 @@ export function AccountScreen({
   var [groupData, setGroupData] = React.useState(loadGroup("default"));
   var isAdmin = user && user.toLowerCase().indexOf("admin") !== -1;
   var isEmail = user && user.indexOf("@") !== -1;
-  var bd2 = D ? "#2a3347" : "#e5e7eb";
+  var bd2 = D ? "#262844" : "#e5e7eb";
   var handleSave = function () {
     if (pwIn && (pwIn.length < 4 || pwIn.length > 30)) {
       setPwErr("Password must be 4-30characters.");
@@ -364,7 +364,7 @@ export function AccountScreen({
     <div
       style={{
         minHeight: "100vh",
-        background: D ? "#0f1117" : "#f0f4ff",
+        background: D ? "radial-gradient(1200px 820px at 12% -12%, rgba(124,58,237,.20), transparent 60%), radial-gradient(1000px 720px at 102% 4%, rgba(217,70,239,.14), transparent 55%), radial-gradient(900px 700px at 50% 120%, rgba(59,130,246,.10), transparent 55%), #0a0a14" : "radial-gradient(1100px 780px at 10% -10%, rgba(124,58,237,.10), transparent 60%), radial-gradient(940px 660px at 104% 2%, rgba(217,70,239,.08), transparent 55%), radial-gradient(820px 640px at 50% 116%, rgba(59,130,246,.06), transparent 55%), #f6f6fc",
         padding: 24,
         overflowY: "auto",
       }}
@@ -413,7 +413,7 @@ export function AccountScreen({
                 width: 44,
                 height: 44,
                 borderRadius: "50%",
-                background: "linear-gradient(135deg,#6366f1,#8b5cf6)",
+                background: "linear-gradient(135deg,#7c3aed,#8b5cf6)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -536,7 +536,7 @@ export function AccountScreen({
             onClick={handleSave}
             style={{
               width: "100%",
-              background: saved ? "#16a34a" : "#6366f1",
+              background: saved ? "#16a34a" : "#7c3aed",
               color: "#fff",
               border: "none",
               borderRadius: 12,
@@ -585,9 +585,9 @@ export function AccountScreen({
               style={{
                 padding: "8px 18px",
                 borderRadius: 10,
-                border: "1.5px solid #6366f1",
+                border: "1.5px solid #7c3aed",
                 background: "transparent",
-                color: "#6366f1",
+                color: "#7c3aed",
                 fontWeight: 600,
                 fontSize: 13,
                 cursor: "pointer",
@@ -608,7 +608,7 @@ export function AccountScreen({
                     gap: 10,
                     padding: "8px 12px",
                     borderRadius: 9,
-                    background: D ? "#1e2537" : "#f9fafb",
+                    background: D ? "#191a2b" : "#f9fafb",
                     border: "1px solid " + bd2,
                   }}
                 >
@@ -746,9 +746,9 @@ export function AccountScreen({
             style={{
               padding: "7px 12px",
               borderRadius: 9,
-              border: "1px solid #6366f1",
+              border: "1px solid #7c3aed",
               background: "transparent",
-              color: "#6366f1",
+              color: "#7c3aed",
               fontSize: 12,
               cursor: "pointer",
             }}
@@ -769,7 +769,7 @@ export function AccountScreen({
                     justifyContent: "space-between",
                     padding: "6px 8px",
                     borderRadius: 8,
-                    background: D ? "#1e2537" : "#f9fafb",
+                    background: D ? "#191a2b" : "#f9fafb",
                     border: "1px solid " + bd2,
                   }}
                 >
@@ -831,8 +831,8 @@ export function AdminBar({ D, actions }) {
         gap: 8,
         padding: "8px 12px",
         borderRadius: 10,
-        background: D ? "rgba(99,102,241,.12)" : "#eef2ff",
-        border: "1.5px solid #6366f1",
+        background: D ? "rgba(99,102,241,.12)" : "#f5f3ff",
+        border: "1.5px solid #7c3aed",
         marginBottom: 16,
         alignItems: "center",
         flexWrap: "wrap",
@@ -842,7 +842,7 @@ export function AdminBar({ D, actions }) {
         style={{
           fontSize: 10,
           fontWeight: 800,
-          color: "#6366f1",
+          color: "#7c3aed",
           letterSpacing: "0.08em",
           textTransform: "uppercase",
           marginRight: 4,
@@ -859,8 +859,8 @@ export function AdminBar({ D, actions }) {
               fontSize: 12,
               padding: "5px 14px",
               borderRadius: 7,
-              border: "1.5px solid #6366f1",
-              background: "#6366f1",
+              border: "1.5px solid #7c3aed",
+              background: "#7c3aed",
               color: "#fff",
               cursor: "pointer",
               fontWeight: 600,

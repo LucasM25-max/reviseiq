@@ -65,7 +65,7 @@ ${n.heading}\n${stripHtml(n.body)}`,
     <div
       style={{
         minHeight: "100vh",
-        background: D ? "#0f1117" : "#f9fafb",
+        background: D ? "radial-gradient(1200px 820px at 12% -12%, rgba(124,58,237,.20), transparent 60%), radial-gradient(1000px 720px at 102% 4%, rgba(217,70,239,.14), transparent 55%), radial-gradient(900px 700px at 50% 120%, rgba(59,130,246,.10), transparent 55%), #0a0a14" : "radial-gradient(1100px 780px at 10% -10%, rgba(124,58,237,.10), transparent 60%), radial-gradient(940px 660px at 104% 2%, rgba(217,70,239,.08), transparent 55%), radial-gradient(820px 640px at 50% 116%, rgba(59,130,246,.06), transparent 55%), #f6f6fc",
         color: tx(D),
       }}
       className="fade-in"
@@ -98,10 +98,10 @@ ${n.heading}\n${stripHtml(n.body)}`,
             padding: "12px 16px",
             borderRadius: 12,
             background: D ? "rgba(99,102,241,0.08)" : "#f0f9ff",
-            border: "1px solid #6366f1",
+            border: "1px solid #7c3aed",
             marginBottom: 20,
             fontSize: 12,
-            color: D ? "#c7d2fe" : "#1e40af",
+            color: D ? "#ddd6fe" : "#1e40af",
             lineHeight: 1.65,
           }}
         >
@@ -162,7 +162,7 @@ ${n.heading}\n${stripHtml(n.body)}`,
                 style={{
                   padding: "9px 13px",
                   borderRadius: 9,
-                  background: D ? "#1e2537" : "#fffbeb",
+                  background: D ? "#191a2b" : "#fffbeb",
                   border: `1px solid ${D ? "#374151" : "#fde68a"}`,
                   fontSize: 12,
                   color: D ? "#fcd34d" : "#92400e",
@@ -228,7 +228,7 @@ ${n.heading}\n${stripHtml(n.body)}`,
               onClick={submit}
               disabled={!canSubmit || busy}
               style={{
-                ...B("#6366f1", false, {
+                ...B("#7c3aed", false, {
                   padding: "12px 0",
                   fontSize: 14,
                   fontWeight: 700,
@@ -364,7 +364,7 @@ ${n.heading}\n${stripHtml(n.body)}`,
                         fontSize: 12,
                         lineHeight: 1.6,
                         padding: "3px 0",
-                        borderBottom: `1px solid ${D ? "#1e2537" : "#f3f4f6"}`,
+                        borderBottom: `1px solid ${D ? "#191a2b" : "#f3f4f6"}`,
                         color: tx(D),
                       }}
                     >
@@ -393,7 +393,7 @@ ${n.heading}\n${stripHtml(n.body)}`,
                         fontSize: 12,
                         lineHeight: 1.6,
                         padding: "3px 0",
-                        borderBottom: `1px solid ${D ? "#1e2537" : "#f3f4f6"}`,
+                        borderBottom: `1px solid ${D ? "#191a2b" : "#f3f4f6"}`,
                         color: tx(D),
                       }}
                     >
@@ -435,7 +435,7 @@ ${n.heading}\n${stripHtml(n.body)}`,
                 onClick={reset}
                 style={{
                   flex: 2,
-                  ...B("#6366f1", false, {
+                  ...B("#7c3aed", false, {
                     padding: "11px 0",
                     fontSize: 13,
                     fontWeight: 700,

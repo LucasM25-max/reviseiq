@@ -40,9 +40,9 @@ export function MockImage({ query, D }) {
           padding: "10px 14px",
           borderRadius: 8,
           background: D ? "rgba(99,102,241,.08)" : "#f5f3ff",
-          border: `1px dashed ${D ? "#4f46e5" : "#a5b4fc"}`,
+          border: `1px dashed ${D ? "#6d28d9" : "#c4b5fd"}`,
           fontSize: 12,
-          color: D ? "#a5b4fc" : "#4f46e5",
+          color: D ? "#c4b5fd" : "#6d28d9",
           fontStyle: "italic",
           margin: "8px 0",
         }}
@@ -130,7 +130,7 @@ export function NumberedExtract({ text, D }) {
         fontFamily: "Georgia,serif",
         fontSize: 13,
         lineHeight: 1.9,
-        color: D ? "#e5e7eb" : "#1f2937",
+        color: D ? "#e5e7eb" : "#1c1d30",
       }}
     >
       {lines.map(function (line, i) {
@@ -211,7 +211,7 @@ export function GradeBoundaryBar({ pct, D }) {
     { grade: "5", min: 60, max: 69, color: "#84cc16" },
     { grade: "6", min: 70, max: 77, color: "#22c55e" },
     { grade: "7", min: 78, max: 85, color: "#06b6d4" },
-    { grade: "8", min: 86, max: 93, color: "#6366f1" },
+    { grade: "8", min: 86, max: 93, color: "#7c3aed" },
     { grade: "9", min: 94, max: 100, color: "#a855f7" },
   ];
   var clampedPct = Math.max(0, Math.min(100, pct));
@@ -341,7 +341,7 @@ export function MockExamScreen({
   const pctTime =
     paper?.d > 0 ? Math.round((timeLeft / (paper.d * 60)) * 100) : 0;
   const timeCritical = timeLeft > 0 && timeLeft < 300;
-  const bd2 = D ? "#2a3347" : "#e5e7eb";
+  const bd2 = D ? "#262844" : "#e5e7eb";
   useEffect(() => {
     if (phase !== "exam") return;
     let isMounted = true;
@@ -786,7 +786,7 @@ export function MockExamScreen({
   if (phase === "setup")
     return (
       <div
-        style={{ minHeight: "100vh", background: D ? "#0f1117" : "#f9fafb" }}
+        style={{ minHeight: "100vh", background: D ? "radial-gradient(1200px 820px at 12% -12%, rgba(124,58,237,.20), transparent 60%), radial-gradient(1000px 720px at 102% 4%, rgba(217,70,239,.14), transparent 55%), radial-gradient(900px 700px at 50% 120%, rgba(59,130,246,.10), transparent 55%), #0a0a14" : "radial-gradient(1100px 780px at 10% -10%, rgba(124,58,237,.10), transparent 60%), radial-gradient(940px 660px at 104% 2%, rgba(217,70,239,.08), transparent 55%), radial-gradient(820px 640px at 50% 116%, rgba(59,130,246,.06), transparent 55%), #f6f6fc" }}
         className="fade-in"
       >
         <div style={{ maxWidth: 700, margin: "0 auto", padding: "32px 24px" }}>
@@ -921,12 +921,12 @@ export function MockExamScreen({
                       style={{
                         padding: "12px 16px",
                         borderRadius: 10,
-                        border: `1.5px solid ${tier === t ? "#6366f1" : bd2}`,
+                        border: `1.5px solid ${tier === t ? "#7c3aed" : bd2}`,
                         background:
                           tier === t
                             ? D
                               ? "rgba(99,102,241,.1)"
-                              : "#eef2ff"
+                              : "#f5f3ff"
                             : "transparent",
                         cursor: "pointer",
                         textAlign: "left",
@@ -936,7 +936,7 @@ export function MockExamScreen({
                         style={{
                           fontWeight: 700,
                           fontSize: 13,
-                          color: tier === t ? "#6366f1" : tx(D),
+                          color: tier === t ? "#7c3aed" : tx(D),
                         }}
                       >
                         {label}
@@ -975,13 +975,13 @@ export function MockExamScreen({
                         ...C(D),
                         padding: "14px 16px",
                         cursor: isCS ? "default" : "pointer",
-                        borderColor: selPaper === i && !isCS ? "#6366f1" : bd2,
+                        borderColor: selPaper === i && !isCS ? "#7c3aed" : bd2,
                         borderWidth: selPaper === i && !isCS ? 2 : 1,
                         background:
                           selPaper === i && !isCS
                             ? D
                               ? "rgba(99,102,241,.1)"
-                              : "#eef2ff"
+                              : "#f5f3ff"
                             : "transparent",
                         opacity: isCS ? 0.55 : 1,
                       }}
@@ -1006,7 +1006,7 @@ export function MockExamScreen({
                               fontWeight: 700,
                               fontSize: 14,
                               color:
-                                selPaper === i && !isCS ? "#6366f1" : tx(D),
+                                selPaper === i && !isCS ? "#7c3aed" : tx(D),
                             }}
                           >
                             {p.n}
@@ -1037,7 +1037,7 @@ export function MockExamScreen({
                               style={{
                                 fontSize: 11,
                                 fontWeight: 600,
-                                color: subj?.accent || "#6366f1",
+                                color: subj?.accent || "#7c3aed",
                               }}
                             >
                               {p.m}
@@ -1065,10 +1065,10 @@ export function MockExamScreen({
                               key={si}
                               style={{
                                 fontSize: 10,
-                                color: D ? "#c7d2fe" : "#1e40af",
+                                color: D ? "#ddd6fe" : "#1e40af",
                                 background: D
                                   ? "rgba(99,102,241,.15)"
-                                  : "#eef2ff",
+                                  : "#f5f3ff",
                                 padding: "2px 7px",
                                 borderRadius: 10,
                               }}
@@ -1103,7 +1103,7 @@ export function MockExamScreen({
                 style={{
                   padding: "14px 16px",
                   borderRadius: 10,
-                  background: D ? "#1e2537" : "#f3f4f6",
+                  background: D ? "#191a2b" : "#f3f4f6",
                   textAlign: "center",
                   fontSize: 13,
                   color: mu(D),
@@ -1116,7 +1116,7 @@ export function MockExamScreen({
                 style={{
                   padding: "12px 14px",
                   borderRadius: 10,
-                  background: D ? "#1e2537" : "#f3f4f6",
+                  background: D ? "#191a2b" : "#f3f4f6",
                   textAlign: "center",
                   fontSize: 13,
                   color: mu(D),
@@ -1140,7 +1140,7 @@ export function MockExamScreen({
                   }
                 }}
                 style={{
-                  ...B("#6366f1", false, {
+                  ...B("#7c3aed", false, {
                     width: "100%",
                     padding: "13px 0",
                     fontSize: 14,
@@ -1170,7 +1170,7 @@ export function MockExamScreen({
   if (phase === "configure")
     return (
       <div
-        style={{ minHeight: "100vh", background: D ? "#0f1117" : "#f9fafb" }}
+        style={{ minHeight: "100vh", background: D ? "radial-gradient(1200px 820px at 12% -12%, rgba(124,58,237,.20), transparent 60%), radial-gradient(1000px 720px at 102% 4%, rgba(217,70,239,.14), transparent 55%), radial-gradient(900px 700px at 50% 120%, rgba(59,130,246,.10), transparent 55%), #0a0a14" : "radial-gradient(1100px 780px at 10% -10%, rgba(124,58,237,.10), transparent 60%), radial-gradient(940px 660px at 104% 2%, rgba(217,70,239,.08), transparent 55%), radial-gradient(820px 640px at 50% 116%, rgba(59,130,246,.06), transparent 55%), #f6f6fc" }}
         className="fade-in"
       >
         <div style={{ maxWidth: 600, margin: "0 auto", padding: "32px 24px" }}>
@@ -1249,7 +1249,7 @@ export function MockExamScreen({
             <button
               onClick={() => prepare(config)}
               style={{
-                ...B("#6366f1", false, {
+                ...B("#7c3aed", false, {
                   width: "100%",
                   padding: "13px 0",
                   fontSize: 14,
@@ -1270,7 +1270,7 @@ export function MockExamScreen({
       <div
         style={{
           minHeight: "100vh",
-          background: D ? "#0f1117" : "#f9fafb",
+          background: D ? "radial-gradient(1200px 820px at 12% -12%, rgba(124,58,237,.20), transparent 60%), radial-gradient(1000px 720px at 102% 4%, rgba(217,70,239,.14), transparent 55%), radial-gradient(900px 700px at 50% 120%, rgba(59,130,246,.10), transparent 55%), #0a0a14" : "radial-gradient(1100px 780px at 10% -10%, rgba(124,58,237,.10), transparent 60%), radial-gradient(940px 660px at 104% 2%, rgba(217,70,239,.08), transparent 55%), radial-gradient(820px 640px at 50% 116%, rgba(59,130,246,.06), transparent 55%), #f6f6fc",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -1300,7 +1300,7 @@ export function MockExamScreen({
       <div
         style={{
           minHeight: "100vh",
-          background: D ? "#0f1117" : "#f9fafb",
+          background: D ? "radial-gradient(1200px 820px at 12% -12%, rgba(124,58,237,.20), transparent 60%), radial-gradient(1000px 720px at 102% 4%, rgba(217,70,239,.14), transparent 55%), radial-gradient(900px 700px at 50% 120%, rgba(59,130,246,.10), transparent 55%), #0a0a14" : "radial-gradient(1100px 780px at 10% -10%, rgba(124,58,237,.10), transparent 60%), radial-gradient(940px 660px at 104% 2%, rgba(217,70,239,.08), transparent 55%), radial-gradient(820px 640px at 50% 116%, rgba(59,130,246,.06), transparent 55%), #f6f6fc",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -1390,7 +1390,7 @@ export function MockExamScreen({
   if (phase === "results" && results)
     return (
       <div
-        style={{ minHeight: "100vh", background: D ? "#0f1117" : "#f9fafb" }}
+        style={{ minHeight: "100vh", background: D ? "radial-gradient(1200px 820px at 12% -12%, rgba(124,58,237,.20), transparent 60%), radial-gradient(1000px 720px at 102% 4%, rgba(217,70,239,.14), transparent 55%), radial-gradient(900px 700px at 50% 120%, rgba(59,130,246,.10), transparent 55%), #0a0a14" : "radial-gradient(1100px 780px at 10% -10%, rgba(124,58,237,.10), transparent 60%), radial-gradient(940px 660px at 104% 2%, rgba(217,70,239,.08), transparent 55%), radial-gradient(820px 640px at 50% 116%, rgba(59,130,246,.06), transparent 55%), #f6f6fc" }}
         className="fade-in"
       >
         <div style={{ maxWidth: 760, margin: "0 auto", padding: "32px 24px" }}>
@@ -1479,7 +1479,7 @@ export function MockExamScreen({
                         flex: 1,
                         height: 14,
                         borderRadius: 4,
-                        background: D ? "#2a3347" : "#e5e7eb",
+                        background: D ? "#262844" : "#e5e7eb",
                         overflow: "hidden",
                       }}
                     >
@@ -1537,10 +1537,10 @@ export function MockExamScreen({
                 });
               }}
               style={{
-                ...B(reviewMode ? "#6366f1" : "transparent", !reviewMode, {
+                ...B(reviewMode ? "#7c3aed" : "transparent", !reviewMode, {
                   fontSize: 12,
                   padding: "8px 14px",
-                  borderColor: reviewMode ? "#6366f1" : bd2,
+                  borderColor: reviewMode ? "#7c3aed" : bd2,
                   color: reviewMode ? "#fff" : mu(D),
                 }),
               }}
@@ -1617,7 +1617,7 @@ export function MockExamScreen({
                               width: 28,
                               height: 28,
                               borderRadius: "50%",
-                              background: "#6366f1",
+                              background: "#7c3aed",
                               color: "#fff",
                               display: "flex",
                               alignItems: "center",
@@ -1656,7 +1656,7 @@ export function MockExamScreen({
                           style={{
                             padding: "10px 12px",
                             borderRadius: 8,
-                            background: D ? "#1e2537" : "#fffbeb",
+                            background: D ? "#191a2b" : "#fffbeb",
                             fontSize: 12,
                             color: tx(D),
                             lineHeight: 1.7,
@@ -1699,7 +1699,7 @@ export function MockExamScreen({
                                 background: D
                                   ? "rgba(99,102,241,.06)"
                                   : "#f8f9ff",
-                                borderLeft: "2px solid #6366f1",
+                                borderLeft: "2px solid #7c3aed",
                               }}
                             >
                               <div
@@ -1714,7 +1714,7 @@ export function MockExamScreen({
                                   style={{
                                     fontWeight: 700,
                                     fontSize: 13,
-                                    color: "#6366f1",
+                                    color: "#7c3aed",
                                     fontFamily: "monospace",
                                   }}
                                 >
@@ -1799,7 +1799,7 @@ export function MockExamScreen({
                                       style={{
                                         padding: "8px 10px",
                                         borderRadius: 7,
-                                        background: D ? "#1e2537" : "#f3f4f6",
+                                        background: D ? "#191a2b" : "#f3f4f6",
                                         fontSize: 11,
                                         color: tx(D),
                                         lineHeight: 1.6,
@@ -1818,7 +1818,7 @@ export function MockExamScreen({
                                           borderRadius: 7,
                                           background: D
                                             ? "rgba(99,102,241,.1)"
-                                            : "#eef2ff",
+                                            : "#f5f3ff",
                                           fontSize: 10,
                                           color: tx(D),
                                           lineHeight: 1.5,
@@ -1964,7 +1964,7 @@ export function MockExamScreen({
                             style={{
                               padding: "10px 12px",
                               borderRadius: 8,
-                              background: D ? "#1e2537" : "#f3f4f6",
+                              background: D ? "#191a2b" : "#f3f4f6",
                               fontSize: 12,
                               color: tx(D),
                               lineHeight: 1.65,
@@ -1982,7 +1982,7 @@ export function MockExamScreen({
                                 borderRadius: 8,
                                 background: D
                                   ? "rgba(99,102,241,.1)"
-                                  : "#eef2ff",
+                                  : "#f5f3ff",
                                 fontSize: 11,
                                 color: tx(D),
                                 lineHeight: 1.6,
@@ -2177,7 +2177,7 @@ export function MockExamScreen({
                           marginTop: 6,
                           padding: "6px 10px",
                           borderRadius: 6,
-                          background: D ? "#1e2537" : "#f3f4f6",
+                          background: D ? "#191a2b" : "#f3f4f6",
                           fontSize: 11,
                           color: tx(D),
                           lineHeight: 1.6,
@@ -2210,7 +2210,7 @@ export function MockExamScreen({
               }}
               style={{
                 flex: 1,
-                ...B("#6366f1", false, { padding: "12px 0", fontSize: 14 }),
+                ...B("#7c3aed", false, { padding: "12px 0", fontSize: 14 }),
               }}
             >
               Try Another Paper
@@ -2243,7 +2243,7 @@ export function MockExamScreen({
     <div
       style={{
         minHeight: "100vh",
-        background: D ? "#0f1117" : "#f9fafb",
+        background: D ? "radial-gradient(1200px 820px at 12% -12%, rgba(124,58,237,.20), transparent 60%), radial-gradient(1000px 720px at 102% 4%, rgba(217,70,239,.14), transparent 55%), radial-gradient(900px 700px at 50% 120%, rgba(59,130,246,.10), transparent 55%), #0a0a14" : "radial-gradient(1100px 780px at 10% -10%, rgba(124,58,237,.10), transparent 60%), radial-gradient(940px 660px at 104% 2%, rgba(217,70,239,.08), transparent 55%), radial-gradient(820px 640px at 50% 116%, rgba(59,130,246,.06), transparent 55%), #f6f6fc",
         color: tx(D),
       }}
       className="fade-in"
@@ -2336,7 +2336,7 @@ export function MockExamScreen({
                 setPaused(false);
               }}
               style={{
-                ...B("#6366f1", false, {
+                ...B("#7c3aed", false, {
                   fontSize: 14,
                   padding: "10px 28px",
                   fontWeight: 700,
@@ -2385,14 +2385,14 @@ export function MockExamScreen({
               style={{
                 height: 4,
                 borderRadius: 4,
-                background: D ? "#2a3347" : "#e5e7eb",
+                background: D ? "#262844" : "#e5e7eb",
               }}
             >
               <div
                 style={{
                   height: "100%",
                   borderRadius: 4,
-                  background: timeCritical ? "#ef4444" : "#6366f1",
+                  background: timeCritical ? "#ef4444" : "#7c3aed",
                   width: pctTime + "%",
                   transition: "width 1s linear",
                 }}
@@ -2405,7 +2405,7 @@ export function MockExamScreen({
                 fontSize: 20,
                 fontWeight: 800,
                 fontFamily: "monospace",
-                color: timeCritical ? "#ef4444" : "#6366f1",
+                color: timeCritical ? "#ef4444" : "#7c3aed",
               }}
             >
               {fmtTime(timeLeft)}
@@ -2449,11 +2449,11 @@ export function MockExamScreen({
                 });
               }}
               style={{
-                ...B(showExtract ? "#6366f1" : "transparent", !showExtract, {
+                ...B(showExtract ? "#7c3aed" : "transparent", !showExtract, {
                   fontSize: 11,
                   padding: "5px 10px",
                   flexShrink: 0,
-                  borderColor: showExtract ? "#6366f1" : bd2,
+                  borderColor: showExtract ? "#7c3aed" : bd2,
                   color: showExtract ? "#fff" : mu(D),
                 }),
               }}
@@ -2469,11 +2469,11 @@ export function MockExamScreen({
                 });
               }}
               style={{
-                ...B(splitScreen ? "#6366f1" : "transparent", !splitScreen, {
+                ...B(splitScreen ? "#7c3aed" : "transparent", !splitScreen, {
                   fontSize: 11,
                   padding: "5px 10px",
                   flexShrink: 0,
-                  borderColor: splitScreen ? "#6366f1" : bd2,
+                  borderColor: splitScreen ? "#7c3aed" : bd2,
                   color: splitScreen ? "#fff" : mu(D),
                 }),
               }}
@@ -2519,7 +2519,7 @@ export function MockExamScreen({
       {showExtract && extract && (
         <div
           style={{
-            background: D ? "#1e2537" : "#fffbeb",
+            background: D ? "#191a2b" : "#fffbeb",
             borderBottom: `1px solid ${D ? "#374151" : "#fde68a"}`,
             padding: "14px 20px",
             maxHeight: 320,
@@ -2579,7 +2579,7 @@ export function MockExamScreen({
       {showExtract2 && extract2 && (
         <div
           style={{
-            background: D ? "#1e2537" : "#fdf2f8",
+            background: D ? "#191a2b" : "#fdf2f8",
             borderBottom: `1px solid ${D ? "#374151" : "#fbcfe8"}`,
             padding: "14px 20px",
             maxHeight: 320,
@@ -2705,7 +2705,7 @@ export function MockExamScreen({
                     flexShrink: 0,
                     background:
                       i === qIdx
-                        ? "#6366f1"
+                        ? "#7c3aed"
                         : done
                           ? "#16a34a"
                           : D
@@ -2733,8 +2733,8 @@ export function MockExamScreen({
                   style={{
                     fontSize: 10,
                     fontWeight: 700,
-                    color: "#6366f1",
-                    background: D ? "rgba(99,102,241,.15)" : "#eef2ff",
+                    color: "#7c3aed",
+                    background: D ? "rgba(99,102,241,.15)" : "#f5f3ff",
                     padding: "2px 8px",
                     borderRadius: 10,
                   }}
@@ -2748,8 +2748,8 @@ export function MockExamScreen({
                   fontWeight: 700,
                   padding: "3px 10px",
                   borderRadius: 20,
-                  background: (subj && subj.mid) || "#e0e7ff",
-                  color: (subj && subj.dk) || "#312e81",
+                  background: (subj && subj.mid) || "#ede9fe",
+                  color: (subj && subj.dk) || "#3b0764",
                 }}
               >
                 {qIsParted ? q.totalMarks : q.marks}
@@ -2791,7 +2791,7 @@ export function MockExamScreen({
                     width: 32,
                     height: 32,
                     borderRadius: "50%",
-                    background: "#6366f1",
+                    background: "#7c3aed",
                     color: "#fff",
                     display: "flex",
                     alignItems: "center",
@@ -2826,7 +2826,7 @@ export function MockExamScreen({
                   style={{
                     padding: "14px 16px",
                     borderRadius: 10,
-                    background: D ? "#1e2537" : "#fffbeb",
+                    background: D ? "#191a2b" : "#fffbeb",
                     border: `1px solid ${D ? "#374151" : "#fde68a"}`,
                     fontSize: 13,
                     color: tx(D),
@@ -2846,7 +2846,7 @@ export function MockExamScreen({
                     style={{
                       ...C(D),
                       padding: 20,
-                      borderLeft: "3px solid #6366f1",
+                      borderLeft: "3px solid #7c3aed",
                     }}
                   >
                     <div
@@ -2870,7 +2870,7 @@ export function MockExamScreen({
                           style={{
                             fontWeight: 800,
                             fontSize: 15,
-                            color: "#6366f1",
+                            color: "#7c3aed",
                             fontFamily: "monospace",
                             minWidth: 28,
                           }}
@@ -2900,8 +2900,8 @@ export function MockExamScreen({
                           fontWeight: 700,
                           padding: "2px 9px",
                           borderRadius: 20,
-                          background: (subj && subj.mid) || "#e0e7ff",
-                          color: (subj && subj.dk) || "#312e81",
+                          background: (subj && subj.mid) || "#ede9fe",
+                          color: (subj && subj.dk) || "#3b0764",
                           flexShrink: 0,
                         }}
                       >
@@ -2938,15 +2938,15 @@ export function MockExamScreen({
                                 textAlign: "left",
                                 padding: "9px 13px",
                                 borderRadius: 9,
-                                border: `1.5px solid ${sel ? "#6366f1" : bd2}`,
+                                border: `1.5px solid ${sel ? "#7c3aed" : bd2}`,
                                 background: sel
                                   ? D
                                     ? "rgba(99,102,241,.15)"
-                                    : "#eef2ff"
+                                    : "#f5f3ff"
                                   : "transparent",
                                 cursor: "pointer",
                                 fontSize: 13,
-                                color: sel ? "#6366f1" : tx(D),
+                                color: sel ? "#7c3aed" : tx(D),
                                 transition: "border-color .15s,background .15s",
                               }}
                             >
@@ -3056,15 +3056,15 @@ export function MockExamScreen({
                           textAlign: "left",
                           padding: "10px 14px",
                           borderRadius: 10,
-                          border: `1.5px solid ${sel ? "#6366f1" : bd2}`,
+                          border: `1.5px solid ${sel ? "#7c3aed" : bd2}`,
                           background: sel
                             ? D
                               ? "rgba(99,102,241,.15)"
-                              : "#eef2ff"
+                              : "#f5f3ff"
                             : "transparent",
                           cursor: "pointer",
                           fontSize: 13,
-                          color: sel ? "#6366f1" : tx(D),
+                          color: sel ? "#7c3aed" : tx(D),
                           transition: "border-color .15s,background .15s",
                         }}
                       >
@@ -3114,7 +3114,7 @@ export function MockExamScreen({
                         marginBottom: 10,
                         padding: "10px 12px",
                         borderRadius: 10,
-                        background: D ? "#1e2537" : "#f0fdf4",
+                        background: D ? "#191a2b" : "#f0fdf4",
                         border: `1px solid ${D ? "#374151" : "#86efac"}`,
                         display: "flex",
                         alignItems: "center",
@@ -3250,7 +3250,7 @@ export function MockExamScreen({
               style={{
                 flex: 2,
                 ...B(
-                  qIdx < questions.length - 1 ? "#6366f1" : "#16a34a",
+                  qIdx < questions.length - 1 ? "#7c3aed" : "#16a34a",
                   false,
                   { fontSize: 13, padding: "10px 0" },
                 ),

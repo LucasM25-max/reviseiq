@@ -113,11 +113,11 @@ export function ExamCoachScreen({
   boardData,
   onBack,
 }) {
-  const bg = D ? "#0f1117" : "#f9fafb",
+  const bg = D ? "#0a0a14" : "#f9fafb",
     tx2 = D ? "#e8ecf4" : "#111827",
     mu2 = D ? "#9ca3af" : "#6b7280";
   const C2 = D
-    ? { background: "#161b27", border: "1px solid #2a3347", borderRadius: 14 }
+    ? { background: "#13131f", border: "1px solid #262844", borderRadius: 14 }
     : { background: "#fff", border: "1px solid #e5e7eb", borderRadius: 14 };
   const [selSubj, setSelSubj] = React.useState(subjects[0]?.id || "");
   const [selCW, setSelCW] = React.useState(COMMAND_WORDS[0].word);
@@ -312,7 +312,7 @@ export function ExamCoachScreen({
       : feedback.overallBand === "Achieving"
         ? "#3b82f6"
         : "#f59e0b"
-    : "#6366f1";
+    : "#7c3aed";
   return (
     <div
       style={{ minHeight: "100vh", background: bg, color: tx2 }}
@@ -373,7 +373,7 @@ export function ExamCoachScreen({
                   padding: "8px 10px",
                   borderRadius: 8,
                   border: "1px solid" + (D ? "#374151" : "#d1d5db"),
-                  background: D ? "#1e2537" : "#fff",
+                  background: D ? "#191a2b" : "#fff",
                   color: tx2,
                   fontSize: 13,
                 }}
@@ -413,8 +413,8 @@ export function ExamCoachScreen({
                       style={{
                         padding: "6px 12px",
                         borderRadius: 20,
-                        border: "1.5px solid" + (sel ? "#6366f1" : "#d1d5db"),
-                        background: sel ? "#6366f1" : "transparent",
+                        border: "1.5px solid" + (sel ? "#7c3aed" : "#d1d5db"),
+                        background: sel ? "#7c3aed" : "transparent",
                         color: sel ? "#fff" : mu2,
                         fontSize: 12,
                         cursor: "pointer",
@@ -434,8 +434,8 @@ export function ExamCoachScreen({
             style={{
               padding: "12px 14px",
               borderRadius: 10,
-              background: D ? "#1a1a2e" : "#eef2ff",
-              border: "1px solid" + (D ? "#312e81" : "#c7d2fe"),
+              background: D ? "#1a1a2e" : "#f5f3ff",
+              border: "1px solid" + (D ? "#3b0764" : "#ddd6fe"),
               marginBottom: 14,
             }}
           >
@@ -443,7 +443,7 @@ export function ExamCoachScreen({
               style={{
                 fontSize: 11,
                 fontWeight: 700,
-                color: "#6366f1",
+                color: "#7c3aed",
                 marginBottom: 4,
               }}
             >
@@ -452,7 +452,7 @@ export function ExamCoachScreen({
             <p
               style={{
                 fontSize: 13,
-                color: D ? "#c7d2fe" : "#3730a3",
+                color: D ? "#ddd6fe" : "#4c1d95",
                 margin: 0,
                 lineHeight: 1.6,
               }}
@@ -467,7 +467,7 @@ export function ExamCoachScreen({
               padding: "10px 22px",
               borderRadius: 10,
               border: "none",
-              background: loadingQ ? "#a5b4fc" : "#6366f1",
+              background: loadingQ ? "#c4b5fd" : "#7c3aed",
               color: "#fff",
               fontSize: 13,
               fontWeight: 600,
@@ -490,7 +490,7 @@ export function ExamCoachScreen({
               style={{
                 fontSize: 11,
                 fontWeight: 700,
-                color: "#6366f1",
+                color: "#7c3aed",
                 marginBottom: 8,
               }}
             >
@@ -528,7 +528,7 @@ export function ExamCoachScreen({
                           style={{
                             fontSize: 12,
                             fontWeight: 600,
-                            color: "#6366f1",
+                            color: "#7c3aed",
                             display: "block",
                             marginBottom: 4,
                           }}
@@ -553,7 +553,7 @@ export function ExamCoachScreen({
                             padding: "10px 12px",
                             borderRadius: 8,
                             border: "1px solid" + (D ? "#374151" : "#d1d5db"),
-                            background: D ? "#1e2537" : "#f9fafb",
+                            background: D ? "#191a2b" : "#f9fafb",
                             color: tx2,
                             fontSize: 13,
                             resize: "vertical",
@@ -578,7 +578,7 @@ export function ExamCoachScreen({
                       padding: "10px 22px",
                       borderRadius: 10,
                       border: "none",
-                      background: submitting ? "#a5b4fc" : "#6366f1",
+                      background: submitting ? "#c4b5fd" : "#7c3aed",
                       color: "#fff",
                       fontSize: 13,
                       fontWeight: 600,
@@ -615,7 +615,7 @@ export function ExamCoachScreen({
                     marginBottom: 20,
                     padding: "14px 18px",
                     borderRadius: 12,
-                    background: D ? "#161b27" : "#f8fafc",
+                    background: D ? "#13131f" : "#f8fafc",
                     border: "1.5px solid " + bandColor,
                   }}
                 >
@@ -647,7 +647,7 @@ export function ExamCoachScreen({
                     <p
                       style={{
                         fontSize: 12,
-                        color: D ? "#c7d2fe" : "#4338ca",
+                        color: D ? "#ddd6fe" : "#5b21b6",
                         margin: 0,
                         lineHeight: 1.5,
                       }}
@@ -738,8 +738,8 @@ export function ExamCoachScreen({
                   style={{
                     padding: "12px 14px",
                     borderRadius: 10,
-                    background: D ? "#1a1a2e" : "#eef2ff",
-                    border: "1px solid" + (D ? "#312e81" : "#c7d2fe"),
+                    background: D ? "#1a1a2e" : "#f5f3ff",
+                    border: "1px solid" + (D ? "#3b0764" : "#ddd6fe"),
                     marginBottom: 12,
                   }}
                 >
@@ -747,7 +747,7 @@ export function ExamCoachScreen({
                     style={{
                       fontSize: 11,
                       fontWeight: 700,
-                      color: "#6366f1",
+                      color: "#7c3aed",
                       marginBottom: 4,
                     }}
                   >
@@ -756,7 +756,7 @@ export function ExamCoachScreen({
                   <p
                     style={{
                       fontSize: 13,
-                      color: D ? "#c7d2fe" : "#3730a3",
+                      color: D ? "#ddd6fe" : "#4c1d95",
                       margin: 0,
                       lineHeight: 1.65,
                     }}
@@ -768,7 +768,7 @@ export function ExamCoachScreen({
                   style={{
                     padding: "10px 14px",
                     borderRadius: 10,
-                    background: D ? "#0f172a" : "#f8fafc",
+                    background: D ? "#0a0a14" : "#f8fafc",
                     border: "1px solid" + (D ? "#1e293b" : "#e2e8f0"),
                     marginBottom: 16,
                   }}
@@ -791,7 +791,7 @@ export function ExamCoachScreen({
                       padding: "10px 18px",
                       borderRadius: 10,
                       border: "none",
-                      background: "#6366f1",
+                      background: "#7c3aed",
                       color: "#fff",
                       fontSize: 13,
                       fontWeight: 600,

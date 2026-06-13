@@ -91,9 +91,9 @@ hintSlide{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:trans
 
 .hint-slide{animation:hintSlide .18s ease forwards}
 /* keyterm chips in notes */
-.keyterm{display:inline-flex;align-items:center;background:rgba(99,102,241,.13);color:#4f46e5;b
+.keyterm{display:inline-flex;align-items:center;background:rgba(99,102,241,.13);color:#6d28d9;b
 order-radius:5px;padding:1px 6px;font-weight:600;font-size:.92em}
-.keyterm-d{background:rgba(165,180,252,.15);color:#a5b4fc}
+.keyterm-d{background:rgba(165,180,252,.15);color:#c4b5fd}
 /* AO badges */
 .ao-badge{display:inline-flex;align-items:center;border-radius:20px;padding:2px
 9px;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase}

@@ -11,7 +11,7 @@ const GRAD_FROM = "#5b54f0";
 const GRAD_MID = "#8b5cf6";
 const GRAD_TO = "#d946ef";
 
-const txc = (D) => (D ? "#eef1fb" : "#0f1729");
+const txc = (D) => (D ? "#eef1fb" : "#0a0a14");
 const muc = (D) => (D ? "#98a2bd" : "#5b6478");
 const hairline = (D) => (D ? "rgba(255,255,255,.07)" : "rgba(16,24,40,.06)");
 

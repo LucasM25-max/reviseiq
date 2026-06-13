@@ -1507,8 +1507,8 @@ export default function App() {
     setBoardSels((s) => ({ ...s, [subjDef.id]: b }));
     await ensureBoardLoaded(subjDef.id, b);
   };
-  const bg = D ? "#0f1117" : "#f9fafb",
-    bd2 = D ? "#2a3347" : "#e5e7eb";
+  const bg = D ? "#0a0a14" : "#f9fafb",
+    bd2 = D ? "#262844" : "#e5e7eb";
   const _goEl = (
     <GlobalOverlays
       D={D}
@@ -1823,7 +1823,7 @@ export default function App() {
       <div
         style={{
           minHeight: "100vh",
-          background: D ? "#0f1117" : "#f0f4ff",
+          background: D ? "radial-gradient(1200px 820px at 12% -12%, rgba(124,58,237,.20), transparent 60%), radial-gradient(1000px 720px at 102% 4%, rgba(217,70,239,.14), transparent 55%), radial-gradient(900px 700px at 50% 120%, rgba(59,130,246,.10), transparent 55%), #0a0a14" : "radial-gradient(1100px 780px at 10% -10%, rgba(124,58,237,.10), transparent 60%), radial-gradient(940px 660px at 104% 2%, rgba(217,70,239,.08), transparent 55%), radial-gradient(820px 640px at 50% 116%, rgba(59,130,246,.06), transparent 55%), #f6f6fc",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -1858,7 +1858,7 @@ export default function App() {
           <div
             style={{
               display: "flex",
-              background: D ? "#1e2537" : "#f3f4f6",
+              background: D ? "#191a2b" : "#f3f4f6",
               borderRadius: 10,
               padding: 3,
               marginBottom: 22,
@@ -1995,7 +1995,7 @@ export default function App() {
             onClick={handleAuth}
             style={{
               width: "100%",
-              background: canSubmit ? "#6366f1" : "#d1d5db",
+              background: canSubmit ? "#7c3aed" : "#d1d5db",
               color: "#fff",
               border: "none",
               borderRadius: 12,
@@ -2037,7 +2037,7 @@ export default function App() {
                   style={{
                     fontSize: 11,
                     color: mu(D),
-                    background: D ? "#1e2537" : "#f3f4f6",
+                    background: D ? "#191a2b" : "#f3f4f6",
                     padding: "2px 8px",
                     borderRadius: 20,
                   }}
@@ -2384,9 +2384,9 @@ export default function App() {
                 gap: 6,
                 padding: "8px 16px",
                 borderRadius: 10,
-                border: "1.5px solid #6366f1",
-                background: D ? "rgba(99,102,241,.12)" : "#eef2ff",
-                color: "#6366f1",
+                border: "1.5px solid #7c3aed",
+                background: D ? "rgba(99,102,241,.12)" : "#f5f3ff",
+                color: "#7c3aed",
                 fontSize: 13,
                 fontWeight: 600,
                 cursor: "pointer",
@@ -2410,7 +2410,7 @@ export default function App() {
                   ...C(D),
                   padding: "16px 18px",
                   marginBottom: 14,
-                  borderColor: "#6366f1",
+                  borderColor: "#7c3aed",
                   borderWidth: 1.5,
                 }}
               >
@@ -2428,7 +2428,7 @@ export default function App() {
                       style={{
                         fontSize: 11,
                         fontWeight: 800,
-                        color: "#6366f1",
+                        color: "#7c3aed",
                         letterSpacing: "0.07em",
                         textTransform: "uppercase",
                         marginBottom: 0,
@@ -2441,7 +2441,7 @@ export default function App() {
                         style={{
                           fontSize: 9,
                           fontWeight: 700,
-                          background: "#6366f1",
+                          background: "#7c3aed",
                           color: "#fff",
                           padding: "2px 7px",
                           borderRadius: 10,
@@ -2456,8 +2456,8 @@ export default function App() {
                       <span
                         style={{
                           fontSize: 9,
-                          color: "#6366f1",
-                          background: "#6366f122",
+                          color: "#7c3aed",
+                          background: "#7c3aed22",
                           padding: "2px 7px",
                           borderRadius: 10,
                           marginLeft: 4,
@@ -2493,7 +2493,7 @@ export default function App() {
                       setScreen("practice");
                     }}
                     style={{
-                      ...B("#6366f1", false, {
+                      ...B("#7c3aed", false, {
                         padding: "10px 16px",
                         fontSize: 13,
                         fontWeight: 700,
@@ -2572,7 +2572,7 @@ export default function App() {
                       style={{
                         fontWeight: 700,
                         fontSize: 18,
-                        color: "#6366f1",
+                        color: "#7c3aed",
                       }}
                     >
                       {" "}
@@ -2637,10 +2637,10 @@ export default function App() {
                                   ? "#374151"
                                   : "#e5e7eb"
                                 : D
-                                  ? "#1e2537"
+                                  ? "#191a2b"
                                   : "#f3f4f6",
                             border: c.t
-                              ? "2px solid #6366f1"
+                              ? "2px solid #7c3aed"
                               : "2px solidtransparent",
                           }}
                         />
@@ -2655,8 +2655,8 @@ export default function App() {
             <div
               style={{
                 borderRadius: 12,
-                background: D ? "rgba(99,102,241,.1)" : "#eef2ff",
-                border: "1.5px solid #6366f1",
+                background: D ? "rgba(99,102,241,.1)" : "#f5f3ff",
+                border: "1.5px solid #7c3aed",
                 marginBottom: 20,
                 overflow: "hidden",
               }}
@@ -2668,14 +2668,14 @@ export default function App() {
                   alignItems: "center",
                   gap: 10,
                   flexWrap: "wrap",
-                  borderBottom: `1px solid ${D ? "rgba(99,102,241,.2)" : "#c7d2fe"}`,
+                  borderBottom: `1px solid ${D ? "rgba(99,102,241,.2)" : "#ddd6fe"}`,
                 }}
               >
                 <span
                   style={{
                     fontSize: 11,
                     fontWeight: 800,
-                    color: "#6366f1",
+                    color: "#7c3aed",
                     letterSpacing: "0.08em",
                     textTransform: "uppercase",
                   }}
@@ -2685,7 +2685,7 @@ export default function App() {
                 <span
                   style={{
                     fontSize: 12,
-                    color: D ? "#a5b4fc" : "#4338ca",
+                    color: D ? "#c4b5fd" : "#5b21b6",
                     flex: 1,
                   }}
                 >
@@ -2707,8 +2707,8 @@ export default function App() {
                     fontSize: 12,
                     padding: "6px 14px",
                     borderRadius: 7,
-                    border: "1.5px solid #6366f1",
-                    background: "#6366f1",
+                    border: "1.5px solid #7c3aed",
+                    background: "#7c3aed",
                     color: "#fff",
                     fontWeight: 600,
                     cursor: "pointer",
@@ -2722,9 +2722,9 @@ export default function App() {
                     fontSize: 12,
                     padding: "6px 14px",
                     borderRadius: 7,
-                    border: "1.5px solid #6366f1",
+                    border: "1.5px solid #7c3aed",
                     background: "transparent",
-                    color: "#6366f1",
+                    color: "#7c3aed",
                     fontWeight: 600,
                     cursor: "pointer",
                   }}
@@ -2737,9 +2737,9 @@ export default function App() {
                     fontSize: 12,
                     padding: "6px 14px",
                     borderRadius: 7,
-                    border: "1.5px solid #6366f1",
+                    border: "1.5px solid #7c3aed",
                     background: "transparent",
-                    color: "#6366f1",
+                    color: "#7c3aed",
                     fontWeight: 600,
                     cursor: "pointer",
                   }}
@@ -2927,7 +2927,7 @@ export default function App() {
                         padding: 10,
                         borderRadius: 10,
                         border: `1px solid ${bd2}`,
-                        background: D ? "#161b27" : "#fff",
+                        background: D ? "#13131f" : "#fff",
                         cursor: "pointer",
                       }}
                     >
@@ -2996,9 +2996,9 @@ export default function App() {
                 fontSize: 12,
                 padding: "6px 10px",
                 borderRadius: 8,
-                border: "1px solid #6366f1",
+                border: "1px solid #7c3aed",
                 background: "transparent",
-                color: "#6366f1",
+                color: "#7c3aed",
               }}
             >
               {showTreemap ? "Show SubjectCards" : "Show Mastery Treemap"}
@@ -3182,7 +3182,7 @@ export default function App() {
                         style={{
                           fontSize: 11,
                           color: mu(D),
-                          background: D ? "#1e2537" : "#f3f4f6",
+                          background: D ? "#191a2b" : "#f3f4f6",
                           padding: "2px 7px",
                           borderRadius: 10,
                         }}
@@ -3193,7 +3193,7 @@ export default function App() {
                         <span
                           style={{
                             fontSize: 11,
-                            color: "#6366f1",
+                            color: "#7c3aed",
                             fontWeight: 600,
                           }}
                         >
@@ -3252,7 +3252,7 @@ export default function App() {
                 padding: "7px 16px",
                 borderRadius: 9,
                 border: "none",
-                background: "#6366f1",
+                background: "#7c3aed",
                 color: "#fff",
                 fontWeight: 600,
                 fontSize: 13,
@@ -3330,7 +3330,7 @@ export default function App() {
                       style={{
                         fontSize: 11,
                         color: mu(D),
-                        background: D ? "#1e2537" : "#f3f4f6",
+                        background: D ? "#191a2b" : "#f3f4f6",
                         padding: "2px 7px",
                         borderRadius: 10,
                       }}
@@ -3592,7 +3592,7 @@ grade${parseInt(target) - parseInt(predicted) !== 1 ? "s" : ""} to go`}
                                   height: 28,
                                   borderRadius: 7,
                                   border: `2px solid ${sel ? gc : D ? "#374151" : "#d1d5db"}`,
-                                  background: sel ? gc : D ? "#161b27" : "#fff",
+                                  background: sel ? gc : D ? "#13131f" : "#fff",
                                   color: sel
                                     ? "#fff"
                                     : D
@@ -3748,8 +3748,8 @@ grade${parseInt(target) - parseInt(predicted) !== 1 ? "s" : ""} to go`}
                     marginBottom: 20,
                     padding: "16px 20px",
                     borderRadius: 14,
-                    background: D ? "rgba(99,102,241,.08)" : "#eef2ff",
-                    border: "1.5px solid #6366f1",
+                    background: D ? "rgba(99,102,241,.08)" : "#f5f3ff",
+                    border: "1.5px solid #7c3aed",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
@@ -3762,7 +3762,7 @@ grade${parseInt(target) - parseInt(predicted) !== 1 ? "s" : ""} to go`}
                       style={{
                         fontSize: 13,
                         fontWeight: 700,
-                        color: "#6366f1",
+                        color: "#7c3aed",
                         marginBottom: 2,
                       }}
                     >
@@ -3784,7 +3784,7 @@ grade${parseInt(target) - parseInt(predicted) !== 1 ? "s" : ""} to go`}
                       padding: "10px 22px",
                       borderRadius: 10,
                       border: "none",
-                      background: "#6366f1",
+                      background: "#7c3aed",
                       color: "#fff",
                       fontWeight: 700,
                       fontSize: 14,
@@ -3967,7 +3967,7 @@ grade${parseInt(target) - parseInt(predicted) !== 1 ? "s" : ""} to go`}
                             style={{
                               fontWeight: 700,
                               fontSize: 15,
-                              border: "1.5px solid #6366f1",
+                              border: "1.5px solid #7c3aed",
                               borderRadius: 6,
                               padding: "2px 8px",
                               background: "transparent",
@@ -4006,11 +4006,11 @@ grade${parseInt(target) - parseInt(predicted) !== 1 ? "s" : ""} to go`}
                                 style={{
                                   padding: "5px 10px",
                                   borderRadius: 7,
-                                  border: "1.5px solid #6366f1",
+                                  border: "1.5px solid #7c3aed",
                                   background: "transparent",
                                   cursor: "pointer",
                                   fontSize: 11,
-                                  color: "#6366f1",
+                                  color: "#7c3aed",
                                   fontWeight: 600,
                                 }}
                               >
@@ -4028,7 +4028,7 @@ grade${parseInt(target) - parseInt(predicted) !== 1 ? "s" : ""} to go`}
                                 padding: "5px 10px",
                                 borderRadius: 7,
                                 border: "none",
-                                background: "#6366f1",
+                                background: "#7c3aed",
                                 cursor: "pointer",
                                 fontSize: 11,
                                 color: "#fff",
@@ -4171,7 +4171,7 @@ grade${parseInt(target) - parseInt(predicted) !== 1 ? "s" : ""} to go`}
                                     style={{
                                       fontSize: 13,
                                       fontWeight: 600,
-                                      border: "1.5px solid #6366f1",
+                                      border: "1.5px solid #7c3aed",
                                       borderRadius: 6,
                                       padding: "2px 6px",
                                       background: "transparent",
@@ -4268,7 +4268,7 @@ grade${parseInt(target) - parseInt(predicted) !== 1 ? "s" : ""} to go`}
                                       background: "none",
                                       border: "none",
                                       cursor: "pointer",
-                                      color: "#6366f1",
+                                      color: "#7c3aed",
                                       fontWeight: 600,
                                     }}
                                   >
@@ -4530,7 +4530,7 @@ grade${parseInt(target) - parseInt(predicted) !== 1 ? "s" : ""} to go`}
                 <button
                   onClick={() => setFocusMode(true)}
                   style={{
-                    ...B("#6366f1", true, {
+                    ...B("#7c3aed", true, {
                       width: "100%",
                       padding: "11px 0",
                       fontSize: 13,
@@ -4748,8 +4748,8 @@ grade${parseInt(target) - parseInt(predicted) !== 1 ? "s" : ""} to go`}
               position: "sticky",
               top: 0,
               zIndex: 50,
-              background: D ? "#161b27" : "#fff",
-              borderBottom: `1px solid ${D ? "#2a3347" : "#e5e7eb"}`,
+              background: D ? "#13131f" : "#fff",
+              borderBottom: `1px solid ${D ? "#262844" : "#e5e7eb"}`,
               padding: "10px 20px",
               display: "flex",
               alignItems: "center",
@@ -4779,7 +4779,7 @@ grade${parseInt(target) - parseInt(predicted) !== 1 ? "s" : ""} to go`}
                   padding: "4px 12px",
                   borderRadius: 20,
                   border: "none",
-                  background: tab === "flashcards" ? "#6366f1" : "transparent",
+                  background: tab === "flashcards" ? "#7c3aed" : "transparent",
                   color:
                     tab === "flashcards" ? "#fff" : D ? "#8896b3" : "#9ca3af",
                   cursor: "pointer",
@@ -4795,7 +4795,7 @@ grade${parseInt(target) - parseInt(predicted) !== 1 ? "s" : ""} to go`}
                   padding: "4px 12px",
                   borderRadius: 20,
                   border: "none",
-                  background: tab === "questions" ? "#6366f1" : "transparent",
+                  background: tab === "questions" ? "#7c3aed" : "transparent",
                   color:
                     tab === "questions" ? "#fff" : D ? "#8896b3" : "#9ca3af",
                   cursor: "pointer",
@@ -4854,9 +4854,9 @@ grade${parseInt(target) - parseInt(predicted) !== 1 ? "s" : ""} to go`}
                   fontSize: 12,
                   padding: "6px 14px",
                   borderRadius: 8,
-                  border: "1px solid #6366f1",
+                  border: "1px solid #7c3aed",
                   background: "transparent",
-                  color: "#6366f1",
+                  color: "#7c3aed",
                   cursor: "pointer",
                   fontWeight: 600,
                 }}
@@ -5099,7 +5099,7 @@ timeline.\nReturn:
 
               const cardType2 = fc2
                 ? detectCardType(fc2.q || "")
-                : { label: "Recall", color: "#6366f1", icon: "🧠" };
+                : { label: "Recall", color: "#7c3aed", icon: "🧠" };
 
               const fcHints2 = fc2
                 ? [
@@ -5299,7 +5299,7 @@ ${cardType2.label === "Calculate" ? "Start by writing theformula." : cardType2.l
                           alignItems: "center",
                           padding: "8px 14px",
                           borderRadius: 10,
-                          background: D ? "#1e2537" : "#f3f4f6",
+                          background: D ? "#191a2b" : "#f3f4f6",
                           marginBottom: 8,
                         }}
                       >
@@ -5307,7 +5307,7 @@ ${cardType2.label === "Calculate" ? "Start by writing theformula." : cardType2.l
                           <strong
                             style={{
                               color: cramMode
-                                ? "#6366f1"
+                                ? "#7c3aed"
                                 : dueCards2.length > 0
                                   ? "#f59e0b"
                                   : tx(D),
@@ -5374,8 +5374,8 @@ ${cardType2.label === "Calculate" ? "Start by writing theformula." : cardType2.l
                               fontSize: 10,
                               padding: "3px 9px",
                               borderRadius: 8,
-                              border: `1.5px solid ${cramMode ? "#6366f1" : "#d1d5db"}`,
-                              background: cramMode ? "#6366f1" : "transparent",
+                              border: `1.5px solid ${cramMode ? "#7c3aed" : "#d1d5db"}`,
+                              background: cramMode ? "#7c3aed" : "transparent",
                               color: cramMode ? "#fff" : mu(D),
                               cursor: "pointer",
                               fontWeight: cramMode ? 700 : 400,
@@ -5481,8 +5481,8 @@ ${cardType2.label === "Calculate" ? "Start by writing theformula." : cardType2.l
                               borderRadius: 10,
                               background: D
                                 ? "rgba(99,102,241,.15)"
-                                : "#eef2ff",
-                              color: "#6366f1",
+                                : "#f5f3ff",
+                              color: "#7c3aed",
                             }}
                           >
                             Dual-coded
@@ -5507,7 +5507,7 @@ ${cardType2.label === "Calculate" ? "Start by writing theformula." : cardType2.l
                             style={{
                               fontSize: 10,
                               color: mu(D),
-                              background: D ? "#1e2537" : "#f3f4f6",
+                              background: D ? "#191a2b" : "#f3f4f6",
                               padding: "3px 8px",
                               borderRadius: 10,
                             }}
@@ -5534,7 +5534,7 @@ ${getRetrievability(fcHist, fc2.id) ?? "—"}% recall`}</span>
                               })
                             }
                             style={{
-                              ...B("#6366f1", true, {
+                              ...B("#7c3aed", true, {
                                 fontSize: 12,
                                 padding: "5px 12px",
                               }),
@@ -5563,7 +5563,7 @@ ${getRetrievability(fcHist, fc2.id) ?? "—"}% recall`}</span>
                             marginBottom: 12,
                             padding: "12px 16px",
                             borderRadius: 12,
-                            background: D ? "#1e2537" : "#fafafa",
+                            background: D ? "#191a2b" : "#fafafa",
                             border: `1px solid ${D ? "#374151" : "#e5e7eb"}`,
                           }}
                         >
@@ -5594,7 +5594,7 @@ ${getRetrievability(fcHist, fc2.id) ?? "—"}% recall`}</span>
                                   padding: "10px 4px",
                                   borderRadius: 12,
                                   border: `2px solid ${opt.color}22`,
-                                  background: D ? "#161b27" : "#fff",
+                                  background: D ? "#13131f" : "#fff",
                                   cursor: "pointer",
                                   textAlign: "center",
                                   transition: "border-color .15s",
@@ -5606,7 +5606,7 @@ ${getRetrievability(fcHist, fc2.id) ?? "—"}% recall`}</span>
                                 onMouseLeave={(e) => {
                                   e.currentTarget.style.borderColor =
                                     opt.color + "22";
-                                  e.currentTarget.style.background = D ? "#161b27" : "#fff";
+                                  e.currentTarget.style.background = D ? "#13131f" : "#fff";
                                 }}
                               >
                                 <div style={{ fontSize: 20, marginBottom: 3 }}>
@@ -5897,7 +5897,7 @@ ${getRetrievability(fcHist, fc2.id) ?? "—"}% recall`}</span>
                             <div
                               className="fc-face"
                               style={{
-                                background: D ? "#161b27" : "#fff",
+                                background: D ? "#13131f" : "#fff",
                                 padding: "20px 24px",
                                 justifyContent: "flex-start",
                               }}
@@ -5921,7 +5921,7 @@ ${getRetrievability(fcHist, fc2.id) ?? "—"}% recall`}</span>
                                         borderRadius: 8,
                                         display: "block",
                                         margin: "0 auto",
-                                        border: `1px solid ${D ? "#2a3347" : "#e5e7eb"}`,
+                                        border: `1px solid ${D ? "#262844" : "#e5e7eb"}`,
                                       }}
                                     />
                                   ) : fc2.diagram ? (
@@ -6117,9 +6117,9 @@ ${getRetrievability(fcHist, fc2.id) ?? "—"}% recall`}</span>
                                       fontSize: 11,
                                       padding: "4px 9px",
                                       borderRadius: 8,
-                                      border: "1px solid #6366f1",
+                                      border: "1px solid #7c3aed",
                                       background: "transparent",
-                                      color: "#6366f1",
+                                      color: "#7c3aed",
                                     }}
                                   >
                                     Sketch it
@@ -6158,7 +6158,7 @@ ${getRetrievability(fcHist, fc2.id) ?? "—"}% recall`}</span>
                                 borderRadius: 9,
                                 marginBottom: 10,
                                 fontSize: 11,
-                                background: D ? "#1e2537" : "#f3f4f6",
+                                background: D ? "#191a2b" : "#f3f4f6",
                                 display: "flex",
                                 alignItems: "center",
                                 gap: 8,
@@ -6190,9 +6190,9 @@ ${getRetrievability(fcHist, fc2.id) ?? "—"}% recall`}</span>
                               onClick={() => setFcSelfOpen(true)}
                               style={{
                                 fontSize: 11,
-                                color: "#6366f1",
+                                color: "#7c3aed",
                                 background: "none",
-                                border: "1px solid #6366f1",
+                                border: "1px solid #7c3aed",
                                 borderRadius: 8,
                                 padding: "5px 12px",
                                 cursor: "pointer",
@@ -6235,7 +6235,7 @@ ${getRetrievability(fcHist, fc2.id) ?? "—"}% recall`}</span>
                               position: "sticky",
                               bottom: window.innerWidth < 640 ? 78 : 16,
                               zIndex: 10,
-                              background: D ? "#0f1117" : "#f9fafb",
+                              background: D ? "#0a0a14" : "#f9fafb",
                               padding: "10px 0",
                               margin: "0 -4px",
                             }}
@@ -6320,7 +6320,7 @@ ${getRetrievability(fcHist, fc2.id) ?? "—"}% recall`}</span>
                               <p
                                 style={{
                                   fontSize: 10,
-                                  color: "#6366f1",
+                                  color: "#7c3aed",
                                   textAlign: "center",
                                   marginTop: 6,
                                 }}
@@ -6336,7 +6336,7 @@ ${getRetrievability(fcHist, fc2.id) ?? "—"}% recall`}</span>
                           marginTop: 10,
                           padding: "10px 12px",
                           borderRadius: 10,
-                          background: D ? "#1e2537" : "#f8fafc",
+                          background: D ? "#191a2b" : "#f8fafc",
                           border: `1px solid ${D ? "#374151" : "#e5e7eb"}`,
                         }}
                       >
@@ -6372,7 +6372,7 @@ ${getRetrievability(fcHist, fc2.id) ?? "—"}% recall`}</span>
                                 textAlign: "center",
                                 background:
                                   i + 1 <= ladderLevel
-                                    ? "#6366f1"
+                                    ? "#7c3aed"
                                     : "transparent",
                                 color: i + 1 <= ladderLevel ? "#fff" : mu(D),
                                 border: `1px solid ${bd2}`,
@@ -6428,7 +6428,7 @@ ${getRetrievability(fcHist, fc2.id) ?? "—"}% recall`}</span>
                               padding: "6px 10px",
                               borderRadius: 8,
                               border: "none",
-                              background: "#6366f1",
+                              background: "#7c3aed",
                               color: "#fff",
                               fontSize: 12,
                             }}
@@ -6490,7 +6490,7 @@ ${getRetrievability(fcHist, fc2.id) ?? "—"}% recall`}</span>
                               padding: "6px 10px",
                               borderRadius: 8,
                               border: "none",
-                              background: "#6366f1",
+                              background: "#7c3aed",
                               color: "#fff",
                               fontSize: 12,
                             }}
@@ -6613,9 +6613,9 @@ ${getRetrievability(fcHist, fc2.id) ?? "—"}% recall`}</span>
                           display: "block",
                           margin: "8px auto0",
                           fontSize: 11,
-                          color: "#6366f1",
+                          color: "#7c3aed",
                           background: "none",
-                          border: "1px solid #6366f1",
+                          border: "1px solid #7c3aed",
                           borderRadius: 8,
                           padding: "5px 14px",
                           cursor: "pointer",
@@ -6751,8 +6751,8 @@ ${getRetrievability(fcHist, fc2.id) ?? "—"}% recall`}</span>
                                 borderRadius: 10,
                                 background: D
                                   ? "rgba(99,102,241,.15)"
-                                  : "#eef2ff",
-                                color: "#6366f1",
+                                  : "#f5f3ff",
+                                color: "#7c3aed",
                               }}
                             >
                               {qCW.word.toUpperCase()}
@@ -6779,11 +6779,11 @@ ${getRetrievability(fcHist, fc2.id) ?? "—"}% recall`}</span>
                             padding: "8px 12px",
                             borderRadius: 8,
                             marginBottom: 10,
-                            background: D ? "rgba(99,102,241,.08)" : "#eef2ff",
-                            border: "1px solid #6366f144",
+                            background: D ? "rgba(99,102,241,.08)" : "#f5f3ff",
+                            border: "1px solid #7c3aed44",
 
                             fontSize: 11,
-                            color: D ? "#c7d2fe" : "#3730a3",
+                            color: D ? "#ddd6fe" : "#4c1d95",
                             lineHeight: 1.55,
                           }}
                         >
@@ -6808,7 +6808,7 @@ ${getRetrievability(fcHist, fc2.id) ?? "—"}% recall`}</span>
                               })
                             }
                             style={{
-                              ...B("#6366f1", true, {
+                              ...B("#7c3aed", true, {
                                 fontSize: 12,
                                 padding: "5px 12px",
                               }),
@@ -6895,9 +6895,9 @@ ${getRetrievability(fcHist, fc2.id) ?? "—"}% recall`}</span>
                               fontSize: 12,
                               padding: "6px 12px",
                               borderRadius: 8,
-                              border: "1px solid #6366f1",
+                              border: "1px solid #7c3aed",
                               background: "transparent",
-                              color: "#6366f1",
+                              color: "#7c3aed",
                               cursor: "pointer",
                             }}
                           >
@@ -6935,7 +6935,7 @@ ${getRetrievability(fcHist, fc2.id) ?? "—"}% recall`}</span>
                               const sel = selOpt === oi,
                                 correct = oi === q.answer,
                                 rev = qRes != null;
-                              let bg2 = D ? "#1f2937" : "#f9fafb",
+                              let bg2 = D ? "#1c1d30" : "#f9fafb",
                                 br2 = bd2,
                                 co2 = tx(D);
                               if (rev && correct) {
@@ -6947,7 +6947,7 @@ ${getRetrievability(fcHist, fc2.id) ?? "—"}% recall`}</span>
                                 br2 = "#ef4444";
                                 co2 = "#b91c1c";
                               } else if (rev && !correct && !sel) {
-                                bg2 = D ? "#1f2937" : "#f9fafb";
+                                bg2 = D ? "#1c1d30" : "#f9fafb";
                                 br2 = bd2;
                                 co2 = mu(D);
                               }
@@ -7092,7 +7092,7 @@ answer is ${q.options[q.answer]}${q.explanation ? " — " + q.explanation : "."}
                                     style={{
                                       padding: "10px 14px",
                                       borderRadius: 10,
-                                      background: D ? "#1e2537" : "#fafafa",
+                                      background: D ? "#191a2b" : "#fafafa",
                                       border: `1px solid ${D ? "#374151" : "#e5e7eb"}`,
                                     }}
                                   >
@@ -7135,7 +7135,7 @@ answer is ${q.options[q.answer]}${q.explanation ? " — " + q.explanation : "."}
                                             padding: "7px 4px",
                                             borderRadius: 9,
                                             border: `1.5px solid ${opt.c}22`,
-                                            background: D ? "#161b27" : "#fff",
+                                            background: D ? "#13131f" : "#fff",
                                             cursor: "pointer",
                                             textAlign: "center",
                                             transition: "border-color .15s",
@@ -7402,7 +7402,7 @@ mark${q.marks !== 1 ? "s" : ""}]`}
                                   width: "100%",
                                   background:
                                     textAns.trim() && !marking
-                                      ? "#6366f1"
+                                      ? "#7c3aed"
                                       : "#9ca3af",
                                   color: "#fff",
                                   border: "none",
@@ -7431,7 +7431,7 @@ mark${q.marks !== 1 ? "s" : ""}]`}
                                     ...C(D),
                                     padding: 20,
                                     background: D ? "#1a1a2e" : "#f8f7ff",
-                                    borderColor: "#6366f1",
+                                    borderColor: "#7c3aed",
                                   }}
                                   className="fade-in"
                                 >
@@ -7622,8 +7622,8 @@ mark${q.marks !== 1 ? "s" : ""}]`}
                                               padding: "6px 10px",
                                               borderRadius: 8,
                                               background: D
-                                                ? "#1e2537"
-                                                : "#eef2ff",
+                                                ? "#191a2b"
+                                                : "#f5f3ff",
                                               fontSize: 11,
                                               fontWeight: 600,
                                             }}
@@ -7788,7 +7788,7 @@ mark${q.marks !== 1 ? "s" : ""}]`}
                                         whiteSpace: "pre-wrap",
                                         fontSize: 12,
                                         fontFamily: "IBMPlex Mono, monospace",
-                                        background: D ? "#0f172a" : "#f8fafc",
+                                        background: D ? "#0a0a14" : "#f8fafc",
                                         padding: 10,
                                         borderRadius: 8,
                                       }}
@@ -7807,7 +7807,7 @@ mark${q.marks !== 1 ? "s" : ""}]`}
                                         style={{
                                           fontSize: 12,
                                           fontWeight: 600,
-                                          color: D ? "#c7d2fe" : "#4338ca",
+                                          color: D ? "#ddd6fe" : "#5b21b6",
                                           marginBottom: 6,
                                         }}
                                       >
@@ -7838,7 +7838,7 @@ mark${q.marks !== 1 ? "s" : ""}]`}
                                           padding: "7px 16px",
                                           borderRadius: 8,
                                           border: "none",
-                                          background: "#6366f1",
+                                          background: "#7c3aed",
                                           color: "#fff",
                                           cursor: "pointer",
                                         }}
@@ -7856,10 +7856,10 @@ mark${q.marks !== 1 ? "s" : ""}]`}
                                             marginBottom: 10,
                                             background: D
                                               ? "rgba(99,102,241,.1)"
-                                              : "#eef2ff",
-                                            border: "1px solid #6366f122",
+                                              : "#f5f3ff",
+                                            border: "1px solid #7c3aed22",
                                             fontSize: 11,
-                                            color: D ? "#a5b4fc" : "#4338ca",
+                                            color: D ? "#c4b5fd" : "#5b21b6",
                                           }}
                                         >
                                           <strong>Your reflection:</strong>{" "}
@@ -7887,7 +7887,7 @@ mark${q.marks !== 1 ? "s" : ""}]`}
                                             padding: "12px 14px",
                                             borderRadius: 10,
                                             background: D
-                                              ? "#161b27"
+                                              ? "#13131f"
                                               : "#f9fafb",
                                             border: `1px solid ${bd2}`,
                                             marginBottom: 6,
@@ -8034,11 +8034,11 @@ mark${q.marks !== 1 ? "s" : ""}]`}
       hmWeeks.push(wk);
     }
     function hmColor(cnt, D) {
-      if (cnt === 0) return D ? "#1e2537" : "#f3f4f6";
+      if (cnt === 0) return D ? "#191a2b" : "#f3f4f6";
       if (cnt === 1) return D ? "#7c3aed" : "#c4b5fd";
       if (cnt === 2) return D ? "#6d28d9" : "#a78bfa";
       if (cnt >= 3) return D ? "#4c1d95" : "#7c3aed";
-      return D ? "#1e2537" : "#f3f4f6";
+      return D ? "#191a2b" : "#f3f4f6";
     }
 
     const hmMonthLabels = [];
@@ -8345,7 +8345,7 @@ mark${q.marks !== 1 ? "s" : ""}]`}
                                 borderRadius: 2,
                                 background: hmColor(cell.cnt, D),
                                 border: cell.isToday
-                                  ? "2px solid #6366f1"
+                                  ? "2px solid #7c3aed"
                                   : "2px solid transparent",
                                 transition: "background .2s",
                                 cursor: "default",
@@ -8472,7 +8472,7 @@ mark${q.marks !== 1 ? "s" : ""}]`}
                   />
                   <Tooltip
                     contentStyle={{
-                      background: D ? "#1e2537" : "#fff",
+                      background: D ? "#191a2b" : "#fff",
                       border: "1px solid" + (D ? "#374151" : "#e5e7eb"),
                       borderRadius: 8,
                       fontSize: 11,
@@ -8573,14 +8573,14 @@ mark${q.marks !== 1 ? "s" : ""}]`}
                   <Radar
                     name="Score"
                     dataKey="pct"
-                    stroke="#6366f1"
-                    fill="#6366f1"
+                    stroke="#7c3aed"
+                    fill="#7c3aed"
                     fillOpacity={0.25}
                     strokeWidth={2}
                   />
                   <Tooltip
                     contentStyle={{
-                      background: D ? "#1e2537" : "#fff",
+                      background: D ? "#191a2b" : "#fff",
                       border: "1px solid" + (D ? "#374151" : "#e5e7eb"),
                       borderRadius: 8,
                       fontSize: 11,
@@ -8720,7 +8720,7 @@ mark${q.marks !== 1 ? "s" : ""}]`}
                           style={{
                             height: 5,
                             borderRadius: 5,
-                            background: D ? "#2a3347" : "#e5e7eb",
+                            background: D ? "#262844" : "#e5e7eb",
                             marginBottom: 4,
                           }}
                         >
@@ -8783,7 +8783,7 @@ mark${q.marks !== 1 ? "s" : ""}]`}
                               height: 26,
                               borderRadius: 6,
                               border: "2px solid" + (sel ? gc : "transparent"),
-                              background: sel ? gc : D ? "#1e2537" : "#f3f4f6",
+                              background: sel ? gc : D ? "#191a2b" : "#f3f4f6",
                               color: sel ? "#fff" : D ? "#9ca3af" : "#6b7280",
                               fontWeight: sel ? 800 : 500,
                               fontSize: 11,
@@ -8870,7 +8870,7 @@ mark${q.marks !== 1 ? "s" : ""}]`}
                           alignItems: "center",
                           padding: "7px 12px",
                           borderRadius: 10,
-                          background: D ? "#1e2537" : "#fef2f2",
+                          background: D ? "#191a2b" : "#fef2f2",
                           marginBottom: 5,
                         }}
                       >
@@ -8916,7 +8916,7 @@ mark${q.marks !== 1 ? "s" : ""}]`}
                 ...C(D),
                 padding: 18,
                 marginBottom: 16,
-                borderColor: "#6366f1",
+                borderColor: "#7c3aed",
                 borderWidth: 1.5,
               }}
             >
@@ -8933,7 +8933,7 @@ mark${q.marks !== 1 ? "s" : ""}]`}
                     width: 38,
                     height: 38,
                     borderRadius: 10,
-                    background: "#6366f122",
+                    background: "#7c3aed22",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -8946,7 +8946,7 @@ mark${q.marks !== 1 ? "s" : ""}]`}
                     style={{
                       fontSize: 11,
                       fontWeight: 800,
-                      color: "#6366f1",
+                      color: "#7c3aed",
                       letterSpacing: "0.07em",
                       textTransform: "uppercase",
                       marginBottom: 3,
@@ -8968,9 +8968,9 @@ mark${q.marks !== 1 ? "s" : ""}]`}
                     style={{
                       padding: "8px 12px",
                       borderRadius: 8,
-                      background: D ? "rgba(99,102,241,.08)" : "#eef2ff",
+                      background: D ? "rgba(99,102,241,.08)" : "#f5f3ff",
                       fontSize: 12,
-                      color: D ? "#c7d2fe" : "#3730a3",
+                      color: D ? "#ddd6fe" : "#4c1d95",
                       lineHeight: 1.5,
                     }}
                   >
@@ -9013,7 +9013,7 @@ mark${q.marks !== 1 ? "s" : ""}]`}
               <div style={{ textAlign: "right" }}>
                 <div style={{ fontSize: 11, color: mu(D) }}>Achievements</div>
                 <div
-                  style={{ fontWeight: 700, fontSize: 20, color: "#6366f1" }}
+                  style={{ fontWeight: 700, fontSize: 20, color: "#7c3aed" }}
                 >
                   {achievements.length}/{ACHIEVEMENTS.length}
                 </div>
@@ -9127,7 +9127,7 @@ mark${q.marks !== 1 ? "s" : ""}]`}
               style={{
                 height: 4,
                 borderRadius: 4,
-                background: D ? "#2a3347" : "#e5e7eb",
+                background: D ? "#262844" : "#e5e7eb",
                 marginBottom: 22,
               }}
             >
@@ -9196,7 +9196,7 @@ mark${q.marks !== 1 ? "s" : ""}]`}
                     const sel = ttSelOpt === oi,
                       correct = oi === q.answer,
                       rev = ttRes != null;
-                    let bg2 = D ? "#1f2937" : "#f9fafb",
+                    let bg2 = D ? "#1c1d30" : "#f9fafb",
                       br2 = bd2,
                       co2 = tx(D);
                     if (rev && correct) {
@@ -9335,7 +9335,7 @@ mark${q.marks !== 1 ? "s" : ""}]`}
                         width: "100%",
                         background:
                           ttTextAns.trim() && !ttMarking
-                            ? "#6366f1"
+                            ? "#7c3aed"
                             : "#9ca3af",
                         color: "#fff",
                         border: "none",
@@ -9359,7 +9359,7 @@ mark${q.marks !== 1 ? "s" : ""}]`}
                         ...C(D),
                         padding: 18,
                         background: D ? "#1a1a2e" : "#f8f7ff",
-                        borderColor: "#6366f1",
+                        borderColor: "#7c3aed",
                       }}
                       className="fade-in"
                     >
@@ -9751,7 +9751,7 @@ mark${q.marks !== 1 ? "s" : ""}]`}
                   setPrereqModal(null);
                 }}
                 style={{
-                  ...B("#6366f1", false, { padding: "8px 12px", fontSize: 12 }),
+                  ...B("#7c3aed", false, { padding: "8px 12px", fontSize: 12 }),
                 }}
               >
                 Go to prerequisite
@@ -9819,7 +9819,7 @@ mark${q.marks !== 1 ? "s" : ""}]`}
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
-              background: D ? "#1e2537" : "#fff",
+              background: D ? "#191a2b" : "#fff",
               borderRadius: 16,
               width: 480,
               maxWidth: "96vw",
@@ -9875,7 +9875,7 @@ mark${q.marks !== 1 ? "s" : ""}]`}
                       alignItems: "center",
                       padding: "8px 12px",
                       borderRadius: 8,
-                      background: D ? "#161b27" : "#f9fafb",
+                      background: D ? "#13131f" : "#f9fafb",
                       marginBottom: 6,
                     }}
                   >
@@ -9892,7 +9892,7 @@ mark${q.marks !== 1 ? "s" : ""}]`}
                       style={{
                         fontSize: 13,
                         fontWeight: 700,
-                        color: "#6366f1",
+                        color: "#7c3aed",
                       }}
                     >
                       {count}

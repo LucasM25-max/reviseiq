@@ -79,7 +79,7 @@ export function FocusMode({ D, cards, questions, section, subj, fcHist, onExit }
       : (1 - timeLeft / (5 * 60)) * 100;
   const r = 70,
     circ = 2 * Math.PI * r;
-  const col = mode === "work" ? "#6366f1" : "#10b981";
+  const col = mode === "work" ? "#7c3aed" : "#10b981";
   const fc = cards[Math.min(cardIdx, cards.length - 1)];
 
   if (exitConfirm)
@@ -98,7 +98,7 @@ export function FocusMode({ D, cards, questions, section, subj, fcHist, onExit }
       >
         <div
           style={{
-            background: D ? "#1e2537" : "#fff",
+            background: D ? "#191a2b" : "#fff",
             borderRadius: 20,
             padding: 28,
             maxWidth: 340,
@@ -193,8 +193,8 @@ export function FocusMode({ D, cards, questions, section, subj, fcHist, onExit }
               fontSize: 12,
               padding: "5px 10px",
               borderRadius: 8,
-              border: `1px solid ${noise ? "#6366f1" : "#d1d5db"}`,
-              background: noise ? "#6366f1" : "transparent",
+              border: `1px solid ${noise ? "#7c3aed" : "#d1d5db"}`,
+              background: noise ? "#7c3aed" : "transparent",
               color: noise ? "#fff" : D ? "#9ca3af" : "#6b7280",
               cursor: "pointer",
             }}
@@ -225,7 +225,7 @@ export function FocusMode({ D, cards, questions, section, subj, fcHist, onExit }
             cy={80}
             r={r}
             fill="none"
-            stroke={D ? "#2a3347" : "#e5e7eb"}
+            stroke={D ? "#262844" : "#e5e7eb"}
             strokeWidth={8}
           />
           <circle
@@ -284,7 +284,7 @@ export function FocusMode({ D, cards, questions, section, subj, fcHist, onExit }
                 padding: "6px 10px",
                 borderRadius: 8,
                 border: "1px solid #d1d5db",
-                background: D ? "#1e2537" : "#fff",
+                background: D ? "#191a2b" : "#fff",
                 color: D ? "#e8ecf4" : "#111827",
                 fontSize: 12,
               }}
@@ -358,7 +358,7 @@ export function FocusMode({ D, cards, questions, section, subj, fcHist, onExit }
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              borderColor: flipped ? "#6366f1" : undefined,
+              borderColor: flipped ? "#7c3aed" : undefined,
             }}
           >
             <div
@@ -366,7 +366,7 @@ export function FocusMode({ D, cards, questions, section, subj, fcHist, onExit }
                 fontSize: 17,
                 lineHeight: 1.7,
                 fontWeight: flipped ? 600 : 400,
-                color: flipped ? "#6366f1" : tx(D),
+                color: flipped ? "#7c3aed" : tx(D),
               }}
             >
               {flipped ? fc.a || fc.back || "" : fc.q || fc.front || ""}
@@ -399,7 +399,7 @@ export function FocusMode({ D, cards, questions, section, subj, fcHist, onExit }
                 padding: "10px 0",
                 borderRadius: 10,
                 border: "none",
-                background: "#6366f1",
+                background: "#7c3aed",
                 color: "#fff",
                 cursor: "pointer",
                 fontSize: 13,

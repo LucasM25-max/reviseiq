@@ -98,7 +98,7 @@ export function SearchModal({
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: D ? "#1e2537" : "#fff",
+          background: D ? "#191a2b" : "#fff",
           borderRadius: 14,
           width: 520,
           maxWidth: "92vw",
@@ -217,9 +217,9 @@ export function SearchModal({
             <span
               style={{
                 fontSize: 10,
-                color: "#6366f1",
+                color: "#7c3aed",
                 fontWeight: 600,
-                background: D ? "#312e81" : "#eef2ff",
+                background: D ? "#3b0764" : "#f5f3ff",
                 padding: "2px 7px",
                 borderRadius: 8,
                 flexShrink: 0,
@@ -255,7 +255,7 @@ export function SubjectSelectionScreen({
   });
   const [step, setStep] = React.useState("subjects");
   const [err, setErr] = React.useState("");
-  const bd2 = D ? "#2a3347" : "#e5e7eb";
+  const bd2 = D ? "#262844" : "#e5e7eb";
   const BOARDS = ["AQA", "Edexcel", "Eduqas", "OCR", "WJEC"];
   const toggleSubject = (id) => {
     setSelected((prev) => {
@@ -311,7 +311,7 @@ export function SubjectSelectionScreen({
       <div
         style={{
           minHeight: "100vh",
-          background: D ? "#0f1117" : "#f0f4ff",
+          background: D ? "radial-gradient(1200px 820px at 12% -12%, rgba(124,58,237,.20), transparent 60%), radial-gradient(1000px 720px at 102% 4%, rgba(217,70,239,.14), transparent 55%), radial-gradient(900px 700px at 50% 120%, rgba(59,130,246,.10), transparent 55%), #0a0a14" : "radial-gradient(1100px 780px at 10% -10%, rgba(124,58,237,.10), transparent 60%), radial-gradient(940px 660px at 104% 2%, rgba(217,70,239,.08), transparent 55%), radial-gradient(820px 640px at 50% 116%, rgba(59,130,246,.06), transparent 55%), #f6f6fc",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -322,7 +322,7 @@ export function SubjectSelectionScreen({
           style={{
             width: "100%",
             maxWidth: 680,
-            background: D ? "#161b27" : "#fff",
+            background: D ? "#13131f" : "#fff",
             borderRadius: 20,
             boxShadow: "0 30px 80px rgba(0,0,0,.15)",
             overflow: "hidden",
@@ -331,7 +331,7 @@ export function SubjectSelectionScreen({
           {}
           <div
             style={{
-              background: "linear-gradient(135deg,#6366f1,#8b5cf6)",
+              background: "linear-gradient(135deg,#7c3aed,#8b5cf6)",
               padding: "32px 32px 24px",
             }}
           >
@@ -504,7 +504,7 @@ export function SubjectSelectionScreen({
             style={{
               padding: "20px 28px",
               borderTop: `1px solid ${bd2}`,
-              background: D ? "#0f1117" : "#f9fafb",
+              background: D ? "#0a0a14" : "#f9fafb",
             }}
           >
             <div
@@ -521,7 +521,7 @@ export function SubjectSelectionScreen({
                   "No subjects selected yet"
                 ) : (
                   <>
-                    <strong style={{ color: "#6366f1" }}>
+                    <strong style={{ color: "#7c3aed" }}>
                       {selected.size}
                     </strong>
                     subject{selected.size !== 1 ? "s" : ""} selected
@@ -555,7 +555,7 @@ export function SubjectSelectionScreen({
                     padding: "11px 28px",
                     borderRadius: 12,
                     border: "none",
-                    background: selected.size > 0 ? "#6366f1" : "#9ca3af",
+                    background: selected.size > 0 ? "#7c3aed" : "#9ca3af",
                     color: "#fff",
                     fontWeight: 700,
                     fontSize: 14,
@@ -576,7 +576,7 @@ export function SubjectSelectionScreen({
     <div
       style={{
         minHeight: "100vh",
-        background: D ? "#0f1117" : "#f0f4ff",
+        background: D ? "radial-gradient(1200px 820px at 12% -12%, rgba(124,58,237,.20), transparent 60%), radial-gradient(1000px 720px at 102% 4%, rgba(217,70,239,.14), transparent 55%), radial-gradient(900px 700px at 50% 120%, rgba(59,130,246,.10), transparent 55%), #0a0a14" : "radial-gradient(1100px 780px at 10% -10%, rgba(124,58,237,.10), transparent 60%), radial-gradient(940px 660px at 104% 2%, rgba(217,70,239,.08), transparent 55%), radial-gradient(820px 640px at 50% 116%, rgba(59,130,246,.06), transparent 55%), #f6f6fc",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -587,7 +587,7 @@ export function SubjectSelectionScreen({
         style={{
           width: "100%",
           maxWidth: 580,
-          background: D ? "#161b27" : "#fff",
+          background: D ? "#13131f" : "#fff",
           borderRadius: 20,
           boxShadow: "0 30px 80px rgba(0,0,0,.15)",
           overflow: "hidden",
@@ -595,7 +595,7 @@ export function SubjectSelectionScreen({
       >
         <div
           style={{
-            background: "linear-gradient(135deg,#6366f1,#8b5cf6)",
+            background: "linear-gradient(135deg,#7c3aed,#8b5cf6)",
             padding: "28px 32px 22px",
           }}
         >
@@ -644,7 +644,7 @@ export function SubjectSelectionScreen({
             style={{
               padding: "10px 14px",
               borderRadius: 10,
-              background: D ? "#1e2537" : "#f3f4f6",
+              background: D ? "#191a2b" : "#f3f4f6",
               display: "flex",
               alignItems: "center",
               gap: 10,
@@ -698,7 +698,7 @@ export function SubjectSelectionScreen({
                   padding: "12px 14px",
                   borderRadius: 12,
                   border: `1px solid ${bd2}`,
-                  background: D ? "#1e2537" : "#f9fafb",
+                  background: D ? "#191a2b" : "#f9fafb",
                 }}
               >
                 <span style={{ fontSize: 20, flexShrink: 0 }}>{s.icon}</span>
@@ -749,7 +749,7 @@ export function SubjectSelectionScreen({
           style={{
             padding: "20px 28px",
             borderTop: `1px solid ${bd2}`,
-            background: D ? "#0f1117" : "#f9fafb",
+            background: D ? "#0a0a14" : "#f9fafb",
             display: "flex",
             gap: 12,
             justifyContent: "flex-end",
@@ -779,7 +779,7 @@ export function SubjectSelectionScreen({
               padding: "12px 32px",
               borderRadius: 12,
               border: "none",
-              background: "#6366f1",
+              background: "#7c3aed",
               color: "#fff",
               fontWeight: 700,
               fontSize: 14,
@@ -815,7 +815,7 @@ export function OnboardingWizard({ D, onComplete }) {
       >
         <div
           style={{
-            background: D ? "#1e2537" : "#fff",
+            background: D ? "#191a2b" : "#fff",
             borderRadius: 20,
             padding: 32,
             width: 400,
@@ -869,8 +869,8 @@ export function OnboardingWizard({ D, onComplete }) {
                 style={{
                   padding: "10px 18px",
                   borderRadius: 10,
-                  border: `2px solid ${b === board ? "#6366f1" : "#e5e7eb"}`,
-                  background: b === board ? "#6366f1" : "transparent",
+                  border: `2px solid ${b === board ? "#7c3aed" : "#e5e7eb"}`,
+                  background: b === board ? "#7c3aed" : "transparent",
                   color: b === board ? "#fff" : D ? "#d1d5db" : "#374151",
                   fontWeight: 600,
                   fontSize: 14,
@@ -884,7 +884,7 @@ export function OnboardingWizard({ D, onComplete }) {
           <button
             onClick={() => setStep(2)}
             style={{
-              background: "#6366f1",
+              background: "#7c3aed",
               color: "#fff",
               border: "none",
               borderRadius: 12,
@@ -916,7 +916,7 @@ export function OnboardingWizard({ D, onComplete }) {
       >
         <div
           style={{
-            background: D ? "#1e2537" : "#fff",
+            background: D ? "#191a2b" : "#fff",
             borderRadius: 20,
             padding: 32,
             width: 400,
@@ -980,7 +980,7 @@ export function OnboardingWizard({ D, onComplete }) {
               onClick={() => onComplete(board, examDate || null)}
               style={{
                 flex: 2,
-                background: "#6366f1",
+                background: "#7c3aed",
                 color: "#fff",
                 border: "none",
                 borderRadius: 12,

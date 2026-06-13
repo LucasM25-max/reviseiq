@@ -11,7 +11,7 @@ export function SubjMyNotesTab({
   mu2,
 }) {
   var subjUCData = ucData[subjId] || { sections: [] };
-  var bd2 = D ? "#374151" : "#e0e7ff";
+  var bd2 = D ? "#374151" : "#ede9fe";
   return (
     <div className="fade-in">
       <div
@@ -43,7 +43,7 @@ export function SubjMyNotesTab({
             padding: "8px 16px",
             borderRadius: 8,
             border: "none",
-            background: "#6366f1",
+            background: "#7c3aed",
             color: "#fff",
             fontSize: 13,
             fontWeight: 600,
@@ -59,7 +59,7 @@ export function SubjMyNotesTab({
             padding: "40px 24px",
             textAlign: "center",
             borderRadius: 12,
-            border: "1.5px dashed #6366f1",
+            border: "1.5px dashed #7c3aed",
             background: D ? "rgba(99,102,241,.04)" : "#fafaff",
           }}
         >
@@ -92,7 +92,7 @@ export function SubjMyNotesTab({
             <div
               key={sec.id}
               style={{
-                border: "1.5px solid #6366f1",
+                border: "1.5px solid #7c3aed",
                 borderRadius: 12,
                 overflow: "hidden",
                 background: D ? "rgba(99,102,241,.04)" : "#fafaff",
@@ -112,7 +112,7 @@ export function SubjMyNotesTab({
                 onMouseEnter={function (e) {
                   e.currentTarget.style.background = D
                     ? "rgba(99,102,241,.1)"
-                    : "#eef2ff";
+                    : "#f5f3ff";
                 }}
                 onMouseLeave={function (e) {
                   e.currentTarget.style.background = "transparent";
@@ -141,7 +141,7 @@ export function SubjMyNotesTab({
                     style={{
                       fontSize: 9,
                       fontWeight: 700,
-                      background: "#6366f1",
+                      background: "#7c3aed",
                       color: "#fff",
                       padding: "2px 6px",
                       borderRadius: 6,
@@ -178,7 +178,7 @@ export function SubjMyNotesTab({
                     background: "none",
                     border: "none",
                     cursor: "pointer",
-                    color: "#6366f1",
+                    color: "#7c3aed",
                     fontWeight: 600,
                   }}
                 >
@@ -214,7 +214,7 @@ export function SubjMyNotesTab({
 
 export function AppFooter({ D, onContact }) {
   var bg2 = D ? "#0d1117" : "#f9fafb";
-  var border = D ? "#1f2937" : "#e5e7eb";
+  var border = D ? "#1c1d30" : "#e5e7eb";
   return (
     <footer
       style={{
@@ -259,9 +259,9 @@ export function AppFooter({ D, onContact }) {
           style={{
             fontSize: 12,
             fontWeight: 600,
-            color: "#6366f1",
+            color: "#7c3aed",
             background: "none",
-            border: "1px solid #6366f1",
+            border: "1px solid #7c3aed",
             borderRadius: 8,
             padding: "6px 14px",
             cursor: "pointer",
@@ -288,7 +288,7 @@ export function _psId(s) {
 export function CreatePersonalSubjectModal({ D, onSave, onClose }) {
   const [name, setName] = React.useState("");
   const [icon, setIcon] = React.useState(" ");
-  const [color, setColor] = React.useState("#6366f1");
+  const [color, setColor] = React.useState("#7c3aed");
   var icons = [
     " ",
     " ",
@@ -307,7 +307,7 @@ export function CreatePersonalSubjectModal({ D, onSave, onClose }) {
     " ",
   ];
   var colors = [
-    "#6366f1",
+    "#7c3aed",
     "#0ea5e9",
     "#10b981",
     "#f59e0b",
@@ -338,7 +338,7 @@ export function CreatePersonalSubjectModal({ D, onSave, onClose }) {
           e.stopPropagation();
         }}
         style={{
-          background: D ? "#1e2537" : "#fff",
+          background: D ? "#191a2b" : "#fff",
           borderRadius: 16,
           width: 440,
           maxWidth: "96vw",
@@ -374,7 +374,7 @@ export function CreatePersonalSubjectModal({ D, onSave, onClose }) {
               padding: "9px 12px",
               borderRadius: 8,
               border: "1px solid" + bd,
-              background: D ? "#161b27" : "#f9fafb",
+              background: D ? "#13131f" : "#f9fafb",
               color: D ? "#e8ecf4" : "#111827",
               fontSize: 13,
             }}
@@ -489,7 +489,7 @@ export function CreatePersonalSubjectModal({ D, onSave, onClose }) {
               padding: "9px 20px",
               borderRadius: 10,
               border: "none",
-              background: name.trim() ? "#6366f1" : "#d1d5db",
+              background: name.trim() ? "#7c3aed" : "#d1d5db",
               color: "#fff",
               fontWeight: 600,
               fontSize: 13,
@@ -526,7 +526,7 @@ export function AddPersonalTopicModal({ D, onSave, onClose }) {
           e.stopPropagation();
         }}
         style={{
-          background: D ? "#1e2537" : "#fff",
+          background: D ? "#191a2b" : "#fff",
           borderRadius: 16,
           width: 380,
           maxWidth: "96vw",
@@ -558,7 +558,7 @@ export function AddPersonalTopicModal({ D, onSave, onClose }) {
             padding: "9px 12px",
             borderRadius: 8,
             border: "1px solid" + bd,
-            background: D ? "#161b27" : "#f9fafb",
+            background: D ? "#13131f" : "#f9fafb",
             color: D ? "#e8ecf4" : "#111827",
             fontSize: 13,
             marginBottom: 16,
@@ -594,7 +594,7 @@ export function AddPersonalTopicModal({ D, onSave, onClose }) {
               padding: "8px 16px",
               borderRadius: 9,
               border: "none",
-              background: title.trim() ? "#6366f1" : "#d1d5db",
+              background: title.trim() ? "#7c3aed" : "#d1d5db",
               color: "#fff",
               fontWeight: 600,
               fontSize: 13,
@@ -622,7 +622,7 @@ export function PersonalSectionScreen({ D, subj, topic, user, onBack, onSave }) 
   var bd = D ? "#374151" : "#e5e7eb";
 
   var tx2 = D ? "#e8ecf4" : "#111827";
-  var bg = D ? "#161b27" : "#f9fafb";
+  var bg = D ? "#13131f" : "#f9fafb";
   var notes = topic.notes || [];
   var flashcards = topic.flashcards || [];
   function addNote() {
@@ -863,7 +863,7 @@ export function PersonalSectionScreen({ D, subj, topic, user, onBack, onSave }) 
         {}
         <div
           style={{
-            background: D ? "#1e2537" : "#fff",
+            background: D ? "#191a2b" : "#fff",
             border: "1px solid" + bd,
             borderRadius: 12,
             padding: 16,
@@ -896,7 +896,7 @@ export function PersonalSectionScreen({ D, subj, topic, user, onBack, onSave }) 
               padding: "8px 10px",
               borderRadius: 8,
               border: "1px solid" + bd,
-              background: D ? "#161b27" : "#f9fafb",
+              background: D ? "#13131f" : "#f9fafb",
               color: tx2,
               fontSize: 12,
               resize: "vertical",
@@ -944,7 +944,7 @@ export function PersonalSectionScreen({ D, subj, topic, user, onBack, onSave }) 
                   padding: "9px 12px",
                   borderRadius: 8,
                   border: "1px solid" + bd,
-                  background: D ? "#161b27" : "#f9fafb",
+                  background: D ? "#13131f" : "#f9fafb",
                   color: tx2,
                   fontSize: 13,
                 }}
@@ -983,7 +983,7 @@ export function PersonalSectionScreen({ D, subj, topic, user, onBack, onSave }) 
                 <div
                   key={n.id}
                   style={{
-                    background: D ? "#1e2537" : "#fff",
+                    background: D ? "#191a2b" : "#fff",
                     border: "1px solid" + bd,
                     borderRadius: 10,
                     padding: "12px 14px",
@@ -1036,7 +1036,7 @@ export function PersonalSectionScreen({ D, subj, topic, user, onBack, onSave }) 
                   }}
                   style={{
                     cursor: "pointer",
-                    background: D ? "#1e2537" : "#fff",
+                    background: D ? "#191a2b" : "#fff",
                     border: "2px solid" + subj.accent,
                     borderRadius: 16,
                     padding: "32px 24px",
@@ -1167,7 +1167,7 @@ export function PersonalSectionScreen({ D, subj, topic, user, onBack, onSave }) 
             )}
             <div
               style={{
-                background: D ? "#1e2537" : "#fff",
+                background: D ? "#191a2b" : "#fff",
                 border: "1px solid" + bd,
                 borderRadius: 12,
                 padding: 16,
@@ -1194,7 +1194,7 @@ export function PersonalSectionScreen({ D, subj, topic, user, onBack, onSave }) 
                   padding: "8px 10px",
                   borderRadius: 7,
                   border: "1px solid" + bd,
-                  background: D ? "#161b27" : "#f9fafb",
+                  background: D ? "#13131f" : "#f9fafb",
                   color: tx2,
                   fontSize: 13,
                   marginBottom: 8,
@@ -1212,7 +1212,7 @@ export function PersonalSectionScreen({ D, subj, topic, user, onBack, onSave }) 
                   padding: "8px 10px",
                   borderRadius: 7,
                   border: "1px solid" + bd,
-                  background: D ? "#161b27" : "#f9fafb",
+                  background: D ? "#13131f" : "#f9fafb",
                   color: tx2,
                   fontSize: 13,
                   marginBottom: 10,
@@ -1258,7 +1258,7 @@ export function PersonalSubjectScreen({
   const [editingName, setEditingName] = React.useState(false);
   const [newName, setNewName] = React.useState(subj.name);
   var bd = D ? "#374151" : "#e5e7eb";
-  var bg = D ? "#161b27" : "#f9fafb";
+  var bg = D ? "#13131f" : "#f9fafb";
   var tx2 = D ? "#e8ecf4" : "#111827";
   if (activeTopic) {
     function saveTopicData(updated) {

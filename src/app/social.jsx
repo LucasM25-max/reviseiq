@@ -148,7 +148,7 @@ export function SchoolLeaderboard({ user, school, D }) {
           marginTop: 14,
           padding: "10px 14px",
           borderRadius: 10,
-          background: D ? "#1e2537" : "#f3f4f6",
+          background: D ? "#191a2b" : "#f3f4f6",
           fontSize: 12,
           color: D ? "#9ca3af" : "#6b7280",
         }}
@@ -175,7 +175,7 @@ export function SchoolLeaderboard({ user, school, D }) {
           marginTop: 14,
           padding: "10px 14px",
           borderRadius: 10,
-          background: D ? "#1e2537" : "#f3f4f6",
+          background: D ? "#191a2b" : "#f3f4f6",
           fontSize: 12,
           color: D ? "#9ca3af" : "#6b7280",
         }}
@@ -226,13 +226,13 @@ export function SchoolLeaderboard({ user, school, D }) {
                 background: isMe
                   ? D
                     ? "rgba(99,102,241,.2)"
-                    : "#eef2ff"
+                    : "#f5f3ff"
                   : D
-                    ? "#1f2937"
+                    ? "#1c1d30"
                     : "#f9fafb",
 
                 border: isMe
-                  ? "1.5px solid #6366f1"
+                  ? "1.5px solid #7c3aed"
                   : "1.5px solid transparent",
                 flexShrink: 0,
               }}
@@ -255,7 +255,7 @@ export function SchoolLeaderboard({ user, school, D }) {
                   flex: 1,
                   fontSize: 13,
                   fontWeight: isMe ? 700 : 400,
-                  color: isMe ? "#6366f1" : tx2,
+                  color: isMe ? "#7c3aed" : tx2,
                 }}
               >
                 {name}

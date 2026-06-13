@@ -124,7 +124,7 @@ export function AITutorScreen({
   const secList = allSections.filter(function (s) {
     return s.subjectId === selSubj;
   });
-  const bd2 = D ? "#2a3347" : "#e5e7eb";
+  const bd2 = D ? "#262844" : "#e5e7eb";
   var memKey =
     "gcse:tutor-mem:" + (user || "anon") + ":" + selSubj + ":" + selBoard;
 
@@ -612,7 +612,7 @@ student has shared this file with you]`,
     <div
       style={{
         minHeight: "100vh",
-        background: D ? "#0f1117" : "#f9fafb",
+        background: D ? "radial-gradient(1200px 820px at 12% -12%, rgba(124,58,237,.20), transparent 60%), radial-gradient(1000px 720px at 102% 4%, rgba(217,70,239,.14), transparent 55%), radial-gradient(900px 700px at 50% 120%, rgba(59,130,246,.10), transparent 55%), #0a0a14" : "radial-gradient(1100px 780px at 10% -10%, rgba(124,58,237,.10), transparent 60%), radial-gradient(940px 660px at 104% 2%, rgba(217,70,239,.08), transparent 55%), radial-gradient(820px 640px at 50% 116%, rgba(59,130,246,.06), transparent 55%), #f6f6fc",
         display: "flex",
         flexDirection: "column",
         color: tx(D),
@@ -671,9 +671,9 @@ student has shared this file with you]`,
                     fontSize: 11,
                     padding: "5px 12px",
                     borderRadius: 20,
-                    border: `1.5px solid ${mode === m ? "#6366f1" : bd2}`,
+                    border: `1.5px solid ${mode === m ? "#7c3aed" : bd2}`,
 
-                    background: mode === m ? "#6366f1" : "transparent",
+                    background: mode === m ? "#7c3aed" : "transparent",
                     color: mode === m ? "#fff" : mu(D),
                     cursor: "pointer",
                     fontWeight: mode === m ? 700 : 400,
@@ -770,7 +770,7 @@ student has shared this file with you]`,
                     socraticLevel === 2
                       ? D
                         ? "rgba(99,102,241,.2)"
-                        : "#eef2ff"
+                        : "#f5f3ff"
                       : socraticLevel === 1
                         ? D
                           ? "rgba(245,158,11,.15)"
@@ -780,7 +780,7 @@ student has shared this file with you]`,
                           : "#ecfdf5",
                   color:
                     socraticLevel === 2
-                      ? "#6366f1"
+                      ? "#7c3aed"
                       : socraticLevel === 1
                         ? "#d97706"
                         : "#059669",
@@ -915,7 +915,7 @@ student has shared this file with you]`,
                       width: 30,
                       height: 30,
                       borderRadius: "50%",
-                      background: "#6366f1",
+                      background: "#7c3aed",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -934,7 +934,7 @@ student has shared this file with you]`,
                     borderRadius: isU
                       ? "16px 16px 4px 16px"
                       : "16px 16px 16px 4px",
-                    background: isU ? "#6366f1" : D ? "#1e2537" : "#f3f4f6",
+                    background: isU ? "#7c3aed" : D ? "#191a2b" : "#f3f4f6",
                     color: isU ? "#fff" : tx(D),
                     fontSize: 13,
                     lineHeight: 1.7,
@@ -1054,7 +1054,7 @@ student has shared this file with you]`,
                           padding: "3px 10px",
                           borderRadius: 14,
                           border: "1px solid" + (D ? "#374151" : "#d1d5db"),
-                          background: D ? "#1e2537" : "#fff",
+                          background: D ? "#191a2b" : "#fff",
                           color: mu(D),
                           cursor: "pointer",
                         }}
@@ -1077,7 +1077,7 @@ student has shared this file with you]`,
                 width: 30,
                 height: 30,
                 borderRadius: "50%",
-                background: "#6366f1",
+                background: "#7c3aed",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -1092,7 +1092,7 @@ student has shared this file with you]`,
               style={{
                 padding: "10px 14px",
                 borderRadius: "16px 16px 16px 4px",
-                background: D ? "#1e2537" : "#f3f4f6",
+                background: D ? "#191a2b" : "#f3f4f6",
                 fontSize: 13,
                 color: mu(D),
               }}
@@ -1133,7 +1133,7 @@ student has shared this file with you]`,
                     gap: 5,
                     padding: "4px 8px",
                     borderRadius: 8,
-                    background: D ? "#1e2537" : "#f3f4f6",
+                    background: D ? "#191a2b" : "#f3f4f6",
                     border: `1px solid ${bd2}`,
                     maxWidth: 160,
                   }}
@@ -1288,7 +1288,7 @@ student has shared this file with you]`,
               onClick={send}
               disabled={sending || (!input.trim() && !files.length)}
               style={{
-                ...B("#6366f1", false, {
+                ...B("#7c3aed", false, {
                   padding: "9px 16px",
                   flexShrink: 0,
                   fontSize: 16,

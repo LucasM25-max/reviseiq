@@ -186,7 +186,7 @@ Mono',monospace;background:rgba(99,102,241,.13);padding:1px
           display: "flex",
           gap: 2,
           padding: "5px 8px",
-          background: D ? "#1e2537" : "#f3f4f6",
+          background: D ? "#191a2b" : "#f3f4f6",
           borderBottom: `1px solid ${brd}`,
           flexWrap: "wrap",
           alignItems: "center",
@@ -246,7 +246,7 @@ Mono',monospace;background:rgba(99,102,241,.13);padding:1px
             e.preventDefault();
             insLatex();
           }}
-          style={{ ...bs, color: "#6366f1" }}
+          style={{ ...bs, color: "#7c3aed" }}
           title="Insert LaTeX"
         >
           ∑ LaTeX
@@ -272,7 +272,7 @@ Mono',monospace;background:rgba(99,102,241,.13);padding:1px
         data-placeholder={placeholder || "Write here…"}
         style={{
           padding: "12px 14px",
-          background: D ? "#1e2537" : "#fff",
+          background: D ? "#191a2b" : "#fff",
           color: tx(D),
           minHeight,
           outline: "none",
@@ -552,11 +552,11 @@ export function MD({ text, D }) {
 export const NOTE_SEC_DEFS = {
   "CORE CONTENT": {
     icon: "📘",
-    border: "#6366f1",
-    bg_l: "#eef2ff",
+    border: "#7c3aed",
+    bg_l: "#f5f3ff",
     bg_d: "rgba(99,102,241,.08)",
-    lbl_l: "#4338ca",
-    lbl_d: "#a5b4fc",
+    lbl_l: "#5b21b6",
+    lbl_d: "#c4b5fd",
     selfCheck: false,
   },
   "WORKED EXAMPLE": {
@@ -648,7 +648,7 @@ export function parseNoteBody(body) {
         icon: "🧠",
         border: "#6b7280",
         bg_l: "#f9fafb",
-        bg_d: "#1f2937",
+        bg_d: "#1c1d30",
         lbl_l: "#374151",
         lbl_d: "#d1d5db",
         selfCheck: false,
@@ -684,9 +684,9 @@ export function NoteSec({ sec, D, images = [] }) {
     ) : null;
   const { def, heading } = sec;
   const borderCol = def?.border || "#6b7280";
-  const bgCol = D ? def?.bg_d || "#1f2937" : def?.bg_l || "#f9fafb";
+  const bgCol = D ? def?.bg_d || "#1c1d30" : def?.bg_l || "#f9fafb";
   const lblCol = D ? def?.lbl_d || "#9ca3af" : def?.lbl_l || "#374151";
-  const bd2 = D ? "#2a3347" : "#e5e7eb";
+  const bd2 = D ? "#262844" : "#e5e7eb";
   return (
     <div
       style={{
@@ -878,8 +878,8 @@ export function SmartNoteCard({
   const [lightbox, setLightbox] = React.useState(null);
   const isHtml = (note.body || "").trimStart().startsWith("<");
   const parsed = !isHtml ? parseNoteBody(note.body || "") : null;
-  const bd2 = D ? "#2a3347" : "#e5e7eb";
-  const accentCol = subjectAccent || "#6366f1";
+  const bd2 = D ? "#262844" : "#e5e7eb";
+  const accentCol = subjectAccent || "#7c3aed";
   const isSideBySide =
     note.layoutMode === "side-by-side" && (note.images || []).length > 0;
 
@@ -903,7 +903,7 @@ export function SmartNoteCard({
   return (
     <div
       style={{
-        background: D ? "#161b27" : "#fff",
+        background: D ? "#13131f" : "#fff",
         borderRadius: 14,
         border: `1px solid ${bd2}`,
         overflow: "hidden",
@@ -984,7 +984,7 @@ export function SmartNoteCard({
                 border: "none",
                 cursor: "pointer",
                 fontSize: 13,
-                color: "#6366f1",
+                color: "#7c3aed",
                 padding: "2px 6px",
               }}
             >
@@ -999,7 +999,7 @@ export function SmartNoteCard({
                   border: "none",
                   cursor: "pointer",
                   fontSize: 13,
-                  color: "#6366f1",
+                  color: "#7c3aed",
                   padding: "2px 6px",
                 }}
               >
@@ -1126,7 +1126,7 @@ export function SmartNoteCard({
             style={{
               marginTop: 12,
               paddingTop: 12,
-              borderTop: `1px solid ${D ? "#2a3347" : "#e5e7eb"}`,
+              borderTop: `1px solid ${D ? "#262844" : "#e5e7eb"}`,
             }}
           >
             <div
@@ -1171,7 +1171,7 @@ export function SmartNoteCard({
             style={{
               marginTop: 12,
               paddingTop: 12,
-              borderTop: `1px solid ${D ? "#2a3347" : "#e5e7eb"}`,
+              borderTop: `1px solid ${D ? "#262844" : "#e5e7eb"}`,
             }}
           >
             <DiagramRenderer diagram={note.diagram} D={D} width={660} />

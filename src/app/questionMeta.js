@@ -12,7 +12,7 @@ export function detectCardType(q) {
     return { label: "Apply", color: "#16a34a", icon: "🔧" };
   if (/evaluat|assess|extent|justify|argue/.test(t))
     return { label: "Evaluate", color: "#dc2626", icon: "🧠" };
-  return { label: "Recall", color: "#6366f1", icon: "🧠" };
+  return { label: "Recall", color: "#7c3aed", icon: "🧠" };
 }
 
 export const AO_COLORS = {

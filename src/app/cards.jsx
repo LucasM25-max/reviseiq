@@ -88,7 +88,7 @@ export function ClozeCard({ card, D, onSubmit, DiagramRendererComp }) {
         borderRadius: 12,
         border: `1.5px solid ${D ? "#374151" : "#e5e7eb"}`,
         padding: 16,
-        background: D ? "#161b27" : "#fff",
+        background: D ? "#13131f" : "#fff",
       }}
     >
       {card?.diagram && (
@@ -119,7 +119,7 @@ export function ClozeCard({ card, D, onSubmit, DiagramRendererComp }) {
                 margin: "05px",
                 borderRadius: 8,
                 border: `1.5px solid ${D ? "#4b5563" : "#cbd5e1"}`,
-                background: D ? "#0f172a" : "#f8fafc",
+                background: D ? "#0a0a14" : "#f8fafc",
                 color: D ? "#fff" : "#111",
               }}
             />
@@ -133,7 +133,7 @@ export function ClozeCard({ card, D, onSubmit, DiagramRendererComp }) {
           padding: "8px 14px",
           borderRadius: 8,
           border: "none",
-          background: "#6366f1",
+          background: "#7c3aed",
           color: "#fff",
           cursor: "pointer",
           fontWeight: 700,
@@ -198,7 +198,7 @@ export function SequenceCard({ card, D, onSubmit }) {
         borderRadius: 12,
         border: `1.5px solid ${D ? "#374151" : "#e5e7eb"}`,
         padding: 16,
-        background: D ? "#161b27" : "#fff",
+        background: D ? "#13131f" : "#fff",
       }}
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -214,7 +214,7 @@ export function SequenceCard({ card, D, onSubmit }) {
                 padding: "10px 12px",
                 borderRadius: 10,
                 border: `1px solid ${D ? "#4b5563" : "#d1d5db"}`,
-                background: D ? "#0f172a" : "#f9fafb",
+                background: D ? "#0a0a14" : "#f9fafb",
                 cursor: "grab",
               }}
             >
@@ -230,7 +230,7 @@ export function SequenceCard({ card, D, onSubmit }) {
           padding: "8px 14px",
           borderRadius: 8,
           border: "none",
-          background: "#6366f1",
+          background: "#7c3aed",
           color: "#fff",
           cursor: "pointer",
           fontWeight: 700,
@@ -300,7 +300,7 @@ export function QuestionFigure({ figure, D, figureNumber = 1, DiagramRendererCom
                   style={{
                     border: "1px solid #cbd5e1",
                     padding: 6,
-                    background: D ? "#0f172a" : "#f8fafc",
+                    background: D ? "#0a0a14" : "#f8fafc",
                   }}
                 >
                   {h2}
@@ -345,7 +345,7 @@ export function QuestionFigure({ figure, D, figureNumber = 1, DiagramRendererCom
                   y={h - pad - hh}
                   width={bw}
                   height={hh}
-                  fill="#6366f1"
+                  fill="#7c3aed"
                 />
                 <text
                   x={x + bw / 2}
@@ -389,7 +389,7 @@ export function QuestionFigure({ figure, D, figureNumber = 1, DiagramRendererCom
             stroke="#94a3b8"
           />
           <line x1={pad} y1={pad} x2={pad} y2={h - pad} stroke="#94a3b8" />
-          <path d={d} fill="none" stroke="#6366f1" strokeWidth="2" />
+          <path d={d} fill="none" stroke="#7c3aed" strokeWidth="2" />
         </svg>
       );
     }
@@ -414,7 +414,7 @@ export function QuestionFigure({ figure, D, figureNumber = 1, DiagramRendererCom
               cx={sx(Number(p.x) || 0)}
               cy={sy(Number(p.y) || 0)}
               r="4"
-              fill={p.anomaly ? "#ef4444" : "#6366f1"}
+              fill={p.anomaly ? "#ef4444" : "#7c3aed"}
             />
           ))}
         </svg>

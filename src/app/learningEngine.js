@@ -197,7 +197,7 @@ export function getSubjectStrategy(subj, allSections = [], fcHist = {}, calibrat
       strategy: 'flashcards',
       title: 'Spaced Repetition',
       icon: '🃏',
-      color: '#6366f1',
+      color: '#7c3aed',
       reason: `${snapshot.dueCards} cards due and competency is still building.`,
     };
   }
