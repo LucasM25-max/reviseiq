@@ -2353,428 +2353,187 @@ export default function App() {
         </div>
       </div>
     );
-  if (screen === "home")
+  if (screen === "home") {
+    const _dn = userDisplayName || getDisplayName(user);
+    const _hh = new Date().getHours();
+    const _greet = _hh < 12 ? "Good morning" : _hh < 18 ? "Good afternoon" : "Good evening";
+    const guidedPlan = buildTodaySessionPlan({ subjects, allSections, stats, fcHist, timetableExams });
+    const gb = guidedPlan.primaryBlock || {};
+    const sid0 = subjects[0] ? subjects[0].id : null;
+    const opts = sid0 ? generateSessionOptions(user, sid0, allSections, stats, fcHist) : [];
+
+    const ink = D ? "#eef1fb" : "#0f1729";
+    const sub = D ? "#9aa3c2" : "#5b6478";
+    const glassBg = D ? "rgba(255,255,255,.045)" : "rgba(255,255,255,.72)";
+    const line = D ? "rgba(255,255,255,.09)" : "rgba(16,24,40,.08)";
+    const cardSh = D ? "0 20px 50px -34px rgba(0,0,0,.85)" : "0 20px 50px -34px rgba(76,29,149,.35)";
+    const auroraBg = D
+      ? "radial-gradient(1200px 820px at 12% -12%, rgba(124,58,237,.20), transparent 60%), radial-gradient(1000px 720px at 102% 4%, rgba(217,70,239,.14), transparent 55%), radial-gradient(900px 700px at 50% 120%, rgba(59,130,246,.10), transparent 55%), #0a0a14"
+      : "radial-gradient(1100px 780px at 10% -10%, rgba(124,58,237,.10), transparent 60%), radial-gradient(940px 660px at 104% 2%, rgba(217,70,239,.08), transparent 55%), radial-gradient(820px 640px at 50% 116%, rgba(59,130,246,.06), transparent 55%), #f6f6fc";
+
+    const pageShell = { minHeight: "100vh", background: auroraBg, color: ink, paddingBottom: 64 };
+    const container = { maxWidth: 1080, margin: "0 auto", padding: "0 22px", display: "flex", flexDirection: "column", gap: 22, boxSizing: "border-box" };
+    const greetRow = { display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 16, flexWrap: "wrap", marginTop: 28 };
+    const greetH = { margin: 0, fontSize: 30, fontWeight: 800, letterSpacing: "-.02em", lineHeight: 1.08, color: ink, fontFamily: "var(--riq-display, inherit)" };
+    const greetSub = { margin: "7px 0 0", fontSize: 14.5, color: sub, fontWeight: 500 };
+    const ghostBtn = { fontSize: 13, fontWeight: 700, color: D ? "#c4b5fd" : "#6d28d9", padding: "9px 15px", borderRadius: 11, border: "1px solid " + (D ? "rgba(167,139,250,.3)" : "rgba(124,58,237,.25)"), background: D ? "rgba(124,58,237,.08)" : "rgba(124,58,237,.05)", cursor: "pointer", whiteSpace: "nowrap" };
+
+    const hero = { position: "relative", overflow: "hidden", borderRadius: 26, padding: "30px 30px", background: "linear-gradient(135deg, #5b21b6 0%, #7c3aed 42%, #c026d3 100%)", boxShadow: "0 30px 70px -34px rgba(124,58,237,.75)", color: "#fff" };
+    const heroGlow = { position: "absolute", top: -120, right: -80, width: 360, height: 360, borderRadius: "50%", background: "radial-gradient(circle, rgba(255,255,255,.22), transparent 70%)", pointerEvents: "none" };
+    const heroCol = { flex: 1, minWidth: 0 };
+    const heroInner = { position: "relative", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 24, flexWrap: "wrap" };
+    const heroKicker = { fontSize: 11.5, fontWeight: 800, letterSpacing: ".14em", textTransform: "uppercase", color: "rgba(255,255,255,.8)" };
+    const heroTitle = { margin: "8px 0 0", fontSize: 26, fontWeight: 800, letterSpacing: "-.02em", lineHeight: 1.12, fontFamily: "var(--riq-display, inherit)", maxWidth: 560 };
+    const heroSub = { margin: "8px 0 0", fontSize: 14.5, color: "rgba(255,255,255,.86)", maxWidth: 540, lineHeight: 1.5 };
+    const heroRow = { display: "flex", alignItems: "center", gap: 10, marginTop: 16, flexWrap: "wrap" };
+    const startWith = { fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,.95)", padding: "7px 13px", borderRadius: 999, background: "rgba(255,255,255,.16)", border: "1px solid rgba(255,255,255,.25)" };
+    const heroBadge = { fontSize: 11, fontWeight: 800, letterSpacing: ".06em", padding: "5px 10px", borderRadius: 999, background: "rgba(255,255,255,.92)", color: "#6d28d9" };
+    const startBtn = { flexShrink: 0, fontSize: 15, fontWeight: 800, color: "#5b21b6", padding: "14px 24px", borderRadius: 14, border: "none", background: "#fff", cursor: "pointer", boxShadow: "0 14px 30px -12px rgba(0,0,0,.4)", whiteSpace: "nowrap" };
+
+    const statStrip = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12 };
+    const statTile = { background: glassBg, border: "1px solid " + line, borderRadius: 18, padding: "16px 18px", boxShadow: cardSh, backdropFilter: "blur(12px)" };
+    const statNum = { fontSize: 26, fontWeight: 800, color: ink, fontFamily: "var(--riq-display, inherit)", lineHeight: 1 };
+    const statLbl = { fontSize: 12, fontWeight: 600, color: sub, marginTop: 6, textTransform: "uppercase", letterSpacing: ".04em" };
+    const heatTile = { background: glassBg, border: "1px solid " + line, borderRadius: 18, padding: "16px 18px", boxShadow: cardSh, backdropFilter: "blur(12px)", display: "flex", gap: 5, alignItems: "center", flexWrap: "wrap" };
+    const weekCol = { display: "flex", flexDirection: "column", gap: 4 };
+    const cellStyle = function (c) { return { width: 13, height: 13, borderRadius: 4, background: c.a ? "linear-gradient(135deg,#7c3aed,#c026d3)" : (D ? "rgba(255,255,255,.08)" : "rgba(16,24,40,.06)"), outline: c.t ? "2px solid " + (D ? "#c4b5fd" : "#7c3aed") : "none", outlineOffset: 1 }; };
+
+    const sectionLbl = { fontSize: 12.5, fontWeight: 800, letterSpacing: ".1em", textTransform: "uppercase", color: sub, margin: "6px 0 -6px" };
+    const card = { background: glassBg, border: "1px solid " + line, borderRadius: 22, padding: 22, boxShadow: cardSh, backdropFilter: "blur(12px)" };
+    const choiceGrid = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: 12, marginTop: 14 };
+    const choiceCard = { textAlign: "left", padding: "15px 16px", borderRadius: 15, border: "1px solid " + line, background: D ? "rgba(255,255,255,.03)" : "#fff", cursor: "pointer", transition: "transform .16s cubic-bezier(.22,1,.36,1), border-color .16s ease" };
+    const choiceTitle = { fontSize: 14.5, fontWeight: 800, color: ink };
+    const choiceDesc = { fontSize: 12.5, color: sub, marginTop: 4, lineHeight: 1.45 };
+    const h3s = { margin: 0, fontSize: 17, fontWeight: 800, color: ink, fontFamily: "var(--riq-display, inherit)" };
+    const dayRow = { display: "flex", gap: 10, marginTop: 14, overflowX: "auto", paddingBottom: 4 };
+    const dayChip = { flexShrink: 0, minWidth: 124, textAlign: "left", padding: "12px 14px", borderRadius: 14, border: "1px solid " + line, background: D ? "rgba(255,255,255,.03)" : "#fff", cursor: "pointer" };
+    const dayName = { fontSize: 12, fontWeight: 800, color: D ? "#c4b5fd" : "#7c3aed", textTransform: "uppercase", letterSpacing: ".05em" };
+    const dayTask = { fontSize: 12.5, color: sub, marginTop: 5, lineHeight: 1.4 };
+    const toggleRow = { display: "flex", justifyContent: "flex-end" };
+    const toggleBtn = { fontSize: 12.5, fontWeight: 700, color: D ? "#c4b5fd" : "#6d28d9", padding: "8px 14px", borderRadius: 11, border: "1px solid " + (D ? "rgba(167,139,250,.3)" : "rgba(124,58,237,.25)"), background: "transparent", cursor: "pointer" };
+
+    const subjGrid = { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(216px, 1fr))", gap: 14 };
+    const subjCard = { position: "relative", textAlign: "left", padding: 18, borderRadius: 20, border: "1px solid " + line, background: glassBg, boxShadow: cardSh, backdropFilter: "blur(12px)", cursor: "pointer", transition: "transform .18s cubic-bezier(.22,1,.36,1), box-shadow .18s ease", display: "flex", flexDirection: "column" };
+    const subjTopRow = { display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 6, minHeight: 56 };
+    const gradeBadge = { fontSize: 13, fontWeight: 800, color: ink };
+    const targetBadge = { fontSize: 11.5, fontWeight: 700, color: sub };
+    const subjIcon = function (accent) { return { width: 46, height: 46, borderRadius: 13, background: "linear-gradient(135deg," + accent + "," + accent + "99)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 23, marginBottom: 12, boxShadow: "0 8px 18px -8px " + accent }; };
+    const subjName = { fontSize: 15.5, fontWeight: 800, color: ink };
+    const subjMeta = { display: "flex", alignItems: "center", gap: 7, marginTop: 6, flexWrap: "wrap" };
+    const boardBadge = { fontSize: 11, fontWeight: 700, color: sub, padding: "3px 8px", borderRadius: 7, background: D ? "rgba(255,255,255,.06)" : "rgba(16,24,40,.05)" };
+    const metaSmall = { fontSize: 11.5, color: sub, fontWeight: 600 };
+
+    const personalWrap = { ...card, marginTop: 4 };
+    const personalHead = { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" };
+    const personalGrid = { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 12, marginTop: 16 };
+    const personalCard = { textAlign: "left", padding: 16, borderRadius: 16, border: "1px solid " + line, background: D ? "rgba(255,255,255,.03)" : "#fff", cursor: "pointer", transition: "transform .16s ease" };
+    const emptyNote = { fontSize: 13, color: sub, marginTop: 14, lineHeight: 1.5 };
+    const adminBar = { borderRadius: 16, border: "1px solid " + (D ? "rgba(167,139,250,.3)" : "#ddd6fe"), background: D ? "rgba(124,58,237,.08)" : "rgba(124,58,237,.05)", overflow: "hidden" };
+    const adminHead = { padding: "10px 16px", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", borderBottom: "1px solid " + (D ? "rgba(167,139,250,.25)" : "#ddd6fe") };
+    const adminTag = { fontSize: 12, fontWeight: 800, color: D ? "#c4b5fd" : "#6d28d9", textTransform: "uppercase", letterSpacing: ".06em" };
+    const adminHint = { fontSize: 12.5, color: sub };
+    const adminBtns = { padding: "12px 16px", display: "flex", gap: 10, flexWrap: "wrap" };
+    const adminBtn = { fontSize: 12, fontWeight: 700, padding: "6px 14px", borderRadius: 9, border: "1.5px solid " + (D ? "#a78bfa" : "#7c3aed"), background: "transparent", color: D ? "#c4b5fd" : "#6d28d9", cursor: "pointer" };
+
+    const liftIn = function (e) { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 26px 56px -30px rgba(124,58,237,.5)"; };
+    const liftOut = function (e) { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = cardSh; };
+    const choiceIn = function (e) { e.currentTarget.style.borderColor = D ? "#a78bfa" : "#7c3aed"; e.currentTarget.style.transform = "translateY(-2px)"; };
+    const choiceOut = function (e) { e.currentTarget.style.borderColor = line; e.currentTarget.style.transform = ""; };
+
     return (
-      <div
-        style={{ minHeight: "100vh", background: bg, color: tx(D) }}
-        className="fade-in"
-      >
+      <div style={pageShell} className="fade-in">
         <Header {...hProps} />
-        <div style={{ maxWidth: 960, margin: "0 auto", padding: "40px 24px" }}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              flexWrap: "wrap",
-              gap: 10,
-              marginBottom: streak > 0 ? 16 : 14,
-            }}
-          >
-            <h2 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>
-              Hey {userDisplayName || getDisplayName(user)}
-            </h2>
-            <button
-              onClick={function () {
-                openMyNotes(null);
-              }}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                padding: "8px 16px",
-                borderRadius: 10,
-                border: "1.5px solid #7c3aed",
-                background: D ? "rgba(99,102,241,.12)" : "#f5f3ff",
-                color: "#7c3aed",
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
-            >
+        <div style={container}>
+          <div style={greetRow}>
+            <div>
+              <h2 style={greetH}>{_greet}, {_dn}</h2>
+              <p style={greetSub}>Here’s your focused plan for today — one clear step at a time.</p>
+            </div>
+            <button onClick={function () { openMyNotes(null); }} style={ghostBtn}>
               My Notes &amp; Flashcards
             </button>
           </div>
-          {(() => {
-            const guidedPlan = buildTodaySessionPlan({
-              subjects,
-              allSections,
-              stats,
-              fcHist,
-              timetableExams,
-            });
-            const b = guidedPlan.primaryBlock || {};
-            return (
-              <div
-                style={{
-                  ...C(D),
-                  padding: "16px 18px",
-                  marginBottom: 14,
-                  borderColor: "#7c3aed",
-                  borderWidth: 1.5,
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "flex-start",
-                    gap: 10,
-                    flexWrap: "wrap",
-                  }}
-                >
-                  <div style={{ flex: 1, minWidth: 200 }}>
-                    <div
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 800,
-                        color: "#7c3aed",
-                        letterSpacing: "0.07em",
-                        textTransform: "uppercase",
-                        marginBottom: 0,
-                      }}
-                    >
-                      Guided Session
-                    </div>
-                    {guidedPlan._aiPersonalised && (
-                      <span
-                        style={{
-                          fontSize: 9,
-                          fontWeight: 700,
-                          background: "#7c3aed",
-                          color: "#fff",
-                          padding: "2px 7px",
-                          borderRadius: 10,
-                          letterSpacing: "0.05em",
-                          marginLeft: 6,
-                        }}
-                      >
-                        AI
-                      </span>
-                    )}
-                    {guidedPlan.closingTip && (
-                      <span
-                        style={{
-                          fontSize: 9,
-                          color: "#7c3aed",
-                          background: "#7c3aed22",
-                          padding: "2px 7px",
-                          borderRadius: 10,
-                          marginLeft: 4,
-                          cursor: "default",
-                        }}
-                        title={guidedPlan.closingTip}
-                      >
-                        tip
-                      </span>
-                    )}
-                    <h3
-                      style={{
-                        fontSize: 16,
-                        fontWeight: 700,
-                        margin: "0 04px",
-                      }}
-                    >
-                      {guidedPlan.missionTitle}
-                    </h3>
-                    <p style={{ fontSize: 12, color: mu(D), margin: 0 }}>
-                      {guidedPlan.missionSubtitle}
-                    </p>
-                    <p
-                      style={{ fontSize: 12, margin: "8px 0 0", color: tx(D) }}
-                    >
-                      <strong>Start with:</strong>
-                      {b.title}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setTodaySession(guidedPlan);
-                      setScreen("practice");
-                    }}
-                    style={{
-                      ...B("#7c3aed", false, {
-                        padding: "10px 16px",
-                        fontSize: 13,
-                        fontWeight: 700,
-                        whiteSpace: "nowrap",
-                      }),
-                    }}
-                  >
-                    Start Session
-                  </button>
+
+          <div style={hero}>
+            <div style={heroGlow} />
+            <div style={heroInner}>
+              <div style={heroCol}>
+                <div style={heroKicker}>Today’s mission</div>
+                <h3 style={heroTitle}>{guidedPlan.missionTitle}</h3>
+                <p style={heroSub}>{guidedPlan.missionSubtitle}</p>
+                <div style={heroRow}>
+                  {gb.title ? <span style={startWith}>Start with: {gb.title}</span> : null}
+                  {guidedPlan._aiPersonalised ? <span style={heroBadge}>AI personalised</span> : null}
+                  {guidedPlan.closingTip ? <span style={startWith} title={guidedPlan.closingTip}>Coach tip</span> : null}
                 </div>
               </div>
-            );
-          })()}
-          {streak > 0 && (
-            <div
-              style={{
-                ...C(D),
-                padding: "18px 22px",
-                marginBottom: 22,
-                background:
-                  streak >= 7 ? (D ? "#1c0d05" : "#fff7ed") : undefined,
-                borderColor: streak >= 7 ? "#f97316" : undefined,
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 16,
-                  marginBottom: 12,
-                }}
+              <button
+                onClick={() => { setTodaySession(guidedPlan); setScreen("practice"); }}
+                style={startBtn}
               >
-                <div
-                  className={streakPop ? "streak-pop" : ""}
-                  style={{ fontSize: 36 }}
-                >
-                  {" "}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div
-                    style={{
-                      fontWeight: 700,
-                      fontSize: 16,
-                      color: streak >= 7 ? "#f97316" : tx(D),
-                    }}
-                  >
-                    {streak}-day streak!
-                  </div>
-                  <div style={{ fontSize: 12, color: mu(D) }}>
-                    {streak === 1
-                      ? "Great start — come back tomorrow to keep it going!"
-                      : streak < 7
-                        ? `${7 - streak} more day${7 - streak !== 1 ? "s" : ""} to hit a full week!`
-                        : streak < 30
-                          ? `${30 - streak} more day${30 - streak !== 1 ? "s" : ""} to hit a 30-day streak
-`
-                          : "Incredible consistency — keep it up!"}
-                  </div>
-                </div>
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: 11, color: mu(D), marginBottom: 2 }}>
-                    Longest streak
-                  </div>
-                  <div style={{ fontWeight: 700, fontSize: 18, color: mu(D) }}>
-                    {calcLongestStreak(activityDates)}d
-                  </div>
-                </div>
-                {totalDaysStudied > 0 && (
-                  <div style={{ textAlign: "right", marginLeft: 12 }}>
-                    <div
-                      style={{ fontSize: 11, color: mu(D), marginBottom: 2 }}
-                    >
-                      Total days
-                    </div>
-                    <div
-                      style={{
-                        fontWeight: 700,
-                        fontSize: 18,
-                        color: "#7c3aed",
-                      }}
-                    >
-                      {" "}
-                      {totalDaysStudied}
-                    </div>
-                  </div>
-                )}
+                Start session →
+              </button>
+            </div>
+          </div>
+
+          {streak > 0 ? (
+            <div style={statStrip}>
+              <div style={statTile}>
+                <div style={statNum}>{streak}🔥</div>
+                <div style={statLbl}>Day streak</div>
               </div>
-              <div
-                style={{
-                  display: "flex",
-                  gap: 3,
-                  overflowX: "auto",
-                  paddingBottom: 2,
-                  marginBottom: 14,
-                }}
-              >
+              <div style={statTile}>
+                <div style={statNum}>{calcLongestStreak(activityDates)}d</div>
+                <div style={statLbl}>Longest streak</div>
+              </div>
+              {totalDaysStudied > 0 ? (
+                <div style={statTile}>
+                  <div style={statNum}>{totalDaysStudied}</div>
+                  <div style={statLbl}>Total days</div>
+                </div>
+              ) : null}
+              <div style={heatTile}>
                 {(() => {
                   const weeks = [];
                   const t = new Date();
                   t.setHours(0, 0, 0, 0);
                   const dow = t.getDay() === 0 ? 6 : t.getDay() - 1;
-                  const start = new Date(t);
-                  start.setDate(start.getDate() - dow - 14);
+                  const startD = new Date(t);
+                  startD.setDate(startD.getDate() - dow - 14);
                   for (let w = 0; w < 3; w++) {
                     const week = [];
                     for (let d = 0; d < 7; d++) {
-                      const dt = new Date(start);
+                      const dt = new Date(startD);
                       dt.setDate(dt.getDate() + w * 7 + d);
                       const k = dt.toISOString().slice(0, 10);
-                      week.push({
-                        k,
-                        a: activityDates.has(k),
-                        t: k === todayStr(),
-                      });
+                      week.push({ k, a: activityDates.has(k), t: k === todayStr() });
                     }
                     weeks.push(week);
                   }
                   return weeks.map((wk, wi) => (
-                    <div
-                      key={wi}
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 3,
-                      }}
-                    >
-                      {wk.map((c) => (
-                        <div
-                          key={c.k}
-                          title={c.k}
-                          style={{
-                            width: 12,
-                            height: 12,
-                            borderRadius: 2,
-                            background: c.a
-                              ? D
-                                ? "#f97316"
-                                : "#fb923c"
-                              : c.t
-                                ? D
-                                  ? "#374151"
-                                  : "#e5e7eb"
-                                : D
-                                  ? "#191a2b"
-                                  : "#f3f4f6",
-                            border: c.t
-                              ? "2px solid #7c3aed"
-                              : "2px solidtransparent",
-                          }}
-                        />
-                      ))}
+                    <div key={wi} style={weekCol}>
+                      {wk.map((c) => (<div key={c.k} title={c.k} style={cellStyle(c)} />))}
                     </div>
                   ));
                 })()}
               </div>
             </div>
-          )}
-          {admin && (
-            <div
-              style={{
-                borderRadius: 12,
-                background: D ? "rgba(99,102,241,.1)" : "#f5f3ff",
-                border: "1.5px solid #7c3aed",
-                marginBottom: 20,
-                overflow: "hidden",
-              }}
-            >
-              <div
-                style={{
-                  padding: "10px 16px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
-                  flexWrap: "wrap",
-                  borderBottom: `1px solid ${D ? "rgba(99,102,241,.2)" : "#ddd6fe"}`,
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 800,
-                    color: "#7c3aed",
-                    letterSpacing: "0.08em",
-                    textTransform: "uppercase",
-                  }}
-                >
-                  Admin Mode
-                </span>
-                <span
-                  style={{
-                    fontSize: 12,
-                    color: D ? "#c4b5fd" : "#5b21b6",
-                    flex: 1,
-                  }}
-                >
-                  Navigate into a subject to add topics, notes, flashcards,
-                  questions and past papers.
-                </span>
+          ) : null}
+
+          {admin ? (
+            <div style={adminBar}>
+              <div style={adminHead}>
+                <span style={adminTag}>Admin mode</span>
+                <span style={adminHint}>Navigate into a subject to add topics, notes, flashcards, questions and past papers.</span>
               </div>
-              <div
-                style={{
-                  padding: "10px 16px",
-                  display: "flex",
-                  gap: 8,
-                  flexWrap: "wrap",
-                }}
-              >
-                <button
-                  onClick={() => setImportOpen(true)}
-                  style={{
-                    fontSize: 12,
-                    padding: "6px 14px",
-                    borderRadius: 7,
-                    border: "1.5px solid #7c3aed",
-                    background: "#7c3aed",
-                    color: "#fff",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                  }}
-                >
-                  Import Data
-                </button>
-                <button
-                  onClick={() => setManageAccountsOpen(true)}
-                  style={{
-                    fontSize: 12,
-                    padding: "6px 14px",
-                    borderRadius: 7,
-                    border: "1.5px solid #7c3aed",
-                    background: "transparent",
-                    color: "#7c3aed",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                  }}
-                >
-                  Manage Accounts
-                </button>
-                <button
-                  onClick={viewAnalytics}
-                  style={{
-                    fontSize: 12,
-                    padding: "6px 14px",
-                    borderRadius: 7,
-                    border: "1.5px solid #7c3aed",
-                    background: "transparent",
-                    color: "#7c3aed",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                  }}
-                >
-                  View Analytics
-                </button>
+              <div style={adminBtns}>
+                <button onClick={() => setImportOpen(true)} style={adminBtn}>Import Data</button>
+                <button onClick={() => setManageAccountsOpen(true)} style={adminBtn}>Manage Accounts</button>
+                <button onClick={viewAnalytics} style={adminBtn}>Analytics</button>
               </div>
             </div>
-          )}
-          {importOpen && (
-            <ImportModal
-              D={D}
-              subjects={subjects}
-              onClose={() => setImportOpen(false)}
-              onDone={() => {
-                ensureAllBoardsLoaded(boardSels);
-              }}
-            />
-          )}
-          {manageAccountsOpen && (
-            <ManageAccountsModal
-              D={D}
-              accounts={accounts}
-              adminUser={ADMIN_USER}
-              onClose={() => setManageAccountsOpen(false)}
-              onDelete={function (email) {
-                var n = { ...accounts };
-                delete n[email];
-                setAccs(n);
-                saveAccounts(n);
-                var lbKey = "gcse:lb:" + email.replace(/\W/g, "-");
-                window.storage.delete(lbKey, true).catch(function () {});
-              }}
-            />
-          )}
+          ) : null}
+
           <TodayWidget
             D={D}
             subjects={subjects}
@@ -2784,28 +2543,14 @@ export default function App() {
             timetableExams={timetableExams}
             boardSels={boardSels}
             onNavigateSection={function (sec, toTab) {
-              const si = subjects.findIndex(function (s) {
-                return s.id === sec.subjectId;
-              });
+              const si = subjects.findIndex(function (s) { return s.id === sec.subjectId; });
               if (si < 0) return;
               setSubIdx(si);
               const b = boardSels[subjects[si].id] || DEFAULT_BOARD;
               ensureBoardLoaded(subjects[si].id, b).then(function () {
-                const bd = boardData[subjects[si].id + ":" + b] || {
-                  custom: [],
-                  extras: {},
-                  papers: [],
-                };
-                const merged = mergeTopics(
-                  subjects[si].topics || [],
-                  bd.custom,
-                  bd.extras,
-                );
-                const ti = merged.findIndex(function (t) {
-                  return t.sections.some(function (s) {
-                    return s.id === sec.id;
-                  });
-                });
+                const bd = boardData[subjects[si].id + ":" + b] || { custom: [], extras: {}, papers: [] };
+                const merged = mergeTopics(subjects[si].topics || [], bd.custom, bd.extras);
+                const ti = merged.findIndex(function (t) { return t.sections.some(function (s) { return s.id === sec.id; }); });
                 if (ti < 0) return;
                 setTopIdx(ti);
                 setSecId(sec.id);
@@ -2825,208 +2570,91 @@ export default function App() {
               setBlurtSecId2(secId2);
               setScreen("blurting");
             }}
-            onMock={function () {
-              setScreen("mock");
-            }}
+            onMock={function () { setScreen("mock"); }}
           />
-          {(() => {
-            const sid = subjects[0]?.id;
-            if (!sid) return null;
-            const opts = generateSessionOptions(
-              user,
-              sid,
-              allSections,
-              stats,
-              fcHist,
-            );
-            return (
-              <div style={{ ...C(D), padding: 14, margin: "14px 0" }}>
-                <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>
-                  Structured Session Choices
-                </h3>
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))",
-                    gap: 8,
-                  }}
-                >
-                  {opts.map((o, i) => (
-                    <button
-                      key={i}
-                      onClick={() => {
-                        if (o.action.type === "target") {
-                          setScreen("target");
-                          return;
-                        }
-                        if (o.action.type === "interleaved") {
-                          const plan = generateInterleavedSession(
-                            sid,
-                            allSections,
-                          );
-                          if (plan.length) {
-                            try {
-                              localStorage.setItem(
-                                "gcse:interleaved:" +
-                                  user.replace(/\W/g, "-") +
-                                  ":" +
-                                  sid,
-                                JSON.stringify(plan),
-                              );
-                            } catch (_) {}
-                            const first = plan[0];
-                            const sec = allSections.find(
-                              (s) => s.id === first.sectionId,
-                            );
-                            if (sec) {
-                              const si = subjects.findIndex(
-                                (s) => s.id === sec.subjectId,
-                              );
-                              if (si >= 0) {
-                                setSubIdx(si);
-                                setTopIdx(0);
-                                setSecId(sec.id);
-                                setTab(
-                                  first.kind === "question"
-                                    ? "questions"
-                                    : "flashcards",
-                                );
-                                setScreen("section");
-                              }
-                            }
-                          } else {
-                            showToast(
-                              "Need at least 3 topics with cards/questions for interleaving.",
-                              "warn",
-                            );
-                          }
-                          return;
-                        }
-                        if (o.action.sectionId) {
-                          const sec = allSections.find(
-                            (s) => s.id === o.action.sectionId,
-                          );
-                          if (!sec) return;
-                          const si = subjects.findIndex(
-                            (s) => s.id === sec.subjectId,
-                          );
-                          if (si < 0) return;
-                          setSubIdx(si);
-                          setTopIdx(0);
-                          setSecId(sec.id);
-                          setTab(
-                            o.action.type === "questions"
-                              ? "questions"
-                              : "flashcards",
-                          );
-                          setScreen("section");
-                        }
-                      }}
-                      style={{
-                        textAlign: "left",
-                        padding: 10,
-                        borderRadius: 10,
-                        border: `1px solid ${bd2}`,
-                        background: D ? "#13131f" : "#fff",
-                        cursor: "pointer",
-                      }}
-                    >
-                      <div
-                        style={{
-                          fontSize: 12,
-                          fontWeight: 700,
-                          marginBottom: 4,
-                        }}
-                      >
-                        {o.title}
-                      </div>
-                      <div style={{ fontSize: 11, color: mu(D) }}>
-                        {o.description}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            );
-          })()}
-          {weeklyPlan?.length > 0 && (
-            <div style={{ ...C(D), padding: 14, marginBottom: 14 }}>
-              <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>
-                Weekly AI Learning Plan
-              </h3>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))",
-                  gap: 8,
-                }}
-              >
-                {weeklyPlan.slice(0, 7).map((d, idx) => (
+
+          {opts.length > 0 ? (
+            <div style={card}>
+              <h3 style={h3s}>Structured session choices</h3>
+              <div style={choiceGrid}>
+                {opts.map((o, i) => (
                   <button
-                    key={idx}
-                    onClick={() => setScreen("target")}
-                    style={{
-                      textAlign: "left",
-                      padding: 8,
-                      borderRadius: 8,
-                      border: `1px solid ${bd2}`,
-                      background: "transparent",
-                      cursor: "pointer",
+                    key={i}
+                    onMouseEnter={choiceIn}
+                    onMouseLeave={choiceOut}
+                    onClick={() => {
+                      if (o.action.type === "target") { setScreen("target"); return; }
+                      if (o.action.type === "interleaved") {
+                        const plan = generateInterleavedSession(sid0, allSections);
+                        if (plan.length) {
+                          try { localStorage.setItem("gcse:interleaved:" + user.replace(/\W/g, "-") + ":" + sid0, JSON.stringify(plan)); } catch (_) {}
+                          const first = plan[0];
+                          const sec = allSections.find((s) => s.id === first.sectionId);
+                          if (sec) {
+                            const si = subjects.findIndex((s) => s.id === sec.subjectId);
+                            if (si >= 0) {
+                              setSubIdx(si); setTopIdx(0); setSecId(sec.id);
+                              setTab(first.kind === "question" ? "questions" : "flashcards");
+                              setScreen("section");
+                            }
+                          }
+                        } else {
+                          showToast("Need at least 3 topics with cards/questions for interleaving.", "warn");
+                        }
+                        return;
+                      }
+                      if (o.action.sectionId) {
+                        const sec = allSections.find((s) => s.id === o.action.sectionId);
+                        if (!sec) return;
+                        const si = subjects.findIndex((s) => s.id === sec.subjectId);
+                        if (si < 0) return;
+                        setSubIdx(si); setTopIdx(0); setSecId(sec.id);
+                        setTab(o.action.type === "questions" ? "questions" : "flashcards");
+                        setScreen("section");
+                      }
                     }}
+                    style={choiceCard}
                   >
-                    <div style={{ fontSize: 11, fontWeight: 700 }}>{d.day}</div>
-                    <div style={{ fontSize: 11, color: mu(D), marginTop: 2 }}>
-                      {d.tasks?.[0]}
-                    </div>
+                    <div style={choiceTitle}>{o.title}</div>
+                    <div style={choiceDesc}>{o.description}</div>
                   </button>
                 ))}
               </div>
             </div>
-          )}
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "flex-end",
-              marginBottom: 8,
-            }}
-          >
-            <button
-              onClick={() => setShowTreemap((v) => !v)}
-              style={{
-                fontSize: 12,
-                padding: "6px 10px",
-                borderRadius: 8,
-                border: "1px solid #7c3aed",
-                background: "transparent",
-                color: "#7c3aed",
-              }}
-            >
-              {showTreemap ? "Show SubjectCards" : "Show Mastery Treemap"}
+          ) : null}
+
+          {weeklyPlan && weeklyPlan.length > 0 ? (
+            <div style={card}>
+              <h3 style={h3s}>Weekly AI learning plan</h3>
+              <div style={dayRow}>
+                {weeklyPlan.slice(0, 7).map((d, idx) => (
+                  <button key={idx} onClick={() => setScreen("target")} style={dayChip}>
+                    <div style={dayName}>{d.day}</div>
+                    <div style={dayTask}>{d.tasks ? d.tasks[0] : null}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          <div style={sectionLbl}>Your subjects</div>
+          <div style={toggleRow}>
+            <button onClick={() => setShowTreemap((v) => !v)} style={toggleBtn}>
+              {showTreemap ? "Show subject cards" : "Show mastery treemap"}
             </button>
           </div>
-          {showTreemap && (
+          {showTreemap ? (
             <MasteryTreemap
               D={D}
               nodes={allSections.map(function (sec) {
                 const s = subjects.find((x) => x.id === sec.subjectId);
-                const m = calculateMastery(
-                  sec.subjectId,
-                  allSections,
-                  fcHist,
-                  stats,
-                );
+                const m = calculateMastery(sec.subjectId, allSections, fcHist, stats);
                 return {
                   subjectId: sec.subjectId,
                   topicId: sec.id,
                   name: (s ? s.icon + "" : "") + sec.title,
-                  mastery: Math.round(
-                    (m.flashcardMastery + m.questionAccuracy) / 2,
-                  ),
-                  contentSize:
-                    (sec.notes || []).length +
-                    (sec.flashcards || []).length +
-                    (sec.questions || []).length +
-                    1,
+                  mastery: Math.round((m.flashcardMastery + m.questionAccuracy) / 2),
+                  contentSize: (sec.notes || []).length + (sec.flashcards || []).length + (sec.questions || []).length + 1,
                 };
               })}
               onSelect={function (n) {
@@ -3037,34 +2665,18 @@ export default function App() {
                 setScreen("section");
               }}
             />
-          )}
-          {!showTreemap && (
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))",
-                gap: 14,
-              }}
-            >
+          ) : (
+            <div style={subjGrid}>
               {subjects.map((s, si) => {
                 const selBoard = boardSels[s.id] || DEFAULT_BOARD;
                 const bData = getBD(s.id, selBoard);
-                const ss = stats.subjStats?.[s.id];
-                const qPct =
-                  ss?.qM > 0 ? Math.round((ss.qS / ss.qM) * 100) : null;
+                const ss = stats.subjStats ? stats.subjStats[s.id] : null;
+                const qPct = ss && ss.qM > 0 ? Math.round((ss.qS / ss.qM) * 100) : null;
                 const predicted = qPct != null ? pctToGrade(qPct) : null;
                 const target = targetGrades[s.id] || null;
                 const customCount = (bData.custom || []).length;
-                const mastery = calculateMastery(
-                  s.id,
-                  allSections,
-                  fcHist,
-                  stats,
-                );
-                const hasMasteryData =
-                  mastery.flashcardMastery > 0 ||
-                  mastery.questionAccuracy > 0 ||
-                  mastery.coverage > 0;
+                const mastery = calculateMastery(s.id, allSections, fcHist, stats);
+                const hasMasteryData = mastery.flashcardMastery > 0 || mastery.questionAccuracy > 0 || mastery.coverage > 0;
                 return (
                   <button
                     key={s.id}
@@ -3074,137 +2686,24 @@ export default function App() {
                       await ensureBoardLoaded(s.id, selBoard);
                       setScreen("subject");
                     }}
-                    style={{
-                      ...C(D),
-                      padding: 22,
-                      textAlign: "left",
-                      cursor: "pointer",
-                      display: "block",
-                      width: "100%",
-                      transition: "transform .15s,box-shadow .15s",
-                      position: "relative",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = "translateY(-2px)";
-                      e.currentTarget.style.boxShadow = "0 12px 40px rgba(0,0,0,.1)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = "";
-                      e.currentTarget.style.boxShadow = "";
-                    }}
+                    style={subjCard}
+                    onMouseEnter={liftIn}
+                    onMouseLeave={liftOut}
                   >
-                    <div
-                      style={{
-                        position: "absolute",
-                        top: 12,
-                        right: 12,
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "flex-end",
-                        gap: 4,
-                      }}
-                    >
+                    <div style={subjTopRow}>
                       {hasMasteryData ? (
-                        <MasteryRings
-                          mastery={mastery}
-                          accent={s.accent}
-                          size={54}
-                          D={D}
-                        />
+                        <MasteryRings mastery={mastery} accent={s.accent} size={54} D={D} />
                       ) : (
-                        predicted && (
-                          <span
-                            style={{
-                              fontSize: 13,
-                              fontWeight: 800,
-                              color: "#fff",
-                              background: gradeColor(predicted),
-                              padding: "3px 9px",
-                              borderRadius: 8,
-                            }}
-                          >
-                            {predicted}
-                          </span>
-                        )
+                        predicted ? <span style={gradeBadge}>{predicted}</span> : null
                       )}
-                      {target && (
-                        <span
-                          style={{
-                            fontSize: 10,
-                            fontWeight: 800,
-                            color: "#fff",
-                            background: gradeColor(target),
-                            padding: "1px 6px",
-                            borderRadius: 6,
-                          }}
-                        >
-                          {" "}
-                          {target}
-                        </span>
-                      )}
+                      {target ? <span style={targetBadge}>→ {target}</span> : null}
                     </div>
-                    <div
-                      style={{
-                        width: 44,
-                        height: 44,
-                        borderRadius: 12,
-                        background: `linear-gradient(135deg,${s.accent},${
-                          s.accent
-                        }88)`,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: 22,
-                        marginBottom: 12,
-                      }}
-                    >
-                      {s.icon}
-                    </div>
-                    <div
-                      style={{
-                        fontWeight: 700,
-                        fontSize: 15,
-                        marginBottom: 4,
-                        paddingRight: hasMasteryData ? 60 : predicted ? 70 : 0,
-                      }}
-                    >
-                      {s.name}
-                    </div>
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: 7,
-                        flexWrap: "wrap",
-                        alignItems: "center",
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontSize: 11,
-                          color: mu(D),
-                          background: D ? "#191a2b" : "#f3f4f6",
-                          padding: "2px 7px",
-                          borderRadius: 10,
-                        }}
-                      >
-                        {selBoard}
-                      </span>
-                      {customCount > 0 && (
-                        <span
-                          style={{
-                            fontSize: 11,
-                            color: "#7c3aed",
-                            fontWeight: 600,
-                          }}
-                        >
-                          +{customCount}
-                        </span>
-                      )}
-                      {qPct != null && (
-                        <span style={{ fontSize: 11, color: mu(D) }}>
-                          {qPct}%
-                        </span>
-                      )}
+                    <div style={subjIcon(s.accent)}>{s.icon}</div>
+                    <div style={subjName}>{s.name}</div>
+                    <div style={subjMeta}>
+                      <span style={boardBadge}>{selBoard}</span>
+                      {customCount > 0 ? <span style={metaSmall}>+{customCount}</span> : null}
+                      {qPct != null ? <span style={metaSmall}>{qPct}%</span> : null}
                     </div>
                   </button>
                 );
@@ -3212,136 +2711,38 @@ export default function App() {
             </div>
           )}
         </div>
-        {}
-        <div
-          style={{ maxWidth: 960, margin: "0 auto", padding: "0 24px 32px" }}
-        >
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: 14,
-              marginTop: 8,
-            }}
-          >
-            <div>
-              <h3
-                style={{
-                  fontSize: 16,
-                  fontWeight: 700,
-                  margin: 0,
-                  color: D ? "#e8ecf4" : "#111827",
-                }}
-              >
-                My Subjects
-              </h3>
-              <p
-                style={{
-                  fontSize: 11,
-                  color: D ? "#8896b3" : "#9ca3af",
-                  margin: "2px 0 0",
-                }}
-              >
-                Personal content — only visible to you
-              </p>
+
+        <div style={container}>
+          <div style={personalWrap}>
+            <div style={personalHead}>
+              <div>
+                <h3 style={h3s}>My subjects</h3>
+                <p style={greetSub}>Personal content — only visible to you</p>
+              </div>
+              <button onClick={() => setCreatePersonalOpen(true)} style={ghostBtn}>＋ New subject</button>
             </div>
-            <button
-              onClick={() => setCreatePersonalOpen(true)}
-              style={{
-                padding: "7px 16px",
-                borderRadius: 9,
-                border: "none",
-                background: "#7c3aed",
-                color: "#fff",
-                fontWeight: 600,
-                fontSize: 13,
-                cursor: "pointer",
-              }}
-            >
-              ＋ New Subject
-            </button>
+            {personalSubjects.length === 0 ? (
+              <div style={emptyNote}>Create personal subjects for anything you want to learn — Spanish vocab, music theory, anything. Only you can see them.</div>
+            ) : (
+              <div style={personalGrid}>
+                {personalSubjects.map(function (ps) {
+                  return (
+                    <button
+                      key={ps.id}
+                      onClick={() => setPersonalScreen({ subjId: ps.id })}
+                      style={personalCard}
+                      onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.transform = ""; }}
+                    >
+                      <div style={subjIcon("#7c3aed")}>{ps.icon}</div>
+                      <div style={subjName}>{ps.name}</div>
+                      <span style={metaSmall}>{(ps.topics || []).length} topics</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
-          {personalSubjects.length === 0 && (
-            <div
-              style={{
-                padding: "20px 16px",
-                borderRadius: 12,
-                border: "1.5px dashed" + (D ? "#374151" : "#d1d5db"),
-                textAlign: "center",
-                color: D ? "#8896b3" : "#9ca3af",
-                fontSize: 13,
-              }}
-            >
-              Create personal subjects for anything you want to learn — Spanish
-              vocab, music theory, anything. Only you can see them.
-            </div>
-          )}
-          {personalSubjects.length > 0 && (
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))",
-                gap: 12,
-              }}
-            >
-              {personalSubjects.map(function (ps) {
-                return (
-                  <button
-                    key={ps.id}
-                    onClick={() => setPersonalScreen({ subjId: ps.id })}
-                    style={{
-                      ...C(D),
-                      padding: 20,
-                      textAlign: "left",
-                      cursor: "pointer",
-                      display: "block",
-                      width: "100%",
-                      transition: "transform .15s",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = "translateY(-2px)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = "";
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: 40,
-                        height: 40,
-                        borderRadius: 10,
-                        background: ps.accent + "22",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: 20,
-                        marginBottom: 10,
-                      }}
-                    >
-                      {ps.icon}
-                    </div>
-                    <div
-                      style={{ fontWeight: 700, fontSize: 14, marginBottom: 4 }}
-                    >
-                      {ps.name}
-                    </div>
-                    <span
-                      style={{
-                        fontSize: 11,
-                        color: mu(D),
-                        background: D ? "#191a2b" : "#f3f4f6",
-                        padding: "2px 7px",
-                        borderRadius: 10,
-                      }}
-                    >
-                      {(ps.topics || []).length} topics
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
         </div>
 
         {createPersonalOpen && (
@@ -3357,6 +2758,8 @@ export default function App() {
         <AppFooter D={D} onContact={() => setScreen("contact")} />
       </div>
     );
+  }
+
   if (screen === "subject" && subjDef) {
     const subj = subjDef;
     return (
