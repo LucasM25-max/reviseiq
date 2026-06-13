@@ -95,8 +95,7 @@ export function updateAdaptiveLevel(user, subjectId, isCorrect) {
 export function getLadderLevel(user, topicId) {
   if (!user || !topicId) return 1;
   try {
-    return;
-    Math.max(
+    return Math.max(
       1,
       Math.min(
         5,
@@ -189,18 +188,15 @@ export function generateWeeklyPlan(
   try {
     var ex = JSON.parse(localStorage.getItem(key) || "null");
     if (ex && Array.isArray(ex)) return;
-    ex;
   } catch (_) {}
   var due = allSections.flatMap((s) =>
     (s.flashcards || [])
       .filter((c) => isCardDue(fcHist, c.id))
       .map(() => s.title),
-  ).sli;
-  ce(0, 3);
+  ).slice(0, 3);
   var weak = Object.entries(stats?.weakQ || {})
     .sort((a, b) => (b[1]?.wrong || 0) - (a[1]?.wrong || 0))
-    .slice(0, 3).m;
-  ap((x) => x[0]);
+    .slice(0, 3).map((x) => x[0]);
   var examSoon = (timetableExams || [])
     .slice()
     .sort((a, b) => a.date.localeCompare(b.date))[0];

@@ -112,8 +112,7 @@ export function ContactScreen({ D, user, isAdmin, onBack }) {
       var updated = existing.map(function (m) {
         if (m.id !== msgId) return m;
 
-        return;
-        Object.assign({}, m, {
+        return Object.assign({}, m, {
           thread: (m.thread || []).concat([
             { from: user, text: txt, timestamp: Date.now() },
           ]),
@@ -245,8 +244,7 @@ export function ContactScreen({ D, user, isAdmin, onBack }) {
                     ? "Send Message"
                     : (function () {
                         var unread = msgs.filter(function (m) {
-                          return;
-                          !readIds.has(m.id);
+                          return !readIds.has(m.id);
                         }).length;
                         return (
                           "Inbox" +

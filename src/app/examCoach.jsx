@@ -135,8 +135,7 @@ export function ExamCoachScreen({
 
   const cmdDef =
     COMMAND_WORDS.find(function (c) {
-      return;
-      c.word === selCW;
+      return c.word === selCW;
     }) || COMMAND_WORDS[0];
 
   function getContextNotes() {

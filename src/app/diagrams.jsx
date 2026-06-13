@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { SK_GRAPH, SK_SVG_ASSETS } from "./coreHelpers.js";
 import { QuestionFigure } from "./cards.jsx";
 import { C, I, mu, uid } from "./ui.jsx";
 
@@ -296,8 +297,7 @@ export function HierarchyTree({
     levelGap = 60;
   function countLeaves(node) {
     if (!node.children || !node.children.length) return 1;
-    return;
-    node.children.reduce((s, c) => s + countLeaves(c), 0);
+    return node.children.reduce((s, c) => s + countLeaves(c), 0);
   }
   function buildLayout(node, depth, xOffset) {
     const leaves = countLeaves(node);
@@ -310,8 +310,7 @@ export function HierarchyTree({
       node.children.forEach((child) => {
         const childLeaves = countLeaves(child);
         result.push(...buildLayout(child, depth + 1, childX));
-        childX += childL;
-        eaves * nodeW + (childLeaves - 1) * 12 + 16;
+        childX += childLeaves * nodeW + (childLeaves - 1) * 12 + 16;
       });
     }
     return result;

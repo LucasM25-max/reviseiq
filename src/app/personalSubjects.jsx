@@ -275,8 +275,7 @@ export function AppFooter({ D, onContact }) {
 }
 
 export function _psId(s) {
-  return;
-  (s || "")
+  return (s || "")
     .toLowerCase()
     .replace(/[^a-z0-9]/g, "-")
     .replace(/-+/g, "-")
@@ -1088,8 +1087,7 @@ export function PersonalSectionScreen({ D, subj, topic, user, onBack, onSave }) 
                     disabled={fcIdx === 0}
                     onClick={function () {
                       setFcIdx(function (i) {
-                        return;
-                        i - 1;
+                        return i - 1;
                       });
                       setFlip(false);
                     }}
@@ -1267,8 +1265,7 @@ export function PersonalSubjectScreen({
       var newSubj = {
         ...subj,
         topics: subj.topics.map(function (t) {
-          return;
-          t.id === updated.id ? updated : t;
+          return t.id === updated.id ? updated : t;
         }),
       };
       var newPs = personalSubjects.map(function (s) {
@@ -1373,8 +1370,7 @@ export function PersonalSubjectScreen({
                     var ns = { ...subj, name: newName.trim() };
                     onSaveSubjects(
                       personalSubjects.map(function (s) {
-                        return;
-                        s.id === subj.id ? ns : s;
+                        return s.id === subj.id ? ns : s;
                       }),
                     );
                   }
@@ -1386,8 +1382,7 @@ export function PersonalSubjectScreen({
                       var ns = { ...subj, name: newName.trim() };
                       onSaveSubjects(
                         personalSubjects.map(function (s) {
-                          return;
-                          s.id === subj.id ? ns : s;
+                          return s.id === subj.id ? ns : s;
                         }),
                       );
                     }
@@ -1528,8 +1523,7 @@ export function PersonalSubjectScreen({
                   }}
                   onMouseLeave={function (e) {
                     e.currentTarget.style.borderColor = bd;
-                    e.currentTarget.style.backgro;
-                    und = "transparent";
+                    e.currentTarget.style.background = "transparent";
                   }}
                 >
                   <div

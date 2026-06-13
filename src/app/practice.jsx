@@ -126,13 +126,11 @@ export function TodayWidget({
               }}
               onMouseEnter={function (e) {
                 e.currentTarget.style.borderColor = item.color;
-                e.currentTarget.style.tr;
-                ansform = "translateY(-1px)";
+                e.currentTarget.style.transform = "translateY(-1px)";
               }}
               onMouseLeave={function (e) {
                 e.currentTarget.style.borderColor = D ? "#2a3347" : "#e5e7eb";
-                e.curre;
-                ntTarget.style.transform = "";
+                e.currentTarget.style.transform = "";
               }}
             >
               <div

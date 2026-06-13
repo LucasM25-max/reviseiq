@@ -355,8 +355,7 @@ export function MD({ text, D }) {
     });
     const latexParsed = parseLatex(s, mathReady);
     if (typeof latexParsed === "string") {
-      return;
-      latexParsed.split(/(\*\*[^*]+\*\*)/).map((p, i) =>
+      return latexParsed.split(/(\*\*[^*]+\*\*)/).map((p, i) =>
         p.startsWith("**") && p.endsWith("**") ? (
           <strong key={i} style={{ color: D ? "#fff" : "#111827" }}>
             {p.slice(2, -2)}

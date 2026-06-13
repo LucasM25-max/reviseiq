@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { SK } from "./coreHelpers.js";
 import { ACT_DEFS } from "./blurtingScreen.jsx";
 import { B, C, I, mu, tx, uid } from "./ui.jsx";
 
@@ -116,8 +117,7 @@ export function TimetableScreen({
 
   const fmtD = (d) => {
     const dt = new Date(d + "T12:00:00");
-    return;
-    dt.toLocaleDateString("en-GB", {
+    return dt.toLocaleDateString("en-GB", {
       weekday: "short",
       day: "numeric",
       month: "short",
@@ -131,8 +131,7 @@ export function TimetableScreen({
   const fromMins = (m) => {
     const h = Math.floor(m / 60);
     const mn = m % 60;
-    return;
-    `${String(h).padStart(2, "0")}:${String(mn).padStart(2, "0")}`;
+    return `${String(h).padStart(2, "0")}:${String(mn).padStart(2, "0")}`;
   };
 
   const getFreeSlots = (date, existingOnDay) => {
@@ -247,8 +246,7 @@ export function TimetableScreen({
           (d) => d.toISOString().slice(0, 10) === db.toISOString().slice(0, 10),
         )
       )
-        dates.pu;
-      sh(db);
+        dates.push(db);
       dates.sort((a, b) => a - b);
       dates.forEach((date, di) => {
         const dateStr = date.toISOString().slice(0, 10);

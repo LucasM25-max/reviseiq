@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { markAnswer } from "./aiService.js";
 import { AnnotatedImage } from "./annotation.jsx";
 import { generateMockQuestions, generatePartedPaper, generateStructuredPaper, getMockSpec } from "./papers.js";
 import { mergeTopics } from "./social.jsx";
@@ -281,12 +282,10 @@ export function GradeBoundaryBar({ pct, D }) {
       >
         Your score: {pct}% — approx{" "}
         {boundaries.find(function (b) {
-          return;
-          clampedPct >= b.min && clampedPct <= b.max;
+          return clampedPct >= b.min && clampedPct <= b.max;
         })
           ? boundaries.find(function (b) {
-              return;
-              clampedPct >= b.min && clampedPct <= b.max;
+              return clampedPct >= b.min && clampedPct <= b.max;
             }).grade
           : "U"}
       </div>
@@ -617,8 +616,7 @@ export function MockExamScreen({
           var a = answers[q.id];
           if (isParted(q)) {
             return (a?.parts || []).some(function (pa) {
-              return;
-              pa && (pa.selOpt != null || pa.textAns?.trim() || pa.fileAns);
+              return pa && (pa.selOpt != null || pa.textAns?.trim() || pa.fileAns);
             });
           }
           return a?.selOpt != null || a?.textAns?.trim() || a?.fileAns;
@@ -2053,7 +2051,7 @@ ${tier === t ? "#6366f1" : bd2}`,
                   (q.parts || []).forEach(function (pt, pi) {
                     var pa = sParts[pi] || {};
                     totalQ += Number(pt.marks || 0);
-                    if (pt.type === "mcq" && pa.selOpt === pt.answer) sco;
+                    if (pt.type === "mcq" && pa.selOpt === pt.answer) scoredQ += Number(pt.marks || 0);
 
                     if (
                       pa.result?.score != null &&
@@ -2068,8 +2066,7 @@ ${tier === t ? "#6366f1" : bd2}`,
                         ? "#16a34a"
                         : "#d97706";
                   var attempted = (a?.parts || []).some(function (pa) {
-                    return;
-                    pa && (pa.selOpt != null || pa.textAns?.trim());
+                    return pa && (pa.selOpt != null || pa.textAns?.trim());
                   });
                   return (
                     <div key={q.id} style={{ ...C(D), padding: 14 }}>
@@ -2204,14 +2201,12 @@ ${tier === t ? "#6366f1" : bd2}`,
                 setQuestions([]);
                 setAnswers({});
                 setResults(null);
-                setExtrac;
-                t(null);
+                setExtract(null);
                 setExtract2(null);
                 setExamHistory([]);
                 setReviewMode(false);
                 setPaused(false);
-                setPausesLe;
-                ft(2);
+                setPausesLeft(2);
                 setWarn5shown(false);
                 setWarn5modal(false);
                 setSplitScreen(false);
@@ -2473,8 +2468,7 @@ ${tier === t ? "#6366f1" : bd2}`,
             <button
               onClick={function () {
                 setSplitScreen(function (p) {
-                  return;
-                  !p;
+                  return !p;
                 });
               }}
               style={{
@@ -2696,8 +2690,7 @@ ${D ? "#374151" : "#fbcfe8"}`,
               var done;
               if (isParted(qq)) {
                 done = (a?.parts || []).some(function (pa) {
-                  return;
-                  pa && (pa.selOpt != null || pa.textAns?.trim() || pa.fileAns);
+                  return pa && (pa.selOpt != null || pa.textAns?.trim() || pa.fileAns);
                 });
               } else {
                 done = a?.selOpt != null || a?.textAns?.trim() || a?.fileAns;
@@ -2772,8 +2765,7 @@ ${D ? "#374151" : "#fbcfe8"}`,
 
           {(() => {
             var totalMarks = questions.reduce(function (s, qq) {
-              return;
-              s +
+              return s +
                 (isParted(qq)
                   ? Number(qq.totalMarks || 0)
                   : Number(qq.marks || 0));

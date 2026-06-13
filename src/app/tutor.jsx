@@ -98,6 +98,8 @@ export function AITutorScreen({
   boardData,
   user,
   googleKey,
+  calibrationData = {},
+  stats = {},
   onBack,
 }) {
   const [selSubj, setSS] = useState(subjects[0]?.id || "");
@@ -184,8 +186,7 @@ export function AITutorScreen({
     setErr("");
     setSocraticLevel(2);
     try {
-      window.stor;
-      age.delete(memKey);
+      window.storage.delete(memKey);
     } catch (e) {}
   };
   const buildCtx = useCallback(() => {
@@ -363,12 +364,10 @@ student has shared this file with you]`,
       setInput("");
       setFiles([]);
 
-      errors;
       const chosenModel = await pickTutorModel(user);
       setActiveModel(chosenModel);
       const startIdx = TUTOR_MODELS.findIndex(function (m) {
-        return;
-        m.model === chosenModel.model;
+        return m.model === chosenModel.model;
       });
       const tryOrder = [
         ...TUTOR_MODELS.slice(startIdx < 0 ? 0 : startIdx),
@@ -473,8 +472,7 @@ student has shared this file with you]`,
               });
               setMsgs(function (p) {
                 return p.map(function (m, i) {
-                  return;
-                  i === p.length - 1
+                  return i === p.length - 1
                     ? Object.assign({}, m, {
                         _d: Object.assign({}, m._d, { chips: chipsArr }),
                       })
@@ -531,8 +529,7 @@ student has shared this file with you]`,
     setMsgs(hist2);
     pickTutorModel(user)
       .then(function (chosenModel) {
-        return;
-        tutorCall(
+        return tutorCall(
           chosenModel,
           buildSys(),
           [{ role: "user", content: promptText }],
@@ -592,8 +589,7 @@ student has shared this file with you]`,
         "";
       if (t)
         setInput(function (p) {
-          return;
-          p ? p + " " + t : t;
+          return p ? p + " " + t : t;
         });
     };
     rec.start();
@@ -606,8 +602,7 @@ student has shared this file with you]`,
         ? " "
         : f.isText
           ? " "
-          : f.name?.endsWith(".pptx") || f.name?.ends;
-  With(".ppt")
+          : f.name?.endsWith(".pptx") || f.name?.endsWith(".ppt")
     ? " "
     : f.name?.endsWith(".docx") || f.name?.endsWith(".doc")
       ? " "

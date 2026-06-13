@@ -260,8 +260,7 @@ ${D ? "#4b5563" : "#d1d5db"}`,
           <div style={{ marginTop: 6, color: D ? "#cbd5e1" : "#374151" }}>
             {base
               .map(function (x, i) {
-                return;
-                i + 1 + ". " + x;
+                return i + 1 + ". " + x;
               })
               .join(" → ")}
           </div>

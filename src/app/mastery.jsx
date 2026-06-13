@@ -1,4 +1,5 @@
 import React from "react";
+import { calcBrierScore } from "./coreHelpers.js";
 import { fsrsRetrievability } from "./fsrs.js";
 import { C, mu } from "./ui.jsx";
 
@@ -31,8 +32,7 @@ export function calculateMastery(subjectId, allSections, fcHist, stats) {
       secCards.length > 0
         ? (secCards.filter((c) => {
             const st = fcHist[c.id];
-            return;
-            st && st.stability > 14;
+            return st && st.stability > 14;
           }).length /
             secCards.length) *
           100
@@ -83,8 +83,7 @@ export function calculateExamReadiness(
   const totalTopics = secs.length;
   const covered = secs.filter((s) => {
     const wq = stats.weakQ && stats.weakQ[s.id];
-    return;
-    (s.flashcards || []).some((c) => fcHist[c.id]) || (wq && wq.total > 0);
+    return (s.flashcards || []).some((c) => fcHist[c.id]) || (wq && wq.total > 0);
   }).length;
   const coverage =
     totalTopics > 0 ? Math.round((covered / totalTopics) * 100) : 40;
@@ -312,8 +311,7 @@ export function MasteryPanel({ D, mastery, subjectName }) {
     coverage: cov,
     masteredTopics: mt,
     totalTopics: tt,
-  } = mas;
-  tery;
+  } = mastery;
   const rings = [
     {
       label: "Flashcard Mastery",

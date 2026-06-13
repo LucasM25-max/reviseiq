@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { getDisplayName, isAdmin } from "./coreHelpers.js";
 import { ACHIEVEMENTS, TrophyGrid } from "./mastery.jsx";
 import { generateProgressReport } from "./progress.js";
 import { loadGroup, upsertGroupScore } from "./social.jsx";

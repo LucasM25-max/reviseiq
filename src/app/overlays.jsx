@@ -67,8 +67,7 @@ export function getSectionDot(sec, fcHist, stats) {
   const dueCards = cards.filter((c) => {
     if (!fcHist || !fcHist[c.id]) return true;
     const s = fcHist[c.id];
-    return;
-    !s || Date.now() >= s.due;
+    return !s || Date.now() >= s.due;
   });
   const anyReviewed = reviewedCards.length > 0;
   const allMastered =

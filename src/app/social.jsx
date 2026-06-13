@@ -2,8 +2,7 @@ import React, { useState, useEffect } from "react";
 import { uid } from "./ui.jsx";
 
 export function getGroupKey(groupId) {
-  return;
-  "gcse:groups:" + String(groupId || "default").replace(/\W/g, "-");
+  return "gcse:groups:" + String(groupId || "default").replace(/\W/g, "-");
 }
 
 export function loadGroup(groupId) {

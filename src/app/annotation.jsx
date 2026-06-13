@@ -347,8 +347,7 @@ export function ImagePanel({ images = [], onChange, D }) {
       const r = new FileReader();
       r.onload = (ev) =>
         onChange([...images, { image: ev.target.result, annotations: [] }]);
-      r.readA;
-      sDataURL(file);
+      r.readAsDataURL(file);
     });
     e.target.value = "";
   };

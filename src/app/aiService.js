@@ -26,8 +26,7 @@ export const tutorUsageKey = function (u) {
 export async function getTutorUsage(u) {
   try {
     var r = await window.storage.get(tutorUsageKey(u), true);
-    return;
-    r && r.value ? JSON.parse(r.value) : {};
+    return r && r.value ? JSON.parse(r.value) : {};
   } catch (e) {
     return {};
   }
@@ -230,8 +229,7 @@ export async function callAIChat(systemPrompt, messages, maxTokens) {
 export var callGeminiSimple = callAI;
 
 export var callGeminiChat = function (_ignored, systemPrompt, messages) {
-  return;
-  callAIChat(systemPrompt, messages);
+  return callAIChat(systemPrompt, messages);
 };
 
 export function _aiClamp(v, lo, hi) {
@@ -882,4 +880,30 @@ export function getAccGki(acc) {
 
 export function getAccDisplayName(acc) {
   return (acc && typeof acc === "object" && acc.displayName) || "";
+}
+
+// Heuristic primary-error classifier used by the rubric validator and the app.
+// Returns one of the canonical error categories, or null when no clear issue.
+export function detectErrorType(questionText, studentAnswer, markScheme, missedPoints) {
+  const ans = (studentAnswer || "").trim();
+  const missed = Array.isArray(missedPoints) ? missedPoints.length : 0;
+  if (!ans) return "Knowledge Gap";
+  const qt = (questionText || "").toLowerCase();
+  const cmdWords = [
+    "evaluate", "analyse", "analyze", "compare", "discuss",
+    "explain", "justify", "assess", "to what extent",
+  ];
+  const hasCmd = cmdWords.some((w) => qt.indexOf(w) !== -1);
+  if (missed >= 3) return "Knowledge Gap";
+  if (hasCmd && ans.length < 120) return "Command Word Error";
+  if (missed >= 1) return "Application Error";
+  if (ans.length < 30) return "Communication Error";
+  return null;
+}
+
+// Mark a single free-text answer against its mark scheme via the AI rubric.
+// Returns { score, band, feedback, missedPoints, strengths, examTip,
+//           modelAnswer, errorType, ... } (see _validateRubric).
+export async function markAnswer(q, studentAnswer) {
+  return aiServiceFeedbackRubric(q, studentAnswer);
 }

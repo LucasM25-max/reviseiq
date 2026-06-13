@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { getDisplayName } from "./coreHelpers.js";
 
 export function ManageAccountsModal({ D, accounts, adminUser, onClose, onDelete }) {
   var users = Object.keys(accounts)
@@ -198,8 +199,7 @@ export function ImportModal({ D, subjects, onClose, onDone }) {
           );
           const merged = (existing || []).concat(
             (custom || []).filter(function (c) {
-              return;
-              !existingIds.has(c.id);
+              return !existingIds.has(c.id);
             }),
           );
           await window.storage.set(
@@ -261,8 +261,7 @@ export function ImportModal({ D, subjects, onClose, onDone }) {
           );
           const merged = (existing || []).concat(
             (papers || []).filter(function (p) {
-              return;
-              !exKeys.has((p.title || "") + (p.year || ""));
+              return !exKeys.has((p.title || "") + (p.year || ""));
             }),
           );
           await window.storage.set(

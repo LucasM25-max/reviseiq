@@ -170,7 +170,6 @@ export function UCSectionModal({
     setNoteHead("");
     setNoteBody("");
 
-    failure;
     if (noteBody.trim().length > 60) {
       var textContent = noteHead + ": " + noteBody.slice(0, 400);
       callAI(
@@ -195,8 +194,7 @@ export function UCSectionModal({
     onSaveSection(subjId, {
       ...sec,
       notes: notes.filter(function (n) {
-        return;
-        n.id !== id;
+        return n.id !== id;
       }),
     });
   }
@@ -407,8 +405,7 @@ export function UCSectionModal({
 
           var existingQs = new Set(
             (fcsSnap || []).map(function (f) {
-              return;
-              (f.q || f.front || "").toLowerCase().trim();
+              return (f.q || f.front || "").toLowerCase().trim();
             }),
           );
           var dedupedFCs = newFCs.filter(function (f) {
@@ -452,19 +449,16 @@ export function UCSectionModal({
       aiServiceQuestionGenerator(subjectName, "GCSE", aiText, needed, "")
         .then(function (validated) {
           var newQs = validated.map(function (q) {
-            return;
-            Object.assign({}, q, { id: uid2(), _userCreated: true });
+            return Object.assign({}, q, { id: uid2(), _userCreated: true });
           });
 
           var existingTexts = new Set(
             (qsSnap || []).map(function (q) {
-              return;
-              (q.text || "").toLowerCase().trim();
+              return (q.text || "").toLowerCase().trim();
             }),
           );
           var dedupedQs = newQs.filter(function (q) {
-            return;
-            !existingTexts.has((q.text || "").toLowerCase());
+            return !existingTexts.has((q.text || "").toLowerCase());
           });
           onSaveSection(subjId, {
             ...secSnap,
@@ -964,8 +958,7 @@ export function UCSectionModal({
                     <button
                       onClick={function () {
                         setFcIdx(function (i) {
-                          return;
-                          (i - 1 + fcs.length) % fcs.length;
+                          return (i - 1 + fcs.length) % fcs.length;
                         });
                         setFlip(false);
                       }}
@@ -991,8 +984,7 @@ export function UCSectionModal({
                     <button
                       onClick={function () {
                         setFcIdx(function (i) {
-                          return;
-                          (i + 1) % fcs.length;
+                          return (i + 1) % fcs.length;
                         });
                         setFlip(false);
                       }}
@@ -1681,8 +1673,7 @@ export function UserContentScreen({
           subjId={selSubj}
           sec={
             (ucData[selSubj] || { sections: [] }).sections.find(function (s) {
-              return;
-              s.id === modal.sec.id;
+              return s.id === modal.sec.id;
             }) || modal.sec
           }
           subjects={subjects}

@@ -3,7 +3,8 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar } from "recharts";
 import { buildTodaySessionPlan, getPedagogicalContext, selectCommandWordQuestions } from "./learningEngine.js";
 import { ImportModal, ManageAccountsModal } from "./accountModals.jsx";
-import { _aiWithRetry, _parseAIJson, aiServiceReflectionSummarizer, buildAIPersonalisedSession, callAI, getAccDisplayName, getAccHash } from "./aiService.js";
+import { _aiWithRetry, _parseAIJson, aiServiceReflectionSummarizer, buildAIPersonalisedSession, callAI, detectErrorType, getAccDisplayName, getAccHash, markAnswer } from "./aiService.js";
+import { ADMIN_PASS_HASH, ADMIN_SCHOOL, ADMIN_USER, DEFAULT_BOARD, SK, SK_CALIBRATION, SK_ERROR_PATTERNS, SK_GRAPH, SK_JOURNAL, SK_PERSONAL, SK_SESSION, classifyError, confToProb, getDisplayName, hashPw, incrementErrorPattern, isAdmin } from "./coreHelpers.js";
 import { AnnotatedImage } from "./annotation.jsx";
 import { BlurtingScreen } from "./blurtingScreen.jsx";
 import { ClozeCard, QuestionFigure, SequenceCard, generateWhyPrompt } from "./cards.jsx";
@@ -114,13 +115,9 @@ export default function App() {
 
   const [qSelfDone, setQSelfDone] = useState(false);
   const [labelTestMode, setLabelTestMode] = useState(false);
-  self - test;
   const [labelTestComplete, setLabelTestComplete] = useState(false);
 
   const [sessionSetup, setSessionSetup] = useState(null);
-  {
-    (goal, confidence, duration, startTime);
-  }
   const [showGoalModal, setShowGoalModal] = useState(false);
   const [showReflection, setShowReflection] = useState(false);
   const [journalData, setJournalData] = useState({});
@@ -128,14 +125,11 @@ export default function App() {
   const [calibrationData, setCalibrationData] = useState({});
   const [errorPatternsAll, setErrorPatternsAll] = useState({});
   const [pedCtx, setPedCtx] = useState(null);
-  getPedagogicalContext();
   const [goalModalShownThisTab, setGoalModalShownThisTab] = useState(false);
-  double - show;
 
   const [achievements, setAchievements] = useState([]);
 
   const [newAchievement, setNewAchievement] = useState(null);
-  achievement;
   const [focusMode, setFocusMode] = useState(false);
 
   const [totalDaysStudied, setTotalDaysStudied] = useState(0);
@@ -669,8 +663,7 @@ export default function App() {
       [sId]: {
         ...prev,
         sections: prev.sections.filter(function (s) {
-          return;
-          s.id !== secId;
+          return s.id !== secId;
         }),
       },
     });
@@ -759,8 +752,7 @@ export default function App() {
         "gcse:achievements:" + user.replace(/\W/g, "-"),
         JSON.stringify(next),
         true,
-      ).catc;
-      h(() => {});
+      ).catch(() => {});
 
       if (newIds[0]) {
         setNewAchievement(newIds[0]);
@@ -783,8 +775,7 @@ export default function App() {
       const tag = document.activeElement?.tagName;
       const typing =
         ["INPUT", "TEXTAREA", "SELECT"].includes(tag) ||
-        document.activeElement?.contentEdita;
-      ble === "true";
+        document.activeElement?.contentEditable === "true";
 
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
@@ -866,8 +857,7 @@ export default function App() {
                 setFlip(false);
                 setFcIdx((i) => {
                   const cards = section.flashcards || [];
-                  return;
-                  i < cards.length - 1 ? i + 1 : 0;
+                  return i < cards.length - 1 ? i + 1 : 0;
                 });
               }
             }
@@ -879,8 +869,7 @@ export default function App() {
             e.preventDefault();
             setQIdx((i) => {
               const qs = section?.questions || [];
-              return;
-              qs.length > 0 ? (i < qs.length - 1 ? i + 1 : 0) : 0;
+              return qs.length > 0 ? (i < qs.length - 1 ? i + 1 : 0) : 0;
             });
             setQRes(null);
             setSelOpt(null);
@@ -891,8 +880,7 @@ export default function App() {
             e.preventDefault();
             setQIdx((i) => {
               const qs = section?.questions || [];
-              return;
-              qs.length > 0 ? (i > 0 ? i - 1 : qs.length - 1) : 0;
+              return qs.length > 0 ? (i > 0 ? i - 1 : qs.length - 1) : 0;
             });
             setQRes(null);
             setSelOpt(null);
@@ -945,8 +933,7 @@ export default function App() {
       .get(SK.PREFS(user), true)
       .then((r) => {
         const existing = r?.value ? JSON.parse(r.value) : {};
-        return;
-        window.storage.set(
+        return window.storage.set(
           SK.PREFS(user),
           JSON.stringify({
             ...existing,
@@ -1561,8 +1548,7 @@ export default function App() {
       trackEvent("screen_view", { screen: "dashboard" });
     },
     onTarget: () => {
-      s;
-      etTTSubj(null);
+      setTTSubj(null);
       setScreen("target");
       trackEvent("screen_view", { screen: "target" });
     },
@@ -1652,8 +1638,7 @@ export default function App() {
           D={D}
           user={user}
           subjects={subjects.filter(function (s) {
-            return;
-            !s._politics;
+            return !s._politics;
           })}
           ucData={userContent}
           onSaveSection={saveUCSection}
@@ -2183,8 +2168,7 @@ export default function App() {
           user={user}
           D={D}
           subjects={subjects.filter(function (s) {
-            return;
-            !s._politics;
+            return !s._politics;
           })}
           allSections={allSections}
           boardSels={boardSels}
@@ -2207,6 +2191,8 @@ export default function App() {
           boardData={boardData}
           user={user}
           googleKey={userGoogleKey}
+          calibrationData={calibrationData}
+          stats={stats}
           onBack={() => setScreen("home")}
         />
       </>
@@ -2624,8 +2610,7 @@ export default function App() {
                         t: k === todayStr(),
                       });
                     }
-                    weeks.pus;
-                    h(week);
+                    weeks.push(week);
                   }
                   return weeks.map((wk, wi) => (
                     <div
@@ -2820,8 +2805,7 @@ ${D ? "rgba(99,102,241,.2)" : "#c7d2fe"}`,
                 );
                 const ti = merged.findIndex(function (t) {
                   return t.sections.some(function (s) {
-                    return;
-                    s.id === sec.id;
+                    return s.id === sec.id;
                   });
                 });
                 if (ti < 0) return;
@@ -2841,8 +2825,7 @@ ${D ? "rgba(99,102,241,.2)" : "#c7d2fe"}`,
             onNavigateBlurt={function (subjId, secId2) {
               setBlurtSubjId(subjId);
               setBlurtSecId2(secId2);
-              setScre;
-              en("blurting");
+              setScreen("blurting");
             }}
             onMock={function () {
               setScreen("mock");
@@ -3055,8 +3038,7 @@ ${bd2}`,
                 if (si < 0) return;
                 setSubIdx(si);
                 setSecId(n.topicId);
-                set;
-                Screen("section");
+                setScreen("section");
               }}
             />
           )}
@@ -3108,8 +3090,7 @@ ${bd2}`,
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.transform = "translateY(-2px)";
-                      e.currentTarget.style.bo;
-                      xShadow = "0 12px 40px rgba(0,0,0,.1)";
+                      e.currentTarget.style.boxShadow = "0 12px 40px rgba(0,0,0,.1)";
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.transform = "";
@@ -4130,8 +4111,7 @@ ${bd2}`,
                                 e.currentTarget.closest(
                                   "div[style]",
                                 ).style.borderColor = subj.accent;
-                                e.curren;
-                                tTarget.style.background = subj.light;
+                                e.currentTarget.style.background = subj.light;
                               }}
                               onMouseLeave={(e) => {
                                 e.currentTarget.closest(
@@ -4192,8 +4172,7 @@ ${bd2}`,
                                           );
                                         setEditingTitle(null);
                                       }
-                                      if (e.key === "Escape") setEditi;
-                                      ngTitle(null);
+                                      if (e.key === "Escape") setEditingTitle(null);
                                     }}
                                     style={{
                                       fontSize: 13,
@@ -4223,8 +4202,7 @@ ${bd2}`,
                                   if (!cards.length) return null;
                                   const mastered = cards.filter((c) => {
                                     const s = getCardState(fcHist, c.id);
-                                    return;
-                                    s && s.interval > 7;
+                                    return s && s.interval > 7;
                                   }).length;
                                   const pct = Math.round(
                                     (mastered / cards.length) * 100,
@@ -4394,8 +4372,7 @@ ${bd2}`,
                         var cards = sec.flashcards || [];
                         var mastered = cards.filter(function (c) {
                           var s = getCardState(fcHist, c.id);
-                          return;
-                          s && s.interval > 7;
+                          return s && s.interval > 7;
                         }).length;
                         var pct = cards.length
                           ? Math.round((mastered / cards.length) * 100)
@@ -4429,8 +4406,7 @@ ${bd2}`,
                               }}
                               onMouseLeave={function (e) {
                                 e.currentTarget.style.borderColor = bd2;
-                                e.currentTarget.style.backgr;
-                                ound = "transparent";
+                                e.currentTarget.style.background = "transparent";
                               }}
                             >
                               <div
@@ -4655,8 +4631,7 @@ ${bd2}`,
             sec={
               (userContent[modal.subjId] || { sections: [] }).sections.find(
                 function (s) {
-                  return;
-                  s.id === (modal.sec?.id || modal.secId);
+                  return s.id === (modal.sec?.id || modal.secId);
                 },
               ) || modal.sec
             }
@@ -5636,14 +5611,12 @@ ${getRetrievability(fcHist, fc2.id) ?? "—"}% recall`}</span>
                                 }}
                                 onMouseEnter={(e) => {
                                   e.currentTarget.style.borderColor = opt.color;
-                                  e.currentTarget.style.backgrou;
-                                  nd = opt.color + "15";
+                                  e.currentTarget.style.background = opt.color + "15";
                                 }}
                                 onMouseLeave={(e) => {
                                   e.currentTarget.style.borderColor =
                                     opt.color + "22";
-                                  e.currentTarget.style.bac;
-                                  kground = D ? "#161b27" : "#fff";
+                                  e.currentTarget.style.background = D ? "#161b27" : "#fff";
                                 }}
                               >
                                 <div style={{ fontSize: 20, marginBottom: 3 }}>
@@ -8818,8 +8791,7 @@ mark${q.marks !== 1 ? "s" : ""}]`}
                             key={g}
                             onClick={function () {
                               setTargetGrades(function (p) {
-                                return;
-                                Object.assign({}, p, {
+                                return Object.assign({}, p, {
                                   [s.id]: sel ? undefined : g,
                                 });
                               });
@@ -8876,8 +8848,7 @@ mark${q.marks !== 1 ? "s" : ""}]`}
                   return x.wq.total + x.wf.total > 0;
                 })
                 .sort(function (a, b) {
-                  return;
-                  b.score - a.score;
+                  return b.score - a.score;
                 })
                 .slice(0, 5);
               if (!scored.length) return null;
@@ -9813,8 +9784,7 @@ ${ttSubj === si ? s.accent : bd2}`,
                   setSubIdx(prereqModal.si);
                   setTopIdx(prereqModal.ti);
                   setSecId(prereqModal.to);
-                  s;
-                  etScreen("section");
+                  setScreen("section");
                   setPrereqModal(null);
                 }}
                 style={{
