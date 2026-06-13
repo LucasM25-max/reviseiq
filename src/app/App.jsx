@@ -164,6 +164,7 @@ export default function App() {
   const [blurtSubjId, setBlurtSubjId] = useState(null);
   const [blurtSecId2, setBlurtSecId2] = useState(null);
   const [tutorSubjId, setTutorSubjId] = useState(null);
+  const [coachMode, setCoachMode] = useState("exam");
   const [timetableExams, setTimetableExams] = useState([]);
   const [userContent, setUserContent] = useState({});
   const [ucScreen, setUCScreen] = useState(null);
@@ -1576,10 +1577,16 @@ export default function App() {
     },
     onTutor: () => {
       setTutorSubjId(null);
-      setScreen("tutor");
-      trackEvent("screen_view", { screen: "tutor" });
+      setCoachMode("tutor");
+      setScreen("coach");
+      trackEvent("screen_view", { screen: "coach" });
     },
-    onCoach: () => setScreen("coach"),
+    onCoach: () => {
+      setCoachMode("exam");
+      setScreen("coach");
+      trackEvent("screen_view", { screen: "coach" });
+    },
+    onStudy: () => setScreen("study"),
     onLeaderboards: () => setScreen("friends"),
     onAccount: () => setScreen("account"),
     onContact: () => setScreen("contact"),
@@ -2232,20 +2239,73 @@ export default function App() {
         />
       </>
     );
-  if (screen === "coach")
+  if (screen === "coach") {
+    const _cline = D ? "rgba(255,255,255,.09)" : "rgba(16,24,40,.08)";
+    const coachTabs = [
+      { id: "tutor", label: "AI Tutor" },
+      { id: "exam", label: "Exam Technique" },
+    ];
+    const coachWrap = { maxWidth: 1100, margin: "0 auto", padding: "12px 16px 0" };
+    const coachTabBar = {
+      display: "inline-flex",
+      gap: 4,
+      padding: 4,
+      borderRadius: 12,
+      background: D ? "rgba(255,255,255,.06)" : "rgba(16,24,40,.05)",
+      border: "1px solid " + _cline,
+    };
+    const coachTabBtn = (active) => ({
+      border: "none",
+      cursor: "pointer",
+      borderRadius: 9,
+      padding: "7px 16px",
+      fontSize: 13.5,
+      fontWeight: 700,
+      background: active ? (D ? "#5b54f0" : "#7c3aed") : "transparent",
+      color: active ? "#fff" : D ? "#9aa3c2" : "#5b6478",
+    });
     return (
       <>
         <Header {...hProps} />
-        <ExamCoachScreen
-          D={D}
-          subjects={subjects}
-          allSections={allSections}
-          boardSels={boardSels}
-          boardData={boardData}
-          onBack={() => setScreen("home")}
-        />
+        <div style={coachWrap}>
+          <div style={coachTabBar}>
+            {coachTabs.map((m) => (
+              <button
+                key={m.id}
+                onClick={() => setCoachMode(m.id)}
+                style={coachTabBtn(coachMode === m.id)}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        {coachMode === "tutor" ? (
+          <AITutorScreen
+            D={D}
+            subjects={subjects}
+            allSections={allSections}
+            boardSels={boardSels}
+            boardData={boardData}
+            user={user}
+            googleKey={userGoogleKey}
+            calibrationData={calibrationData}
+            stats={stats}
+            onBack={() => setScreen("home")}
+          />
+        ) : (
+          <ExamCoachScreen
+            D={D}
+            subjects={subjects}
+            allSections={allSections}
+            boardSels={boardSels}
+            boardData={boardData}
+            onBack={() => setScreen("home")}
+          />
+        )}
       </>
     );
+  }
   if (screen === "contact")
     return (
       <ContactScreen
@@ -2388,6 +2448,97 @@ export default function App() {
         </div>
       </div>
     );
+  if (screen === "study") {
+    const _dnk = D ? "#eef1fb" : "#0f1729";
+    const _sub = D ? "#9aa3c2" : "#5b6478";
+    const _line = D ? "rgba(255,255,255,.09)" : "rgba(16,24,40,.08)";
+    const _glass = D ? "rgba(255,255,255,.045)" : "rgba(255,255,255,.72)";
+    const _sh = D
+      ? "0 20px 50px -34px rgba(0,0,0,.85)"
+      : "0 20px 50px -34px rgba(76,29,149,.35)";
+    const studyShell = {
+      minHeight: "100vh",
+      background: D ? "#0a0a14" : "#f6f7fb",
+      color: _dnk,
+    };
+    const studyWrap = { maxWidth: 1100, margin: "0 auto", padding: "8px 16px 60px" };
+    const studyH2 = { fontSize: 26, fontWeight: 800, margin: "8px 0 2px" };
+    const studyLead = { color: _sub, margin: 0, fontSize: 14 };
+    const studyEmpty = { color: _sub, marginTop: 24 };
+    const studyName = { fontSize: 16, fontWeight: 800 };
+    const studyReady = { fontSize: 12.5, fontWeight: 700, color: _sub };
+    const grid = {
+      display: "grid",
+      gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
+      gap: 14,
+      marginTop: 18,
+    };
+    const card = {
+      textAlign: "left",
+      padding: 18,
+      borderRadius: 20,
+      border: "1px solid " + _line,
+      background: _glass,
+      boxShadow: _sh,
+      cursor: "pointer",
+      display: "flex",
+      flexDirection: "column",
+      gap: 8,
+    };
+    const real = subjects.filter((s) => !s._politics);
+    return (
+      <div style={studyShell} className="fade-in">
+        <Header {...hProps} />
+        <div style={studyWrap}>
+          <h2 style={studyH2}>Study</h2>
+          <p style={studyLead}>
+            Choose a subject to learn, review flashcards, practise questions, blurt or sit a mock.
+          </p>
+          {real.length === 0 ? (
+            <p style={studyEmpty}>
+              No subjects yet — add some from your Account to start studying.
+            </p>
+          ) : (
+            <div style={grid}>
+              {real.map((s) => {
+                let readiness = 0;
+                try {
+                  readiness =
+                    calculateExamReadiness(
+                      s.id,
+                      allSections,
+                      fcHist,
+                      stats,
+                      calibrationData[s.id],
+                      timetableExams,
+                    )?.score ?? 0;
+                } catch (e) {}
+                const si = subjects.findIndex((x) => x.id === s.id);
+                return (
+                  <button
+                    key={s.id}
+                    onClick={() => {
+                      setSubIdx(si);
+                      setScreen("subject");
+                    }}
+                    style={card}
+                  >
+                    <span style={studyName}>
+                      {s.icon ? s.icon + " " : ""}
+                      {s.name}
+                    </span>
+                    <span style={studyReady}>
+                      {readiness}% exam ready
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
   if (screen === "home") {
     const _dn = userDisplayName || getDisplayName(user);
     const _hh = new Date().getHours();
@@ -7452,6 +7603,8 @@ mark${q.marks !== 1 ? "s" : ""}]`}
     );
   }
   if (screen === "dashboard") {
+    const planRow = { display: "flex", gap: 10, flexWrap: "wrap", margin: "4px 0 18px" };
+    const planBtn = { display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 16px", borderRadius: 12, border: "1px solid " + (D ? "rgba(255,255,255,.1)" : "rgba(16,24,40,.1)"), background: D ? "rgba(255,255,255,.05)" : "#fff", color: D ? "#eef1fb" : "#0f1729", fontSize: 13.5, fontWeight: 700, cursor: "pointer" };
     const fcPct = stats.fcT > 0 ? Math.round((stats.fcC / stats.fcT) * 100) : 0;
     const qPct = stats.qM > 0 ? Math.round((stats.qS / stats.qM) * 100) : 0;
     const totalCustom = Object.values(boardData).reduce(
@@ -7607,6 +7760,10 @@ mark${q.marks !== 1 ? "s" : ""}]`}
             const emptyP = { fontSize: 13, color: D ? "#98a2bd" : "#5b6478", lineHeight: 1.5, textAlign: "center", margin: "20px 0" };
             return (
               <section style={wrapSt}>
+                <div style={planRow}>
+                  <button style={planBtn} onClick={() => setScreen("timetable")}>📅 Exam timetable</button>
+                  <button style={planBtn} onClick={() => setScreen("target")}>🎯 Target grades</button>
+                </div>
                 <div style={kicker}>Your signal</div>
                 <div style={tileGrid}>
                   <StatTile icon="🔥" figure={streak} caption="Day streak" accent="#f59e0b" D={D} />
