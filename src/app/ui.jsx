@@ -1,42 +1,47 @@
 import React, { useState, useEffect } from "react";
 
 export const C = (D) => ({
-  background: D ? "#161b27" : "#fff",
-  border: `1px solid ${D ? "#2a3347" : "#e5e7eb"}`,
-  borderRadius: 14,
+  background: D ? "#161b27" : "#ffffff",
+  border: `1px solid ${D ? "#252d3f" : "#eceef2"}`,
+  borderRadius: 18,
+  boxShadow: D
+    ? "0 1px 2px rgba(0,0,0,.4), 0 10px 30px -16px rgba(0,0,0,.7)"
+    : "0 1px 2px rgba(16,24,40,.04), 0 14px 34px -18px rgba(16,24,40,.14)",
 });
 
 export const I = (D, x = {}) => ({
   width: "100%",
-  background: D ? "#1e2537" : "#fff",
-  border: `1.5px solid
-${D ? "#374151" : "#d1d5db"}`,
-  borderRadius: 10,
-  padding: "10px14px",
-  fontSize: 13,
+  background: D ? "#1a2133" : "#fff",
+  border: `1.5px solid ${D ? "#2f3a52" : "#dde1e9"}`,
+  borderRadius: 12,
+  padding: "11px 14px",
+  fontSize: 14,
   outline: "none",
   color: D ? "#e8ecf4" : "#111827",
+  transition: "border-color .18s ease, box-shadow .18s ease",
+  boxSizing: "border-box",
   ...x,
 });
 
 export const B = (color, outline, extra = {}) => ({
-  padding: "9px16px",
-  borderRadius: 10,
-  border: outline
-    ? `1.5px solid
-${color}`
-    : "none",
+  padding: "10px 18px",
+  borderRadius: 12,
+  border: outline ? `1.5px solid ${color}` : "1px solid transparent",
   background: outline ? "transparent" : color,
   color: outline ? color : "#fff",
   cursor: "pointer",
-  fontSize: 13,
-  fontWeight: 600,
+  fontSize: 14,
+  fontWeight: 700,
+  letterSpacing: ".01em",
+  transition:
+    "transform .15s ease, box-shadow .15s ease, filter .15s ease, background .15s ease",
+  boxShadow: outline || !color ? "none" : `0 1px 2px rgba(16,24,40,.14), 0 8px 18px -10px ${color}`,
   ...extra,
 });
 
-export const mu = (D) => (D ? "#8896b3" : "#9ca3af");
+export const mu = (D) => (D ? "#94a3c4" : "#6b7280");
 
-export const tx = (D) => (D ? "#e8ecf4" : "#111827");
+export const tx = (D) => (D ? "#eef2fb" : "#0f172a");
 
 export const uid = () =>
   typeof crypto !== "undefined" && crypto.randomUUID

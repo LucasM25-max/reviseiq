@@ -2372,8 +2372,7 @@ export default function App() {
             }}
           >
             <h2 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>
-              Hey
-              {userDisplayName || getDisplayName(user)}
+              Hey {userDisplayName || getDisplayName(user)}
             </h2>
             <button
               onClick={function () {

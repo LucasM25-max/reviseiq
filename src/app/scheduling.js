@@ -238,12 +238,12 @@ export function generateSessionOptions(user, subjectId, allSections, stats, fcHi
   return [
     {
       title: "Due Card Sprint",
-      description: "Clear due flashcards in " + (due?.title || "thistopic"),
+      description: "Clear due flashcards in " + (due?.title || "this topic"),
       action: { type: "flashcards", sectionId: due?.id },
     },
     {
       title: "Weak Spot Drill",
-      description: "Target weaker questions in " + (weak?.title || "yourtopic"),
+      description: "Target weaker questions in " + (weak?.title || "your topic"),
       action: { type: "questions", sectionId: weak?.id },
     },
     {
@@ -253,7 +253,7 @@ export function generateSessionOptions(user, subjectId, allSections, stats, fcHi
     },
     {
       title: "Interleaved Session",
-      description: "Round-robin mixed topics for strongertransfer",
+      description: "Round-robin mixed topics for stronger transfer",
       action: { type: "interleaved", subjectId: subjectId },
     },
   ];
