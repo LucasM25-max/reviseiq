@@ -322,7 +322,7 @@ export function PracticeSessionScreen({
                         !done[b.id],
                         {
                           fontSize: 12,
-                          padding: "7px12px",
+                          padding: "7px 12px",
                           borderColor: done[b.id] ? "#16a34a" : bd2,
                           color: done[b.id] ? "#fff" : mu(D),
                         },
@@ -341,7 +341,7 @@ export function PracticeSessionScreen({
             onClick={onReset}
             style={{
               ...B("transparent", true, {
-                padding: "10px14px",
+                padding: "10px 14px",
                 fontSize: 13,
                 borderColor: bd2,
                 color: mu(D),
@@ -353,7 +353,7 @@ export function PracticeSessionScreen({
           <button
             onClick={onBack}
             style={{
-              ...B("#111827", false, { padding: "10px14px", fontSize: 13 }),
+              ...B("#111827", false, { padding: "10px 14px", fontSize: 13 }),
             }}
           >
             Return Home

@@ -18,7 +18,7 @@ export function renderMath(src, display = false) {
           fontFamily: "'IBM PlexMono',monospace",
           fontSize: 12,
           background: "rgba(99,102,241,.12)",
-          padding: "1px5px",
+          padding: "1px 5px",
           borderRadius: 4,
         }}
       >
@@ -68,7 +68,7 @@ export function parseLatex(s, mathReady) {
         out.push(
           <span
             key={i}
-            style={{ display: "block", textAlign: "center", margin: "4px0" }}
+            style={{ display: "block", textAlign: "center", margin: "4px 0" }}
           >
             {renderMath(s.slice(i + 2, end), true)}
           </span>,
@@ -168,7 +168,7 @@ Mono',monospace;background:rgba(99,102,241,.13);padding:1px
     border: "none",
     cursor: "pointer",
     borderRadius: 5,
-    padding: "3px8px",
+    padding: "3px 8px",
     fontSize: 13,
     fontWeight: 600,
     color: tx(D),
@@ -185,10 +185,9 @@ Mono',monospace;background:rgba(99,102,241,.13);padding:1px
         style={{
           display: "flex",
           gap: 2,
-          padding: "5px8px",
+          padding: "5px 8px",
           background: D ? "#1e2537" : "#f3f4f6",
-          borderBottom: `1px solid
-${brd}`,
+          borderBottom: `1px solid ${brd}`,
           flexWrap: "wrap",
           alignItems: "center",
         }}
@@ -272,7 +271,7 @@ ${brd}`,
         }}
         data-placeholder={placeholder || "Write here…"}
         style={{
-          padding: "12px14px",
+          padding: "12px 14px",
           background: D ? "#1e2537" : "#fff",
           color: tx(D),
           minHeight,
@@ -324,7 +323,7 @@ export function MD({ text, D }) {
                     key={ci}
                     style={{
                       border: `1px solid ${D ? "#4b5563" : "#d1d5db"}`,
-                      padding: "6px12px",
+                      padding: "6px 12px",
                       textAlign: "left",
                     }}
                   >
@@ -396,8 +395,7 @@ export function MD({ text, D }) {
           key={i}
           style={{
             border: "none",
-            borderTop: `1px solid
-${D ? "#374151" : "#e5e7eb"}`,
+            borderTop: `1px solid ${D ? "#374151" : "#e5e7eb"}`,
             margin: "10px 0",
           }}
         />,
@@ -431,8 +429,7 @@ ${D ? "#374151" : "#e5e7eb"}`,
             color: D ? "#f3f4f6" : "#111827",
             margin: "16px 06px",
             paddingBottom: 4,
-            borderBottom: `1px solid
-${D ? "#374151" : "#e5e7eb"}`,
+            borderBottom: `1px solid ${D ? "#374151" : "#e5e7eb"}`,
           }}
         >
           {pb(l.slice(3))}
@@ -492,10 +489,9 @@ ${D ? "#374151" : "#e5e7eb"}`,
           key={i}
           style={{
             margin: "8px 0",
-            padding: "10px14px",
+            padding: "10px 14px",
             borderRadius: 8,
-            border: `1px solid
-${D ? "#92400e" : "#fde68a"}`,
+            border: `1px solid ${D ? "#92400e" : "#fde68a"}`,
             background: D ? "rgba(120,53,15,.25)" : "#fffbeb",
             fontSize: 13,
             color: D ? "#fcd34d" : "#92400e",
@@ -696,8 +692,7 @@ export function NoteSec({ sec, D, images = [] }) {
       style={{
         borderRadius: 12,
         overflow: "hidden",
-        border: `1.5px solid
-${borderCol}33`,
+        border: `1.5px solid ${borderCol}33`,
         marginBottom: 8,
       }}
     >
@@ -710,8 +705,7 @@ ${borderCol}33`,
           gap: 10,
           padding: "9px 14px",
           background: bgCol,
-          borderLeft: `3px solid
-${borderCol}`,
+          borderLeft: `3px solid ${borderCol}`,
           borderTop: "none",
           borderRight: "none",
           borderBottom: "none",
@@ -738,7 +732,7 @@ ${borderCol}`,
               fontSize: 10,
               color: lblCol,
               background: borderCol + "25",
-              padding: "2px8px",
+              padding: "2px 8px",
               borderRadius: 10,
               fontWeight: 700,
               marginRight: 4,
@@ -764,8 +758,7 @@ ${borderCol}`,
           className="note-reveal"
           style={{
             background: D ? "#0d1117" : "#fff",
-            borderTop: `1px solid
-${borderCol}22`,
+            borderTop: `1px solid ${borderCol}22`,
           }}
         >
           {images.length > 0 && (
@@ -817,7 +810,7 @@ ${borderCol}22`,
             {def?.selfCheck && (
               <div
                 style={{
-                  padding: "8px12px",
+                  padding: "8px 12px",
                   borderRadius: 8,
                   background: bgCol,
                   marginBottom: 10,
@@ -845,7 +838,7 @@ ${borderCol}22`,
               maxWidth: "95vw",
               maxHeight: "90vh",
               borderRadius: 12,
-              boxShadow: "0 30px 80pxrgba(0,0,0,.5)",
+              boxShadow: "0 30px 80px rgba(0,0,0,.5)",
             }}
           />
           <button
@@ -912,8 +905,7 @@ export function SmartNoteCard({
       style={{
         background: D ? "#161b27" : "#fff",
         borderRadius: 14,
-        border: `1px solid
-${bd2}`,
+        border: `1px solid ${bd2}`,
         overflow: "hidden",
         marginBottom: 14,
       }}
@@ -922,8 +914,7 @@ ${bd2}`,
         style={{
           padding: "12px 18px 10px",
           background: D ? "rgba(255,255,255,.02)" : "#fafafa",
-          borderBottom: `1px solid
-${bd2}`,
+          borderBottom: `1px solid ${bd2}`,
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
@@ -1121,8 +1112,7 @@ ${bd2}`,
                       borderRadius: 8,
                       marginBottom: 10,
                       display: "block",
-                      border: `1px solid
-${bd2}`,
+                      border: `1px solid ${bd2}`,
                     }}
                   />
                 ) : null,
@@ -1136,8 +1126,7 @@ ${bd2}`,
             style={{
               marginTop: 12,
               paddingTop: 12,
-              borderTop: `1px solid
-${D ? "#2a3347" : "#e5e7eb"}`,
+              borderTop: `1px solid ${D ? "#2a3347" : "#e5e7eb"}`,
             }}
           >
             <div
@@ -1182,8 +1171,7 @@ ${D ? "#2a3347" : "#e5e7eb"}`,
             style={{
               marginTop: 12,
               paddingTop: 12,
-              borderTop: `1px solid
-${D ? "#2a3347" : "#e5e7eb"}`,
+              borderTop: `1px solid ${D ? "#2a3347" : "#e5e7eb"}`,
             }}
           >
             <DiagramRenderer diagram={note.diagram} D={D} width={660} />
@@ -1200,7 +1188,7 @@ ${D ? "#2a3347" : "#e5e7eb"}`,
               maxWidth: "95vw",
               maxHeight: "90vh",
               borderRadius: 12,
-              boxShadow: "0 30px 80pxrgba(0,0,0,.5)",
+              boxShadow: "0 30px 80px rgba(0,0,0,.5)",
             }}
           />
           <button

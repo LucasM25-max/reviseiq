@@ -40,7 +40,7 @@ export function SubjMyNotesTab({
             display: "flex",
             alignItems: "center",
             gap: 6,
-            padding: "8px16px",
+            padding: "8px 16px",
             borderRadius: 8,
             border: "none",
             background: "#6366f1",
@@ -59,7 +59,7 @@ export function SubjMyNotesTab({
             padding: "40px 24px",
             textAlign: "center",
             borderRadius: 12,
-            border: "1.5px dashed#6366f1",
+            border: "1.5px dashed #6366f1",
             background: D ? "rgba(99,102,241,.04)" : "#fafaff",
           }}
         >
@@ -92,7 +92,7 @@ export function SubjMyNotesTab({
             <div
               key={sec.id}
               style={{
-                border: "1.5px solid#6366f1",
+                border: "1.5px solid #6366f1",
                 borderRadius: 12,
                 overflow: "hidden",
                 background: D ? "rgba(99,102,241,.04)" : "#fafaff",
@@ -143,7 +143,7 @@ export function SubjMyNotesTab({
                       fontWeight: 700,
                       background: "#6366f1",
                       color: "#fff",
-                      padding: "2px6px",
+                      padding: "2px 6px",
                       borderRadius: 6,
                       flexShrink: 0,
                       whiteSpace: "nowrap",
@@ -173,7 +173,7 @@ export function SubjMyNotesTab({
                   }}
                   style={{
                     flex: 1,
-                    padding: "5px0",
+                    padding: "5px 0",
                     fontSize: 11,
                     background: "none",
                     border: "none",
@@ -191,7 +191,7 @@ export function SubjMyNotesTab({
                   }}
                   style={{
                     flex: 1,
-                    padding: "5px0",
+                    padding: "5px 0",
                     fontSize: 11,
                     background: "none",
                     border: "none",
@@ -220,14 +220,14 @@ export function AppFooter({ D, onContact }) {
       style={{
         borderTop: "1px solid " + border,
         background: bg2,
-        padding: "20px24px",
+        padding: "20px 24px",
         marginTop: 40,
       }}
     >
       <div
         style={{
           maxWidth: 960,
-          margin: "0auto",
+          margin: "0 auto",
           display: "flex",
           flexWrap: "wrap",
           alignItems: "center",
@@ -261,7 +261,7 @@ export function AppFooter({ D, onContact }) {
             fontWeight: 600,
             color: "#6366f1",
             background: "none",
-            border: "1px solid#6366f1",
+            border: "1px solid #6366f1",
             borderRadius: 8,
             padding: "6px 14px",
             cursor: "pointer",
@@ -486,7 +486,7 @@ export function CreatePersonalSubjectModal({ D, onSave, onClose }) {
               });
             }}
             style={{
-              padding: "9px20px",
+              padding: "9px 20px",
               borderRadius: 10,
               border: "none",
               background: name.trim() ? "#6366f1" : "#d1d5db",
@@ -591,7 +591,7 @@ export function AddPersonalTopicModal({ D, onSave, onClose }) {
                 });
             }}
             style={{
-              padding: "8px16px",
+              padding: "8px 16px",
               borderRadius: 9,
               border: "none",
               background: title.trim() ? "#6366f1" : "#d1d5db",
@@ -841,7 +841,7 @@ export function PersonalSectionScreen({ D, subj, topic, user, onBack, onSave }) 
                   setFlip(false);
                 }}
                 style={{
-                  padding: "10px16px",
+                  padding: "10px 16px",
                   fontSize: 13,
                   fontWeight: tab === t ? 600 : 400,
                   color: tab === t ? subj.accent : D ? "#9ca3af" : "#6b7280",
@@ -913,7 +913,7 @@ export function PersonalSectionScreen({ D, subj, topic, user, onBack, onSave }) 
             onClick={generateFromText}
             style={{
               marginTop: 8,
-              padding: "7px16px",
+              padding: "7px 16px",
               borderRadius: 8,
               border: "none",
               background: aiText.trim() && !aiLoading ? subj.accent : "#d1d5db",
@@ -953,7 +953,7 @@ export function PersonalSectionScreen({ D, subj, topic, user, onBack, onSave }) 
                 disabled={!noteText.trim()}
                 onClick={addNote}
                 style={{
-                  padding: "9px16px",
+                  padding: "9px 16px",
                   borderRadius: 8,
                   border: "none",
                   background: noteText.trim() ? subj.accent : "#d1d5db",
@@ -986,7 +986,7 @@ export function PersonalSectionScreen({ D, subj, topic, user, onBack, onSave }) 
                     background: D ? "#1e2537" : "#fff",
                     border: "1px solid" + bd,
                     borderRadius: 10,
-                    padding: "12px14px",
+                    padding: "12px 14px",
                     marginBottom: 8,
                     display: "flex",
                     justifyContent: "space-between",
@@ -1039,7 +1039,7 @@ export function PersonalSectionScreen({ D, subj, topic, user, onBack, onSave }) 
                     background: D ? "#1e2537" : "#fff",
                     border: "2px solid" + subj.accent,
                     borderRadius: 16,
-                    padding: "32px24px",
+                    padding: "32px 24px",
                     textAlign: "center",
                     minHeight: 140,
                     display: "flex",
@@ -1115,9 +1115,9 @@ export function PersonalSectionScreen({ D, subj, topic, user, onBack, onSave }) 
                         deleteFlashcard(curFc.id);
                       }}
                       style={{
-                        padding: "7px12px",
+                        padding: "7px 12px",
                         borderRadius: 8,
-                        border: "1px solid#ef4444",
+                        border: "1px solid #ef4444",
                         background: "none",
                         color: "#ef4444",
                         cursor: "pointer",
@@ -1158,7 +1158,7 @@ export function PersonalSectionScreen({ D, subj, topic, user, onBack, onSave }) 
                   fontSize: 13,
                   color: D ? "#9ca3af" : "#6b7280",
                   textAlign: "center",
-                  padding: "24px0",
+                  padding: "24px 0",
                 }}
               >
                 No flashcards yet. Add some below or use AI to generate from
@@ -1223,7 +1223,7 @@ export function PersonalSectionScreen({ D, subj, topic, user, onBack, onSave }) 
                 disabled={!fcFront.trim() || !fcBack.trim()}
                 onClick={addFlashcard}
                 style={{
-                  padding: "8px16px",
+                  padding: "8px 16px",
                   borderRadius: 8,
                   border: "none",
                   background:
@@ -1395,7 +1395,7 @@ export function PersonalSubjectScreen({
                   fontWeight: 700,
                   border: "2px solid" + subj.accent,
                   borderRadius: 8,
-                  padding: "4px10px",
+                  padding: "4px 10px",
                   background: "transparent",
                   color: tx2,
                   width: "100%",
@@ -1413,12 +1413,12 @@ export function PersonalSubjectScreen({
                   }}
                   style={{
                     background: "none",
-                    border: "1px solid#9ca3af",
+                    border: "1px solid #9ca3af",
                     borderRadius: 6,
                     cursor: "pointer",
                     fontSize: 12,
                     color: "#9ca3af",
-                    padding: "3px8px",
+                    padding: "3px 8px",
                   }}
                 >
                   {" "}
@@ -1441,7 +1441,7 @@ export function PersonalSubjectScreen({
             style={{
               padding: "7px 14px",
               borderRadius: 9,
-              border: "1px solid#ef4444",
+              border: "1px solid #ef4444",
               background: "none",
               color: "#ef4444",
               fontWeight: 600,
@@ -1466,7 +1466,7 @@ export function PersonalSubjectScreen({
               setAddTopicOpen(true);
             }}
             style={{
-              padding: "7px16px",
+              padding: "7px 16px",
               borderRadius: 9,
               border: "none",
               background: subj.accent,
@@ -1483,7 +1483,7 @@ export function PersonalSubjectScreen({
           <div
             style={{
               textAlign: "center",
-              padding: "40px0",
+              padding: "40px 0",
               color: D ? "#9ca3af" : "#6b7280",
               fontSize: 13,
             }}
@@ -1563,7 +1563,7 @@ export function PersonalSubjectScreen({
                     cursor: "pointer",
                     fontSize: 10,
                     color: "#ef4444",
-                    padding: "2px6px",
+                    padding: "2px 6px",
                     fontWeight: 700,
                   }}
                 ></button>

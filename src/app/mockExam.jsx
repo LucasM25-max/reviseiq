@@ -37,11 +37,10 @@ export function MockImage({ query, D }) {
     return (
       <div
         style={{
-          padding: "10px14px",
+          padding: "10px 14px",
           borderRadius: 8,
           background: D ? "rgba(99,102,241,.08)" : "#f5f3ff",
-          border: `1px dashed
-${D ? "#4f46e5" : "#a5b4fc"}`,
+          border: `1px dashed ${D ? "#4f46e5" : "#a5b4fc"}`,
           fontSize: 12,
           color: D ? "#a5b4fc" : "#4f46e5",
           fontStyle: "italic",
@@ -61,8 +60,7 @@ ${D ? "#4f46e5" : "#a5b4fc"}`,
           maxHeight: 300,
           borderRadius: 8,
           display: "block",
-          border: `1px solid
-${D ? "#374151" : "#e5e7eb"}`,
+          border: `1px solid ${D ? "#374151" : "#e5e7eb"}`,
         }}
       />
       <div
@@ -178,7 +176,7 @@ export function HistoryInterpBlock({ text, title, D }) {
         style={{
           background: D ? "#451a03" : "#92400e",
           color: "#fef3c7",
-          padding: "6px14px",
+          padding: "6px 14px",
           fontSize: 11,
           fontWeight: 700,
           letterSpacing: "0.08em",
@@ -189,7 +187,7 @@ export function HistoryInterpBlock({ text, title, D }) {
       <div
         style={{
           background: D ? "#1c1008" : "#fffbeb",
-          padding: "14px16px",
+          padding: "14px 16px",
           fontSize: 13,
           lineHeight: 1.85,
           color: D ? "#fef3c7" : "#1c1917",
@@ -921,10 +919,9 @@ export function MockExamScreen({
                       key={t}
                       onClick={() => setTier(t)}
                       style={{
-                        padding: "12px16px",
+                        padding: "12px 16px",
                         borderRadius: 10,
-                        border: `1.5px solid
-${tier === t ? "#6366f1" : bd2}`,
+                        border: `1.5px solid ${tier === t ? "#6366f1" : bd2}`,
                         background:
                           tier === t
                             ? D
@@ -1089,10 +1086,10 @@ ${tier === t ? "#6366f1" : bd2}`,
             {genErr && (
               <div
                 style={{
-                  padding: "10px14px",
+                  padding: "10px 14px",
                   borderRadius: 8,
                   background: "#fee2e2",
-                  border: "1px solid#ef4444",
+                  border: "1px solid #ef4444",
                   fontSize: 12,
                   color: "#b91c1c",
                   marginBottom: 12,
@@ -1104,7 +1101,7 @@ ${tier === t ? "#6366f1" : bd2}`,
             {paper.paperType === "comingSoon" ? (
               <div
                 style={{
-                  padding: "14px16px",
+                  padding: "14px 16px",
                   borderRadius: 10,
                   background: D ? "#1e2537" : "#f3f4f6",
                   textAlign: "center",
@@ -1117,7 +1114,7 @@ ${tier === t ? "#6366f1" : bd2}`,
             ) : ["maths", "bio", "chem", "phys"].includes(selSubj) && !tier ? (
               <div
                 style={{
-                  padding: "12px14px",
+                  padding: "12px 14px",
                   borderRadius: 10,
                   background: D ? "#1e2537" : "#f3f4f6",
                   textAlign: "center",
@@ -1145,7 +1142,7 @@ ${tier === t ? "#6366f1" : bd2}`,
                 style={{
                   ...B("#6366f1", false, {
                     width: "100%",
-                    padding: "13px0",
+                    padding: "13px 0",
                     fontSize: 14,
                     fontWeight: 700,
                   }),
@@ -1254,7 +1251,7 @@ ${tier === t ? "#6366f1" : bd2}`,
               style={{
                 ...B("#6366f1", false, {
                   width: "100%",
-                  padding: "13px0",
+                  padding: "13px 0",
                   fontSize: 14,
                   fontWeight: 700,
                   marginTop: 8,
@@ -1542,7 +1539,7 @@ ${tier === t ? "#6366f1" : bd2}`,
               style={{
                 ...B(reviewMode ? "#6366f1" : "transparent", !reviewMode, {
                   fontSize: 12,
-                  padding: "8px14px",
+                  padding: "8px 14px",
                   borderColor: reviewMode ? "#6366f1" : bd2,
                   color: reviewMode ? "#fff" : mu(D),
                 }),
@@ -1555,7 +1552,7 @@ ${tier === t ? "#6366f1" : bd2}`,
               style={{
                 ...B("transparent", true, {
                   fontSize: 12,
-                  padding: "8px14px",
+                  padding: "8px 14px",
                   borderColor: bd2,
                   color: mu(D),
                 }),
@@ -1657,7 +1654,7 @@ ${tier === t ? "#6366f1" : bd2}`,
                       {q.context && q.context.trim() && (
                         <div
                           style={{
-                            padding: "10px12px",
+                            padding: "10px 12px",
                             borderRadius: 8,
                             background: D ? "#1e2537" : "#fffbeb",
                             fontSize: 12,
@@ -1697,12 +1694,12 @@ ${tier === t ? "#6366f1" : bd2}`,
                             <div
                               key={pi}
                               style={{
-                                padding: "12px14px",
+                                padding: "12px 14px",
                                 borderRadius: 8,
                                 background: D
                                   ? "rgba(99,102,241,.06)"
                                   : "#f8f9ff",
-                                borderLeft: "2px solid#6366f1",
+                                borderLeft: "2px solid #6366f1",
                               }}
                             >
                               <div
@@ -1759,7 +1756,7 @@ ${tier === t ? "#6366f1" : bd2}`,
                               {part.type === "mcq" ? (
                                 <div
                                   style={{
-                                    padding: "7px10px",
+                                    padding: "7px 10px",
                                     borderRadius: 7,
                                     background:
                                       pAns.selOpt === part.answer
@@ -1800,7 +1797,7 @@ ${tier === t ? "#6366f1" : bd2}`,
                                     </div>
                                     <div
                                       style={{
-                                        padding: "8px10px",
+                                        padding: "8px 10px",
                                         borderRadius: 7,
                                         background: D ? "#1e2537" : "#f3f4f6",
                                         fontSize: 11,
@@ -1817,7 +1814,7 @@ ${tier === t ? "#6366f1" : bd2}`,
                                       <div
                                         style={{
                                           marginTop: 5,
-                                          padding: "6px9px",
+                                          padding: "6px 9px",
                                           borderRadius: 7,
                                           background: D
                                             ? "rgba(99,102,241,.1)"
@@ -1845,7 +1842,7 @@ ${tier === t ? "#6366f1" : bd2}`,
                                     </div>
                                     <div
                                       style={{
-                                        padding: "8px10px",
+                                        padding: "8px 10px",
                                         borderRadius: 7,
                                         background: D
                                           ? "rgba(16,185,129,.08)"
@@ -1926,7 +1923,7 @@ ${tier === t ? "#6366f1" : bd2}`,
                     {q.type === "mcq" ? (
                       <div
                         style={{
-                          padding: "8px12px",
+                          padding: "8px 12px",
                           borderRadius: 8,
                           background: isCorr ? "#dcfce7" : "#fee2e2",
                           fontSize: 12,
@@ -1965,7 +1962,7 @@ ${tier === t ? "#6366f1" : bd2}`,
                           </div>
                           <div
                             style={{
-                              padding: "10px12px",
+                              padding: "10px 12px",
                               borderRadius: 8,
                               background: D ? "#1e2537" : "#f3f4f6",
                               fontSize: 12,
@@ -1981,7 +1978,7 @@ ${tier === t ? "#6366f1" : bd2}`,
                             <div
                               style={{
                                 marginTop: 6,
-                                padding: "8px10px",
+                                padding: "8px 10px",
                                 borderRadius: 8,
                                 background: D
                                   ? "rgba(99,102,241,.1)"
@@ -2009,7 +2006,7 @@ ${tier === t ? "#6366f1" : bd2}`,
                           </div>
                           <div
                             style={{
-                              padding: "10px12px",
+                              padding: "10px 12px",
                               borderRadius: 8,
                               background: D
                                 ? "rgba(16,185,129,.08)"
@@ -2178,7 +2175,7 @@ ${tier === t ? "#6366f1" : bd2}`,
                       <div
                         style={{
                           marginTop: 6,
-                          padding: "6px10px",
+                          padding: "6px 10px",
                           borderRadius: 6,
                           background: D ? "#1e2537" : "#f3f4f6",
                           fontSize: 11,
@@ -2223,7 +2220,7 @@ ${tier === t ? "#6366f1" : bd2}`,
               style={{
                 flex: 1,
                 ...B("transparent", true, {
-                  padding: "12px0",
+                  padding: "12px 0",
                   fontSize: 14,
                   borderColor: bd2,
                   color: mu(D),
@@ -2273,7 +2270,7 @@ ${tier === t ? "#6366f1" : bd2}`,
               padding: 28,
               maxWidth: 320,
               textAlign: "center",
-              border: "2px solid#f59e0b",
+              border: "2px solid #f59e0b",
             }}
           >
             <div style={{ fontSize: 40, marginBottom: 10 }}> </div>
@@ -2298,7 +2295,7 @@ ${tier === t ? "#6366f1" : bd2}`,
               style={{
                 ...B("#f59e0b", false, {
                   width: "100%",
-                  padding: "10px0",
+                  padding: "10px 0",
                   fontSize: 14,
                   fontWeight: 700,
                 }),
@@ -2341,7 +2338,7 @@ ${tier === t ? "#6366f1" : bd2}`,
               style={{
                 ...B("#6366f1", false, {
                   fontSize: 14,
-                  padding: "10px28px",
+                  padding: "10px 28px",
                   fontWeight: 700,
                 }),
               }}
@@ -2434,7 +2431,7 @@ ${tier === t ? "#6366f1" : bd2}`,
               style={{
                 ...B("transparent", true, {
                   fontSize: 11,
-                  padding: "5px10px",
+                  padding: "5px 10px",
                   flexShrink: 0,
                   borderColor: bd2,
                   color: mu(D),
@@ -2454,7 +2451,7 @@ ${tier === t ? "#6366f1" : bd2}`,
               style={{
                 ...B(showExtract ? "#6366f1" : "transparent", !showExtract, {
                   fontSize: 11,
-                  padding: "5px10px",
+                  padding: "5px 10px",
                   flexShrink: 0,
                   borderColor: showExtract ? "#6366f1" : bd2,
                   color: showExtract ? "#fff" : mu(D),
@@ -2474,7 +2471,7 @@ ${tier === t ? "#6366f1" : bd2}`,
               style={{
                 ...B(splitScreen ? "#6366f1" : "transparent", !splitScreen, {
                   fontSize: 11,
-                  padding: "5px10px",
+                  padding: "5px 10px",
                   flexShrink: 0,
                   borderColor: splitScreen ? "#6366f1" : bd2,
                   color: splitScreen ? "#fff" : mu(D),
@@ -2494,7 +2491,7 @@ ${tier === t ? "#6366f1" : bd2}`,
               style={{
                 ...B(showExtract2 ? "#ec4899" : "transparent", !showExtract2, {
                   fontSize: 11,
-                  padding: "5px10px",
+                  padding: "5px 10px",
                   flexShrink: 0,
                   borderColor: showExtract2 ? "#ec4899" : bd2,
                   color: showExtract2 ? "#fff" : mu(D),
@@ -2509,7 +2506,7 @@ ${tier === t ? "#6366f1" : bd2}`,
             style={{
               ...B("#ef4444", true, {
                 fontSize: 11,
-                padding: "5px10px",
+                padding: "5px 10px",
                 flexShrink: 0,
               }),
             }}
@@ -2523,8 +2520,7 @@ ${tier === t ? "#6366f1" : bd2}`,
         <div
           style={{
             background: D ? "#1e2537" : "#fffbeb",
-            borderBottom: `1px solid
-${D ? "#374151" : "#fde68a"}`,
+            borderBottom: `1px solid ${D ? "#374151" : "#fde68a"}`,
             padding: "14px 20px",
             maxHeight: 320,
             overflowY: "auto",
@@ -2584,8 +2580,7 @@ ${D ? "#374151" : "#fde68a"}`,
         <div
           style={{
             background: D ? "#1e2537" : "#fdf2f8",
-            borderBottom: `1px solid
-${D ? "#374151" : "#fbcfe8"}`,
+            borderBottom: `1px solid ${D ? "#374151" : "#fbcfe8"}`,
             padding: "14px 20px",
             maxHeight: 320,
             overflowY: "auto",
@@ -2633,7 +2628,7 @@ ${D ? "#374151" : "#fbcfe8"}`,
         style={{
           display: splitScreen ? "flex" : "block",
           maxWidth: splitScreen ? "100%" : 760,
-          margin: "0auto",
+          margin: "0 auto",
           padding: splitScreen ? 0 : "18px 24px",
           gap: 0,
         }}
@@ -2649,7 +2644,7 @@ ${D ? "#374151" : "#fbcfe8"}`,
               maxHeight: "calc(100vh - 80px)",
               position: "sticky",
               top: 80,
-              padding: "18px20px",
+              padding: "18px 20px",
               background: D ? "#0d1117" : "#fffbeb",
             }}
           >
@@ -2751,7 +2746,7 @@ ${D ? "#374151" : "#fbcfe8"}`,
                 style={{
                   fontSize: 11,
                   fontWeight: 700,
-                  padding: "3px10px",
+                  padding: "3px 10px",
                   borderRadius: 20,
                   background: (subj && subj.mid) || "#e0e7ff",
                   color: (subj && subj.dk) || "#312e81",
@@ -2829,11 +2824,10 @@ ${D ? "#374151" : "#fbcfe8"}`,
               {q.context && q.context.trim() && (
                 <div
                   style={{
-                    padding: "14px16px",
+                    padding: "14px 16px",
                     borderRadius: 10,
                     background: D ? "#1e2537" : "#fffbeb",
-                    border: `1px solid
-${D ? "#374151" : "#fde68a"}`,
+                    border: `1px solid ${D ? "#374151" : "#fde68a"}`,
                     fontSize: 13,
                     color: tx(D),
                     lineHeight: 1.75,
@@ -2904,7 +2898,7 @@ ${D ? "#374151" : "#fde68a"}`,
                         style={{
                           fontSize: 11,
                           fontWeight: 700,
-                          padding: "2px9px",
+                          padding: "2px 9px",
                           borderRadius: 20,
                           background: (subj && subj.mid) || "#e0e7ff",
                           color: (subj && subj.dk) || "#312e81",
@@ -2944,8 +2938,7 @@ ${D ? "#374151" : "#fde68a"}`,
                                 textAlign: "left",
                                 padding: "9px 13px",
                                 borderRadius: 9,
-                                border: `1.5px solid
-${sel ? "#6366f1" : bd2}`,
+                                border: `1.5px solid ${sel ? "#6366f1" : bd2}`,
                                 background: sel
                                   ? D
                                     ? "rgba(99,102,241,.15)"
@@ -3063,8 +3056,7 @@ ${sel ? "#6366f1" : bd2}`,
                           textAlign: "left",
                           padding: "10px 14px",
                           borderRadius: 10,
-                          border: `1.5px solid
-${sel ? "#6366f1" : bd2}`,
+                          border: `1.5px solid ${sel ? "#6366f1" : bd2}`,
                           background: sel
                             ? D
                               ? "rgba(99,102,241,.15)"
@@ -3120,11 +3112,10 @@ ${sel ? "#6366f1" : bd2}`,
                     <div
                       style={{
                         marginBottom: 10,
-                        padding: "10px12px",
+                        padding: "10px 12px",
                         borderRadius: 10,
                         background: D ? "#1e2537" : "#f0fdf4",
-                        border: `1px solid
-${D ? "#374151" : "#86efac"}`,
+                        border: `1px solid ${D ? "#374151" : "#86efac"}`,
                         display: "flex",
                         alignItems: "center",
                         gap: 10,
@@ -3215,7 +3206,7 @@ ${D ? "#374151" : "#86efac"}`,
                       style={{
                         ...B("transparent", true, {
                           fontSize: 14,
-                          padding: "8px10px",
+                          padding: "8px 10px",
                           borderColor: bd2,
                           color: mu(D),
                           flexShrink: 0,
@@ -3243,8 +3234,7 @@ ${D ? "#374151" : "#86efac"}`,
                 flex: 1,
                 padding: "10px 0",
                 borderRadius: 10,
-                border: `1px solid
-${bd2}`,
+                border: `1px solid ${bd2}`,
                 background: "transparent",
                 color: qIdx === 0 ? mu(D) : tx(D),
                 cursor: qIdx === 0 ? "not-allowed" : "pointer",

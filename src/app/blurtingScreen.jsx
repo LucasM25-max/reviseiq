@@ -95,10 +95,10 @@ ${n.heading}\n${stripHtml(n.body)}`,
         </div>
         <div
           style={{
-            padding: "12px16px",
+            padding: "12px 16px",
             borderRadius: 12,
             background: D ? "rgba(99,102,241,0.08)" : "#f0f9ff",
-            border: "1px solid#6366f1",
+            border: "1px solid #6366f1",
             marginBottom: 20,
             fontSize: 12,
             color: D ? "#c7d2fe" : "#1e40af",
@@ -160,11 +160,10 @@ ${n.heading}\n${stripHtml(n.body)}`,
             {bSec && sec && !(sec.notes || []).length && (
               <div
                 style={{
-                  padding: "9px13px",
+                  padding: "9px 13px",
                   borderRadius: 9,
                   background: D ? "#1e2537" : "#fffbeb",
-                  border: `1px solid
-${D ? "#374151" : "#fde68a"}`,
+                  border: `1px solid ${D ? "#374151" : "#fde68a"}`,
                   fontSize: 12,
                   color: D ? "#fcd34d" : "#92400e",
                 }}
@@ -230,7 +229,7 @@ ${D ? "#374151" : "#fde68a"}`,
               disabled={!canSubmit || busy}
               style={{
                 ...B("#6366f1", false, {
-                  padding: "12px0",
+                  padding: "12px 0",
                   fontSize: 14,
                   fontWeight: 700,
                   width: "100%",
@@ -292,7 +291,7 @@ ${D ? "#374151" : "#fde68a"}`,
                   color: mu(D),
                   lineHeight: 1.65,
                   maxWidth: 500,
-                  margin: "0auto",
+                  margin: "0 auto",
                 }}
               >
                 {res.feedback}
@@ -302,10 +301,10 @@ ${D ? "#374151" : "#fde68a"}`,
             {res.misconceptions && res.misconceptions.length > 0 && (
               <div
                 style={{
-                  padding: "14px16px",
+                  padding: "14px 16px",
                   borderRadius: 12,
                   background: D ? "rgba(239,68,68,.1)" : "#fef2f2",
-                  border: "2px solid#ef4444",
+                  border: "2px solid #ef4444",
                 }}
               >
                 <p
@@ -327,8 +326,7 @@ ${D ? "#374151" : "#fde68a"}`,
                       fontSize: 12,
                       lineHeight: 1.65,
                       padding: "5px 0",
-                      borderBottom: `1px solid
-${D ? "rgba(239,68,68,.2)" : "#fee2e2"}`,
+                      borderBottom: `1px solid ${D ? "rgba(239,68,68,.2)" : "#fee2e2"}`,
                       color: D ? "#fca5a5" : "#b91c1c",
                       display: "flex",
                       gap: 6,
@@ -366,8 +364,7 @@ ${D ? "rgba(239,68,68,.2)" : "#fee2e2"}`,
                         fontSize: 12,
                         lineHeight: 1.6,
                         padding: "3px 0",
-                        borderBottom: `1px solid
-${D ? "#1e2537" : "#f3f4f6"}`,
+                        borderBottom: `1px solid ${D ? "#1e2537" : "#f3f4f6"}`,
                         color: tx(D),
                       }}
                     >
@@ -395,7 +392,7 @@ ${D ? "#1e2537" : "#f3f4f6"}`,
                       style={{
                         fontSize: 12,
                         lineHeight: 1.6,
-                        padding: "3px0",
+                        padding: "3px 0",
                         borderBottom: `1px solid ${D ? "#1e2537" : "#f3f4f6"}`,
                         color: tx(D),
                       }}
@@ -439,7 +436,7 @@ ${D ? "#1e2537" : "#f3f4f6"}`,
                 style={{
                   flex: 2,
                   ...B("#6366f1", false, {
-                    padding: "11px0",
+                    padding: "11px 0",
                     fontSize: 13,
                     fontWeight: 700,
                   }),
@@ -456,7 +453,7 @@ ${D ? "#1e2537" : "#f3f4f6"}`,
                 style={{
                   flex: 1,
                   ...B("transparent", true, {
-                    padding: "11px0",
+                    padding: "11px 0",
                     fontSize: 13,
                     borderColor: D ? "#374151" : "#d1d5db",
                     color: mu(D),

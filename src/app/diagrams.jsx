@@ -600,8 +600,7 @@ export function LabelledStructure({
             width: "100%",
             display: "block",
             borderRadius: 8,
-            border: `1px solid
-${D ? "#2a3347" : "#e5e7eb"}`,
+            border: `1px solid ${D ? "#2a3347" : "#e5e7eb"}`,
           }}
         />
       ) : (
@@ -612,8 +611,7 @@ ${D ? "#2a3347" : "#e5e7eb"}`,
             borderRadius: 8,
             background: D ? "#1e2537" : "#f3f4f6",
             border: `1.
-5px dashed
-${D ? "#374151" : "#d1d5db"}`,
+5px dashed ${D ? "#374151" : "#d1d5db"}`,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -657,10 +655,9 @@ ${D ? "#374151" : "#d1d5db"}`,
                   fontSize: 10,
                   fontWeight: 700,
                   textAlign: "center",
-                  padding: "2px4px",
+                  padding: "2px 4px",
                   borderRadius: 4,
-                  border: `1.5px solid
-${labelAccent}`,
+                  border: `1.5px solid ${labelAccent}`,
                   background: D ? "#161b27" : "#fff",
                   color: D ? "#e8ecf4" : "#111827",
                   outline: "none",
@@ -680,7 +677,7 @@ ${labelAccent}`,
                     isCorrect || isHovered ? "#fff" : D ? "#e8ecf4" : "#111827",
                   border: `1.5px solid ${labelAccent}`,
                   borderRadius: 4,
-                  padding: "2px8px",
+                  padding: "2px 8px",
                   fontSize: 10,
                   fontWeight: 700,
                   whiteSpace: "nowrap",
@@ -964,7 +961,7 @@ export function ProgressiveDiagram({ steps = [], D }) {
           onClick={() => setIdx((i) => i + 1)}
           style={{
             marginTop: 8,
-            padding: "6px12px",
+            padding: "6px 12px",
             borderRadius: 8,
             border: "none",
             background: "#6366f1",
@@ -1078,7 +1075,7 @@ export function ProcessCard({ card, D }) {
       <button
         onClick={() => setIdx((i) => Math.min(steps.length - 1, i + 1))}
         style={{
-          padding: "6px10px",
+          padding: "6px 10px",
           borderRadius: 8,
           border: "none",
           background: "#6366f1",
@@ -1129,7 +1126,7 @@ export function SketchCanvas({ D }) {
       onMouseUp={end}
       onMouseLeave={end}
       style={{
-        border: "1px solid#94a3b8",
+        border: "1px solid #94a3b8",
         borderRadius: 8,
         background: D ? "#0f172a" : "#fff",
         width: "100%",
@@ -1389,7 +1386,7 @@ export function KnowledgeGraph({
               ],
             });
           }}
-          style={{ padding: "6px10px" }}
+          style={{ padding: "6px 10px" }}
         >
           Edge
         </button>
@@ -1503,7 +1500,7 @@ export function MasteryTreemap({ nodes = [], D, onSelect }) {
             top: 10,
             fontSize: 11,
             background: D ? "#0f172a" : "#fff",
-            border: "1pxsolid #cbd5e1",
+            border: "1px solid #cbd5e1",
             padding: "5px 8px",
             borderRadius: 6,
           }}
@@ -1707,7 +1704,7 @@ export function SketchnoteCanvas({ D, user, subjectId }) {
       </div>
       <svg
         viewBox={`0 0 ${600 / zoom} ${280 / zoom}`}
-        style={{ width: "100%", border: "1px solid#cbd5e1", borderRadius: 8 }}
+        style={{ width: "100%", border: "1px solid #cbd5e1", borderRadius: 8 }}
       >
         {data.edges.map((e, i) => {
           const a = data.nodes.find((n) => n.id === e.from),

@@ -80,7 +80,7 @@ export function UCNewSectionModal({ D, onClose, onSave }) {
             style={{
               flex: 1,
               ...B("#6366f1", false, {
-                padding: "10px0",
+                padding: "10px 0",
                 fontSize: 13,
                 fontWeight: 700,
                 opacity: name.trim() ? 1 : 0.5,
@@ -94,7 +94,7 @@ export function UCNewSectionModal({ D, onClose, onSave }) {
             style={{
               flex: 1,
               ...B("transparent", true, {
-                padding: "10px0",
+                padding: "10px 0",
                 fontSize: 13,
                 borderColor: bd2,
                 color: mu(D),
@@ -501,7 +501,7 @@ export function UCSectionModal({
         display: "flex",
         alignItems: "flex-start",
         justifyContent: "center",
-        padding: "20px16px",
+        padding: "20px 16px",
         overflowY: "auto",
       }}
     >
@@ -554,7 +554,7 @@ export function UCSectionModal({
               display: "flex",
               alignItems: "center",
               gap: 5,
-              padding: "6px12px",
+              padding: "6px 12px",
               borderRadius: 8,
               border: "1px solid " + bd2,
               cursor: "pointer",
@@ -578,9 +578,9 @@ export function UCSectionModal({
               });
             }}
             style={{
-              padding: "6px12px",
+              padding: "6px 12px",
               borderRadius: 8,
-              border: "1px solid#6366f1",
+              border: "1px solid #6366f1",
               background: showAI
                 ? D
                   ? "rgba(99,102,241,.2)"
@@ -639,7 +639,7 @@ export function UCSectionModal({
                       setAiMode(p[0]);
                     }}
                     style={{
-                      padding: "6px14px",
+                      padding: "6px 14px",
                       borderRadius: 7,
                       border:
                         "1.5px solid" + (aiMode === p[0] ? "#6366f1" : bd2),
@@ -682,7 +682,7 @@ export function UCSectionModal({
                 disabled={!aiText.trim() || aiLoading}
                 style={{
                   ...B("#6366f1", false, {
-                    padding: "9px20px",
+                    padding: "9px 20px",
                     fontSize: 13,
                     fontWeight: 700,
                     opacity: !aiText.trim() || aiLoading ? 0.4 : 1,
@@ -699,7 +699,7 @@ export function UCSectionModal({
                 }}
                 style={{
                   ...B("transparent", true, {
-                    padding: "9px16px",
+                    padding: "9px 16px",
                     fontSize: 13,
                     borderColor: bd2,
                     color: mu(D),
@@ -734,7 +734,7 @@ export function UCSectionModal({
                   setFlip(false);
                 }}
                 style={{
-                  padding: "11px14px",
+                  padding: "11px 14px",
                   fontSize: 12,
                   fontWeight: tab === pair[0] ? 600 : 400,
                   color: tab === pair[0] ? "#6366f1" : mu(D),
@@ -743,7 +743,7 @@ export function UCSectionModal({
                   cursor: "pointer",
                   borderBottom:
                     tab === pair[0]
-                      ? "2px solid#6366f1"
+                      ? "2px solid #6366f1"
                       : "2px solid transparent",
                   marginBottom: -1,
                   whiteSpace: "nowrap",
@@ -803,7 +803,7 @@ export function UCSectionModal({
                             fontSize: 9,
                             background: "#6366f1",
                             color: "#fff",
-                            padding: "2px6px",
+                            padding: "2px 6px",
                             borderRadius: 4,
                             fontWeight: 600,
                           }}
@@ -876,7 +876,7 @@ export function UCSectionModal({
                     fontSize: 13,
                     color: mu(D),
                     textAlign: "center",
-                    padding: "30px0",
+                    padding: "30px 0",
                   }}
                 >
                   No flashcards yet — use ＋ Add or AI Generate.
@@ -964,7 +964,7 @@ export function UCSectionModal({
                       }}
                       style={{
                         ...B("transparent", true, {
-                          padding: "8px16px",
+                          padding: "8px 16px",
                           fontSize: 13,
                           borderColor: bd2,
                           color: mu(D),
@@ -990,7 +990,7 @@ export function UCSectionModal({
                       }}
                       style={{
                         ...B("transparent", true, {
-                          padding: "8px16px",
+                          padding: "8px 16px",
                           fontSize: 13,
                           borderColor: bd2,
                           color: mu(D),
@@ -1003,7 +1003,7 @@ export function UCSectionModal({
                       }}
                       style={{
                         ...B("transparent", true, {
-                          padding: "8px12px",
+                          padding: "8px 12px",
                           fontSize: 11,
                           borderColor: "#ef4444",
                           color: "#ef4444",
@@ -1027,7 +1027,7 @@ export function UCSectionModal({
                     fontSize: 13,
                     color: mu(D),
                     textAlign: "center",
-                    padding: "30px0",
+                    padding: "30px 0",
                   }}
                 >
                   No questions yet — use ＋ Add or AI Generate.
@@ -1053,7 +1053,7 @@ export function UCSectionModal({
                           fontSize: 9,
                           background: "#6366f1",
                           color: "#fff",
-                          padding: "2px6px",
+                          padding: "2px 6px",
                           borderRadius: 4,
                           fontWeight: 600,
                         }}
@@ -1089,7 +1089,7 @@ export function UCSectionModal({
                   {curQ.markScheme && (
                     <div
                       style={{
-                        padding: "8px12px",
+                        padding: "8px 12px",
                         borderRadius: 8,
                         background: D ? "rgba(16,185,129,.08)" : "#f0fdf4",
                         fontSize: 12,
@@ -1109,7 +1109,7 @@ export function UCSectionModal({
                       }}
                       style={{
                         ...B("transparent", true, {
-                          padding: "6px14px",
+                          padding: "6px 14px",
                           fontSize: 12,
                           borderColor: bd2,
                           color: mu(D),
@@ -1124,7 +1124,7 @@ export function UCSectionModal({
                       }}
                       style={{
                         ...B("transparent", true, {
-                          padding: "6px14px",
+                          padding: "6px 14px",
                           fontSize: 12,
                           borderColor: bd2,
                           color: mu(D),
@@ -1209,7 +1209,7 @@ export function UCSectionModal({
                   disabled={!noteHead.trim()}
                   style={{
                     ...B("#6366f1", false, {
-                      padding: "9px20px",
+                      padding: "9px 20px",
                       fontSize: 13,
                       fontWeight: 600,
                       opacity: noteHead.trim() ? 1 : 0.4,
@@ -1278,7 +1278,7 @@ export function UCSectionModal({
                   disabled={!fcFront.trim() || !fcBack.trim()}
                   style={{
                     ...B("#6366f1", false, {
-                      padding: "9px20px",
+                      padding: "9px 20px",
                       fontSize: 13,
                       fontWeight: 600,
                       opacity: fcFront.trim() && fcBack.trim() ? 1 : 0.4,
@@ -1325,7 +1325,7 @@ export function UCSectionModal({
                           setQType(p[0]);
                         }}
                         style={{
-                          padding: "6px14px",
+                          padding: "6px 14px",
                           borderRadius: 7,
                           border:
                             "1.5px solid" + (qType === p[0] ? "#6366f1" : bd2),
@@ -1425,7 +1425,7 @@ export function UCSectionModal({
                   disabled={!qText.trim()}
                   style={{
                     ...B("#6366f1", false, {
-                      padding: "9px20px",
+                      padding: "9px 20px",
                       fontSize: 13,
                       fontWeight: 600,
                       opacity: qText.trim() ? 1 : 0.4,
@@ -1499,7 +1499,7 @@ export function UserContentScreen({
                   setSelSubj(s.id);
                 }}
                 style={{
-                  padding: "6px14px",
+                  padding: "6px 14px",
                   borderRadius: 20,
                   border: "1.5px solid" + (selSubj === s.id ? s.accent : bd2),
                   background: selSubj === s.id ? s.accent : "transparent",
@@ -1562,7 +1562,7 @@ export function UserContentScreen({
             <div
               key={sec.id}
               style={{
-                border: "1.5px solid#6366f1",
+                border: "1.5px solid #6366f1",
                 borderRadius: 12,
                 overflow: "hidden",
                 background: D ? "rgba(99,102,241,.04)" : "#fafaff",
@@ -1575,7 +1575,7 @@ export function UserContentScreen({
                 style={{
                   width: "100%",
                   textAlign: "left",
-                  padding: "14px16px",
+                  padding: "14px 16px",
                   background: "transparent",
                   border: "none",
                   cursor: "pointer",
@@ -1611,7 +1611,7 @@ export function UserContentScreen({
                   }}
                   style={{
                     flex: 1,
-                    padding: "5px0",
+                    padding: "5px 0",
                     fontSize: 11,
                     background: "none",
                     border: "none",
@@ -1629,7 +1629,7 @@ export function UserContentScreen({
                   }}
                   style={{
                     flex: 1,
-                    padding: "5px0",
+                    padding: "5px 0",
                     fontSize: 11,
                     background: "none",
                     border: "none",

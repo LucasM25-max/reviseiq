@@ -117,9 +117,9 @@ export function FocusMode({ D, cards, questions, section, subj, fcHist, onExit }
               onClick={() => setExitConfirm(false)}
               style={{
                 flex: 1,
-                padding: "10px0",
+                padding: "10px 0",
                 borderRadius: 10,
-                border: "1px solid#d1d5db",
+                border: "1px solid #d1d5db",
                 background: "transparent",
                 cursor: "pointer",
                 fontSize: 13,
@@ -131,7 +131,7 @@ export function FocusMode({ D, cards, questions, section, subj, fcHist, onExit }
               onClick={onExit}
               style={{
                 flex: 1,
-                padding: "10px0",
+                padding: "10px 0",
                 borderRadius: 10,
                 border: "none",
                 background: "#ef4444",
@@ -169,7 +169,7 @@ export function FocusMode({ D, cards, questions, section, subj, fcHist, onExit }
           top: 0,
           left: 0,
           right: 0,
-          padding: "12px20px",
+          padding: "12px 20px",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
@@ -193,8 +193,7 @@ export function FocusMode({ D, cards, questions, section, subj, fcHist, onExit }
               fontSize: 12,
               padding: "5px 10px",
               borderRadius: 8,
-              border: `1px solid
-${noise ? "#6366f1" : "#d1d5db"}`,
+              border: `1px solid ${noise ? "#6366f1" : "#d1d5db"}`,
               background: noise ? "#6366f1" : "transparent",
               color: noise ? "#fff" : D ? "#9ca3af" : "#6b7280",
               cursor: "pointer",
@@ -208,7 +207,7 @@ ${noise ? "#6366f1" : "#d1d5db"}`,
               fontSize: 12,
               padding: "5px 12px",
               borderRadius: 8,
-              border: "1px solid#d1d5db",
+              border: "1px solid #d1d5db",
               background: "transparent",
               color: D ? "#9ca3af" : "#6b7280",
               cursor: "pointer",
@@ -284,7 +283,7 @@ ${noise ? "#6366f1" : "#d1d5db"}`,
               style={{
                 padding: "6px 10px",
                 borderRadius: 8,
-                border: "1px solid#d1d5db",
+                border: "1px solid #d1d5db",
                 background: D ? "#1e2537" : "#fff",
                 color: D ? "#e8ecf4" : "#111827",
                 fontSize: 12,
@@ -299,7 +298,7 @@ ${noise ? "#6366f1" : "#d1d5db"}`,
             <button
               onClick={() => setRunning(true)}
               style={{
-                padding: "10px24px",
+                padding: "10px 24px",
                 borderRadius: 12,
                 border: "none",
                 background: col,
@@ -316,7 +315,7 @@ ${noise ? "#6366f1" : "#d1d5db"}`,
           <button
             onClick={() => setRunning(false)}
             style={{
-              padding: "10px24px",
+              padding: "10px 24px",
               borderRadius: 12,
               border: "none",
               background: "#f59e0b",
@@ -383,7 +382,7 @@ ${noise ? "#6366f1" : "#d1d5db"}`,
                 flex: 1,
                 padding: "10px 0",
                 borderRadius: 10,
-                border: "1px solid#d1d5db",
+                border: "1px solid #d1d5db",
                 background: "transparent",
                 color: mu(D),
                 cursor: "pointer",
@@ -397,7 +396,7 @@ ${noise ? "#6366f1" : "#d1d5db"}`,
               }}
               style={{
                 flex: 1,
-                padding: "10px0",
+                padding: "10px 0",
                 borderRadius: 10,
                 border: "none",
                 background: "#6366f1",

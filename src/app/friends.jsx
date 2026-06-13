@@ -230,10 +230,9 @@ Requests${
             onClick={() => setFTab(t)}
             style={{
               fontSize: 11,
-              padding: "4px10px",
+              padding: "4px 10px",
               borderRadius: 20,
-              border: `1.5px solid
-${t === tab ? "#6366f1" : bd2}`,
+              border: `1.5px solid ${t === tab ? "#6366f1" : bd2}`,
               background: t === tab ? "#6366f1" : "transparent",
               color: t === tab ? "#fff" : mu(D),
               cursor: "pointer",
@@ -279,7 +278,7 @@ ${t === tab ? "#6366f1" : bd2}`,
                     display: "flex",
                     alignItems: "center",
                     gap: 8,
-                    padding: "6px10px",
+                    padding: "6px 10px",
                     borderRadius: 8,
                     background: isMe
                       ? D
@@ -364,7 +363,7 @@ ${t === tab ? "#6366f1" : bd2}`,
               disabled={busy || !search.trim()}
               style={{
                 ...B("#6366f1", false, {
-                  padding: "8px14px",
+                  padding: "8px 14px",
                   fontSize: 12,
                   opacity: busy || !search.trim() ? 0.4 : 1,
                   cursor: busy || !search.trim() ? "not-allowed" : "pointer",
@@ -406,7 +405,7 @@ ${t === tab ? "#6366f1" : bd2}`,
                     display: "flex",
                     alignItems: "center",
                     gap: 8,
-                    padding: "7px0",
+                    padding: "7px 0",
                     borderBottom: `1px solid ${bd2}`,
                   }}
                 >
@@ -479,7 +478,7 @@ ${t === tab ? "#6366f1" : bd2}`,
                 display: "flex",
                 alignItems: "center",
                 gap: 8,
-                padding: "8px10px",
+                padding: "8px 10px",
                 borderRadius: 8,
                 background: D ? "#1e2537" : "#f9fafb",
                 marginBottom: 6,

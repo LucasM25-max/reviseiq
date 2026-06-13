@@ -74,7 +74,7 @@ export function ManageAccountsModal({ D, accounts, adminUser, onClose, onDelete 
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
-                  padding: "10px14px",
+                  padding: "10px 14px",
                   borderRadius: 10,
                   border: "1px solid" + bd,
                   marginBottom: 8,
@@ -109,7 +109,7 @@ export function ManageAccountsModal({ D, accounts, adminUser, onClose, onDelete 
                   style={{
                     padding: "5px 12px",
                     borderRadius: 7,
-                    border: "1px solid#ef4444",
+                    border: "1px solid #ef4444",
                     background: "none",
                     color: "#ef4444",
                     fontWeight: 600,
@@ -317,8 +317,7 @@ export function ImportModal({ D, subjects, onClose, onDone }) {
         <div
           style={{
             padding: "18px 22px",
-            borderBottom: `1px solid
-${D ? "#374151" : "#e5e7eb"}`,
+            borderBottom: `1px solid ${D ? "#374151" : "#e5e7eb"}`,
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
@@ -363,7 +362,7 @@ ${D ? "#374151" : "#e5e7eb"}`,
             <pre
               style={{
                 marginTop: 4,
-                padding: "8px12px",
+                padding: "8px 12px",
                 borderRadius: 8,
                 background: D ? "#161b27" : "#f3f4f6",
                 fontSize: 11,
@@ -381,11 +380,10 @@ ${D ? "#374151" : "#e5e7eb"}`,
               width: "100%",
               minHeight: 200,
               borderRadius: 10,
-              border: `1px solid
-${D ? "#374151" : "#d1d5db"}`,
+              border: `1px solid ${D ? "#374151" : "#d1d5db"}`,
               background: D ? "#161b27" : "#f9fafb",
               color: D ? "#e8ecf4" : "#111827",
-              padding: "10px14px",
+              padding: "10px 14px",
               fontSize: 12,
               fontFamily: "monospace",
               resize: "vertical",
@@ -396,7 +394,7 @@ ${D ? "#374151" : "#d1d5db"}`,
             <div
               style={{
                 marginTop: 10,
-                padding: "10px14px",
+                padding: "10px 14px",
                 borderRadius: 8,
                 background: status === "ok" ? "#dcfce7" : "#fee2e2",
                 color: status === "ok" ? "#15803d" : "#b91c1c",
@@ -410,8 +408,7 @@ ${D ? "#374151" : "#d1d5db"}`,
         <div
           style={{
             padding: "14px 22px",
-            borderTop: `1px solid
-${D ? "#374151" : "#e5e7eb"}`,
+            borderTop: `1px solid ${D ? "#374151" : "#e5e7eb"}`,
             display: "flex",
             gap: 10,
             justifyContent: "flex-end",
@@ -422,8 +419,7 @@ ${D ? "#374151" : "#e5e7eb"}`,
             style={{
               padding: "9px 20px",
               borderRadius: 10,
-              border: `1px solid
-${D ? "#374151" : "#d1d5db"}`,
+              border: `1px solid ${D ? "#374151" : "#d1d5db"}`,
               background: "transparent",
               color: D ? "#e5e7eb" : "#374151",
               cursor: "pointer",
@@ -436,7 +432,7 @@ ${D ? "#374151" : "#d1d5db"}`,
             onClick={doImport}
             disabled={!raw.trim() || loading}
             style={{
-              padding: "9px22px",
+              padding: "9px 22px",
               borderRadius: 10,
               border: "none",
               background: loading || !raw.trim() ? "#a5b4fc" : "#6366f1",
@@ -574,14 +570,14 @@ export function ShortcutModal({ D, onClose }) {
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
-                padding: "5px0",
+                padding: "5px 0",
                 borderBottom: `1px solid ${D ? "#374151" : "#f3f4f6"}`,
               }}
             >
               <kbd
                 style={{
                   background: D ? "#374151" : "#f3f4f6",
-                  padding: "2px8px",
+                  padding: "2px 8px",
                   borderRadius: 6,
                   fontSize: 12,
                   fontFamily: "monospace",

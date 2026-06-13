@@ -1836,7 +1836,7 @@ export default function App() {
             width: "100%",
             maxWidth: 400,
             padding: 40,
-            boxShadow: "0 25px 60pxrgba(0,0,0,.12)",
+            boxShadow: "0 25px 60px rgba(0,0,0,.12)",
           }}
         >
           <div style={{ textAlign: "center", marginBottom: 28 }}>
@@ -1875,7 +1875,7 @@ export default function App() {
                   }}
                   style={{
                     flex: 1,
-                    padding: "9px0",
+                    padding: "9px 0",
                     borderRadius: 8,
                     border: "none",
                     background:
@@ -1984,7 +1984,7 @@ export default function App() {
                 background: D ? "rgba(239,68,68,.1)" : "#fef2f2",
                 padding: "8px 12px",
                 borderRadius: 8,
-                border: "1px solid#fca5a5",
+                border: "1px solid #fca5a5",
               }}
             >
               {authErr}
@@ -1999,7 +1999,7 @@ export default function App() {
               color: "#fff",
               border: "none",
               borderRadius: 12,
-              padding: "13px0",
+              padding: "13px 0",
               fontSize: 14,
               fontWeight: 700,
               cursor: canSubmit ? "pointer" : "default",
@@ -2038,7 +2038,7 @@ export default function App() {
                     fontSize: 11,
                     color: mu(D),
                     background: D ? "#1e2537" : "#f3f4f6",
-                    padding: "2px8px",
+                    padding: "2px 8px",
                     borderRadius: 20,
                   }}
                 >
@@ -2382,9 +2382,9 @@ export default function App() {
                 display: "flex",
                 alignItems: "center",
                 gap: 6,
-                padding: "8px16px",
+                padding: "8px 16px",
                 borderRadius: 10,
-                border: "1.5px solid#6366f1",
+                border: "1.5px solid #6366f1",
                 background: D ? "rgba(99,102,241,.12)" : "#eef2ff",
                 color: "#6366f1",
                 fontSize: 13,
@@ -2408,7 +2408,7 @@ export default function App() {
               <div
                 style={{
                   ...C(D),
-                  padding: "16px18px",
+                  padding: "16px 18px",
                   marginBottom: 14,
                   borderColor: "#6366f1",
                   borderWidth: 1.5,
@@ -2443,7 +2443,7 @@ export default function App() {
                           fontWeight: 700,
                           background: "#6366f1",
                           color: "#fff",
-                          padding: "2px7px",
+                          padding: "2px 7px",
                           borderRadius: 10,
                           letterSpacing: "0.05em",
                           marginLeft: 6,
@@ -2458,7 +2458,7 @@ export default function App() {
                           fontSize: 9,
                           color: "#6366f1",
                           background: "#6366f122",
-                          padding: "2px7px",
+                          padding: "2px 7px",
                           borderRadius: 10,
                           marginLeft: 4,
                           cursor: "default",
@@ -2494,7 +2494,7 @@ export default function App() {
                     }}
                     style={{
                       ...B("#6366f1", false, {
-                        padding: "10px16px",
+                        padding: "10px 16px",
                         fontSize: 13,
                         fontWeight: 700,
                         whiteSpace: "nowrap",
@@ -2511,7 +2511,7 @@ export default function App() {
             <div
               style={{
                 ...C(D),
-                padding: "18px22px",
+                padding: "18px 22px",
                 marginBottom: 22,
                 background:
                   streak >= 7 ? (D ? "#1c0d05" : "#fff7ed") : undefined,
@@ -2656,20 +2656,19 @@ export default function App() {
               style={{
                 borderRadius: 12,
                 background: D ? "rgba(99,102,241,.1)" : "#eef2ff",
-                border: "1.5px solid#6366f1",
+                border: "1.5px solid #6366f1",
                 marginBottom: 20,
                 overflow: "hidden",
               }}
             >
               <div
                 style={{
-                  padding: "10px16px",
+                  padding: "10px 16px",
                   display: "flex",
                   alignItems: "center",
                   gap: 10,
                   flexWrap: "wrap",
-                  borderBottom: `1px solid
-${D ? "rgba(99,102,241,.2)" : "#c7d2fe"}`,
+                  borderBottom: `1px solid ${D ? "rgba(99,102,241,.2)" : "#c7d2fe"}`,
                 }}
               >
                 <span
@@ -2706,9 +2705,9 @@ ${D ? "rgba(99,102,241,.2)" : "#c7d2fe"}`,
                   onClick={() => setImportOpen(true)}
                   style={{
                     fontSize: 12,
-                    padding: "6px14px",
+                    padding: "6px 14px",
                     borderRadius: 7,
-                    border: "1.5px solid#6366f1",
+                    border: "1.5px solid #6366f1",
                     background: "#6366f1",
                     color: "#fff",
                     fontWeight: 600,
@@ -2721,9 +2720,9 @@ ${D ? "rgba(99,102,241,.2)" : "#c7d2fe"}`,
                   onClick={() => setManageAccountsOpen(true)}
                   style={{
                     fontSize: 12,
-                    padding: "6px14px",
+                    padding: "6px 14px",
                     borderRadius: 7,
-                    border: "1.5px solid#6366f1",
+                    border: "1.5px solid #6366f1",
                     background: "transparent",
                     color: "#6366f1",
                     fontWeight: 600,
@@ -2736,9 +2735,9 @@ ${D ? "rgba(99,102,241,.2)" : "#c7d2fe"}`,
                   onClick={viewAnalytics}
                   style={{
                     fontSize: 12,
-                    padding: "6px14px",
+                    padding: "6px 14px",
                     borderRadius: 7,
-                    border: "1.5px solid#6366f1",
+                    border: "1.5px solid #6366f1",
                     background: "transparent",
                     color: "#6366f1",
                     fontWeight: 600,
@@ -2927,8 +2926,7 @@ ${D ? "rgba(99,102,241,.2)" : "#c7d2fe"}`,
                         textAlign: "left",
                         padding: 10,
                         borderRadius: 10,
-                        border: `1px solid
-${bd2}`,
+                        border: `1px solid ${bd2}`,
                         background: D ? "#161b27" : "#fff",
                         cursor: "pointer",
                       }}
@@ -2971,8 +2969,7 @@ ${bd2}`,
                       textAlign: "left",
                       padding: 8,
                       borderRadius: 8,
-                      border: `1px solid
-${bd2}`,
+                      border: `1px solid ${bd2}`,
                       background: "transparent",
                       cursor: "pointer",
                     }}
@@ -2997,9 +2994,9 @@ ${bd2}`,
               onClick={() => setShowTreemap((v) => !v)}
               style={{
                 fontSize: 12,
-                padding: "6px10px",
+                padding: "6px 10px",
                 borderRadius: 8,
-                border: "1px solid#6366f1",
+                border: "1px solid #6366f1",
                 background: "transparent",
                 color: "#6366f1",
               }}
@@ -3122,7 +3119,7 @@ ${bd2}`,
                               fontWeight: 800,
                               color: "#fff",
                               background: gradeColor(predicted),
-                              padding: "3px9px",
+                              padding: "3px 9px",
                               borderRadius: 8,
                             }}
                           >
@@ -3137,7 +3134,7 @@ ${bd2}`,
                             fontWeight: 800,
                             color: "#fff",
                             background: gradeColor(target),
-                            padding: "1px6px",
+                            padding: "1px 6px",
                             borderRadius: 6,
                           }}
                         >
@@ -3186,7 +3183,7 @@ ${bd2}`,
                           fontSize: 11,
                           color: mu(D),
                           background: D ? "#1e2537" : "#f3f4f6",
-                          padding: "2px7px",
+                          padding: "2px 7px",
                           borderRadius: 10,
                         }}
                       >
@@ -3252,7 +3249,7 @@ ${bd2}`,
             <button
               onClick={() => setCreatePersonalOpen(true)}
               style={{
-                padding: "7px16px",
+                padding: "7px 16px",
                 borderRadius: 9,
                 border: "none",
                 background: "#6366f1",
@@ -3334,7 +3331,7 @@ ${bd2}`,
                         fontSize: 11,
                         color: mu(D),
                         background: D ? "#1e2537" : "#f3f4f6",
-                        padding: "2px7px",
+                        padding: "2px 7px",
                         borderRadius: 10,
                       }}
                     >
@@ -3372,7 +3369,7 @@ ${bd2}`,
           style={{
             maxWidth: 960,
             margin: "0 auto",
-            padding: "32px24px",
+            padding: "32px 24px",
             paddingBottom: window.innerWidth < 640 ? 70 : 0,
           }}
         >
@@ -3433,7 +3430,7 @@ ${subj.accent}88)`,
                     style={{
                       fontSize: 13,
                       fontWeight: 700,
-                      padding: "4px14px",
+                      padding: "4px 14px",
                       borderRadius: 20,
                       background: subj.accent,
                       color: "#fff",
@@ -3491,7 +3488,7 @@ ${subj.accent}88)`,
                             alignItems: "center",
                             gap: 8,
                             flexWrap: "wrap",
-                            padding: "8px12px",
+                            padding: "8px 12px",
                             borderRadius: 10,
                             background: D
                               ? "rgba(255,255,255,.04)"
@@ -3513,7 +3510,7 @@ ${subj.accent}88)`,
                               fontWeight: 900,
                               color: "#fff",
                               background: gradeColor(predicted),
-                              padding: "3px13px",
+                              padding: "3px 13px",
                               borderRadius: 9,
                               letterSpacing: "0.04em",
                             }}
@@ -3530,7 +3527,7 @@ ${subj.accent}88)`,
                               style={{
                                 fontSize: 12,
                                 fontWeight: 700,
-                                padding: "3px10px",
+                                padding: "3px 10px",
                                 borderRadius: 8,
                                 background:
                                   parseInt(predicted) >= parseInt(target) ||
@@ -3594,8 +3591,7 @@ grade${parseInt(target) - parseInt(predicted) !== 1 ? "s" : ""} to go`}
                                   width: 28,
                                   height: 28,
                                   borderRadius: 7,
-                                  border: `2px solid
-${sel ? gc : D ? "#374151" : "#d1d5db"}`,
+                                  border: `2px solid ${sel ? gc : D ? "#374151" : "#d1d5db"}`,
                                   background: sel ? gc : D ? "#161b27" : "#fff",
                                   color: sel
                                     ? "#fff"
@@ -3636,10 +3632,10 @@ ${sel ? gc : D ? "#374151" : "#d1d5db"}`,
           {subj._politics && (
             <div
               style={{
-                padding: "12px16px",
+                padding: "12px 16px",
                 borderRadius: 12,
                 background: D ? "#134e4a22" : "#f0fdfa",
-                border: "1.5px solid#0f766e",
+                border: "1.5px solid #0f766e",
                 marginBottom: 20,
                 display: "flex",
                 flexWrap: "wrap",
@@ -3669,7 +3665,7 @@ ${sel ? gc : D ? "#374151" : "#d1d5db"}`,
                       fontWeight: 700,
                       background: "#0f766e",
                       color: "#fff",
-                      padding: "2px8px",
+                      padding: "2px 8px",
                       borderRadius: 20,
                     }}
                   >
@@ -3750,10 +3746,10 @@ ${sel ? gc : D ? "#374151" : "#d1d5db"}`,
                 <div
                   style={{
                     marginBottom: 20,
-                    padding: "16px20px",
+                    padding: "16px 20px",
                     borderRadius: 14,
                     background: D ? "rgba(99,102,241,.08)" : "#eef2ff",
-                    border: "1.5px solid#6366f1",
+                    border: "1.5px solid #6366f1",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
@@ -3785,7 +3781,7 @@ ${sel ? gc : D ? "#374151" : "#d1d5db"}`,
                       navToSection(subIdx, ti >= 0 ? ti : 0, ctaSection.id)
                     }
                     style={{
-                      padding: "10px22px",
+                      padding: "10px 22px",
                       borderRadius: 10,
                       border: "none",
                       background: "#6366f1",
@@ -3830,7 +3826,7 @@ ${sel ? gc : D ? "#374151" : "#d1d5db"}`,
                     setSubjTab(t);
                   }}
                   style={{
-                    padding: "10px18px",
+                    padding: "10px 18px",
                     fontSize: 13,
                     fontWeight: subjTab === t ? 600 : 400,
                     color: subjTab === t ? subj.accent : mu(D),
@@ -3971,7 +3967,7 @@ ${sel ? gc : D ? "#374151" : "#d1d5db"}`,
                             style={{
                               fontWeight: 700,
                               fontSize: 15,
-                              border: "1.5px solid#6366f1",
+                              border: "1.5px solid #6366f1",
                               borderRadius: 6,
                               padding: "2px 8px",
                               background: "transparent",
@@ -4010,7 +4006,7 @@ ${sel ? gc : D ? "#374151" : "#d1d5db"}`,
                                 style={{
                                   padding: "5px 10px",
                                   borderRadius: 7,
-                                  border: "1.5px solid#6366f1",
+                                  border: "1.5px solid #6366f1",
                                   background: "transparent",
                                   cursor: "pointer",
                                   fontSize: 11,
@@ -4029,7 +4025,7 @@ ${sel ? gc : D ? "#374151" : "#d1d5db"}`,
                                 })
                               }
                               style={{
-                                padding: "5px10px",
+                                padding: "5px 10px",
                                 borderRadius: 7,
                                 border: "none",
                                 background: "#6366f1",
@@ -4046,7 +4042,7 @@ ${sel ? gc : D ? "#374151" : "#d1d5db"}`,
                               style={{
                                 padding: "5px 10px",
                                 borderRadius: 7,
-                                border: "1.5px solid#ef4444",
+                                border: "1.5px solid #ef4444",
                                 background: "transparent",
                                 cursor: "pointer",
                                 fontSize: 11,
@@ -4083,8 +4079,7 @@ ${sel ? gc : D ? "#374151" : "#d1d5db"}`,
                           <div
                             key={sec.id}
                             style={{
-                              border: `1.5px solid
-${bd2}`,
+                              border: `1.5px solid ${bd2}`,
                               borderRadius: 12,
                               overflow: "hidden",
                               transition: "border-color .15s",
@@ -4101,7 +4096,7 @@ ${bd2}`,
                               style={{
                                 width: "100%",
                                 textAlign: "left",
-                                padding: "12px14px",
+                                padding: "12px 14px",
                                 background: "transparent",
                                 cursor: "pointer",
                                 color: tx(D),
@@ -4176,9 +4171,9 @@ ${bd2}`,
                                     style={{
                                       fontSize: 13,
                                       fontWeight: 600,
-                                      border: "1.5px solid#6366f1",
+                                      border: "1.5px solid #6366f1",
                                       borderRadius: 6,
-                                      padding: "2px6px",
+                                      padding: "2px 6px",
                                       background: "transparent",
                                       color: "inherit",
                                       width: "100%",
@@ -4248,8 +4243,7 @@ ${bd2}`,
                                 style={{
                                   display: "flex",
                                   gap: 0,
-                                  borderTop: `1px solid
-${bd2}`,
+                                  borderTop: `1px solid ${bd2}`,
                                   background: D
                                     ? "rgba(0,0,0,.2)"
                                     : "rgba(0,0,0,.03)",
@@ -4269,7 +4263,7 @@ ${bd2}`,
                                     }}
                                     style={{
                                       flex: 1,
-                                      padding: "5px0",
+                                      padding: "5px 0",
                                       fontSize: 11,
                                       background: "none",
                                       border: "none",
@@ -4290,7 +4284,7 @@ ${bd2}`,
                                   }}
                                   style={{
                                     flex: 1,
-                                    padding: "5px0",
+                                    padding: "5px 0",
                                     fontSize: 11,
                                     background: "none",
                                     border: "none",
@@ -4391,7 +4385,7 @@ ${bd2}`,
                               style={{
                                 width: "100%",
                                 textAlign: "left",
-                                padding: "12px14px",
+                                padding: "12px 14px",
                                 borderRadius: 12,
                                 border: "1.5px solid" + bd2,
                                 background: "transparent",
@@ -4538,7 +4532,7 @@ ${bd2}`,
                   style={{
                     ...B("#6366f1", true, {
                       width: "100%",
-                      padding: "11px0",
+                      padding: "11px 0",
                       fontSize: 13,
                       fontWeight: 700,
                       marginBottom: 18,
@@ -4755,9 +4749,8 @@ ${bd2}`,
               top: 0,
               zIndex: 50,
               background: D ? "#161b27" : "#fff",
-              borderBottom: `1px solid
-${D ? "#2a3347" : "#e5e7eb"}`,
-              padding: "10px20px",
+              borderBottom: `1px solid ${D ? "#2a3347" : "#e5e7eb"}`,
+              padding: "10px 20px",
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
@@ -4783,7 +4776,7 @@ ${D ? "#2a3347" : "#e5e7eb"}`,
                 onClick={() => setTab("flashcards")}
                 style={{
                   fontSize: 12,
-                  padding: "4px12px",
+                  padding: "4px 12px",
                   borderRadius: 20,
                   border: "none",
                   background: tab === "flashcards" ? "#6366f1" : "transparent",
@@ -4799,7 +4792,7 @@ ${D ? "#2a3347" : "#e5e7eb"}`,
                 onClick={() => setTab("questions")}
                 style={{
                   fontSize: 12,
-                  padding: "4px12px",
+                  padding: "4px 12px",
                   borderRadius: 20,
                   border: "none",
                   background: tab === "questions" ? "#6366f1" : "transparent",
@@ -4829,7 +4822,7 @@ ${D ? "#2a3347" : "#e5e7eb"}`,
         <div
           style={{
             maxWidth: inFocusMode ? 680 : 760,
-            margin: "0auto",
+            margin: "0 auto",
             padding: inFocusMode ? "16px 24px" : "28px 24px",
             paddingBottom: 100,
           }}
@@ -4861,7 +4854,7 @@ ${D ? "#2a3347" : "#e5e7eb"}`,
                   fontSize: 12,
                   padding: "6px 14px",
                   borderRadius: 8,
-                  border: "1px solid#6366f1",
+                  border: "1px solid #6366f1",
                   background: "transparent",
                   color: "#6366f1",
                   cursor: "pointer",
@@ -4903,7 +4896,7 @@ ${D ? "#2a3347" : "#e5e7eb"}`,
                 key={t}
                 onClick={() => setTab(t)}
                 style={{
-                  padding: "10px16px",
+                  padding: "10px 16px",
                   fontSize: 13,
                   fontWeight: tab === t ? 600 : 400,
                   color: tab === t ? subj.accent : mu(D),
@@ -5304,7 +5297,7 @@ ${cardType2.label === "Calculate" ? "Start by writing theformula." : cardType2.l
                           display: "flex",
                           justifyContent: "space-between",
                           alignItems: "center",
-                          padding: "8px14px",
+                          padding: "8px 14px",
                           borderRadius: 10,
                           background: D ? "#1e2537" : "#f3f4f6",
                           marginBottom: 8,
@@ -5361,8 +5354,7 @@ ${cardType2.label === "Calculate" ? "Start by writing theformula." : cardType2.l
                               fontSize: 10,
                               padding: "3px 9px",
                               borderRadius: 8,
-                              border: `1.5px solid
-${shuffled ? "#f59e0b" : "#d1d5db"}`,
+                              border: `1.5px solid ${shuffled ? "#f59e0b" : "#d1d5db"}`,
                               background: shuffled ? "#f59e0b" : "transparent",
                               color: shuffled ? "#fff" : mu(D),
                               cursor: "pointer",
@@ -5382,8 +5374,7 @@ ${shuffled ? "#f59e0b" : "#d1d5db"}`,
                               fontSize: 10,
                               padding: "3px 9px",
                               borderRadius: 8,
-                              border: `1.5px solid
-${cramMode ? "#6366f1" : "#d1d5db"}`,
+                              border: `1.5px solid ${cramMode ? "#6366f1" : "#d1d5db"}`,
                               background: cramMode ? "#6366f1" : "transparent",
                               color: cramMode ? "#fff" : mu(D),
                               cursor: "pointer",
@@ -5517,7 +5508,7 @@ ${cramMode ? "#6366f1" : "#d1d5db"}`,
                               fontSize: 10,
                               color: mu(D),
                               background: D ? "#1e2537" : "#f3f4f6",
-                              padding: "3px8px",
+                              padding: "3px 8px",
                               borderRadius: 10,
                             }}
                           >{`Stability: ${curState2.stability?.toFixed(1)}d ·
@@ -5656,7 +5647,7 @@ ${getRetrievability(fcHist, fc2.id) ?? "—"}% recall`}</span>
                                 background: "none",
                                 border: `1px solid ${D ? "#374151" : "#d1d5db"}`,
                                 borderRadius: 8,
-                                padding: "5px12px",
+                                padding: "5px 12px",
                                 cursor: "pointer",
                                 marginBottom: 6,
                               }}
@@ -5854,8 +5845,7 @@ ${getRetrievability(fcHist, fc2.id) ?? "—"}% recall`}</span>
                                     style={{
                                       padding: "10px 4px",
                                       borderRadius: 12,
-                                      border: `2px solid
-${btn.color}`,
+                                      border: `2px solid ${btn.color}`,
                                       background: "transparent",
                                       cursor: "pointer",
                                       color: btn.color,
@@ -5897,8 +5887,7 @@ ${btn.color}`,
                             style={{
                               minHeight: isDualCoded ? 260 : 180,
                               borderRadius: 14,
-                              border: `1.5px solid
-${flip ? subj.accent : bd2}`,
+                              border: `1.5px solid ${flip ? subj.accent : bd2}`,
                               cursor: fcConf !== null ? "pointer" : "default",
                               opacity: fcConf === null ? 0.5 : 1,
                               transition: "opacity .2s",
@@ -5909,7 +5898,7 @@ ${flip ? subj.accent : bd2}`,
                               className="fc-face"
                               style={{
                                 background: D ? "#161b27" : "#fff",
-                                padding: "20px24px",
+                                padding: "20px 24px",
                                 justifyContent: "flex-start",
                               }}
                             >
@@ -6026,7 +6015,7 @@ ${flip ? subj.accent : bd2}`,
                               style={{
                                 background: D ? "#1a1040" : "#f5f3ff",
                                 borderRadius: 14,
-                                padding: "20px24px",
+                                padding: "20px 24px",
                                 justifyContent: "flex-start",
                               }}
                             >
@@ -6126,9 +6115,9 @@ ${flip ? subj.accent : bd2}`,
                                     onClick={() => setShowSketch((s) => !s)}
                                     style={{
                                       fontSize: 11,
-                                      padding: "4px9px",
+                                      padding: "4px 9px",
                                       borderRadius: 8,
-                                      border: "1px solid#6366f1",
+                                      border: "1px solid #6366f1",
                                       background: "transparent",
                                       color: "#6366f1",
                                     }}
@@ -6203,9 +6192,9 @@ ${flip ? subj.accent : bd2}`,
                                 fontSize: 11,
                                 color: "#6366f1",
                                 background: "none",
-                                border: "1px solid#6366f1",
+                                border: "1px solid #6366f1",
                                 borderRadius: 8,
-                                padding: "5px12px",
+                                padding: "5px 12px",
                                 cursor: "pointer",
                                 marginBottom: 10,
                                 display: "block",
@@ -6345,11 +6334,10 @@ ${flip ? subj.accent : bd2}`,
                       <div
                         style={{
                           marginTop: 10,
-                          padding: "10px12px",
+                          padding: "10px 12px",
                           borderRadius: 10,
                           background: D ? "#1e2537" : "#f8fafc",
-                          border: `1px solid
-${D ? "#374151" : "#e5e7eb"}`,
+                          border: `1px solid ${D ? "#374151" : "#e5e7eb"}`,
                         }}
                       >
                         <div
@@ -6378,7 +6366,7 @@ ${D ? "#374151" : "#e5e7eb"}`,
                             <div
                               key={l}
                               style={{
-                                padding: "5px4px",
+                                padding: "5px 4px",
                                 borderRadius: 6,
                                 fontSize: 9,
                                 textAlign: "center",
@@ -6437,7 +6425,7 @@ ${D ? "#374151" : "#e5e7eb"}`,
                             }}
                             style={{
                               marginTop: 6,
-                              padding: "6px10px",
+                              padding: "6px 10px",
                               borderRadius: 8,
                               border: "none",
                               background: "#6366f1",
@@ -6478,7 +6466,7 @@ ${D ? "#374151" : "#e5e7eb"}`,
                             }
                             style={{
                               marginTop: 6,
-                              padding: "6px10px",
+                              padding: "6px 10px",
                               borderRadius: 8,
                               border: "none",
                               background: "#0ea5e9",
@@ -6499,7 +6487,7 @@ ${D ? "#374151" : "#e5e7eb"}`,
                             style={{
                               marginTop: 6,
                               marginLeft: 6,
-                              padding: "6px10px",
+                              padding: "6px 10px",
                               borderRadius: 8,
                               border: "none",
                               background: "#6366f1",
@@ -6551,11 +6539,10 @@ ${D ? "#374151" : "#e5e7eb"}`,
                             }}
                             style={{
                               flex: 1,
-                              padding: "12px0",
+                              padding: "12px 0",
                               borderRadius: 12,
                               background: "transparent",
-                              border: `1px solid
-${bd2}`,
+                              border: `1px solid ${bd2}`,
                               color: mu(D),
                               cursor: "pointer",
                               fontSize: 13,
@@ -6578,11 +6565,10 @@ ${bd2}`,
                             }}
                             style={{
                               flex: 1,
-                              padding: "12px0",
+                              padding: "12px 0",
                               borderRadius: 12,
                               background: "transparent",
-                              border: `1px solid
-${bd2}`,
+                              border: `1px solid ${bd2}`,
                               color: mu(D),
                               cursor: "pointer",
                               fontSize: 13,
@@ -6629,7 +6615,7 @@ ${bd2}`,
                           fontSize: 11,
                           color: "#6366f1",
                           background: "none",
-                          border: "1px solid#6366f1",
+                          border: "1px solid #6366f1",
                           borderRadius: 8,
                           padding: "5px 14px",
                           cursor: "pointer",
@@ -6761,7 +6747,7 @@ ${bd2}`,
                               style={{
                                 fontSize: 10,
                                 fontWeight: 700,
-                                padding: "2px8px",
+                                padding: "2px 8px",
                                 borderRadius: 10,
                                 background: D
                                   ? "rgba(99,102,241,.15)"
@@ -6909,7 +6895,7 @@ ${bd2}`,
                               fontSize: 12,
                               padding: "6px 12px",
                               borderRadius: 8,
-                              border: "1px solid#6366f1",
+                              border: "1px solid #6366f1",
                               background: "transparent",
                               color: "#6366f1",
                               cursor: "pointer",
@@ -7015,8 +7001,7 @@ ${bd2}`,
                                       textAlign: "left",
                                       padding: "11px 16px",
                                       borderRadius: 10,
-                                      border: `1.5px solid
-${br2}`,
+                                      border: `1.5px solid ${br2}`,
                                       background: bg2,
                                       cursor: qRes ? "default" : "pointer",
                                       color: co2,
@@ -7055,7 +7040,7 @@ ${br2}`,
                                       className="hint-slide"
                                       style={{
                                         marginTop: 4,
-                                        padding: "8px12px",
+                                        padding: "8px 12px",
                                         borderRadius: 8,
                                         fontSize: 11,
                                         lineHeight: 1.6,
@@ -7105,11 +7090,10 @@ answer is ${q.options[q.answer]}${q.explanation ? " — " + q.explanation : "."}
                                 {qConf === null ? (
                                   <div
                                     style={{
-                                      padding: "10px14px",
+                                      padding: "10px 14px",
                                       borderRadius: 10,
                                       background: D ? "#1e2537" : "#fafafa",
-                                      border: `1px solid
-${D ? "#374151" : "#e5e7eb"}`,
+                                      border: `1px solid ${D ? "#374151" : "#e5e7eb"}`,
                                     }}
                                   >
                                     <p
@@ -7211,8 +7195,7 @@ ${D ? "#374151" : "#e5e7eb"}`,
                                       fontSize: 11,
                                       color: mu(D),
                                       background: "none",
-                                      border: `1px solid
-${D ? "#374151" : "#d1d5db"}`,
+                                      border: `1px solid ${D ? "#374151" : "#d1d5db"}`,
                                       borderRadius: 8,
                                       padding: "5px 12px",
                                       cursor: "pointer",
@@ -7424,7 +7407,7 @@ mark${q.marks !== 1 ? "s" : ""}]`}
                                   color: "#fff",
                                   border: "none",
                                   borderRadius: 12,
-                                  padding: "12px0",
+                                  padding: "12px 0",
                                   fontSize: 14,
                                   fontWeight: 600,
                                   cursor:
@@ -7532,7 +7515,7 @@ mark${q.marks !== 1 ? "s" : ""}]`}
                                         background: D
                                           ? "rgba(239,68,68,.08)"
                                           : "#fef2f2",
-                                        border: "1px solid#ef444422",
+                                        border: "1px solid #ef444422",
                                       }}
                                     >
                                       <p
@@ -7570,10 +7553,10 @@ mark${q.marks !== 1 ? "s" : ""}]`}
                                   {qRes.examTip && (
                                     <div
                                       style={{
-                                        padding: "9px12px",
+                                        padding: "9px 12px",
                                         borderRadius: 10,
                                         background: D ? "#1e2f4a" : "#eff6ff",
-                                        border: "1px solid#bfdbfe",
+                                        border: "1px solid #bfdbfe",
                                         marginBottom: 12,
                                       }}
                                     >
@@ -7591,12 +7574,12 @@ mark${q.marks !== 1 ? "s" : ""}]`}
                                   {qRes.errorType && (
                                     <div
                                       style={{
-                                        padding: "8px12px",
+                                        padding: "8px 12px",
                                         borderRadius: 10,
                                         background: D
                                           ? "rgba(245,158,11,.1)"
                                           : "#fffbeb",
-                                        border: "1px solid#f59e0b55",
+                                        border: "1px solid #f59e0b55",
                                         marginBottom: 10,
                                         fontSize: 12,
                                         color: D ? "#fcd34d" : "#92400e",
@@ -7636,7 +7619,7 @@ mark${q.marks !== 1 ? "s" : ""}]`}
                                         <React.Fragment key={idx}>
                                           <span
                                             style={{
-                                              padding: "6px10px",
+                                              padding: "6px 10px",
                                               borderRadius: 8,
                                               background: D
                                                 ? "#1e2537"
@@ -7712,7 +7695,7 @@ mark${q.marks !== 1 ? "s" : ""}]`}
                                             key={idx}
                                             style={{
                                               background: bg,
-                                              padding: "1px4px",
+                                              padding: "1px 4px",
                                               borderRadius: 4,
                                               marginRight: 4,
                                             }}
@@ -7745,7 +7728,7 @@ mark${q.marks !== 1 ? "s" : ""}]`}
                                         <tr>
                                           <th
                                             style={{
-                                              border: "1px solid#cbd5e1",
+                                              border: "1px solid #cbd5e1",
                                               padding: 6,
                                               textAlign: "left",
                                             }}
@@ -7754,7 +7737,7 @@ mark${q.marks !== 1 ? "s" : ""}]`}
                                           </th>
                                           <th
                                             style={{
-                                              border: "1px solid#cbd5e1",
+                                              border: "1px solid #cbd5e1",
                                               padding: 6,
                                               textAlign: "left",
                                             }}
@@ -7769,7 +7752,7 @@ mark${q.marks !== 1 ? "s" : ""}]`}
                                             <tr key={ri}>
                                               <td
                                                 style={{
-                                                  border: "1px solid#cbd5e1",
+                                                  border: "1px solid #cbd5e1",
                                                   padding: 6,
                                                 }}
                                               >
@@ -7777,7 +7760,7 @@ mark${q.marks !== 1 ? "s" : ""}]`}
                                               </td>
                                               <td
                                                 style={{
-                                                  border: "1px solid#cbd5e1",
+                                                  border: "1px solid #cbd5e1",
                                                   padding: 6,
                                                 }}
                                               >
@@ -7874,7 +7857,7 @@ mark${q.marks !== 1 ? "s" : ""}]`}
                                             background: D
                                               ? "rgba(99,102,241,.1)"
                                               : "#eef2ff",
-                                            border: "1px solid#6366f122",
+                                            border: "1px solid #6366f122",
                                             fontSize: 11,
                                             color: D ? "#a5b4fc" : "#4338ca",
                                           }}
@@ -7901,7 +7884,7 @@ mark${q.marks !== 1 ? "s" : ""}]`}
                                       {showMdl && (
                                         <div
                                           style={{
-                                            padding: "12px14px",
+                                            padding: "12px 14px",
                                             borderRadius: 10,
                                             background: D
                                               ? "#161b27"
@@ -7957,7 +7940,7 @@ mark${q.marks !== 1 ? "s" : ""}]`}
                           style={{
                             width: "100%",
                             ...B(subj.accent, false, {
-                              padding: "12px0",
+                              padding: "12px 0",
                               borderRadius: 12,
                               fontSize: 14,
                             }),
@@ -8707,7 +8690,7 @@ mark${q.marks !== 1 ? "s" : ""}]`}
                               fontWeight: 800,
                               color: "#fff",
                               background: gradeColor(target),
-                              padding: "2px7px",
+                              padding: "2px 7px",
                               borderRadius: 7,
                             }}
                           >
@@ -8723,7 +8706,7 @@ mark${q.marks !== 1 ? "s" : ""}]`}
                             background: predicted
                               ? gradeColor(predicted) + "22"
                               : "transparent",
-                            padding: "2px8px",
+                            padding: "2px 8px",
                             borderRadius: 6,
                           }}
                         >
@@ -8885,7 +8868,7 @@ mark${q.marks !== 1 ? "s" : ""}]`}
                           display: "flex",
                           justifyContent: "space-between",
                           alignItems: "center",
-                          padding: "7px12px",
+                          padding: "7px 12px",
                           borderRadius: 10,
                           background: D ? "#1e2537" : "#fef2f2",
                           marginBottom: 5,
@@ -8983,7 +8966,7 @@ mark${q.marks !== 1 ? "s" : ""}]`}
                   </p>
                   <div
                     style={{
-                      padding: "8px12px",
+                      padding: "8px 12px",
                       borderRadius: 8,
                       background: D ? "rgba(99,102,241,.08)" : "#eef2ff",
                       fontSize: 12,
@@ -9131,8 +9114,7 @@ mark${q.marks !== 1 ? "s" : ""}]`}
                   fontSize: 12,
                   color: mu(D),
                   background: "none",
-                  border: `1px solid
-${bd2}`,
+                  border: `1px solid ${bd2}`,
                   borderRadius: 8,
                   padding: "6px 12px",
                   cursor: "pointer",
@@ -9187,7 +9169,7 @@ ${bd2}`,
                   style={{
                     fontSize: 11,
                     fontWeight: 600,
-                    padding: "3px10px",
+                    padding: "3px 10px",
                     borderRadius: 20,
                     background: item.subj.mid,
                     color: item.subj.dk,
@@ -9257,8 +9239,7 @@ ${bd2}`,
                           textAlign: "left",
                           padding: "11px 16px",
                           borderRadius: 10,
-                          border: `1.5px solid
-${br2}`,
+                          border: `1.5px solid ${br2}`,
                           background: bg2,
                           cursor: ttRes ? "default" : "pointer",
                           color: co2,
@@ -9286,8 +9267,7 @@ ${br2}`,
                         padding: 14,
                         borderRadius: 12,
                         background: ttRes === "correct" ? "#dcfce7" : "#fee2e2",
-                        border: `1px solid
-${ttRes === "correct" ? "#22c55e" : "#ef4444"}`,
+                        border: `1px solid ${ttRes === "correct" ? "#22c55e" : "#ef4444"}`,
                         color: ttRes === "correct" ? "#15803d" : "#b91c1c",
                         fontSize: 13,
                       }}
@@ -9360,7 +9340,7 @@ ${ttRes === "correct" ? "#22c55e" : "#ef4444"}`,
                         color: "#fff",
                         border: "none",
                         borderRadius: 12,
-                        padding: "11px0",
+                        padding: "11px 0",
                         fontSize: 13,
                         fontWeight: 600,
                         cursor:
@@ -9436,10 +9416,10 @@ ${ttRes === "correct" ? "#22c55e" : "#ef4444"}`,
                         <div
                           style={{
                             marginTop: 8,
-                            padding: "8px12px",
+                            padding: "8px 12px",
                             borderRadius: 8,
                             background: D ? "#1e2f4a" : "#eff6ff",
-                            border: "1px solid#bfdbfe",
+                            border: "1px solid #bfdbfe",
                             fontSize: 12,
                             color: "#1d4ed8",
                           }}
@@ -9458,7 +9438,7 @@ ${ttRes === "correct" ? "#22c55e" : "#ef4444"}`,
                 style={{
                   width: "100%",
                   ...B(isLast ? "#10b981" : "#ef4444", false, {
-                    padding: "12px0",
+                    padding: "12px 0",
                     borderRadius: 12,
                     fontSize: 14,
                   }),
@@ -9525,7 +9505,7 @@ ${ttRes === "correct" ? "#22c55e" : "#ef4444"}`,
               style={{
                 ...B("#ef4444", false, {
                   fontSize: 14,
-                  padding: "11px22px",
+                  padding: "11px 22px",
                   opacity: sorted.length === 0 ? 0.4 : 1,
                 }),
               }}
@@ -9544,10 +9524,9 @@ ${ttRes === "correct" ? "#22c55e" : "#ef4444"}`,
             <button
               onClick={() => setTTSubj(null)}
               style={{
-                padding: "6px14px",
+                padding: "6px 14px",
                 borderRadius: 20,
-                border: `1.5px solid
-${ttSubj === null ? "#ef4444" : bd2}`,
+                border: `1.5px solid ${ttSubj === null ? "#ef4444" : bd2}`,
                 background: ttSubj === null ? "#ef4444" : "transparent",
                 color: ttSubj === null ? "#fff" : mu(D),
                 cursor: "pointer",
@@ -9562,10 +9541,9 @@ ${ttSubj === null ? "#ef4444" : bd2}`,
                 key={s.id}
                 onClick={() => setTTSubj(si === ttSubj ? null : si)}
                 style={{
-                  padding: "6px14px",
+                  padding: "6px 14px",
                   borderRadius: 20,
-                  border: `1.5px solid
-${ttSubj === si ? s.accent : bd2}`,
+                  border: `1.5px solid ${ttSubj === si ? s.accent : bd2}`,
                   background: ttSubj === si ? s.accent : "transparent",
                   color: ttSubj === si ? "#fff" : mu(D),
                   cursor: "pointer",
@@ -9612,7 +9590,7 @@ ${ttSubj === si ? s.accent : bd2}`,
                       display: "flex",
                       alignItems: "center",
                       gap: 12,
-                      padding: "10px0",
+                      padding: "10px 0",
                       borderBottom: `1px solid ${bd2}`,
                     }}
                   >
@@ -9719,7 +9697,7 @@ ${ttSubj === si ? s.accent : bd2}`,
             left: 0,
             right: 0,
             zIndex: 800,
-            padding: "0 16px16px",
+            padding: "0 16px 16px",
             maxWidth: 680,
             margin: "0 auto",
           }}
@@ -9787,7 +9765,7 @@ ${ttSubj === si ? s.accent : bd2}`,
                   setPrereqModal(null);
                 }}
                 style={{
-                  ...B("#9ca3af", false, { padding: "8px12px", fontSize: 12 }),
+                  ...B("#9ca3af", false, { padding: "8px 12px", fontSize: 12 }),
                 }}
               >
                 Continue anyway
@@ -9895,7 +9873,7 @@ ${ttSubj === si ? s.accent : bd2}`,
                       display: "flex",
                       justifyContent: "space-between",
                       alignItems: "center",
-                      padding: "8px12px",
+                      padding: "8px 12px",
                       borderRadius: 8,
                       background: D ? "#161b27" : "#f9fafb",
                       marginBottom: 6,
@@ -9932,7 +9910,7 @@ ${ttSubj === si ? s.accent : bd2}`,
                 onClick={() => setAnalyticsData(null)}
                 style={{
                   width: "100%",
-                  padding: "9px0",
+                  padding: "9px 0",
                   borderRadius: 10,
                   border: "1px solid📊" + (D ? "#374151" : "#e5e7eb"),
                   background: "transparent",

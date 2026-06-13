@@ -115,7 +115,7 @@ export function Header({
             background: D ? "#1e2537" : "#f3f4f6",
             border: "1px solid" + (D ? "#374151" : "#e5e7eb"),
             borderRadius: 8,
-            padding: "5px10px",
+            padding: "5px 10px",
             fontSize: 12,
             color: mu(D),
             cursor: "pointer",
@@ -134,7 +134,7 @@ export function Header({
               display: "flex",
               alignItems: "center",
               gap: 4,
-              padding: "4px10px",
+              padding: "4px 10px",
               borderRadius: 20,
               background:
                 streak >= 7
@@ -180,7 +180,7 @@ export function Header({
             display: "flex",
             alignItems: "center",
             gap: 6,
-            padding: "4px10px",
+            padding: "4px 10px",
             borderRadius: 20,
             background: D ? "#1e2537" : "#f3f4f6",
             border: "1px solid" + (D ? "#374151" : "#e5e7eb"),
@@ -207,7 +207,7 @@ export function Header({
                 fontWeight: 700,
                 background: "#6366f1",
                 color: "#fff",
-                padding: "1px6px",
+                padding: "1px 6px",
                 borderRadius: 10,
                 flexShrink: 0,
               }}
@@ -229,7 +229,7 @@ export function Header({
             border: "none",
             cursor: "pointer",
             color: mu(D),
-            padding: "4px6px",
+            padding: "4px 6px",
             borderRadius: 6,
             lineHeight: 1,
             flexShrink: 0,
@@ -246,7 +246,7 @@ export function Header({
             background: D ? "#161b27" : "#fff",
             border: "1px solid " + (D ? "#374151" : "#e5e7eb"),
             borderTop: "none",
-            borderRadius: "0 0 14px14px",
+            borderRadius: "0 0 14px 14px",
             zIndex: 60,
             padding: "8px 10px 12px",
             boxShadow: "0 8px 32px rgba(0,0,0,.18)",
@@ -267,7 +267,7 @@ export function Header({
                   alignItems: "center",
                   gap: 10,
                   width: "100%",
-                  padding: "9px12px",
+                  padding: "9px 12px",
                   background: active
                     ? D
                       ? "rgba(99,102,241,.18)"
@@ -585,7 +585,7 @@ export function AccountScreen({
               style={{
                 padding: "8px 18px",
                 borderRadius: 10,
-                border: "1.5px solid#6366f1",
+                border: "1.5px solid #6366f1",
                 background: "transparent",
                 color: "#6366f1",
                 fontWeight: 600,
@@ -606,7 +606,7 @@ export function AccountScreen({
                     display: "flex",
                     alignItems: "center",
                     gap: 10,
-                    padding: "8px12px",
+                    padding: "8px 12px",
                     borderRadius: 9,
                     background: D ? "#1e2537" : "#f9fafb",
                     border: "1px solid " + bd2,
@@ -627,7 +627,7 @@ export function AccountScreen({
                     style={{
                       fontSize: 11,
                       fontWeight: 700,
-                      padding: "2px9px",
+                      padding: "2px 9px",
                       borderRadius: 8,
                       background: s.accent + "22",
                       color: s.accent,
@@ -644,10 +644,10 @@ export function AccountScreen({
                   display: "flex",
                   alignItems: "center",
                   gap: 10,
-                  padding: "8px12px",
+                  padding: "8px 12px",
                   borderRadius: 9,
                   background: D ? "rgba(15,118,110,.08)" : "#f0fdfa",
-                  border: "1px solid#0f766e22",
+                  border: "1px solid #0f766e22",
                 }}
               >
                 <span style={{ fontSize: 18, flexShrink: 0 }}>
@@ -746,7 +746,7 @@ export function AccountScreen({
             style={{
               padding: "7px 12px",
               borderRadius: 9,
-              border: "1px solid#6366f1",
+              border: "1px solid #6366f1",
               background: "transparent",
               color: "#6366f1",
               fontSize: 12,
@@ -767,7 +767,7 @@ export function AccountScreen({
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
-                    padding: "6px8px",
+                    padding: "6px 8px",
                     borderRadius: 8,
                     background: D ? "#1e2537" : "#f9fafb",
                     border: "1px solid " + bd2,
@@ -790,7 +790,7 @@ export function AccountScreen({
             style={{
               marginTop: 12,
               width: "100%",
-              padding: "10px0",
+              padding: "10px 0",
               borderRadius: 10,
               border: "none",
               background: "#0ea5e9",
@@ -829,10 +829,10 @@ export function AdminBar({ D, actions }) {
       style={{
         display: "flex",
         gap: 8,
-        padding: "8px12px",
+        padding: "8px 12px",
         borderRadius: 10,
         background: D ? "rgba(99,102,241,.12)" : "#eef2ff",
-        border: "1.5px solid#6366f1",
+        border: "1.5px solid #6366f1",
         marginBottom: 16,
         alignItems: "center",
         flexWrap: "wrap",
@@ -859,7 +859,7 @@ export function AdminBar({ D, actions }) {
               fontSize: 12,
               padding: "5px 14px",
               borderRadius: 7,
-              border: "1.5px solid#6366f1",
+              border: "1.5px solid #6366f1",
               background: "#6366f1",
               color: "#fff",
               cursor: "pointer",

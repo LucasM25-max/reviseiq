@@ -418,7 +418,7 @@ definitions.`,
                 fontSize: 13,
                 fontWeight: 600,
                 color: doneS === totalS ? "#16a34a" : "#6366f1",
-                padding: "6px14px",
+                padding: "6px 14px",
                 borderRadius: 20,
                 background:
                   doneS === totalS
@@ -456,7 +456,7 @@ definitions.`,
                 setTab(t);
               }}
               style={{
-                padding: "10px18px",
+                padding: "10px 18px",
                 fontSize: 13,
                 fontWeight: tab === t ? 600 : 400,
                 color: tab === t ? "#6366f1" : mu(D),
@@ -541,8 +541,7 @@ definitions.`,
                         style={{
                           padding: "5px 12px",
                           borderRadius: 8,
-                          border: `1.5px solid
-${on ? "#6366f1" : bd2}`,
+                          border: `1.5px solid ${on ? "#6366f1" : bd2}`,
                           background: on ? "#6366f1" : "transparent",
                           color: on ? "#fff" : mu(D),
                           fontSize: 12,
@@ -630,7 +629,7 @@ ${on ? "#6366f1" : bd2}`,
                   }}
                   style={{
                     ...B("#6366f1", false, {
-                      padding: "9px16px",
+                      padding: "9px 16px",
                       fontSize: 12,
                       fontWeight: 700,
                       alignSelf: "flex-end",
@@ -651,7 +650,7 @@ ${on ? "#6366f1" : bd2}`,
                         display: "flex",
                         alignItems: "center",
                         gap: 10,
-                        padding: "8px12px",
+                        padding: "8px 12px",
                         borderRadius: 8,
                         background: D ? "#1e2537" : "#f3f4f6",
                       }}
@@ -790,7 +789,7 @@ ${on ? "#6366f1" : bd2}`,
                 style={{
                   ...B("#6366f1", false, {
                     width: "100%",
-                    padding: "10px0",
+                    padding: "10px 0",
                     fontSize: 13,
                     fontWeight: 700,
                     opacity: !eDate || !eSubj ? 0.4 : 1,
@@ -838,7 +837,7 @@ ${on ? "#6366f1" : bd2}`,
                         key={ex.id}
                         style={{
                           ...C(D),
-                          padding: "12px16px",
+                          padding: "12px 16px",
                           display: "flex",
                           alignItems: "center",
                           gap: 12,
@@ -875,7 +874,7 @@ ${on ? "#6366f1" : bd2}`,
                             fontWeight: 700,
                             color: col,
                             background: col + "22",
-                            padding: "3px9px",
+                            padding: "3px 9px",
                             borderRadius: 20,
                             flexShrink: 0,
                           }}
@@ -909,7 +908,7 @@ ${on ? "#6366f1" : bd2}`,
                     style={{
                       ...B("transparent", true, {
                         flex: 1,
-                        padding: "11px0",
+                        padding: "11px 0",
                         fontSize: 13,
                         fontWeight: 600,
                         borderColor: bd2,
@@ -1010,11 +1009,10 @@ ${on ? "#6366f1" : bd2}`,
                           display: "flex",
                           alignItems: "center",
                           gap: 6,
-                          padding: "4px12px",
+                          padding: "4px 12px",
                           borderRadius: 20,
                           background: D ? "#1e2537" : "#f3f4f6",
-                          border: `1.5px solid
-${subj?.accent || "#6366f1"}`,
+                          border: `1.5px solid ${subj?.accent || "#6366f1"}`,
                         }}
                       >
                         <span style={{ fontSize: 12 }}>{subj?.icon}</span>
@@ -1045,7 +1043,7 @@ ${subj?.accent || "#6366f1"}`,
                     style={{
                       ...B("transparent", true, {
                         fontSize: 11,
-                        padding: "4px10px",
+                        padding: "4px 10px",
                         borderColor: D ? "#374151" : "#d1d5db",
                         color: mu(D),
                         marginLeft: "auto",
@@ -1090,7 +1088,7 @@ ${subj?.accent || "#6366f1"}`,
                               fontWeight: 700,
                               color: "#fff",
                               background: "#6366f1",
-                              padding: "1px7px",
+                              padding: "1px 7px",
                               borderRadius: 10,
                             }}
                           >
@@ -1131,8 +1129,7 @@ ${subj?.accent || "#6366f1"}`,
                               style={{
                                 ...C(D),
                                 overflow: "hidden",
-                                borderLeft: `4px solid
-${subj?.accent || "#6366f1"}`,
+                                borderLeft: `4px solid ${subj?.accent || "#6366f1"}`,
                                 opacity: done ? 0.7 : 1,
                               }}
                             >
@@ -1141,7 +1138,7 @@ ${subj?.accent || "#6366f1"}`,
                                   display: "flex",
                                   alignItems: "center",
                                   gap: 10,
-                                  padding: "11px14px",
+                                  padding: "11px 14px",
                                   cursor: "pointer",
                                 }}
                                 onClick={() => toggleExp(sess.id)}
@@ -1232,7 +1229,7 @@ ${subj?.accent || "#6366f1"}`,
                               {isExp && (
                                 <div
                                   style={{
-                                    padding: "0 14px14px",
+                                    padding: "0 14px 14px",
                                     display: "flex",
                                     flexDirection: "column",
                                     gap: 8,
@@ -1245,11 +1242,10 @@ ${subj?.accent || "#6366f1"}`,
                                       <div
                                         key={ai}
                                         style={{
-                                          padding: "12px14px",
+                                          padding: "12px 14px",
                                           borderRadius: 10,
                                           background: D ? "#1e2537" : "#f9fafb",
-                                          border: `1.5px solid
-${gDone ? "#16a34a" : D ? "#374151" : "#e5e7eb"}`,
+                                          border: `1.5px solid ${gDone ? "#16a34a" : D ? "#374151" : "#e5e7eb"}`,
                                         }}
                                       >
                                         <div
@@ -1340,7 +1336,7 @@ ${gDone ? "#16a34a" : D ? "#374151" : "#e5e7eb"}`,
                                                   true,
                                                   {
                                                     fontSize: 11,
-                                                    padding: "5px10px",
+                                                    padding: "5px 10px",
                                                     flexShrink: 0,
                                                     whiteSpace: "nowrap",
                                                   },
@@ -1367,7 +1363,7 @@ ${gDone ? "#16a34a" : D ? "#374151" : "#e5e7eb"}`,
                 <div
                   style={{
                     marginTop: 8,
-                    padding: "11px16px",
+                    padding: "11px 16px",
                     borderRadius: 12,
                     background: D ? "#1e2537" : "#f3f4f6",
                     fontSize: 12,

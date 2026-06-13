@@ -23,10 +23,10 @@ export function PastPapersTab({
             display: "flex",
             alignItems: "center",
             gap: 10,
-            padding: "10px14px",
+            padding: "10px 14px",
             borderRadius: 12,
             background: D ? "#1a1a2e" : "#f5f3ff",
-            border: "1.5px solid#6366f1",
+            border: "1.5px solid #6366f1",
             marginBottom: 18,
           }}
         >
@@ -76,7 +76,7 @@ export function PastPapersTab({
                     <th
                       key={i}
                       style={{
-                        padding: "12px16px",
+                        padding: "12px 16px",
                         textAlign: "left",
                         fontWeight: 600,
                         color: mu(D),
@@ -108,7 +108,7 @@ export function PastPapersTab({
                   >
                     <td
                       style={{
-                        padding: "12px16px",
+                        padding: "12px 16px",
                         fontWeight: 600,
                         color: tx(D),
                         whiteSpace: "nowrap",
@@ -252,9 +252,9 @@ export function SRInfoTooltip({ D }) {
             background: D ? "#1e2537" : "#fff",
             border: `1px solid ${D ? "#374151" : "#e5e7eb"}`,
             borderRadius: 10,
-            padding: "12px14px",
+            padding: "12px 14px",
             width: 260,
-            boxShadow: "0 8px 32pxrgba(0,0,0,.18)",
+            boxShadow: "0 8px 32px rgba(0,0,0,.18)",
             fontSize: 12,
             lineHeight: 1.6,
             color: D ? "#e5e7eb" : "#374151",
@@ -318,11 +318,10 @@ export function ForecastBar({ cards, fcHist, D, accent }) {
     <div
       style={{
         marginTop: 10,
-        padding: "10px14px",
+        padding: "10px 14px",
         borderRadius: 10,
         background: D ? "#161b27" : "#f9fafb",
-        border: `1px solid
-${D ? "#2a3347" : "#e5e7eb"}`,
+        border: `1px solid ${D ? "#2a3347" : "#e5e7eb"}`,
       }}
     >
       <div
@@ -473,8 +472,7 @@ export function SessionGoalModal({ D, onStart, onSkip }) {
                 width: "100%",
                 padding: "10px 14px",
                 borderRadius: 10,
-                border: `1.5px solid
-${bd2}`,
+                border: `1.5px solid ${bd2}`,
                 background: D ? "#1e2537" : "#f9fafb",
                 color: D ? "#e8ecf4" : "#111827",
                 fontSize: 13,
@@ -506,8 +504,7 @@ ${bd2}`,
                     flex: 1,
                     padding: "8px 4px",
                     borderRadius: 10,
-                    border: `2px solid
-${confidence === v ? "#6366f1" : bd2}`,
+                    border: `2px solid ${confidence === v ? "#6366f1" : bd2}`,
                     background: confidence === v ? "#6366f1" : "transparent",
                     color:
                       confidence === v ? "#fff" : D ? "#9ca3af" : "#6b7280",
@@ -557,8 +554,7 @@ ${confidence === v ? "#6366f1" : bd2}`,
                     minWidth: 44,
                     padding: "8px 4px",
                     borderRadius: 9,
-                    border: `2px solid
-${duration === t ? "#6366f1" : bd2}`,
+                    border: `2px solid ${duration === t ? "#6366f1" : bd2}`,
                     background: duration === t ? "#6366f1" : "transparent",
                     color: duration === t ? "#fff" : D ? "#9ca3af" : "#6b7280",
                     cursor: "pointer",
@@ -580,8 +576,7 @@ ${duration === t ? "#6366f1" : bd2}`,
               flex: 1,
               padding: "11px 0",
               borderRadius: 12,
-              border: `1px solid
-${bd2}`,
+              border: `1px solid ${bd2}`,
               background: "transparent",
               color: D ? "#9ca3af" : "#6b7280",
               cursor: "pointer",
@@ -601,7 +596,7 @@ ${bd2}`,
             }
             style={{
               flex: 2,
-              padding: "11px0",
+              padding: "11px 0",
               borderRadius: 12,
               border: "none",
               background: "#6366f1",
@@ -654,7 +649,7 @@ export function PostSessionReflection({ D, sessionGoal, subjectId, onSave, onSki
           display: "flex",
           alignItems: "center",
           gap: 10,
-          padding: "12px16px",
+          padding: "12px 16px",
           background: D ? "rgba(99,102,241,.1)" : "#eef2ff",
           border: "none",
           cursor: "pointer",
@@ -692,7 +687,7 @@ export function PostSessionReflection({ D, sessionGoal, subjectId, onSave, onSki
         {sessionGoal && (
           <div
             style={{
-              padding: "8px12px",
+              padding: "8px 12px",
               borderRadius: 8,
               background: D ? "#1e2537" : "#f9fafb",
               fontSize: 12,
@@ -746,8 +741,7 @@ export function PostSessionReflection({ D, sessionGoal, subjectId, onSave, onSki
                 width: "100%",
                 padding: "8px 12px",
                 borderRadius: 8,
-                border: `1px solid
-${bd2}`,
+                border: `1px solid ${bd2}`,
                 background: D ? "#1e2537" : "#f9fafb",
                 color: D ? "#e8ecf4" : "#111827",
                 fontSize: 12,
@@ -766,8 +760,7 @@ ${bd2}`,
               padding: "9px 0",
               borderRadius: 10,
               border: `1px
-solid
-${bd2}`,
+solid ${bd2}`,
               background: "transparent",
               color: D ? "#9ca3af" : "#6b7280",
               cursor: "pointer",
@@ -780,7 +773,7 @@ ${bd2}`,
             onClick={handleSave}
             style={{
               flex: 2,
-              padding: "9px0",
+              padding: "9px 0",
               borderRadius: 10,
               border: "none",
               background: "#6366f1",
@@ -872,7 +865,7 @@ export function StudyJournalTab({ D, entries, mu2, tx2 }) {
               {entry.reflections?.understood && (
                 <div
                   style={{
-                    padding: "8px12px",
+                    padding: "8px 12px",
                     borderRadius: 8,
                     background: D ? "rgba(16,185,129,.08)" : "#f0fdf4",
                     fontSize: 12,
@@ -885,7 +878,7 @@ export function StudyJournalTab({ D, entries, mu2, tx2 }) {
               {entry.reflections?.unclear && (
                 <div
                   style={{
-                    padding: "8px12px",
+                    padding: "8px 12px",
                     borderRadius: 8,
                     background: D ? "rgba(245,158,11,.08)" : "#fffbeb",
                     fontSize: 12,
@@ -898,7 +891,7 @@ export function StudyJournalTab({ D, entries, mu2, tx2 }) {
               {entry.reflections?.improve && (
                 <div
                   style={{
-                    padding: "8px12px",
+                    padding: "8px 12px",
                     borderRadius: 8,
                     background: D ? "rgba(99,102,241,.08)" : "#eef2ff",
                     fontSize: 12,
@@ -912,7 +905,7 @@ export function StudyJournalTab({ D, entries, mu2, tx2 }) {
               {entry.coaching && (
                 <div
                   style={{
-                    padding: "10px14px",
+                    padding: "10px 14px",
                     borderRadius: 10,
                     background: D ? "rgba(99,102,241,.06)" : "#f8f7ff",
                     border: "1px solid" + (D ? "#4f46e522" : "#c7d2fe"),
@@ -1109,7 +1102,7 @@ export function CalibrationGauge({ D, calibData, subjectName }) {
               style={{
                 background: "#10b98122",
                 color: "#10b981",
-                padding: "2px8px",
+                padding: "2px 8px",
                 borderRadius: 10,
                 fontWeight: 600,
               }}
@@ -1120,7 +1113,7 @@ export function CalibrationGauge({ D, calibData, subjectName }) {
               style={{
                 background: "#f59e0b22",
                 color: "#d97706",
-                padding: "2px8px",
+                padding: "2px 8px",
                 borderRadius: 10,
                 fontWeight: 600,
               }}
@@ -1131,7 +1124,7 @@ export function CalibrationGauge({ D, calibData, subjectName }) {
               style={{
                 background: "#ef444422",
                 color: "#ef4444",
-                padding: "2px8px",
+                padding: "2px 8px",
                 borderRadius: 10,
                 fontWeight: 600,
               }}
@@ -1145,10 +1138,10 @@ export function CalibrationGauge({ D, calibData, subjectName }) {
         <div
           style={{
             marginTop: 12,
-            padding: "10px14px",
+            padding: "10px 14px",
             borderRadius: 10,
             background: D ? "rgba(239,68,68,.1)" : "#fef2f2",
-            border: "1px solid#ef4444",
+            border: "1px solid #ef4444",
             fontSize: 12,
             color: D ? "#fca5a5" : "#b91c1c",
             lineHeight: 1.6,
@@ -1196,11 +1189,10 @@ export function MemoryDecayChart({ D, cardState, accent }) {
     <div
       style={{
         marginBottom: 8,
-        padding: "10px14px",
+        padding: "10px 14px",
         borderRadius: 10,
         background: D ? "#161b27" : "#f9fafb",
-        border: `1px solid
-${D ? "#2a3347" : "#e5e7eb"}`,
+        border: `1px solid ${D ? "#2a3347" : "#e5e7eb"}`,
       }}
     >
       <div
@@ -1250,8 +1242,7 @@ ${D ? "#2a3347" : "#e5e7eb"}`,
           <Tooltip
             contentStyle={{
               background: D ? "#1e2537" : "#fff",
-              border: `1px solid
-${D ? "#374151" : "#e5e7eb"}`,
+              border: `1px solid ${D ? "#374151" : "#e5e7eb"}`,
               borderRadius: 6,
               fontSize: 10,
               padding: "4px 8px",
@@ -1438,7 +1429,7 @@ export function StrategyRecommendation({
         <button
           onClick={action}
           style={{
-            padding: "9px18px",
+            padding: "9px 18px",
             borderRadius: 10,
             border: "none",
             background: rec.color,

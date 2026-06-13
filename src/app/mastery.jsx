@@ -366,7 +366,7 @@ activity`,
               fontWeight: 700,
               background: "#dcfce7",
               color: "#15803d",
-              padding: "3px10px",
+              padding: "3px 10px",
               borderRadius: 20,
             }}
           >
@@ -450,7 +450,7 @@ activity`,
           style={{
             background: "#6366f122",
             color: "#6366f1",
-            padding: "2px7px",
+            padding: "2px 7px",
             borderRadius: 8,
           }}
         >
@@ -460,7 +460,7 @@ activity`,
           style={{
             background: "#10b98122",
             color: "#10b981",
-            padding: "2px7px",
+            padding: "2px 7px",
             borderRadius: 8,
           }}
         >
@@ -470,7 +470,7 @@ activity`,
           style={{
             background: "#f59e0b22",
             color: "#d97706",
-            padding: "2px7px",
+            padding: "2px 7px",
             borderRadius: 8,
           }}
         >
@@ -660,7 +660,7 @@ export function AchievementToast({ achievement, D, onClose }) {
         padding: "14px 20px",
         minWidth: 260,
         maxWidth: 340,
-        boxShadow: "0 12px 40pxrgba(99,102,241,.4)",
+        boxShadow: "0 12px 40px rgba(99,102,241,.4)",
         display: "flex",
         alignItems: "center",
         gap: 12,

@@ -86,8 +86,7 @@ export function ClozeCard({ card, D, onSubmit, DiagramRendererComp }) {
     <div
       style={{
         borderRadius: 12,
-        border: `1.5px solid
-${D ? "#374151" : "#e5e7eb"}`,
+        border: `1.5px solid ${D ? "#374151" : "#e5e7eb"}`,
         padding: 16,
         background: D ? "#161b27" : "#fff",
       }}
@@ -119,8 +118,7 @@ ${D ? "#374151" : "#e5e7eb"}`,
                 padding: "4px 8px",
                 margin: "05px",
                 borderRadius: 8,
-                border: `1.5px solid
-${D ? "#4b5563" : "#cbd5e1"}`,
+                border: `1.5px solid ${D ? "#4b5563" : "#cbd5e1"}`,
                 background: D ? "#0f172a" : "#f8fafc",
                 color: D ? "#fff" : "#111",
               }}
@@ -132,7 +130,7 @@ ${D ? "#4b5563" : "#cbd5e1"}`,
         onClick={submit}
         style={{
           marginTop: 12,
-          padding: "8px14px",
+          padding: "8px 14px",
           borderRadius: 8,
           border: "none",
           background: "#6366f1",
@@ -198,8 +196,7 @@ export function SequenceCard({ card, D, onSubmit }) {
     <div
       style={{
         borderRadius: 12,
-        border: `1.5px solid
-${D ? "#374151" : "#e5e7eb"}`,
+        border: `1.5px solid ${D ? "#374151" : "#e5e7eb"}`,
         padding: 16,
         background: D ? "#161b27" : "#fff",
       }}
@@ -216,8 +213,7 @@ ${D ? "#374151" : "#e5e7eb"}`,
               style={{
                 padding: "10px 12px",
                 borderRadius: 10,
-                border: `1px solid
-${D ? "#4b5563" : "#d1d5db"}`,
+                border: `1px solid ${D ? "#4b5563" : "#d1d5db"}`,
                 background: D ? "#0f172a" : "#f9fafb",
                 cursor: "grab",
               }}
@@ -231,7 +227,7 @@ ${D ? "#4b5563" : "#d1d5db"}`,
         onClick={grade}
         style={{
           marginTop: 12,
-          padding: "8px14px",
+          padding: "8px 14px",
           borderRadius: 8,
           border: "none",
           background: "#6366f1",
@@ -302,7 +298,7 @@ export function QuestionFigure({ figure, D, figureNumber = 1, DiagramRendererCom
                 <th
                   key={i}
                   style={{
-                    border: "1px solid#cbd5e1",
+                    border: "1px solid #cbd5e1",
                     padding: 6,
                     background: D ? "#0f172a" : "#f8fafc",
                   }}
@@ -432,8 +428,7 @@ export function QuestionFigure({ figure, D, figureNumber = 1, DiagramRendererCom
         marginBottom: 12,
         padding: 10,
         borderRadius: 10,
-        border: `1px solid
-${D ? "#374151" : "#e5e7eb"}`,
+        border: `1px solid ${D ? "#374151" : "#e5e7eb"}`,
         background: D ? "#111827" : "#fff",
       }}
     >

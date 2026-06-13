@@ -447,8 +447,7 @@ Keep labels short (2-4 words). Maximum 8 items. Use appropriate accent colour.`;
                           height: 56,
                           objectFit: "cover",
                           borderRadius: 6,
-                          border: `1px solid
-${D ? "#2a3347" : "#e5e7eb"}`,
+                          border: `1px solid ${D ? "#2a3347" : "#e5e7eb"}`,
                         }}
                       />
                       <button
@@ -485,8 +484,7 @@ ${D ? "#2a3347" : "#e5e7eb"}`,
                       width: 56,
                       height: 56,
                       borderRadius: 6,
-                      border: `1.5px dashed
-${D ? "#374151" : "#d1d5db"}`,
+                      border: `1.5px dashed ${D ? "#374151" : "#d1d5db"}`,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -667,8 +665,7 @@ name","sublabel":"optional"}]}}\nKeep labels under 4 words. Max 7 items.`;
                         maxHeight: 160,
                         borderRadius: 8,
                         display: "block",
-                        border: `1px solid
-${D ? "#2a3347" : "#e5e7eb"}`,
+                        border: `1px solid ${D ? "#2a3347" : "#e5e7eb"}`,
                       }}
                     />
                     <input
@@ -895,8 +892,7 @@ ${D ? "#2a3347" : "#e5e7eb"}`,
                         height: 56,
                         objectFit: "cover",
                         borderRadius: 6,
-                        border: `1px solid
-${D ? "#2a3347" : "#e5e7eb"}`,
+                        border: `1px solid ${D ? "#2a3347" : "#e5e7eb"}`,
                       }}
                     />
                     <button
@@ -933,8 +929,7 @@ ${D ? "#2a3347" : "#e5e7eb"}`,
                     width: 56,
                     height: 56,
                     borderRadius: 6,
-                    border: `1.5px dashed
-${D ? "#374151" : "#d1d5db"}`,
+                    border: `1.5px dashed ${D ? "#374151" : "#d1d5db"}`,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -975,8 +970,7 @@ ${D ? "#374151" : "#d1d5db"}`,
               padding: "10px 0",
               borderRadius: 10,
               border: `1px
-solid
-${D ? "#374151" : "#d1d5db"}`,
+solid ${D ? "#374151" : "#d1d5db"}`,
               background: "transparent",
               cursor: "pointer",
               fontSize: 13,
@@ -991,7 +985,7 @@ ${D ? "#374151" : "#d1d5db"}`,
             style={{
               ...B("#6366f1", false, {
                 flex: 2,
-                padding: "10px0",
+                padding: "10px 0",
                 opacity: valid() ? 1 : 0.4,
                 cursor: valid() ? "pointer" : "not-allowed",
               }),

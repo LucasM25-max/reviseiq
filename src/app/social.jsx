@@ -146,7 +146,7 @@ export function SchoolLeaderboard({ user, school, D }) {
       <div
         style={{
           marginTop: 14,
-          padding: "10px14px",
+          padding: "10px 14px",
           borderRadius: 10,
           background: D ? "#1e2537" : "#f3f4f6",
           fontSize: 12,
@@ -173,7 +173,7 @@ export function SchoolLeaderboard({ user, school, D }) {
       <div
         style={{
           marginTop: 14,
-          padding: "10px14px",
+          padding: "10px 14px",
           borderRadius: 10,
           background: D ? "#1e2537" : "#f3f4f6",
           fontSize: 12,
@@ -221,7 +221,7 @@ export function SchoolLeaderboard({ user, school, D }) {
                 display: "flex",
                 alignItems: "center",
                 gap: 10,
-                padding: "7px12px",
+                padding: "7px 12px",
                 borderRadius: 8,
                 background: isMe
                   ? D

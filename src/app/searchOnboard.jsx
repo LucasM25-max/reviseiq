@@ -111,7 +111,7 @@ export function SearchModal({
             display: "flex",
             alignItems: "center",
             gap: 10,
-            padding: "14px16px",
+            padding: "14px 16px",
             borderBottom: `1px solid ${D ? "#374151" : "#e5e7eb"}`,
           }}
         >
@@ -148,7 +148,7 @@ export function SearchModal({
         {!q && (
           <div
             style={{
-              padding: "32px16px",
+              padding: "32px 16px",
               textAlign: "center",
               color: D ? "#8896b3" : "#9ca3af",
               fontSize: 13,
@@ -160,7 +160,7 @@ export function SearchModal({
         {q && results.length === 0 && (
           <div
             style={{
-              padding: "32px16px",
+              padding: "32px 16px",
               textAlign: "center",
               color: D ? "#8896b3" : "#9ca3af",
               fontSize: 13,
@@ -181,13 +181,12 @@ export function SearchModal({
               alignItems: "flex-start",
               gap: 10,
               width: "100%",
-              padding: "12px16px",
+              padding: "12px 16px",
               background: "none",
               border: "none",
               cursor: "pointer",
               textAlign: "left",
-              borderBottom: `1px solid
-${D ? "#374151" : "#f3f4f6"}`,
+              borderBottom: `1px solid ${D ? "#374151" : "#f3f4f6"}`,
               transition: "background .1s",
             }}
             onMouseEnter={(e) =>
@@ -333,7 +332,7 @@ export function SubjectSelectionScreen({
           <div
             style={{
               background: "linear-gradient(135deg,#6366f1,#8b5cf6)",
-              padding: "32px 32px24px",
+              padding: "32px 32px 24px",
             }}
           >
             <div style={{ fontSize: 36, marginBottom: 10 }}> </div>
@@ -371,10 +370,10 @@ export function SubjectSelectionScreen({
               <div
                 style={{
                   marginBottom: 20,
-                  padding: "12px16px",
+                  padding: "12px 16px",
                   borderRadius: 12,
                   background: D ? "rgba(15,118,110,.12)" : "#f0fdfa",
-                  border: "1.5px solid#0f766e",
+                  border: "1.5px solid #0f766e",
                   display: "flex",
                   alignItems: "center",
                   gap: 12,
@@ -403,7 +402,7 @@ export function SubjectSelectionScreen({
                     fontWeight: 700,
                     background: "#0f766e",
                     color: "#fff",
-                    padding: "3px10px",
+                    padding: "3px 10px",
                     borderRadius: 20,
                   }}
                 >
@@ -449,7 +448,7 @@ export function SubjectSelectionScreen({
                             display: "flex",
                             alignItems: "center",
                             gap: 10,
-                            padding: "10px14px",
+                            padding: "10px 14px",
                             borderRadius: 12,
                             border: `2px solid ${on ? s.accent : bd2}`,
                             background: on ? s.accent + "18" : "transparent",
@@ -504,8 +503,7 @@ export function SubjectSelectionScreen({
           <div
             style={{
               padding: "20px 28px",
-              borderTop: `1px solid
-${bd2}`,
+              borderTop: `1px solid ${bd2}`,
               background: D ? "#0f1117" : "#f9fafb",
             }}
           >
@@ -541,8 +539,7 @@ ${bd2}`,
                       fontSize: 13,
                       color: D ? "#8896b3" : "#9ca3af",
                       background: "none",
-                      border: `1px solid
-${bd2}`,
+                      border: `1px solid ${bd2}`,
                       borderRadius: 10,
                       padding: "10px 18px",
                       cursor: "pointer",
@@ -599,7 +596,7 @@ ${bd2}`,
         <div
           style={{
             background: "linear-gradient(135deg,#6366f1,#8b5cf6)",
-            padding: "28px 32px22px",
+            padding: "28px 32px 22px",
           }}
         >
           <button
@@ -634,7 +631,7 @@ ${bd2}`,
         </div>
         <div
           style={{
-            padding: "20px28px",
+            padding: "20px 28px",
             maxHeight: "60vh",
             overflowY: "auto",
             display: "flex",
@@ -645,7 +642,7 @@ ${bd2}`,
           {}
           <div
             style={{
-              padding: "10px14px",
+              padding: "10px 14px",
               borderRadius: 10,
               background: D ? "#1e2537" : "#f3f4f6",
               display: "flex",
@@ -678,8 +675,7 @@ ${bd2}`,
                   fontSize: 12,
                   padding: "4px 12px",
                   borderRadius: 8,
-                  border: `1px solid
-${D ? "#374151" : "#d1d5db"}`,
+                  border: `1px solid ${D ? "#374151" : "#d1d5db"}`,
                   background: "transparent",
                   color: D ? "#e8ecf4" : "#374151",
                   cursor: "pointer",
@@ -699,7 +695,7 @@ ${D ? "#374151" : "#d1d5db"}`,
                   display: "flex",
                   alignItems: "center",
                   gap: 12,
-                  padding: "12px14px",
+                  padding: "12px 14px",
                   borderRadius: 12,
                   border: `1px solid ${bd2}`,
                   background: D ? "#1e2537" : "#f9fafb",
@@ -752,8 +748,7 @@ ${D ? "#374151" : "#d1d5db"}`,
         <div
           style={{
             padding: "20px 28px",
-            borderTop: `1px solid
-${bd2}`,
+            borderTop: `1px solid ${bd2}`,
             background: D ? "#0f1117" : "#f9fafb",
             display: "flex",
             gap: 12,
@@ -769,8 +764,7 @@ ${bd2}`,
                 fontSize: 13,
                 color: D ? "#8896b3" : "#9ca3af",
                 background: "none",
-                border: `1px solid
-${bd2}`,
+                border: `1px solid ${bd2}`,
                 borderRadius: 10,
                 padding: "10px 18px",
                 cursor: "pointer",
@@ -782,7 +776,7 @@ ${bd2}`,
           <button
             onClick={handleComplete}
             style={{
-              padding: "12px32px",
+              padding: "12px 32px",
               borderRadius: 12,
               border: "none",
               background: "#6366f1",
@@ -875,8 +869,7 @@ export function OnboardingWizard({ D, onComplete }) {
                 style={{
                   padding: "10px 18px",
                   borderRadius: 10,
-                  border: `2px solid
-${b === board ? "#6366f1" : "#e5e7eb"}`,
+                  border: `2px solid ${b === board ? "#6366f1" : "#e5e7eb"}`,
                   background: b === board ? "#6366f1" : "transparent",
                   color: b === board ? "#fff" : D ? "#d1d5db" : "#374151",
                   fontWeight: 600,
@@ -895,7 +888,7 @@ ${b === board ? "#6366f1" : "#e5e7eb"}`,
               color: "#fff",
               border: "none",
               borderRadius: 12,
-              padding: "12px32px",
+              padding: "12px 32px",
               fontSize: 15,
               fontWeight: 700,
               cursor: "pointer",
@@ -959,8 +952,7 @@ ${b === board ? "#6366f1" : "#e5e7eb"}`,
               width: "100%",
               padding: "12px 14px",
               borderRadius: 10,
-              border: `1.5px solid
-${D ? "#374151" : "#e5e7eb"}`,
+              border: `1.5px solid ${D ? "#374151" : "#e5e7eb"}`,
               background: D ? "#374151" : "#f9fafb",
               color: D ? "#e8ecf4" : "#111827",
               fontSize: 14,
@@ -975,8 +967,7 @@ ${D ? "#374151" : "#e5e7eb"}`,
                 flex: 1,
                 background: "none",
                 color: "#6b7280",
-                border: `1.5px solid
-${D ? "#374151" : "#e5e7eb"}`,
+                border: `1.5px solid ${D ? "#374151" : "#e5e7eb"}`,
                 borderRadius: 12,
                 padding: "12px",
                 fontSize: 14,

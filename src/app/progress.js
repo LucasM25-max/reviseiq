@@ -31,7 +31,7 @@ export function generateProgressReport(userData) {
   var w = window.open("", "_blank", "width=900,height=700");
   if (!w) return false;
   var html =
-    '<!doctype html><html><head><title>ReviseIQ Progress Report</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#111}h1{margin-bottom:0}table{border-collapse:collapse;width:100%;margin-top:14px}td,th{border:1px solid#ddd;padding:8px;text-align:left}.muted{color:#666}</style></head><body><h1>ReviseIQ Progress Report</h1><p class=\"muted\">Generated ' +
+    '<!doctype html><html><head><title>ReviseIQ Progress Report</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#111}h1{margin-bottom:0}table{border-collapse:collapse;width:100%;margin-top:14px}td,th{border:1px solid #ddd;padding:8px;text-align:left}.muted{color:#666}</style></head><body><h1>ReviseIQ Progress Report</h1><p class=\"muted\">Generated ' +
     new Date().toLocaleString() +
     "</p><table><tr><th>Metric</th><th>Value</th></tr><tr><td>Current streak</td><td>" +
     (userData.streak || 0) +

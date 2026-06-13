@@ -289,7 +289,7 @@ export function ContactScreen({ D, user, isAdmin, onBack }) {
                     setMsg("");
                   }}
                   style={{
-                    padding: "8px20px",
+                    padding: "8px 20px",
                     borderRadius: 8,
                     border: "none",
                     background: "#6366f1",
@@ -375,7 +375,7 @@ export function ContactScreen({ D, user, isAdmin, onBack }) {
                   onClick={handleSend}
                   disabled={sending || !msg.trim()}
                   style={{
-                    padding: "10px24px",
+                    padding: "10px 24px",
                     borderRadius: 8,
                     border: "none",
                     background: !msg.trim() ? "#9ca3af" : "#6366f1",
@@ -469,7 +469,7 @@ export function ContactScreen({ D, user, isAdmin, onBack }) {
                       <div
                         key={ri}
                         style={{
-                          borderLeft: "3px solid#6366f1",
+                          borderLeft: "3px solid #6366f1",
                           paddingLeft: 12,
                           marginBottom: 8,
                           marginLeft: 8,
@@ -558,7 +558,7 @@ export function ContactScreen({ D, user, isAdmin, onBack }) {
                       style={{
                         padding: "0 14px",
                         borderRadius: 8,
-                        border: "1px solid#ef4444",
+                        border: "1px solid #ef4444",
                         background: "none",
                         color: "#ef4444",
                         fontWeight: 600,

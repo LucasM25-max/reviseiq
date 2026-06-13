@@ -159,8 +159,7 @@ export function MobileBottomNav({ screen, onHome, onStudy, onProgress, onTutor, 
         right: 0,
         zIndex: 60,
         background: D ? "#161b27" : "#fff",
-        borderTop: `1px solid
-${D ? "#2a3347" : "#e5e7eb"}`,
+        borderTop: `1px solid ${D ? "#2a3347" : "#e5e7eb"}`,
         display: "flex",
         paddingBottom: "env(safe-area-inset-bottom)",
         boxShadow: "0 -4px 20px rgba(0,0,0,.08)",
@@ -251,7 +250,7 @@ export function ToastContainer() {
           key={t.id}
           className={t.leaving ? "toast-out" : "toast-in"}
           style={{
-            padding: "10px20px",
+            padding: "10px 20px",
             borderRadius: 12,
             fontSize: 13,
             fontWeight: 600,
@@ -262,7 +261,7 @@ export function ToastContainer() {
                 : t.type === "warn"
                   ? "#f59e0b"
                   : "#10b981",
-            boxShadow: "0 4px 20pxrgba(0,0,0,.2)",
+            boxShadow: "0 4px 20px rgba(0,0,0,.2)",
             whiteSpace: "nowrap",
           }}
         >

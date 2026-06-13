@@ -124,7 +124,7 @@ export function ImageAnnotator({ value, onChange, D }) {
             style={{
               ...B(tool === t.id ? "#6366f1" : "transparent", tool !== t.id, {
                 fontSize: 13,
-                padding: "4px10px",
+                padding: "4px 10px",
                 borderColor: D ? "#374151" : "#d1d5db",
                 color: tool === t.id ? "#fff" : tx(D),
               }),
@@ -145,7 +145,7 @@ export function ImageAnnotator({ value, onChange, D }) {
                 borderRadius: "50%",
                 background: c,
                 border:
-                  color === c ? "2px solid#6366f1" : "2px solid transparent",
+                  color === c ? "2px solid #6366f1" : "2px solid transparent",
                 cursor: "pointer",
                 flexShrink: 0,
                 outline: "none",
@@ -169,8 +169,7 @@ export function ImageAnnotator({ value, onChange, D }) {
           cursor: tool === "arrow" && arrowStart ? "crosshair" : "cell",
           borderRadius: 8,
           overflow: "hidden",
-          border: `1.5px solid
-${D ? "#374151" : "#d1d5db"}`,
+          border: `1.5px solid ${D ? "#374151" : "#d1d5db"}`,
         }}
         onClick={handleContainerClick}
         onMouseMove={handleMouseMove}
@@ -294,12 +293,12 @@ ${D ? "#374151" : "#d1d5db"}`,
                           ? "#111"
                           : "#fff",
                       borderRadius: 4,
-                      padding: "3px8px",
+                      padding: "3px 8px",
                       fontSize: 11,
                       fontWeight: 700,
                       whiteSpace: "nowrap",
                       cursor: "pointer",
-                      boxShadow: "0 1px 4pxrgba(0,0,0,.4)",
+                      boxShadow: "0 1px 4px rgba(0,0,0,.4)",
                     }}
                   >
                     {a.text || "…"}
@@ -548,7 +547,7 @@ export function AnnotatedImage({ img, D }) {
                 fontSize: 11,
                 fontWeight: 700,
                 whiteSpace: "nowrap",
-                boxShadow: "0 1px4px rgba(0,0,0,.4)",
+                boxShadow: "0 1px 4px rgba(0,0,0,.4)",
               }}
             >
               {a.text}

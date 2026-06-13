@@ -117,7 +117,7 @@ export function ExamCoachScreen({
     tx2 = D ? "#e8ecf4" : "#111827",
     mu2 = D ? "#9ca3af" : "#6b7280";
   const C2 = D
-    ? { background: "#161b27", border: "1px solid#2a3347", borderRadius: 14 }
+    ? { background: "#161b27", border: "1px solid #2a3347", borderRadius: 14 }
     : { background: "#fff", border: "1px solid #e5e7eb", borderRadius: 14 };
   const [selSubj, setSelSubj] = React.useState(subjects[0]?.id || "");
   const [selCW, setSelCW] = React.useState(COMMAND_WORDS[0].word);
@@ -432,7 +432,7 @@ export function ExamCoachScreen({
           {}
           <div
             style={{
-              padding: "12px14px",
+              padding: "12px 14px",
               borderRadius: 10,
               background: D ? "#1a1a2e" : "#eef2ff",
               border: "1px solid" + (D ? "#312e81" : "#c7d2fe"),
@@ -464,7 +464,7 @@ export function ExamCoachScreen({
             onClick={generateQuestion}
             disabled={loadingQ}
             style={{
-              padding: "10px22px",
+              padding: "10px 22px",
               borderRadius: 10,
               border: "none",
               background: loadingQ ? "#a5b4fc" : "#6366f1",
@@ -550,7 +550,7 @@ export function ExamCoachScreen({
                           style={{
                             width: "100%",
                             minHeight: 72,
-                            padding: "10px12px",
+                            padding: "10px 12px",
                             borderRadius: 8,
                             border: "1px solid" + (D ? "#374151" : "#d1d5db"),
                             background: D ? "#1e2537" : "#f9fafb",
@@ -575,7 +575,7 @@ export function ExamCoachScreen({
                     onClick={submitAnswer}
                     disabled={submitting}
                     style={{
-                      padding: "10px22px",
+                      padding: "10px 22px",
                       borderRadius: 10,
                       border: "none",
                       background: submitting ? "#a5b4fc" : "#6366f1",
@@ -593,7 +593,7 @@ export function ExamCoachScreen({
                     style={{
                       padding: "10px 16px",
                       borderRadius: 10,
-                      border: "1pxsolid" + (D ? "#374151" : "#d1d5db"),
+                      border: "1px solid" + (D ? "#374151" : "#d1d5db"),
                       background: "transparent",
                       color: mu2,
                       fontSize: 13,
@@ -613,7 +613,7 @@ export function ExamCoachScreen({
                     alignItems: "center",
                     gap: 12,
                     marginBottom: 20,
-                    padding: "14px18px",
+                    padding: "14px 18px",
                     borderRadius: 12,
                     background: D ? "#161b27" : "#f8fafc",
                     border: "1.5px solid " + bandColor,
@@ -666,7 +666,7 @@ export function ExamCoachScreen({
                 >
                   <div
                     style={{
-                      padding: "12px14px",
+                      padding: "12px 14px",
                       borderRadius: 10,
                       background: D ? "#052e16" : "#f0fdf4",
                       border: "1px solid" + (D ? "#166534" : "#bbf7d0"),
@@ -700,7 +700,7 @@ export function ExamCoachScreen({
                   </div>
                   <div
                     style={{
-                      padding: "12px14px",
+                      padding: "12px 14px",
                       borderRadius: 10,
                       background: D ? "#431407" : "#fff7ed",
                       border: "1px solid" + (D ? "#9a3412" : "#fed7aa"),
@@ -736,7 +736,7 @@ export function ExamCoachScreen({
 
                 <div
                   style={{
-                    padding: "12px14px",
+                    padding: "12px 14px",
                     borderRadius: 10,
                     background: D ? "#1a1a2e" : "#eef2ff",
                     border: "1px solid" + (D ? "#312e81" : "#c7d2fe"),
@@ -766,7 +766,7 @@ export function ExamCoachScreen({
                 </div>
                 <div
                   style={{
-                    padding: "10px14px",
+                    padding: "10px 14px",
                     borderRadius: 10,
                     background: D ? "#0f172a" : "#f8fafc",
                     border: "1px solid" + (D ? "#1e293b" : "#e2e8f0"),
@@ -788,7 +788,7 @@ export function ExamCoachScreen({
                     onClick={generateQuestion}
                     disabled={loadingQ}
                     style={{
-                      padding: "10px18px",
+                      padding: "10px 18px",
                       borderRadius: 10,
                       border: "none",
                       background: "#6366f1",
@@ -805,7 +805,7 @@ export function ExamCoachScreen({
                     style={{
                       padding: "10px 16px",
                       borderRadius: 10,
-                      border: "1pxsolid" + (D ? "#374151" : "#d1d5db"),
+                      border: "1px solid" + (D ? "#374151" : "#d1d5db"),
                       background: "transparent",
                       color: mu2,
                       fontSize: 13,
