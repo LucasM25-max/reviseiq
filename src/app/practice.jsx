@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { computeNextBestActions } from "../learningEngine.js";
+import { computeNextBestActions } from "./learningEngine.js";
 import { B, C, mu, tx } from "./ui.jsx";
 
 export function TodayWidget({

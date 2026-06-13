@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { computeDerivedSocraticLevel } from "../learningEngine.js";
+import { computeDerivedSocraticLevel } from "./learningEngine.js";
 import { TUTOR_MODELS, _aiRequest, buildTutorSystemPrompt, incTutorUsage, pickTutorModel } from "./aiService.js";
 import { MD } from "./richText.jsx";
 import { mergeTopics } from "./social.jsx";

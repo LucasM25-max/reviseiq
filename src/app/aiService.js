@@ -1,4 +1,4 @@
-import { buildAISessionPrompt, applyAISession } from "../learningEngine.js";
+import { buildAISessionPrompt, applyAISession } from "./learningEngine.js";
 import { B, C } from "./ui.jsx";
 
 export var _GROQ_KEY_ALIAS = [];

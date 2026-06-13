@@ -1,7 +1,7 @@
 import "../../src/storage.js";
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar } from "recharts";
-import { buildTodaySessionPlan, getPedagogicalContext, selectCommandWordQuestions } from "../learningEngine.js";
+import { buildTodaySessionPlan, getPedagogicalContext, selectCommandWordQuestions } from "./learningEngine.js";
 import { ImportModal, ManageAccountsModal } from "./accountModals.jsx";
 import { _aiWithRetry, _parseAIJson, aiServiceReflectionSummarizer, buildAIPersonalisedSession, callAI, getAccDisplayName, getAccHash } from "./aiService.js";
 import { AnnotatedImage } from "./annotation.jsx";
