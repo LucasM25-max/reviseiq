@@ -226,38 +226,7 @@ export function generateWeeklyPlan(
   return plan;
 }
 
-export function generateSessionOptions(user, subjectId, allSections, stats, fcHist) {
-  var secs = allSections.filter((s) => s.subjectId === subjectId);
-  var due = secs.find((s) =>
-    (s.flashcards || []).some((c) => isCardDue(fcHist, c.id)),
-  );
-  var weakId = Object.entries(stats?.weakQ || {}).sort(
-    (a, b) => (b[1]?.wrong || 0) - (a[1]?.wrong || 0),
-  )[0]?.[0];
-  var weak = secs.find((s) => s.id === weakId) || secs[0];
-  return [
-    {
-      title: "Due Card Sprint",
-      description: "Clear due flashcards in " + (due?.title || "this topic"),
-      action: { type: "flashcards", sectionId: due?.id },
-    },
-    {
-      title: "Weak Spot Drill",
-      description: "Target weaker questions in " + (weak?.title || "your topic"),
-      action: { type: "questions", sectionId: weak?.id },
-    },
-    {
-      title: "Mixed Focus",
-      description: "Blend flashcards + exam questions",
-      action: { type: "target" },
-    },
-    {
-      title: "Interleaved Session",
-      description: "Round-robin mixed topics for stronger transfer",
-      action: { type: "interleaved", subjectId: subjectId },
-    },
-  ];
-}
+
 
 export function getVariantStorageKey(user, cardId) {
   return (
@@ -346,60 +315,4 @@ export function maybeUseVariantText(user, card, reviewCount, stability) {
   return variants[0]?.text || null;
 }
 
-export function generateInterleavedSession(subjectId, allSections) {
-  var secs = (allSections || []).filter(function (s) {
-    return s.subjectId === subjectId;
-  });
-  var byTopic = {};
-  secs.forEach(function (sec) {
-    var t = sec.topicId || sec.id;
-    if (!byTopic[t]) byTopic[t] = [];
-    (sec.flashcards || []).forEach(function (c) {
-      byTopic[t].push({
-        kind: "flashcard",
-        sectionId: sec.id,
-        topicId: t,
-        item: c,
-      });
-    });
 
-    (sec.questions || []).forEach(function (q) {
-      byTopic[t].push({
-        kind: "question",
-        sectionId: sec.id,
-        topicId: t,
-        item: q,
-      });
-    });
-  });
-  var topicIds = Object.keys(byTopic)
-    .filter(function (t) {
-      return byTopic[t].length > 0;
-    })
-    .slice(0, 8);
-  if (topicIds.length < 3) return [];
-  var idx = 0;
-  var out = [];
-  var lastTopic = null;
-  var guard = 0;
-  while (guard < 2000) {
-    guard++;
-    var nonEmpty = topicIds.filter(function (t) {
-      return byTopic[t] && byTopic[t].length;
-    });
-    if (!nonEmpty.length) break;
-    var pick = nonEmpty[idx % nonEmpty.length];
-    idx++;
-    if (pick === lastTopic && nonEmpty.length > 1) {
-      pick =
-        nonEmpty.find(function (t) {
-          return t !== lastTopic;
-        }) || pick;
-    }
-    var next = (byTopic[pick] || []).shift();
-    if (!next) continue;
-    out.push(next);
-    lastTopic = pick;
-  }
-  return out;
-}

@@ -619,7 +619,7 @@ student has shared this file with you]`,
       <div
         style={{
           borderBottom: `1px solid ${bd2}`,
-          background: D ? "#0d1117" : "#fff",
+          background: D ? "rgba(17,18,32,.72)" : "rgba(255,255,255,.78)",
           padding: "10px 16px",
           flexShrink: 0,
         }}
@@ -650,11 +650,11 @@ student has shared this file with you]`,
             <h2
               style={{ fontSize: 16, fontWeight: 700, color: tx(D), flex: 1 }}
             >
-              ReviseIQ AI Tutor
+              {mode === "homework" ? "Homework Help" : "Sage"}
             </h2>
             <div style={{ display: "flex", gap: 6 }}>
               {[
-                ["tutor", "Tutor"],
+                ["tutor", "Sage"],
                 ["homework", "Homework Help"],
               ].map(([m, lbl]) => (
                 <button
@@ -862,7 +862,7 @@ student has shared this file with you]`,
                 color: tx(D),
               }}
             >
-              ReviseIQ AI Tutor
+              {mode === "homework" ? "Homework Help" : "Sage"}
             </p>
             <p style={{ fontSize: 13, marginBottom: 10, lineHeight: 1.6 }}>
               {mode === "tutor"
@@ -911,7 +911,7 @@ student has shared this file with you]`,
                       width: 30,
                       height: 30,
                       borderRadius: "50%",
-                      background: "#7c3aed",
+                      background: "linear-gradient(135deg,#5b54f0,#8b5cf6 55%,#d946ef)",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -930,7 +930,7 @@ student has shared this file with you]`,
                     borderRadius: isU
                       ? "16px 16px 4px 16px"
                       : "16px 16px 16px 4px",
-                    background: isU ? "#7c3aed" : D ? "#191a2b" : "#f3f4f6",
+                    background: isU ? "#7c3aed" : D ? "rgba(255,255,255,.05)" : "rgba(124,58,237,.07)",
                     color: isU ? "#fff" : tx(D),
                     fontSize: 13,
                     lineHeight: 1.7,
@@ -1050,7 +1050,7 @@ student has shared this file with you]`,
                           padding: "3px 10px",
                           borderRadius: 14,
                           border: "1px solid" + (D ? "#374151" : "#d1d5db"),
-                          background: D ? "#191a2b" : "#fff",
+                          background: D ? "rgba(255,255,255,.05)" : "#fff",
                           color: mu(D),
                           cursor: "pointer",
                         }}
@@ -1073,7 +1073,7 @@ student has shared this file with you]`,
                 width: 30,
                 height: 30,
                 borderRadius: "50%",
-                background: "#7c3aed",
+                background: "linear-gradient(135deg,#5b54f0,#8b5cf6 55%,#d946ef)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -1088,7 +1088,7 @@ student has shared this file with you]`,
               style={{
                 padding: "10px 14px",
                 borderRadius: "16px 16px 16px 4px",
-                background: D ? "#191a2b" : "#f3f4f6",
+                background: D ? "rgba(255,255,255,.05)" : "rgba(124,58,237,.07)",
                 fontSize: 13,
                 color: mu(D),
               }}
@@ -1103,7 +1103,7 @@ student has shared this file with you]`,
       <div
         style={{
           borderTop: `1px solid ${bd2}`,
-          background: D ? "#0d1117" : "#fff",
+          background: D ? "rgba(17,18,32,.72)" : "rgba(255,255,255,.78)",
           padding: "10px 16px",
           flexShrink: 0,
         }}
@@ -1129,7 +1129,7 @@ student has shared this file with you]`,
                     gap: 5,
                     padding: "4px 8px",
                     borderRadius: 8,
-                    background: D ? "#191a2b" : "#f3f4f6",
+                    background: D ? "rgba(255,255,255,.05)" : "rgba(124,58,237,.07)",
                     border: `1px solid ${bd2}`,
                     maxWidth: 160,
                   }}
