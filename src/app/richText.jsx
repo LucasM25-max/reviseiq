@@ -339,44 +339,27 @@ export function MD({ text, D }) {
     tbl.length = 0;
   };
   const pb = (s) => {
-    if (!mathReady) return;
-    s.split(/(\*\*[^*]+\*\*|\*[^*\n]+\*)/).map((p, i) => {
-      if (p.startsWith("**") && p.endsWith("**")) return;
-      <strong key={i}>{p.slice(2, -2)}</strong>;
-      if (
-        p.startsWith("*") &&
-        p.endsWith("*") &&
-        !p.startsWith("**") &&
-        p.length > 2
-      )
-        return <em key={i}>{p.slice(1, -1)}</em>;
-      return p;
-    });
+    if (!mathReady) return s;
+    const renderInline = (seg, keyPrefix) =>
+      seg.split(/(\*\*[^*]+\*\*|\*[^*\n]+\*)/).map((p, i) => {
+        if (!p) return null;
+        if (p.startsWith("**") && p.endsWith("**") && p.length > 4)
+          return <strong key={keyPrefix + "-" + i}>{p.slice(2, -2)}</strong>;
+        if (
+          p.startsWith("*") &&
+          p.endsWith("*") &&
+          !p.startsWith("**") &&
+          p.length > 2
+        )
+          return <em key={keyPrefix + "-" + i}>{p.slice(1, -1)}</em>;
+        return p;
+      });
     const latexParsed = parseLatex(s, mathReady);
-    if (typeof latexParsed === "string") {
-      return latexParsed.split(/(\*\*[^*]+\*\*)/).map((p, i) =>
-        p.startsWith("**") && p.endsWith("**") ? (
-          <strong key={i} style={{ color: D ? "#fff" : "#111827" }}>
-            {p.slice(2, -2)}
-          </strong>
-        ) : (
-          p
-        ),
-      );
-    }
+    if (typeof latexParsed === "string") return renderInline(latexParsed, "i");
     if (!Array.isArray(latexParsed)) return latexParsed;
-    return latexParsed.flatMap((seg, si) => {
-      if (typeof seg !== "string") return [seg];
-      return seg.split(/(\*\*[^*]+\*\*)/).map((p, i) =>
-        p.startsWith("**") && p.endsWith("**") ? (
-          <strong key={`${si}-${i}`} style={{ color: D ? "#fff" : "#111827" }}>
-            {p.slice(2, -2)}
-          </strong>
-        ) : (
-          p
-        ),
-      );
-    });
+    return latexParsed.flatMap((seg, si) =>
+      typeof seg === "string" ? renderInline(seg, "s" + si) : [seg],
+    );
   };
   lines.forEach((l, i) => {
     if (l.startsWith("|")) {

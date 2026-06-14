@@ -61,7 +61,7 @@ export async function _aiRequest(systemPrompt, messages, maxTokens, model) {
     var cm = messages[ci];
     if (cm._d && cm._d.files && Array.isArray(cm._d.files)) {
       for (var fi2 = 0; fi2 < cm._d.files.length; fi2++) {
-        if (cm._d.files[fi2].isImage) hasImages = true;
+        if (cm._d.files[fi2].isImage || (cm._d.files[fi2].isPdf && cm._d.files[fi2].data)) hasImages = true;
       }
     }
   }
@@ -91,12 +91,10 @@ export async function _aiRequest(systemPrompt, messages, maxTokens, model) {
           fileParts.push(
             "[Uploaded text file:" + f.name + "]\n" + f.textContent,
           );
-        else if (f.isPdf)
-          fileParts.push(
-            "[Uploaded PDF: " +
-              f.name +
-              " — please analyse the contentdescribed by the student]",
-          );
+        else if (f.isPdf) {
+          if (!f.data)
+            fileParts.push("[Uploaded PDF: " + f.name + " — content unavailable]");
+        }
         else if (f.isImage) {
         } else if (f.unsupported) {
           fileParts.push("[Uploaded file: " + f.name + "]");
@@ -113,7 +111,7 @@ export async function _aiRequest(systemPrompt, messages, maxTokens, model) {
         m._d &&
         m._d.files &&
         m._d.files.some(function (f) {
-          return f.isImage;
+          return f.isImage || (f.isPdf && f.data);
         })
       )
     )
@@ -124,7 +122,7 @@ export async function _aiRequest(systemPrompt, messages, maxTokens, model) {
       m._d &&
       m._d.files &&
       m._d.files.some(function (f) {
-        return f.isImage;
+        return f.isImage || (f.isPdf && f.data);
       })
     ) {
       var contentArr = [];
@@ -135,6 +133,11 @@ export async function _aiRequest(systemPrompt, messages, maxTokens, model) {
           contentArr.push({
             type: "image_url",
             image_url: { url: "data:" + imgF.type + ";base64," + imgF.data },
+          });
+        } else if (imgF.isPdf && imgF.data) {
+          contentArr.push({
+            type: "image_url",
+            image_url: { url: "data:application/pdf;base64," + imgF.data },
           });
         }
       }
