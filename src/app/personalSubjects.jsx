@@ -248,10 +248,10 @@ export function AppFooter({ D, onContact }) {
           {" · "}Built with the help of{" "}
           <span style={{ color: "#f97316" }}>Claude</span>
           {", AI powered by "}
-          <span style={{ color: "#10a37f" }}>Llama via Groq</span>
+          <span style={{ color: "#10a37f" }}>Google Gemini</span>
           {" · "}
           <span style={{ fontSize: 11 }}>
-            Not affiliated with Anthropic or Groq.
+            Not affiliated with Google or Anthropic.
           </span>
         </div>
         <button

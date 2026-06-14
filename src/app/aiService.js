@@ -3,15 +3,21 @@ import { B, C } from "./ui.jsx";
 
 export var _GROQ_KEY_ALIAS = [];
 
-export const TUTOR_MODELS = [
-  { model: "llama-3.3-70b-versatile", label: "Llama 3.3 70B", dailyLimit: 999 },
-];
+// Gemini model routing. All AI runs on Google Gemini via the /api/ai (text)
+// and /api/image (image generation) serverless proxies. Models per task:
+//   gemini-pro-latest        -> deep reasoning: AI Tutor, exam marking
+//   gemini-flash-latest      -> balanced: question / notes / flashcard generation
+//   gemini-flash-lite-latest -> fast and cheap: planning, short summaries
+//   gemini-2.5-flash-image   -> image generation (AI Tutor visuals)
+export const GEMINI_PRO = "gemini-pro-latest";
+export const GEMINI_FLASH = "gemini-flash-latest";
+export const GEMINI_FLASH_LITE = "gemini-flash-lite-latest";
+export const GEMINI_IMAGE = "gemini-2.5-flash-image";
 
-export var _GROQ_MODELS = [
-  "llama-3.3-70b-versatile",
-  "llama-3.1-8b-instant",
-  "gemma2-9b-it",
-  "mixtral-8x7b-32768",
+export var _GEMINI_MODELS = [GEMINI_FLASH, GEMINI_FLASH_LITE];
+
+export const TUTOR_MODELS = [
+  { model: GEMINI_PRO, label: "Gemini Pro", dailyLimit: 999 },
 ];
 
 export const tutorUsageKey = function (u) {
@@ -45,7 +51,7 @@ export async function pickTutorModel(u) {
   return TUTOR_MODELS[0];
 }
 
-export async function _aiRequest(systemPrompt, messages, maxTokens) {
+export async function _aiRequest(systemPrompt, messages, maxTokens, model) {
   var tokLimit = maxTokens && maxTokens > 0 ? maxTokens : 1500;
   var msgs = [];
   if (systemPrompt) msgs.push({ role: "system", content: systemPrompt });
@@ -152,13 +158,14 @@ export async function _aiRequest(systemPrompt, messages, maxTokens) {
     msgs.push({ role: "user", content: "Hello" });
   }
 
-  var modelList = hasImages
-    ? [
-        "meta-llama/llama-4-scout-17b-16e-instruct",
-        "llama-3.2-11b-vision-preview",
-        "llama-3.2-90b-vision-preview",
-      ].concat(_GROQ_MODELS)
-    : _GROQ_MODELS;
+  // Every Gemini model is multimodal, so image inputs need no special model.
+  // Use the requested model first, then fall back through the tiers.
+  var primary = model || (hasImages ? GEMINI_PRO : GEMINI_FLASH);
+  var modelList = [primary].concat(
+    [GEMINI_PRO, GEMINI_FLASH, GEMINI_FLASH_LITE].filter(function (m) {
+      return m !== primary;
+    }),
+  );
   var lastErr = new Error("AI unavailable.");
   for (var mi = 0; mi < modelList.length; mi++) {
     try {
@@ -214,16 +221,17 @@ export async function _aiRequest(systemPrompt, messages, maxTokens) {
   throw lastErr;
 }
 
-export async function callAI(prompt, maxTokens) {
+export async function callAI(prompt, maxTokens, model) {
   return _aiRequest(
     null,
     [{ role: "user", content: prompt }],
     maxTokens || 1500,
+    model,
   );
 }
 
-export async function callAIChat(systemPrompt, messages, maxTokens) {
-  return _aiRequest(systemPrompt || null, messages, maxTokens || 1500);
+export async function callAIChat(systemPrompt, messages, maxTokens, model) {
+  return _aiRequest(systemPrompt || null, messages, maxTokens || 1500, model);
 }
 
 export var callGeminiSimple = callAI;
@@ -231,6 +239,21 @@ export var callGeminiSimple = callAI;
 export var callGeminiChat = function (_ignored, systemPrompt, messages) {
   return callAIChat(systemPrompt, messages);
 };
+
+// Generate an educational illustration with gemini-2.5-flash-image.
+// Returns a data: URL string, or null if generation is unavailable.
+export async function generateTutorImage(prompt) {
+  try {
+    var resp = await fetch("/api/image", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model: GEMINI_IMAGE, prompt: prompt }),
+    });
+    var dat = await resp.json();
+    if (dat && dat.image) return dat.image;
+  } catch (e) {}
+  return null;
+}
 
 export function _aiClamp(v, lo, hi) {
   return Math.max(lo, Math.min(hi, Number(v) || 0));
@@ -324,7 +347,7 @@ export async function buildAIPersonalisedSession(
   if (!ctx || !ctx.hasEnoughData) return fallbackPlan;
   const prompt = buildAISessionPrompt(ctx, allSections, stats, fcHist);
   try {
-    const raw = await callAI(prompt, 800);
+    const raw = await callAI(prompt, 800, GEMINI_FLASH_LITE);
     const parsed = _parseAIJson(raw);
     return applyAISession(parsed, fallbackPlan);
   } catch (_) {
@@ -497,7 +520,7 @@ export async function aiServiceFeedbackRubric(q, studentAnswer) {
     "\n}";
   return _aiWithRetry(
     async function () {
-      var raw = await callAI(prompt, 1400);
+      var raw = await callAI(prompt, 1400, GEMINI_PRO);
       var parsed = _parseAIJson(raw);
       var validated = _validateRubric(parsed, q);
       if (!validated) throw new Error("Rubric validation failed");
@@ -584,7 +607,7 @@ export async function aiServiceMisconceptionExtractor(notesText, blurtText) {
     '"partial":["specific point"],"feedback":"...","misconceptions":["wrong claim"]}';
   return _aiWithRetry(
     async function () {
-      var raw = await callAI(prompt, 1300);
+      var raw = await callAI(prompt, 1300, GEMINI_FLASH);
       var parsed = _parseAIJson(raw);
       var validated = _validateBlurt(parsed);
       if (!validated) throw new Error("Blurt validation failed");
@@ -708,7 +731,7 @@ export async function aiServiceQuestionGenerator(
     '"options":["A...","B...","C...","D..."],"answer":0,"explanation":"..."}]';
   return _aiWithRetry(
     async function () {
-      var raw = await callAI(prompt, 5000);
+      var raw = await callAI(prompt, 5000, GEMINI_FLASH);
       var parsed = _parseAIJson(raw);
       if (!Array.isArray(parsed) || !parsed.length)
         throw new Error("No questions returned");
@@ -765,7 +788,7 @@ export async function aiServiceReflectionSummarizer(reflections, subjectName) {
     '"encouragement":"1 warm sentence"}';
   return _aiWithRetry(
     async function () {
-      var raw = await callAI(prompt, 450);
+      var raw = await callAI(prompt, 450, GEMINI_FLASH_LITE);
       var parsed = _parseAIJson(raw);
       if (!parsed || !parsed.summary)
         throw new Error("Invalid reflection output");
@@ -799,7 +822,7 @@ export function buildTutorSystemPrompt(
 ) {
   var lvl = typeof socraticLevel === "number" ? socraticLevel : 2;
   var imgInstr =
-    "When a diagram, chart or visual would GENUINELY help comprehension,include [IMG: descriptive search term]. Educational visuals only — not decorative.";
+    "IMAGES: When a labelled diagram or visual would genuinely aid understanding (for example a biological structure, a physics setup, or a graph), include a marker on its own line in the form [IMG: a detailed description of the educational image to generate]. An image will be generated from that description and shown to the student. Use it only when a visual materially helps comprehension - never decoratively - and at most one or two per reply.";
   var pedagogyBlock;
   if (mode === "homework") {
     pedagogyBlock =

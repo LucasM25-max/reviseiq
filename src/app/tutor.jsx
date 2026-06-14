@@ -1,76 +1,72 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { computeDerivedSocraticLevel } from "./learningEngine.js";
-import { TUTOR_MODELS, _aiRequest, buildTutorSystemPrompt, incTutorUsage, pickTutorModel } from "./aiService.js";
+import { TUTOR_MODELS, GEMINI_PRO, _aiRequest, buildTutorSystemPrompt, generateTutorImage, incTutorUsage, pickTutorModel } from "./aiService.js";
 import { MD } from "./richText.jsx";
 import { mergeTopics } from "./social.jsx";
 import { B, I, mu, stripHtml, trackEvent, tx } from "./ui.jsx";
 
 export function TutorImage({ query, D }) {
   const [imgSrc, setImgSrc] = useState(null);
-  const [tried, setTried] = useState(false);
+  const [state, setState] = useState("loading");
   useEffect(() => {
-    const term = query.trim().replace(/\s+/g, "_");
-    fetch(
-      `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(term)}`,
-    )
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.thumbnail?.source) setImgSrc(d.thumbnail.source);
+    let alive = true;
+    setState("loading");
+    setImgSrc(null);
+    generateTutorImage(query)
+      .then(function (src) {
+        if (!alive) return;
+        if (src) {
+          setImgSrc(src);
+          setState("done");
+        } else {
+          setState("error");
+        }
       })
-      .catch(() => {})
-      .finally(() => setTried(true));
+      .catch(function () {
+        if (alive) setState("error");
+      });
+    return function () {
+      alive = false;
+    };
   }, [query]);
-  if (!tried)
+
+  const line = D ? "rgba(255,255,255,.1)" : "rgba(16,24,40,.1)";
+  const wrapSt = {
+    margin: "12px 0",
+    padding: 10,
+    borderRadius: 12,
+    border: "1px solid " + line,
+    background: D ? "rgba(255,255,255,.04)" : "#fff",
+  };
+  const capSt = {
+    marginTop: 6,
+    fontSize: 12,
+    fontStyle: "italic",
+    color: D ? "#9aa3c2" : "#5b6478",
+  };
+  const imgSt = {
+    maxWidth: "100%",
+    maxHeight: 320,
+    borderRadius: 8,
+    display: "block",
+  };
+
+  if (state === "loading")
     return (
-      <div
-        style={{
-          fontSize: 11,
-          color: mu(D),
-          fontStyle: "italic",
-          padding: "4px 0",
-        }}
-      >
-        Loading image: {query}…
+      <div style={wrapSt}>
+        <div style={capSt}>Generating illustration: {query}…</div>
       </div>
     );
-  if (!imgSrc)
+  if (state === "error" || !imgSrc)
     return (
-      <div
-        style={{
-          fontSize: 11,
-          color: mu(D),
-          fontStyle: "italic",
-          padding: "4px 2px",
-          background: D ? "rgba(99,102,241,.08)" : "#f5f3ff",
-          borderRadius: 6,
-          display: "inline-block",
-        }}
-      >
-        {query}
+      <div style={wrapSt}>
+        <div style={capSt}>[Visual: {query}]</div>
       </div>
     );
   return (
-    <div style={{ margin: "8px 0" }}>
-      <img
-        src={imgSrc}
-        alt={query}
-        style={{
-          maxWidth: "100%",
-          maxHeight: 260,
-          borderRadius: 8,
-          display: "block",
-        }}
-      />
-      <div
-        style={{
-          fontSize: 10,
-          color: mu(D),
-          marginTop: 2,
-          fontStyle: "italic",
-        }}
-      >
-        {query} (Wikipedia)
-      </div>
+    <div style={wrapSt}>
+      <img src={imgSrc} alt={query} style={imgSt} />
+      <div style={capSt}>{query} · AI-generated illustration</div>
     </div>
   );
 }
@@ -341,7 +337,7 @@ student has shared this file with you]`,
   };
 
   const tutorCall = async function (modelDef, systemPrompt, hist) {
-    return _aiRequest(systemPrompt || null, hist, 1500);
+    return _aiRequest(systemPrompt || null, hist, 1500, GEMINI_PRO);
   };
 
   const callAILocal = async function (modelDef, systemPrompt, hist) {
