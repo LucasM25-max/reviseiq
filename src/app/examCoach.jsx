@@ -6,13 +6,13 @@ export const COMMAND_WORDS = [
   {
     word: "Explain",
     boards: ["AQA", "Edexcel", "OCR", "WJEC"],
-    tip: "Give clear reasons — use'because', 'therefore', 'this means'. Chain causes to effects. Don't just describe; showcausation.",
+    tip: "Give clear reasons — use 'because', 'therefore', 'this means'. Chain causes to effects. Don't just describe; show causation.",
     scaffold: ["Point", "Reasoning", "Evidence", "Impact"],
   },
   {
     word: "Evaluate",
     boards: ["AQA", "Edexcel", "OCR", "WJEC"],
-    tip: "Weigh up both sides, thencommit to a clear judgement. AQA rewards a final 'Overall…' sentence. Don't just list pros andcons.",
+    tip: "Weigh up both sides, then commit to a clear judgement. AQA rewards a final 'Overall…' sentence. Don't just list pros and cons.",
     scaffold: [
       "Argument for",
       "Counter-argument",
@@ -23,18 +23,18 @@ export const COMMAND_WORDS = [
   {
     word: "Analyse",
     boards: ["AQA", "Edexcel", "OCR", "WJEC"],
-    tip: "Break the topic into componentsand examine each in depth. Explain the significance of each part. Avoid surfacedescription.",
+    tip: "Break the topic into components and examine each in depth. Explain the significance of each part. Avoid surface description.",
     scaffold: [
       "Key component",
       "How it works / why it matters",
       "Evidence",
-      "Widersignificance",
+      "Wider significance",
     ],
   },
   {
     word: "Compare",
     boards: ["AQA", "Edexcel", "OCR", "WJEC"],
-    tip: "Identify specific similaritiesAND differences. Use comparative connectives: 'whereas', 'similarly', 'in contrast'. Link directly— don't write two separate accounts.",
+    tip: "Identify specific similarities AND differences. Use comparative connectives: 'whereas', 'similarly', 'in contrast'. Link directly— don't write two separate accounts.",
     scaffold: [
       "Similarity",
       "Difference",
@@ -45,7 +45,7 @@ export const COMMAND_WORDS = [
   {
     word: "Describe",
     boards: ["AQA", "Edexcel", "OCR", "WJEC"],
-    tip: "Give accurate, detailedfeatures. Use subject-specific vocabulary. A strong description has multiple developed points,not a list.",
+    tip: "Give accurate, detailed features. Use subject-specific vocabulary. A strong description has multiple developed points, not a list.",
     scaffold: ["Feature 1", "Feature 2", "Feature 3", "Supporting detail"],
   },
   {
@@ -56,7 +56,7 @@ export const COMMAND_WORDS = [
       "Claim",
       "Supporting evidence",
       "Limitation / counter",
-      "Reasonedconclusion",
+      "Reasoned conclusion",
     ],
   },
   {
@@ -78,7 +78,7 @@ export const COMMAND_WORDS = [
       "Decision / position",
       "Reason 1 + evidence",
       "Reason 2 + evidence",
-      "Whyalternative is weaker",
+      "Why alternative is weaker",
     ],
   },
   {
@@ -88,7 +88,7 @@ export const COMMAND_WORDS = [
     scaffold: [
       "Aspect 1 — detail",
       "Aspect 2 — detail",
-      "Relationship betweenaspects",
+      "Relationship between aspects",
       "Overall finding",
     ],
   },
@@ -98,7 +98,7 @@ export const COMMAND_WORDS = [
     tip: "Always take a clear position. Structure: agree partially, then qualify. Your extent should be explicit: 'largely', 'to a limited extent', 'primarily because…'",
     scaffold: [
       "Main argument (extent)",
-      "Supportingevidence",
+      "Supporting evidence",
       "Counter-argument",
       "Qualified conclusion stating extent",
     ],
@@ -200,7 +200,7 @@ export function ExamCoachScreen({
           selCW +
           " the key factors that influence [a relevant concept in " +
           (subjDef ? subjDef.name : "this subject") +
-          "]. Use specific evidence to support your answer. [6marks]"
+          "]. Use specific evidence to support your answer. [6 marks]"
         );
       },
     )
@@ -222,7 +222,7 @@ export function ExamCoachScreen({
       })
       .join("\n\n");
     if (!filled.replace(/[:\s]/g, "").trim()) {
-      setErrMsg("Please fill in at least one section beforesubmitting.");
+      setErrMsg("Please fill in at least one section before submitting.");
       return;
     }
     setSubmitting(true);

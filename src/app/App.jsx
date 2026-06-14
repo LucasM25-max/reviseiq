@@ -10,7 +10,7 @@ import { BlurtingScreen } from "./blurtingScreen.jsx";
 import { ClozeCard, QuestionFigure, SequenceCard, generateWhyPrompt } from "./cards.jsx";
 import { ContactScreen } from "./contact.jsx";
 import { CreateModal } from "./createModal.jsx";
-import { ConceptMap, DiagramRenderer, GraphCard, GraphEditor, KnowledgeGraph, LabelledStructure, LearningTimeline, MasteryTreemap, ProcessCard, ProgressiveDiagram, SketchCanvas, SketchnoteCanvas, checkPrerequisites, generateSVGDiagram } from "./diagrams.jsx";
+import { ConceptMap, DiagramRenderer, GraphCard, LabelledStructure, LearningTimeline, MasteryTreemap, ProcessCard, ProgressiveDiagram, SketchCanvas, checkPrerequisites, generateSVGDiagram } from "./diagrams.jsx";
 import { ExamCoachScreen } from "./examCoach.jsx";
 import { FocusMode } from "./focusMode.jsx";
 import { FriendsPanel } from "./friends.jsx";
@@ -3296,33 +3296,7 @@ grade${parseInt(target) - parseInt(predicted) !== 1 ? "s" : ""} to go`}
               </div>
             </div>
           )}
-          {!subj._politics &&
-            (admin ? (
-              <GraphEditor
-                D={D}
-                user={user}
-                subjectId={subj.id}
-                masteryMap={{}}
-                onSelectNode={function () {}}
-                onGoToPrereq={function (from, to) {
-                  setPrereqModal({ from, to, si: subIdx, ti: topIdx || 0 });
-                }}
-              />
-            ) : (
-              <KnowledgeGraph
-                D={D}
-                user={user}
-                subjectId={subj.id}
-                masteryMap={{}}
-                onSelectNode={function () {}}
-                onGoToPrereq={function (from, to) {
-                  setPrereqModal({ from, to, si: subIdx, ti: topIdx || 0 });
-                }}
-              />
-            ))}
-          {!subj._politics && (
-            <SketchnoteCanvas D={D} user={user} subjectId={subj.id} />
-          )}
+          
           {subjTab === "sections" &&
             (() => {
               const allSecsDue = curTopics

@@ -506,7 +506,7 @@ student has shared this file with you]`,
     var promptText =
       "Generate 3 rapid-fire GCSE " +
       selBoard +
-      ' exam-style questions on"' +
+      ' exam-style questions on "' +
       topic +
       '". ' +
       (ctx.hasContent
@@ -514,8 +514,8 @@ student has shared this file with you]`,
           ctx.notes.slice(0, 800) +
           " " +
           ctx.fcs.slice(0, 400)
-        : " Usegeneral GCSE knowledge.") +
-      " Format: 1. [Q] (Answer: [A]) 2. [Q] (Answer: [A]) 3. [Q] (Answer: [A]) Mix question types.Max 25 words each.";
+        : " Use general GCSE knowledge.") +
+      " Format: 1. [Q] (Answer: [A]) 2. [Q] (Answer: [A]) 3. [Q] (Answer: [A]) Mix question types. Max 25 words each.";
     var userMsg = {
       role: "user",
       content: "Quiz me on this topic!",
