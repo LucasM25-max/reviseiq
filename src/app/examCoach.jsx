@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { _aiWithRetry, aiServiceFeedbackRubric, callAI } from "./aiService.js";
-import { stripHtml } from "./ui.jsx";
+import { C, mu, stripHtml, tx } from "./ui.jsx";
 
 export const COMMAND_WORDS = [
   {
@@ -113,12 +113,14 @@ export function ExamCoachScreen({
   boardData,
   onBack,
 }) {
-  const bg = D ? "#0a0a14" : "#f9fafb",
-    tx2 = D ? "#e8ecf4" : "#111827",
-    mu2 = D ? "#9ca3af" : "#6b7280";
-  const C2 = D
-    ? { background: "#13131f", border: "1px solid #262844", borderRadius: 14 }
-    : { background: "#fff", border: "1px solid #e5e7eb", borderRadius: 14 };
+  // Lumen design system: glass cards + aurora background, shared with the rest
+  // of the app via ui.jsx so the Coach matches the redesigned surfaces.
+  const bg = D
+    ? "radial-gradient(1200px 600px at 50% -12%, rgba(99,102,241,.16), transparent), #0a0a14"
+    : "radial-gradient(1200px 600px at 50% -12%, rgba(99,102,241,.08), transparent), #f7f8fc",
+    tx2 = tx(D),
+    mu2 = mu(D);
+  const C2 = C(D);
   const [selSubj, setSelSubj] = React.useState(subjects[0]?.id || "");
   const [selCW, setSelCW] = React.useState(COMMAND_WORDS[0].word);
   const [phase, setPhase] = React.useState("setup");

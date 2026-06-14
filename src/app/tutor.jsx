@@ -3,7 +3,7 @@ import { computeDerivedSocraticLevel } from "./learningEngine.js";
 import { TUTOR_MODELS, GEMINI_PRO, _aiRequest, buildTutorSystemPrompt, generateTutorImage, incTutorUsage, pickTutorModel } from "./aiService.js";
 import { MD } from "./richText.jsx";
 import { mergeTopics } from "./social.jsx";
-import { B, I, mu, stripHtml, trackEvent, tx } from "./ui.jsx";
+import { B, ErrorBoundary, I, mu, stripHtml, trackEvent, tx } from "./ui.jsx";
 
 export function TutorImage({ query, D }) {
   const [imgSrc, setImgSrc] = useState(null);
@@ -982,7 +982,7 @@ student has shared this file with you]`,
                   {isU ? (
                     <p style={{ margin: 0 }}>{(m._d && m._d.text) || ""}</p>
                   ) : (
-                    parseTutorContent((m._d && m._d.text) || m.content || "", D)
+                    <ErrorBoundary D={D} resetKey={(m._d && m._d.text) || m.content || ""} label="This response couldn’t be displayed — try asking again.">{parseTutorContent((m._d && m._d.text) || m.content || "", D)}</ErrorBoundary>
                   )}
                   {!isU && stag && (
                     <div

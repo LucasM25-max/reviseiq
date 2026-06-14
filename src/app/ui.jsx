@@ -276,3 +276,50 @@ export function ToastContainer() {
     </div>
   );
 }
+
+
+// Contains render-time crashes (e.g. malformed AI markdown / LaTeX) so a single
+// bad element can never white-screen the whole app. Resets when resetKey changes.
+export class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { err: null };
+  }
+  static getDerivedStateFromError(err) {
+    return { err: err };
+  }
+  componentDidCatch(err) {
+    try {
+      trackEvent("render_error", { msg: (err && err.message) || "" });
+    } catch (e) {}
+  }
+  componentDidUpdate(prev) {
+    if (prev.resetKey !== this.props.resetKey && this.state.err) {
+      this.setState({ err: null });
+    }
+  }
+  render() {
+    if (this.state.err) {
+      const D = this.props.D;
+      const st = {
+        margin: "8px 0",
+        padding: "12px 14px",
+        borderRadius: 12,
+        fontSize: 13,
+        lineHeight: 1.5,
+        border:
+          "1px solid " +
+          (D ? "rgba(255,180,120,.28)" : "rgba(200,120,40,.28)"),
+        background: D ? "rgba(120,70,20,.18)" : "rgba(255,243,230,.92)",
+        color: D ? "#f3c89a" : "#92400e",
+      };
+      return (
+        <div style={st}>
+          {this.props.label ||
+            "Something went wrong displaying this content."}
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
