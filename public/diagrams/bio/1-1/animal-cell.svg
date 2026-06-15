@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 620 430" font-family="Segoe UI, Arial, sans-serif">
+  <rect width="620" height="430" rx="16" fill="#ffffff"/>
+  <text x="20" y="34" font-size="20" font-weight="700" fill="#111827">Animal cell</text>
+  <ellipse cx="250" cy="240" rx="185" ry="140" fill="#fdecef" stroke="#e26d8a" stroke-width="4"/>
+  <circle cx="250" cy="235" r="52" fill="#c5b3e6" stroke="#7e57c2" stroke-width="3"/>
+  <circle cx="250" cy="235" r="18" fill="#7e57c2"/>
+  <ellipse cx="352" cy="172" rx="40" ry="21" fill="#ef9a9a" stroke="#e53935" stroke-width="2.5"/>
+  <path d="M320 172 q14 -13 27 0 q13 13 27 0" fill="none" stroke="#b71c1c" stroke-width="2"/>
+  <g fill="#455a64">
+    <circle cx="180" cy="320" r="5"/><circle cx="205" cy="332" r="5"/><circle cx="230" cy="322" r="5"/>
+    <circle cx="320" cy="315" r="5"/><circle cx="345" cy="328" r="5"/>
+  </g>
+  <g stroke="#94a3b8" stroke-width="1.5">
+    <line x1="250" y1="100" x2="452" y2="95"/>
+    <line x1="390" y1="168" x2="452" y2="165"/>
+    <line x1="300" y1="232" x2="452" y2="235"/>
+    <line x1="395" y1="278" x2="452" y2="300"/>
+    <line x1="345" y1="328" x2="452" y2="365"/>
+  </g>
+  <g font-size="15" font-weight="600" fill="#1f2937">
+    <text x="460" y="100">Cell membrane</text>
+    <text x="460" y="170">Mitochondria</text>
+    <text x="460" y="240">Nucleus</text>
+    <text x="460" y="305">Cytoplasm</text>
+    <text x="460" y="370">Ribosomes</text>
+  </g>
+</svg>

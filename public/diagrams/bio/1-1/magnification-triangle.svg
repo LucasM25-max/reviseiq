@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 420" font-family="Segoe UI, Arial, sans-serif">
+  <rect width="520" height="420" rx="16" fill="#ffffff"/>
+  <text x="20" y="34" font-size="20" font-weight="700" fill="#111827">Magnification formula triangle</text>
+  <polygon points="260,80 130,300 390,300" fill="#ede7f6" stroke="#5e35b1" stroke-width="3"/>
+  <line x1="195" y1="190" x2="325" y2="190" stroke="#5e35b1" stroke-width="3"/>
+  <line x1="260" y1="190" x2="260" y2="300" stroke="#5e35b1" stroke-width="3"/>
+  <g font-weight="700" fill="#311b92" text-anchor="middle">
+    <text x="260" y="155" font-size="18">image size</text>
+    <text x="196" y="258" font-size="15">magnif-</text>
+    <text x="196" y="276" font-size="15">ication</text>
+    <text x="325" y="258" font-size="15">real</text>
+    <text x="325" y="276" font-size="15">size</text>
+  </g>
+  <text x="260" y="352" text-anchor="middle" font-size="17" font-weight="700" fill="#111827">magnification = image size ÷ real size</text>
+  <text x="260" y="382" text-anchor="middle" font-size="13" fill="#6b7280">Cover the quantity you want to find.</text>
+</svg>
