@@ -175,12 +175,44 @@ export function registerReviseIQServiceWorker() {
     window.__reviseiqSWRegistered
   )
     return;
+  window.__reviseiqSWRegistered = true;
   try {
-    var swCode =
-      'const CACHE=\"reviseiq-shell-v1\";self.addEventListener(\"install\",e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll([\"/\"]).catch(()=>{})));self.skipWaiting();});self.addEventListener(\"activate\",e=>{e.waitUntil(self.clients.claim());});self.addEventListener(\"fetch\",e=>{const r=e.request;const u=new URL(r.url);if(r.method!==\"GET\")return;e.respondWith((async()=>{if(u.origin===location.origin&&(u.pathname.endsWith(\".js\")||u.pathname.endsWith(\".css\")||u.pathname===\"/\")){const c=await caches.match(r);if(c)return c;try{const n=await fetch(r);const cache=await caches.open(CACHE);cache.put(r,n.clone());return n;}catch(_){return caches.match(\"/\");}}try{return await fetch(r);}catch(_){const c=await caches.match(r);if(c)return c;return new Response(\"Offline\",{status:503,headers:{\"Content-Type\":\"text/plain\"}});}})());});';
-    var blob = new Blob([swCode], { type: "text/javascript" });
-    var url = URL.createObjectURL(blob);
-    navigator.serviceWorker.register(url).catch(function () {});
-    window.__reviseiqSWRegistered = true;
+    // One-time cleanup: drop any legacy / blob-registered workers and stale
+    // caches that could otherwise keep serving an old, frozen bundle.
+    if (navigator.serviceWorker.getRegistrations) {
+      navigator.serviceWorker
+        .getRegistrations()
+        .then(function (regs) {
+          regs.forEach(function (reg) {
+            var su = (reg.active && reg.active.scriptURL) || "";
+            if (su.indexOf("blob:") === 0 || su.indexOf("/sw.js") === -1) {
+              reg.unregister().catch(function () {});
+            }
+          });
+        })
+        .catch(function () {});
+    }
+    if (window.caches && caches.keys) {
+      caches
+        .keys()
+        .then(function (keys) {
+          keys.forEach(function (k) {
+            if (k !== "reviseiq-shell-v2")
+              caches.delete(k).catch(function () {});
+          });
+        })
+        .catch(function () {});
+    }
+    // Real file served at origin root (proper scope + MIME), network-first.
+    navigator.serviceWorker
+      .register("/sw.js")
+      .then(function (reg) {
+        if (reg && reg.update) {
+          try {
+            reg.update();
+          } catch (_) {}
+        }
+      })
+      .catch(function () {});
   } catch (_) {}
 }

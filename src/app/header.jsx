@@ -54,165 +54,225 @@ export function Header({
     },
     [menuOpen],
   );
+  var line = D ? "rgba(255,255,255,.08)" : "rgba(16,24,40,.08)";
+  var GRAD = "linear-gradient(120deg,#5b54f0,#8b5cf6,#d946ef)";
+  var softBg = D ? "rgba(255,255,255,.05)" : "rgba(16,24,40,.04)";
+  var barStyle = {
+    background: D ? "rgba(10,10,20,.72)" : "rgba(255,255,255,.72)",
+    borderBottom: "1px solid " + line,
+    backdropFilter: "saturate(180%) blur(18px)",
+    WebkitBackdropFilter: "saturate(180%) blur(18px)",
+    position: "sticky",
+    top: 0,
+    zIndex: 50,
+  };
+  var innerStyle = {
+    maxWidth: 1100,
+    margin: "0 auto",
+    padding: "0 16px",
+    height: 56,
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+  };
+  var logoStyle = {
+    fontFamily: "var(--riq-display, inherit)",
+    fontWeight: 800,
+    fontSize: 19,
+    letterSpacing: "-0.02em",
+    background: "none",
+    border: "none",
+    cursor: "pointer",
+    flexShrink: 0,
+    padding: 0,
+    paddingRight: 2,
+  };
+  var crumbStyle = {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 6,
+    fontSize: 12,
+    fontWeight: 600,
+    color: D ? "#c4b5fd" : "#7c3aed",
+    background: D ? "rgba(124,58,237,.18)" : "rgba(124,58,237,.08)",
+    borderRadius: 999,
+    padding: "4px 11px",
+    flexShrink: 0,
+  };
+  var crumbIcon = { fontSize: 12, opacity: 0.9 };
+  var spacerStyle = { flex: 1 };
+  var searchStyle = {
+    display: "flex",
+    alignItems: "center",
+    gap: 7,
+    background: softBg,
+    border: "1px solid " + line,
+    borderRadius: 999,
+    padding: "6px 14px 6px 11px",
+    fontSize: 12.5,
+    color: D ? "#9aa3c2" : "#5b6478",
+    cursor: "pointer",
+    flexShrink: 0,
+  };
+  var searchIcon = { fontSize: 12, opacity: 0.8 };
+  var streakHot = streak >= 7;
+  var streakStyle = {
+    display: "flex",
+    alignItems: "center",
+    gap: 5,
+    padding: "5px 11px",
+    borderRadius: 999,
+    background: streakHot ? (D ? "rgba(249,115,22,.16)" : "#fff7ed") : softBg,
+    border: "1px solid " + (streakHot ? "rgba(249,115,22,.5)" : line),
+    flexShrink: 0,
+  };
+  var streakIcon = { fontSize: 13 };
+  var streakNum = {
+    fontSize: 12,
+    fontWeight: 700,
+    color: streakHot ? "#f97316" : (D ? "#9aa3c2" : "#5b6478"),
+  };
+  var iconBtn = {
+    width: 34,
+    height: 34,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: 15,
+    background: softBg,
+    border: "1px solid " + line,
+    borderRadius: 999,
+    cursor: "pointer",
+    color: D ? "#eef1fb" : "#0a0a14",
+    flexShrink: 0,
+    lineHeight: 1,
+    padding: 0,
+  };
+  var userChip = {
+    display: "flex",
+    alignItems: "center",
+    gap: 7,
+    padding: "3px 11px 3px 3px",
+    borderRadius: 999,
+    background: softBg,
+    border: "1px solid " + line,
+    flexShrink: 0,
+  };
+  var avatarStyle = {
+    width: 27,
+    height: 27,
+    borderRadius: "50%",
+    background: GRAD,
+    color: "#fff",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: 12,
+    fontWeight: 700,
+    flexShrink: 0,
+  };
+  var nameStyle = {
+    fontSize: 12.5,
+    fontWeight: 600,
+    color: D ? "#eef1fb" : "#0a0a14",
+    maxWidth: 120,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  };
+  var adminBadge = {
+    fontSize: 9,
+    fontWeight: 800,
+    background: GRAD,
+    color: "#fff",
+    padding: "1px 6px",
+    borderRadius: 999,
+    flexShrink: 0,
+    letterSpacing: "0.03em",
+  };
+  var menuStyle = {
+    position: "absolute",
+    top: 62,
+    right: 12,
+    minWidth: 234,
+    background: D ? "rgba(17,18,32,.97)" : "rgba(255,255,255,.98)",
+    border: "1px solid " + line,
+    borderRadius: 18,
+    zIndex: 60,
+    padding: 8,
+    boxShadow: D
+      ? "0 20px 60px rgba(0,0,0,.5)"
+      : "0 24px 60px rgba(16,24,40,.16)",
+    backdropFilter: "saturate(180%) blur(20px)",
+    WebkitBackdropFilter: "saturate(180%) blur(20px)",
+  };
+  var avatarInitial = ((displayName || "?").trim().charAt(0) || "?").toUpperCase();
+  function hdrItemStyle(active) {
+    return {
+      display: "flex",
+      alignItems: "center",
+      gap: 12,
+      width: "100%",
+      padding: "9px 11px",
+      background: active ? GRAD : "transparent",
+      border: "none",
+      borderRadius: 12,
+      cursor: "pointer",
+      color: active ? "#fff" : D ? "#eef1fb" : "#0a0a14",
+      fontWeight: active ? 700 : 500,
+      fontSize: 13.5,
+      textAlign: "left",
+      marginBottom: 2,
+    };
+  }
+  function hdrItemIcon(active) {
+    return {
+      width: 28,
+      height: 28,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontSize: 14,
+      borderRadius: 9,
+      flexShrink: 0,
+      background: active
+        ? "rgba(255,255,255,.22)"
+        : D
+          ? "rgba(255,255,255,.06)"
+          : "rgba(16,24,40,.05)",
+      color: active ? "#fff" : D ? "#c4b5fd" : "#7c3aed",
+    };
+  }
   return (
-    <header
-      data-riq-hdr="1"
-      style={{
-        background: D ? "#0d1117" : "#fff",
-        borderBottom: "1px solid" + (D ? "#262844" : "#e5e7eb"),
-        position: "sticky",
-        top: 0,
-        zIndex: 50,
-      }}
-    >
-      <div
-        style={{
-          maxWidth: 1100,
-          margin: "0 auto",
-          padding: "016px",
-          height: 54,
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-        }}
-      >
-        <button
-          onClick={onHome}
-          style={{
-            fontWeight: 800,
-            fontSize: 15,
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            color: tx(D),
-            flexShrink: 0,
-            letterSpacing: "-0.01em",
-            paddingRight: 6,
-          }}
-        >
-          ReviseIQ
+    <header data-riq-hdr="1" style={barStyle}>
+      <div style={innerStyle}>
+        <button onClick={onHome} style={logoStyle} aria-label="ReviseIQ home">
+          <span className="riq-gradient-text">ReviseIQ</span>
         </button>
-
         {curItem && curItem.id !== "home" && (
-          <span
-            style={{
-              fontSize: 12,
-              color: mu(D),
-              fontWeight: 500,
-              flexShrink: 0,
-            }}
-          >
-            {curItem.icon}
+          <span style={crumbStyle}>
+            <span style={crumbIcon}>{curItem.icon}</span>
             {curItem.label}
           </span>
         )}
-        <div style={{ flex: 1 }} />
-        <button
-          onClick={onSearch}
-          style={{
-            background: D ? "#191a2b" : "#f3f4f6",
-            border: "1px solid" + (D ? "#374151" : "#e5e7eb"),
-            borderRadius: 8,
-            padding: "5px 10px",
-            fontSize: 12,
-            color: mu(D),
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            gap: 5,
-            flexShrink: 0,
-          }}
-        >
-          <span> </span>
-          <span style={{ color: D ? "#9ca3af" : "#6b7280" }}>Search</span>
+        <div style={spacerStyle} />
+        <button onClick={onSearch} style={searchStyle} aria-label="Search">
+          <span style={searchIcon}>🔍</span>
+          <span>Search</span>
         </button>
         {streak > 0 && (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 4,
-              padding: "4px 10px",
-              borderRadius: 20,
-              background:
-                streak >= 7
-                  ? D
-                    ? "#431407"
-                    : "#fff7ed"
-                  : D
-                    ? "#1c1917"
-                    : "#f9fafb",
-              border: "1.5px solid " + (streak >= 7 ? "#f97316" : "#d1d5db"),
-              flexShrink: 0,
-            }}
-          >
-            <span style={{ fontSize: 13 }}> </span>
-            <span
-              style={{
-                fontSize: 12,
-                fontWeight: 700,
-                color: streak >= 7 ? "#f97316" : mu(D),
-              }}
-            >
-              {streak}d
-            </span>
+          <div style={streakStyle} title={streak + "-day streak"}>
+            <span style={streakIcon}>🔥</span>
+            <span style={streakNum}>{streak}d</span>
           </div>
         )}
-        <button
-          onClick={onDark}
-          style={{
-            fontSize: 15,
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            color: mu(D),
-            padding: "4px",
-            borderRadius: 6,
-            flexShrink: 0,
-          }}
-        >
+        <button onClick={onDark} style={iconBtn} aria-label="Toggle theme">
           {D ? "☀️" : "🌙"}
         </button>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-            padding: "4px 10px",
-            borderRadius: 20,
-            background: D ? "#191a2b" : "#f3f4f6",
-            border: "1px solid" + (D ? "#374151" : "#e5e7eb"),
-            flexShrink: 0,
-          }}
-        >
-          <span
-            style={{
-              fontSize: 12,
-              fontWeight: 600,
-              color: tx(D),
-              maxWidth: 130,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {displayName}
-          </span>
-          {isAdmin(user) && (
-            <span
-              style={{
-                fontSize: 9,
-                fontWeight: 700,
-                background: "#7c3aed",
-                color: "#fff",
-                padding: "1px 6px",
-                borderRadius: 10,
-                flexShrink: 0,
-              }}
-            >
-              ADMIN
-            </span>
-          )}
+        <div style={userChip}>
+          <span style={avatarStyle}>{avatarInitial}</span>
+          <span style={nameStyle}>{displayName}</span>
+          {isAdmin(user) && <span style={adminBadge}>ADMIN</span>}
         </div>
         <button
           onClick={function (e) {
@@ -221,41 +281,16 @@ export function Header({
               return !o;
             });
           }}
-          style={{
-            fontSize: 18,
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            color: mu(D),
-            padding: "4px 6px",
-            borderRadius: 6,
-            lineHeight: 1,
-            flexShrink: 0,
-          }}
+          style={iconBtn}
           aria-label="Open menu"
         >
           ☰
         </button>
       </div>
       {menuOpen && (
-        <div
-          style={{
-            position: "absolute",
-            top: 54,
-            right: 0,
-            minWidth: 220,
-            background: D ? "#13131f" : "#fff",
-            border: "1px solid " + (D ? "#374151" : "#e5e7eb"),
-            borderTop: "none",
-            borderRadius: "0 0 14px 14px",
-            zIndex: 60,
-            padding: "8px 10px 12px",
-            boxShadow: "0 8px 32px rgba(0,0,0,.18)",
-          }}
-        >
+        <div style={menuStyle}>
           {allNavItems.map(function (item) {
             var active = screen === item.id;
-
             return (
               <button
                 key={item.id}
@@ -263,37 +298,9 @@ export function Header({
                   item.fn();
                   setMenuOpen(false);
                 }}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
-                  width: "100%",
-                  padding: "9px 12px",
-                  background: active
-                    ? D
-                      ? "rgba(99,102,241,.18)"
-                      : "#f5f3ff"
-                    : "transparent",
-                  border: "none",
-                  borderRadius: 8,
-                  cursor: "pointer",
-                  color: active ? "#7c3aed" : tx(D),
-                  fontWeight: active ? 700 : 400,
-                  fontSize: 13,
-                  textAlign: "left",
-                  marginBottom: 2,
-                }}
+                style={hdrItemStyle(active)}
               >
-                <span
-                  style={{
-                    fontSize: 16,
-                    width: 22,
-                    textAlign: "center",
-                    flexShrink: 0,
-                  }}
-                >
-                  {item.icon}
-                </span>
+                <span style={hdrItemIcon(active)}>{item.icon}</span>
                 {item.label}
               </button>
             );
