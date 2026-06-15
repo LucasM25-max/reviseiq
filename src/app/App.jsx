@@ -2412,22 +2412,35 @@ export default function App() {
     const _sh = D
       ? "0 20px 50px -34px rgba(0,0,0,.85)"
       : "0 20px 50px -34px rgba(76,29,149,.35)";
+    const GRAD = "linear-gradient(120deg,#5b54f0,#8b5cf6,#d946ef)";
     const studyShell = {
       minHeight: "100vh",
       background: D ? "#0a0a14" : "#f6f7fb",
       color: _dnk,
     };
-    const studyWrap = { maxWidth: 1100, margin: "0 auto", padding: "8px 16px 60px" };
+    const studyWrap = {
+      maxWidth: 1100,
+      margin: "0 auto",
+      padding: "8px 16px 60px",
+    };
     const studyH2 = { fontSize: 26, fontWeight: 800, margin: "8px 0 2px" };
     const studyLead = { color: _sub, margin: 0, fontSize: 14 };
     const studyEmpty = { color: _sub, marginTop: 24 };
     const studyName = { fontSize: 16, fontWeight: 800 };
     const studyReady = { fontSize: 12.5, fontWeight: 700, color: _sub };
+    const sectionLabel = {
+      fontSize: 12,
+      fontWeight: 800,
+      letterSpacing: ".08em",
+      textTransform: "uppercase",
+      color: _sub,
+      margin: "28px 0 0",
+    };
     const grid = {
       display: "grid",
       gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
       gap: 14,
-      marginTop: 18,
+      marginTop: 14,
     };
     const card = {
       textAlign: "left",
@@ -2441,15 +2454,86 @@ export default function App() {
       flexDirection: "column",
       gap: 8,
     };
+    const examGrid = {
+      display: "grid",
+      gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+      gap: 14,
+      marginTop: 14,
+    };
+    const examCard = {
+      textAlign: "left",
+      padding: "18px 20px",
+      borderRadius: 22,
+      border: "1px solid transparent",
+      background:
+        "linear-gradient(" +
+        (D ? "#101024,#101024" : "#ffffff,#ffffff") +
+        ") padding-box, " +
+        GRAD +
+        " border-box",
+      boxShadow: _sh,
+      cursor: "pointer",
+      display: "flex",
+      alignItems: "center",
+      gap: 16,
+      color: _dnk,
+    };
+    const examIcon = {
+      width: 46,
+      height: 46,
+      borderRadius: 14,
+      background: GRAD,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontSize: 22,
+      flexShrink: 0,
+    };
+    const examTitle = { fontSize: 16, fontWeight: 800, margin: 0 };
+    const examDesc = { fontSize: 12.5, color: _sub, margin: "3px 0 0" };
     const real = subjects.filter((s) => !s._politics);
+    const examModes = [
+      {
+        id: "target",
+        icon: "\uD83C\uDFAF",
+        title: "Target Tests",
+        desc: "Short, focused tests on your weak spots",
+        fn: hProps.onTarget,
+      },
+      {
+        id: "mock",
+        icon: "\uD83D\uDCDD",
+        title: "Mock Exams",
+        desc: "Sit a full, timed past paper",
+        fn: hProps.onMock,
+      },
+    ].filter((m) => typeof m.fn === "function");
     return (
       <div style={studyShell} className="fade-in">
         <Header {...hProps} />
         <div style={studyWrap}>
           <h2 style={studyH2}>Study</h2>
           <p style={studyLead}>
-            Choose a subject to learn, review flashcards, practise questions, blurt or sit a mock.
+            Choose a subject to learn, review flashcards and practise questions —
+            or sit a target test or a full mock exam.
           </p>
+          {examModes.length > 0 && (
+            <>
+              <p style={sectionLabel}>Tests &amp; exams</p>
+              <div style={examGrid}>
+                {examModes.map((m) => (
+                  <button key={m.id} onClick={m.fn} style={examCard}>
+                    <span style={examIcon}>{m.icon}</span>
+                    <span>
+                      <p style={examTitle}>{m.title}</p>
+                      <p style={examDesc}>{m.desc}</p>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+          <p style={sectionLabel}>Your subjects</p>
           {real.length === 0 ? (
             <p style={studyEmpty}>
               No subjects yet — add some from your Account to start studying.
@@ -2483,9 +2567,7 @@ export default function App() {
                       {s.icon ? s.icon + " " : ""}
                       {s.name}
                     </span>
-                    <span style={studyReady}>
-                      {readiness}% exam ready
-                    </span>
+                    <span style={studyReady}>{readiness}% exam ready</span>
                   </button>
                 );
               })}
