@@ -648,7 +648,7 @@ student has shared this file with you]`,
               Back
             </button>
             <h2
-              style={{ fontSize: 16, fontWeight: 700, color: tx(D), flex: 1 }}
+              style={{ fontFamily: "var(--riq-display, inherit)", fontSize: 19, fontWeight: 800, letterSpacing: "-0.01em", color: tx(D), flex: 1 }}
             >
               {mode === "homework" ? "Homework Help" : "Sage"}
             </h2>
@@ -754,7 +754,7 @@ student has shared this file with you]`,
                     ? "Socratic: asks guiding questions before explaining"
                     : socraticLevel === 1
                       ? "Guided: explains then prompts recall"
-                      : "Direct: gives answersimmediately"
+                      : "Direct: gives answers immediately"
                 }
                 style={{
                   fontSize: 9,
@@ -853,11 +853,12 @@ student has shared this file with you]`,
               margin: "0 auto",
             }}
           >
-            <div style={{ fontSize: 52, marginBottom: 12 }}> </div>
+            <div style={{ fontSize: 52, marginBottom: 12 }}>🧠</div>
             <p
               style={{
-                fontWeight: 700,
-                fontSize: 16,
+                fontFamily: "var(--riq-display, inherit)",
+                fontWeight: 800,
+                fontSize: 20,
                 marginBottom: 8,
                 color: tx(D),
               }}
@@ -867,11 +868,11 @@ student has shared this file with you]`,
             <p style={{ fontSize: 13, marginBottom: 10, lineHeight: 1.6 }}>
               {mode === "tutor"
                 ? "Start by telling me what you already know about the topic — I'll guide you to fill the gaps."
-                : "Share your homework by uploading a photo, PDF or file, or paste the question below.I'll ask guiding questions to help you reach the answer yourself."}
+                : "Share your homework by uploading a photo, PDF or file, or paste the question below. I'll ask guiding questions to help you reach the answer yourself."}
             </p>
             <p style={{ fontSize: 11, color: mu(D), marginBottom: 6 }}>
               {hasContent
-                ? "Drawing from yourrevision notes and flashcards."
+                ? "Drawing from your revision notes and flashcards."
                 : "Using general GCSE knowledge."}
             </p>
             <p style={{ fontSize: 10, color: mu(D) }}>
@@ -920,7 +921,7 @@ student has shared this file with you]`,
                       marginTop: 2,
                     }}
                   >
-                    {" "}
+                    🧠
                   </div>
                 )}
                 <div
@@ -1025,7 +1026,7 @@ student has shared this file with you]`,
                       marginTop: 2,
                     }}
                   >
-                    {" "}
+                    🧑‍🎓
                   </div>
                 )}
               </div>
@@ -1081,7 +1082,7 @@ student has shared this file with you]`,
                 flexShrink: 0,
               }}
             >
-              {" "}
+              🧠
             </div>
 
             <div
@@ -1235,7 +1236,7 @@ student has shared this file with you]`,
                 }),
               }}
             >
-              {" "}
+              📎
             </button>
             <button
               onClick={startVoice}
@@ -1250,7 +1251,7 @@ student has shared this file with you]`,
                 }),
               }}
             >
-              {listening ? "●" : " "}
+              {listening ? "●" : "🎤"}
             </button>
             <textarea
               value={input}
@@ -1296,7 +1297,7 @@ student has shared this file with you]`,
                       : "pointer",
                 }),
               }}
-            ></button>
+            >➤</button>
           </div>
           <p
             style={{
@@ -1306,8 +1307,7 @@ student has shared this file with you]`,
               textAlign: "center",
             }}
           >
-            Using
-            <strong>{activeModel.label}</strong> · May make mistakes — verify
+            Using <strong>{activeModel.label}</strong> · May make mistakes — verify
             with your teacher
           </p>
         </div>

@@ -368,7 +368,7 @@ export function CreatePersonalSubjectModal({ D, onSave, onClose }) {
             onChange={function (e) {
               setName(e.target.value);
             }}
-            placeholder="e.g.Spanish Vocabulary, Piano Theory…"
+            placeholder="e.g. Spanish Vocabulary, Piano Theory…"
             style={{
               width: "100%",
               padding: "9px 12px",

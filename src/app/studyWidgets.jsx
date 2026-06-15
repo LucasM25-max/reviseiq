@@ -703,7 +703,7 @@ export function PostSessionReflection({ D, sessionGoal, subjectId, onSave, onSki
             label: "What did I understand well?",
             val: understood,
             set: setU,
-            ph: "e.g.The stages of mitosis",
+            ph: "e.g. The stages of mitosis",
           },
           {
             key: "unclear",
@@ -717,7 +717,7 @@ export function PostSessionReflection({ D, sessionGoal, subjectId, onSave, onSki
             label: "What will I do differently next time?",
             val: improve,
             set: setI,
-            ph: "e.g.Test myself without notes first",
+            ph: "e.g. Test myself without notes first",
           },
         ].map((field) => (
           <div key={field.key}>
