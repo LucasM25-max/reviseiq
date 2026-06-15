@@ -109,7 +109,7 @@ export function DashboardScreen(props) {
         "Knowledge Gap": 0,
         "Application Error": 0,
         "Command Word Error": 0,
-        CommunicationError: 0,
+        "Communication Error": 0,
       };
       ALL_SUBJECTS.forEach(function (s) {
         try {

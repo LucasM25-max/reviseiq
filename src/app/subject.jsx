@@ -2,13 +2,11 @@ import { CreateModal } from "./createModal.jsx";
 import { getCardState, isCardDue } from "./fsrs.js";
 import { AdminBar, Header } from "./header.jsx";
 import { ExamReadinessGauge, MasteryPanel, calculateExamReadiness, calculateMastery } from "./mastery.jsx";
-import { SubjMyNotesTab } from "./personalSubjects.jsx";
 import { CalibrationGauge, MasteryRing, PastPapersTab, StrategyRecommendation, StudyJournalTab } from "./studyWidgets.jsx";
 import { B, C, gradeColor, mu, pctToGrade, tx } from "./ui.jsx";
-import { UCNewSectionModal, UCSectionModal } from "./userContent.jsx";
 
 export function SubjectScreen(props) {
-  const { D, addCustomSection, addPaper, addSubtopic, admin, allSections, bd2, bg, calibrationData, curBData, curBoard, curTopics, deleteCustomSec, deletePaper, deleteSubtopic, deleteUCSection, editingTitle, fcHist, hProps, journalData, modal, navToSection, renameCustomSubtopic, renameCustomTopic, saveUCSection, setBlurtSecId2, setBlurtSubjId, setEditingTitle, setFocusMode, setModal, setScreen, setSubjTab, setTTSubj, setTab, setTargetGrades, stats, subIdx, subjDef, subjTab, subjects, targetGrades, timetableExams, user, userContent } = props;
+  const { D, addCustomSection, addPaper, addSubtopic, admin, allSections, bd2, bg, calibrationData, curBData, curBoard, curTopics, deleteCustomSec, deletePaper, deleteSubtopic, editingTitle, fcHist, hProps, journalData, modal, navToSection, renameCustomSubtopic, renameCustomTopic, setBlurtSecId2, setBlurtSubjId, setEditingTitle, setFocusMode, setModal, setScreen, setSubjTab, setTTSubj, setTab, setTargetGrades, stats, subIdx, subjDef, subjTab, subjects, targetGrades, timetableExams, user } = props;
 
     const subj = subjDef;
     return (
@@ -438,7 +436,6 @@ grade${parseInt(target) - parseInt(predicted) !== 1 ? "s" : ""} to go`}
               ? [["sections", "Topics"]]
               : [
                   ["sections", "Topics"],
-                  ["mynotes", "MyNotes"],
                   ["papers", "Papers"],
                   ["journal", "Journal"],
                 ]
@@ -1086,17 +1083,6 @@ grade${parseInt(target) - parseInt(predicted) !== 1 ? "s" : ""} to go`}
               })}
             </div>
           )}
-          {subjTab === "mynotes" && (
-            <SubjMyNotesTab
-              D={D}
-              subjId={subj.id}
-              ucData={userContent}
-              setModal={setModal}
-              deleteUCSection={deleteUCSection}
-              tx2={tx(D)}
-              mu2={mu(D)}
-            />
-          )}
           {subjTab === "papers" && (
             <PastPapersTab
               papers={curBData.papers}
@@ -1221,42 +1207,6 @@ grade${parseInt(target) - parseInt(predicted) !== 1 ? "s" : ""} to go`}
             subjects={subjects}
             onClose={() => setModal(null)}
             onSave={addPaper}
-          />
-        )}
-        {modal?.mode === "uc-new-section" && (
-          <UCNewSectionModal
-            D={D}
-            onClose={() => setModal(null)}
-            onSave={function (title) {
-              if (!title.trim()) return;
-              var sec = {
-                id: Math.random().toString(36).slice(2),
-                title: title.trim(),
-                notes: [],
-                flashcards: [],
-                questions: [],
-                created: Date.now(),
-              };
-              saveUCSection(modal.subjId, sec);
-              setModal({ mode: "uc-section", subjId: modal.subjId, sec });
-            }}
-          />
-        )}
-        {modal?.mode === "uc-section" && (
-          <UCSectionModal
-            D={D}
-            user={user}
-            subjId={modal.subjId}
-            sec={
-              (userContent[modal.subjId] || { sections: [] }).sections.find(
-                function (s) {
-                  return s.id === (modal.sec?.id || modal.secId);
-                },
-              ) || modal.sec
-            }
-            subjects={subjects}
-            onSaveSection={saveUCSection}
-            onClose={() => setModal(null)}
           />
         )}
       </div>

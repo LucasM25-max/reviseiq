@@ -471,7 +471,7 @@ export async function aiServiceFeedbackRubric(q, studentAnswer) {
     '"strengths": ["specific correct point the student made (max 3)"]',
     '"examTip": "one concrete ' + board + ' exam technique tip"',
     '"modelAnswer": "complete ideal answer"',
-    '"errorType": "Knowledge Gap"|"Application Error"|"Command Word Error"|"CommunicationError"|null',
+    '"errorType": "Knowledge Gap"|"Application Error"|"Command Word Error"|"Communication Error"|null',
     '"annotatedAnswer": [{"text":"sentence from modelanswer","type":"point"|"evidence"|"explanation"|"application"}]',
     '"comparisonTable": [{"student":"excerpt from student answer","expectation":"mark point theymissed"}]',
     '"structureDiagram": ' +

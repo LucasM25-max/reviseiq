@@ -4,14 +4,13 @@ import { Header } from "./header.jsx";
 import { buildTodaySessionPlan, getNextGoal } from "./learningEngine.js";
 import { Figure, Ring } from "./lumen.jsx";
 import { MasteryRings, calculateExamReadiness, calculateMastery } from "./mastery.jsx";
-import { AppFooter, CreatePersonalSubjectModal } from "./personalSubjects.jsx";
 import { TodayWidget } from "./practice.jsx";
 import { calcLongestStreak, todayStr } from "./scheduling.js";
 import { mergeTopics } from "./social.jsx";
 import { pctToGrade, showToast } from "./ui.jsx";
 
 export function HomeScreen(props) {
-  const { D, activityDates, allSections, boardData, boardSels, calibrationData, createPersonalOpen, engineEvents, ensureBoardLoaded, fcHist, getBD, goToGoal, hProps, openMyNotes, personalSubjects, savePersonalSubjects, setBlurtSecId2, setBlurtSubjId, setCreatePersonalOpen, setFcIdx, setFlip, setPersonalScreen, setQIdx, setQRes, setScreen, setSecId, setSelOpt, setShowTreemap, setSubIdx, setSubjTab, setTA, setTab, setTopIdx, showTreemap, stats, streak, subjects, targetGrades, timetableExams, totalDaysStudied, user, userDisplayName, weeklyPlan } = props;
+  const { D, activityDates, allSections, boardData, boardSels, calibrationData, engineEvents, ensureBoardLoaded, fcHist, getBD, goToGoal, hProps, setBlurtSecId2, setBlurtSubjId, setFcIdx, setFlip, setQIdx, setQRes, setScreen, setSecId, setSelOpt, setShowTreemap, setSubIdx, setSubjTab, setTA, setTab, setTopIdx, showTreemap, stats, streak, subjects, targetGrades, timetableExams, totalDaysStudied, user, userDisplayName, weeklyPlan } = props;
 
     const _dn = userDisplayName || getDisplayName(user);
     const _hh = new Date().getHours();
@@ -127,9 +126,6 @@ export function HomeScreen(props) {
               )}
               <p style={greetSub}>Here’s your focused plan for today — one clear step at a time.</p>
             </div>
-            <button onClick={function () { openMyNotes(null); }} style={ghostBtn}>
-              My Notes &amp; Flashcards
-            </button>
           </div>
 
           <div style={hero}>
@@ -273,7 +269,6 @@ export function HomeScreen(props) {
               { icon: "📈", label: "Progress", desc: "Mastery, calibration & journal", on: () => setScreen("dashboard") },
               { icon: "📅", label: "Timetable", desc: "Exam dates & countdown", on: () => setScreen("timetable") },
               { icon: "📝", label: "Mock exam", desc: "Sit a full timed paper", on: () => setScreen("mock") },
-              { icon: "🗒️", label: "My notes", desc: "Your saved notes & flashcards", on: () => openMyNotes(null) },
             ].map((it) => (
               <button key={it.label} style={subjCard} onClick={it.on} onMouseEnter={liftIn} onMouseLeave={liftOut}>
                 <div style={subjIcon("#7c3aed")}>{it.icon}</div>
@@ -284,50 +279,7 @@ export function HomeScreen(props) {
           </div>
         </div>
 
-        <div style={container}>
-          <div style={personalWrap}>
-            <div style={personalHead}>
-              <div>
-                <h3 style={h3s}>My subjects</h3>
-                <p style={greetSub}>Personal content — only visible to you</p>
-              </div>
-              <button onClick={() => setCreatePersonalOpen(true)} style={ghostBtn}>＋ New subject</button>
-            </div>
-            {personalSubjects.length === 0 ? (
-              <div style={emptyNote}>Create personal subjects for anything you want to learn — Spanish vocab, music theory, anything. Only you can see them.</div>
-            ) : (
-              <div style={personalGrid}>
-                {personalSubjects.map(function (ps) {
-                  return (
-                    <button
-                      key={ps.id}
-                      onClick={() => setPersonalScreen({ subjId: ps.id })}
-                      style={personalCard}
-                      onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.transform = ""; }}
-                    >
-                      <div style={subjIcon("#7c3aed")}>{ps.icon}</div>
-                      <div style={subjName}>{ps.name}</div>
-                      <span style={metaSmall}>{(ps.topics || []).length} topics</span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
 
-        {createPersonalOpen && (
-          <CreatePersonalSubjectModal
-            D={D}
-            onClose={() => setCreatePersonalOpen(false)}
-            onSave={function (ns) {
-              savePersonalSubjects([...personalSubjects, ns]);
-              setCreatePersonalOpen(false);
-            }}
-          />
-        )}
-        <AppFooter D={D} onContact={() => setScreen("contact")} />
       </div>
     );
   

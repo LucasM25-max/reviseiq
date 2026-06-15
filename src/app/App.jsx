@@ -4,12 +4,11 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart
 import { buildTodaySessionPlan, getPedagogicalContext, selectCommandWordQuestions } from "./learningEngine.js";
 import { ImportModal, ManageAccountsModal } from "./accountModals.jsx";
 import { _aiWithRetry, _parseAIJson, aiServiceReflectionSummarizer, buildAIPersonalisedSession, callAI, detectErrorType, getAccDisplayName, getAccHash, markAnswer } from "./aiService.js";
-import { ADMIN_PASS_HASH, ADMIN_SCHOOL, ADMIN_USER, DEFAULT_BOARD, SK, SK_CALIBRATION, SK_ERROR_PATTERNS, SK_GRAPH, SK_JOURNAL, SK_PERSONAL, SK_SESSION, calcBrierScore, classifyError, confToProb, getDisplayName, hashPw, incrementErrorPattern, isAdmin } from "./coreHelpers.js";
+import { ADMIN_PASS_HASH, ADMIN_SCHOOL, ADMIN_USER, DEFAULT_BOARD, SK, SK_CALIBRATION, SK_ERROR_PATTERNS, SK_GRAPH, SK_JOURNAL, SK_SESSION, calcBrierScore, classifyError, confToProb, getDisplayName, hashPw, incrementErrorPattern, isAdmin } from "./coreHelpers.js";
 import { AnnotatedImage } from "./annotation.jsx";
 import { BlurtingScreen } from "./blurtingScreen.jsx";
 import { ClozeCard, QuestionFigure, SequenceCard, generateWhyPrompt } from "./cards.jsx";
 import { ContactScreen } from "./contact.jsx";
-import { CreateModal } from "./createModal.jsx";
 import { ConceptMap, DiagramRenderer, GraphCard, LabelledStructure, LearningTimeline, MasteryTreemap, ProcessCard, ProgressiveDiagram, SketchCanvas, checkPrerequisites, generateSVGDiagram } from "./diagrams.jsx";
 import { FocusMode } from "./focusMode.jsx";
 import { FriendsPanel } from "./friends.jsx";
@@ -20,7 +19,6 @@ import { MockExamScreen } from "./mockExam.jsx";
 import { registerReviseIQServiceWorker, syncOfflineQueue, useOfflineQueue } from "./offline.js";
 import { GlobalOverlays } from "./overlays.jsx";
 import { CalibrationDial, Figure, MasteryConstellation, Ring, SessionRecap, StatTile } from "./lumen.jsx";
-import { AppFooter, CreatePersonalSubjectModal, PersonalSubjectScreen, SubjMyNotesTab } from "./personalSubjects.jsx";
 import { PracticeSessionScreen, TodayWidget } from "./practice.jsx";
 import { AO_COLORS, autoHints, detectAOLabel, detectCW, detectCardType } from "./questionMeta.js";
 import { ContentBlock, SmartNoteCard } from "./richText.jsx";
@@ -34,7 +32,6 @@ import { ALL_SUBJECTS } from "./subjects.js";
 import { TimetableScreen } from "./timetable.jsx";
 import { AITutorScreen } from "./tutor.jsx";
 import { B, C, I, MobileBottomNav, ToastContainer, gradeColor, mu, pctToGrade, showToast, stripHtml, trackEvent, tx } from "./ui.jsx";
-import { UCNewSectionModal, UCSectionModal, UserContentScreen } from "./userContent.jsx";
 import { SectionScreen } from "./section.jsx";
 import { SubjectScreen } from "./subject.jsx";
 import { DashboardScreen } from "./dashboard.jsx";
@@ -85,9 +82,6 @@ export default function App() {
   const [analyticsData, setAnalyticsData] = useState(null);
   const [manageAccountsOpen, setManageAccountsOpen] = useState(false);
 
-  const [personalSubjects, setPersonalSubjects] = useState([]);
-  const [personalScreen, setPersonalScreen] = useState(null);
-  const [createPersonalOpen, setCreatePersonalOpen] = useState(false);
   const [fcHist, setFCH] = useState({});
   const [qIdx, setQIdx] = useState(0);
   const [selOpt, setSelOpt] = useState(null);
@@ -170,8 +164,6 @@ export default function App() {
   const [tutorSubjId, setTutorSubjId] = useState(null);
   const [coachMode, setCoachMode] = useState("exam");
   const [timetableExams, setTimetableExams] = useState([]);
-  const [userContent, setUserContent] = useState({});
-  const [ucScreen, setUCScreen] = useState(null);
   const [selectedSubjectIds, setSelectedSubjectIds] = useState(null);
   const [showSubjectSelection, setShowSubjectSelection] = useState(false);
   const [prefsReady, setPrefsReady] = useState(false);
@@ -411,26 +403,6 @@ export default function App() {
       await ensureAllBoardsLoaded(savedSels, ALL_SUBJECTS);
 
       try {
-        const pr = await window.storage.get(SK_PERSONAL(user), false);
-        if (pr?.value) {
-          var ps = JSON.parse(pr.value);
-          if (Array.isArray(ps)) setPersonalSubjects(ps);
-        }
-      } catch (_) {}
-
-      try {
-        const ucr = await window.storage.get(
-          "gcse:uc:all:" + user.replace(/\W/g, "-"),
-          false,
-        );
-        if (ucr?.value) {
-          var ucParsed = JSON.parse(ucr.value);
-          if (ucParsed && typeof ucParsed === "object")
-            setUserContent(ucParsed);
-        }
-      } catch (_) {}
-
-      try {
         const epMap = {};
         const sIds = (savedSels ? Object.keys(savedSels) : []).concat(
           ALL_SUBJECTS.map((s) => s.id),
@@ -644,52 +616,6 @@ export default function App() {
     } catch (e) {
       showToast("Analytics error: " + e.message, "error");
     }
-  };
-  const saveUserContent = (nextUC) => {
-    if (!user) return;
-    setUserContent(nextUC);
-    window.storage
-      .set(
-        "gcse:uc:all:" + user.replace(/\W/g, "-"),
-        JSON.stringify(nextUC),
-        false,
-      )
-      .catch(function () {});
-  };
-  const ucForSubj = (sId) => userContent[sId] || { sections: [] };
-  const saveUCSection = (sId, sec) => {
-    var prev = ucForSubj(sId);
-    var exists = prev.sections.find(function (s) {
-      return s.id === sec.id;
-    });
-    var next = exists
-      ? {
-          ...prev,
-          sections: prev.sections.map(function (s) {
-            return s.id === sec.id ? sec : s;
-          }),
-        }
-      : { ...prev, sections: [...prev.sections, sec] };
-    saveUserContent({ ...userContent, [sId]: next });
-  };
-  const deleteUCSection = (sId, secId) => {
-    var prev = ucForSubj(sId);
-    saveUserContent({
-      ...userContent,
-      [sId]: {
-        ...prev,
-        sections: prev.sections.filter(function (s) {
-          return s.id !== secId;
-        }),
-      },
-    });
-  };
-  const savePersonalSubjects = (ps) => {
-    if (!user) return;
-    setPersonalSubjects(ps);
-    window.storage
-      .set(SK_PERSONAL(user), JSON.stringify(ps), false)
-      .catch(() => {});
   };
 
   const saveJournalEntry = (subjectId, entry) => {
@@ -1629,11 +1555,6 @@ export default function App() {
     }
     if (goal.screen) setScreen(goal.screen);
   };
-  const openMyNotes = (subjId) => {
-    setUCScreen({
-      subjId: subjId || subjects.filter((s) => !s._politics)[0]?.id || null,
-    });
-  };
   const openSessionBlock = (block) => {
     if (!block) return;
     if (block.type === "mock") {
@@ -1683,26 +1604,6 @@ export default function App() {
     }
   };
 
-  if (ucScreen)
-    return (
-      <div>
-        <Header {...hProps} />
-        <UserContentScreen
-          D={D}
-          user={user}
-          subjects={subjects.filter(function (s) {
-            return !s._politics;
-          })}
-          ucData={userContent}
-          onSaveSection={saveUCSection}
-          onDeleteSection={deleteUCSection}
-          onBack={function () {
-            setUCScreen(null);
-          }}
-        />
-      </div>
-    );
-
   if (showSubjectSelection && user && screen !== "login")
     return (
       <SubjectSelectionScreen
@@ -1713,24 +1614,6 @@ export default function App() {
         onComplete={handleSubjectSelectionComplete}
       />
     );
-  if (personalScreen && personalScreen.subjId) {
-    var _ps = personalSubjects.find(function (s) {
-      return s.id === personalScreen.subjId;
-    });
-    if (_ps)
-      return (
-        <PersonalSubjectScreen
-          D={D}
-          subj={_ps}
-          personalSubjects={personalSubjects}
-          user={user}
-          onBack={function () {
-            setPersonalScreen(null);
-          }}
-          onSaveSubjects={savePersonalSubjects}
-        />
-      );
-  }
   if (screen === "login") {
     const idTrim = nameIn.trim();
     const idLower = idTrim.toLowerCase();
@@ -2577,9 +2460,9 @@ export default function App() {
       </div>
     );
   }
-  if (screen === "home") return <HomeScreen D={D} activityDates={activityDates} allSections={allSections} boardData={boardData} boardSels={boardSels} calibrationData={calibrationData} createPersonalOpen={createPersonalOpen} engineEvents={engineEvents} ensureBoardLoaded={ensureBoardLoaded} fcHist={fcHist} getBD={getBD} goToGoal={goToGoal} hProps={hProps} openMyNotes={openMyNotes} personalSubjects={personalSubjects} savePersonalSubjects={savePersonalSubjects} setBlurtSecId2={setBlurtSecId2} setBlurtSubjId={setBlurtSubjId} setCreatePersonalOpen={setCreatePersonalOpen} setFcIdx={setFcIdx} setFlip={setFlip} setPersonalScreen={setPersonalScreen} setQIdx={setQIdx} setQRes={setQRes} setScreen={setScreen} setSecId={setSecId} setSelOpt={setSelOpt} setShowTreemap={setShowTreemap} setSubIdx={setSubIdx} setSubjTab={setSubjTab} setTA={setTA} setTab={setTab} setTopIdx={setTopIdx} showTreemap={showTreemap} stats={stats} streak={streak} subjects={subjects} targetGrades={targetGrades} timetableExams={timetableExams} totalDaysStudied={totalDaysStudied} user={user} userDisplayName={userDisplayName} weeklyPlan={weeklyPlan} />;
+  if (screen === "home") return <HomeScreen D={D} activityDates={activityDates} allSections={allSections} boardData={boardData} boardSels={boardSels} calibrationData={calibrationData} engineEvents={engineEvents} ensureBoardLoaded={ensureBoardLoaded} fcHist={fcHist} getBD={getBD} goToGoal={goToGoal} hProps={hProps} setBlurtSecId2={setBlurtSecId2} setBlurtSubjId={setBlurtSubjId} setFcIdx={setFcIdx} setFlip={setFlip} setQIdx={setQIdx} setQRes={setQRes} setScreen={setScreen} setSecId={setSecId} setSelOpt={setSelOpt} setShowTreemap={setShowTreemap} setSubIdx={setSubIdx} setSubjTab={setSubjTab} setTA={setTA} setTab={setTab} setTopIdx={setTopIdx} showTreemap={showTreemap} stats={stats} streak={streak} subjects={subjects} targetGrades={targetGrades} timetableExams={timetableExams} totalDaysStudied={totalDaysStudied} user={user} userDisplayName={userDisplayName} weeklyPlan={weeklyPlan} />;
 
-  if (screen === "subject" && subjDef) return <SubjectScreen D={D} addCustomSection={addCustomSection} addPaper={addPaper} addSubtopic={addSubtopic} admin={admin} allSections={allSections} bd2={bd2} bg={bg} calibrationData={calibrationData} curBData={curBData} curBoard={curBoard} curTopics={curTopics} deleteCustomSec={deleteCustomSec} deletePaper={deletePaper} deleteSubtopic={deleteSubtopic} deleteUCSection={deleteUCSection} editingTitle={editingTitle} fcHist={fcHist} hProps={hProps} journalData={journalData} modal={modal} navToSection={navToSection} renameCustomSubtopic={renameCustomSubtopic} renameCustomTopic={renameCustomTopic} saveUCSection={saveUCSection} setBlurtSecId2={setBlurtSecId2} setBlurtSubjId={setBlurtSubjId} setEditingTitle={setEditingTitle} setFocusMode={setFocusMode} setModal={setModal} setScreen={setScreen} setSubjTab={setSubjTab} setTTSubj={setTTSubj} setTab={setTab} setTargetGrades={setTargetGrades} stats={stats} subIdx={subIdx} subjDef={subjDef} subjTab={subjTab} subjects={subjects} targetGrades={targetGrades} timetableExams={timetableExams} user={user} userContent={userContent} />;
+  if (screen === "subject" && subjDef) return <SubjectScreen D={D} addCustomSection={addCustomSection} addPaper={addPaper} addSubtopic={addSubtopic} admin={admin} allSections={allSections} bd2={bd2} bg={bg} calibrationData={calibrationData} curBData={curBData} curBoard={curBoard} curTopics={curTopics} deleteCustomSec={deleteCustomSec} deletePaper={deletePaper} deleteSubtopic={deleteSubtopic} editingTitle={editingTitle} fcHist={fcHist} hProps={hProps} journalData={journalData} modal={modal} navToSection={navToSection} renameCustomSubtopic={renameCustomSubtopic} renameCustomTopic={renameCustomTopic} setBlurtSecId2={setBlurtSecId2} setBlurtSubjId={setBlurtSubjId} setEditingTitle={setEditingTitle} setFocusMode={setFocusMode} setModal={setModal} setScreen={setScreen} setSubjTab={setSubjTab} setTTSubj={setTTSubj} setTab={setTab} setTargetGrades={setTargetGrades} stats={stats} subIdx={subIdx} subjDef={subjDef} subjTab={subjTab} subjects={subjects} targetGrades={targetGrades} timetableExams={timetableExams} user={user} />;
 
   if (screen === "section" && section) return <SectionScreen D={D} addToSection={addToSection} admin={admin} bd2={bd2} bg={bg} cramMode={cramMode} curBData={curBData} curBoard={curBoard} editInSection={editInSection} elabOpen={elabOpen} elabText={elabText} enqueueOffline={enqueueOffline} errorPatternsAll={errorPatternsAll} explainFeedback={explainFeedback} explainText={explainText} fcConf={fcConf} fcHintLvl={fcHintLvl} fcHist={fcHist} fcIdx={fcIdx} fcSelfExp={fcSelfExp} fcSelfOpen={fcSelfOpen} flip={flip} goalModalShownThisTab={goalModalShownThisTab} hProps={hProps} labelTestComplete={labelTestComplete} labelTestMode={labelTestMode} logEvent={logEvent} markTodayActive={markTodayActive} marking={marking} modal={modal} noteSearch={noteSearch} qConf={qConf} qHintLvl={qHintLvl} qIdx={qIdx} qRes={qRes} qSelfDone={qSelfDone} qSelfExp={qSelfExp} removeExtra={removeExtra} runAchievementCheck={runAchievementCheck} section={section} selOpt={selOpt} setCalibrationData={setCalibrationData} setCramMode={setCramMode} setD={setD} setElabOpen={setElabOpen} setElabText={setElabText} setExplainFeedback={setExplainFeedback} setExplainText={setExplainText} setFCH={setFCH} setFcConf={setFcConf} setFcHintLvl={setFcHintLvl} setFcIdx={setFcIdx} setFcSelfExp={setFcSelfExp} setFcSelfOpen={setFcSelfOpen} setFlip={setFlip} setFocusMode={setFocusMode} setGoalModalShownThisTab={setGoalModalShownThisTab} setLabelTestComplete={setLabelTestComplete} setLabelTestMode={setLabelTestMode} setLadderTick={setLadderTick} setMark={setMark} setModal={setModal} setNoteSearch={setNoteSearch} setQConf={setQConf} setQHintLvl={setQHintLvl} setQIdx={setQIdx} setQRes={setQRes} setQSelfDone={setQSelfDone} setQSelfExp={setQSelfExp} setScreen={setScreen} setSelOpt={setSelOpt} setShowGoalModal={setShowGoalModal} setShowReflection={setShowReflection} setShowSketch={setShowSketch} setShuffledCards={setShuffledCards} setSmMdl={setSmMdl} setStats={setStats} setSvgPreview={setSvgPreview} setTA={setTA} setTab={setTab} setTransferQuestion={setTransferQuestion} showGoalModal={showGoalModal} showMdl={showMdl} showSketch={showSketch} shuffledCards={shuffledCards} subjDef={subjDef} subjects={subjects} svgPreview={svgPreview} tab={tab} textAns={textAns} touchStartRef={touchStartRef} transferQuestion={transferQuestion} user={user} />;
   if (screen === "dashboard") return <DashboardScreen D={D} achievements={achievements} activityCounts={activityCounts} activityDates={activityDates} allSections={allSections} bg={bg} boardData={boardData} boardSels={boardSels} calibrationData={calibrationData} ensureBoardLoaded={ensureBoardLoaded} fcHist={fcHist} gradeSnapshots={gradeSnapshots} hProps={hProps} pedCtx={pedCtx} setScreen={setScreen} setSubIdx={setSubIdx} setSubjTab={setSubjTab} setTTSubj={setTTSubj} setTargetGrades={setTargetGrades} setTimelineSelected={setTimelineSelected} stats={stats} streak={streak} subjects={subjects} targetGrades={targetGrades} timelineSelected={timelineSelected} timetableExams={timetableExams} totalDaysStudied={totalDaysStudied} user={user} />;
