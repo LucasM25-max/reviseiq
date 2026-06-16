@@ -5,7 +5,8 @@ import { B, I, mu, tx } from "./ui.jsx";
 export function useMathReady() {
   const [ready, setReady] = useState(typeof window.katex !== "undefined");
   useEffect(() => {
-    if (!ready) window.__onKatexReady(() => setReady(true));
+    if (!ready && typeof window.__onKatexReady === "function")
+      window.__onKatexReady(() => setReady(true));
   }, []);
   return ready;
 }

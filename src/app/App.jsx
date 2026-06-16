@@ -11,6 +11,7 @@ import { ClozeCard, QuestionFigure, SequenceCard, generateWhyPrompt } from "./ca
 import { ContactScreen } from "./contact.jsx";
 import { ConceptMap, DiagramRenderer, GraphCard, LabelledStructure, LearningTimeline, MasteryTreemap, ProcessCard, ProgressiveDiagram, SketchCanvas, checkPrerequisites, generateSVGDiagram } from "./diagrams.jsx";
 import { FocusMode } from "./focusMode.jsx";
+import { ErrorBoundary } from "./errorBoundary.jsx";
 import { FriendsPanel } from "./friends.jsx";
 import { fsrsNext, getCardState, getRetrievability, isCardDue, previewIntervals } from "./fsrs.js";
 import { AccountScreen, AdminBar, Header } from "./header.jsx";
@@ -2464,7 +2465,7 @@ export default function App() {
 
   if (screen === "subject" && subjDef) return <SubjectScreen D={D} addCustomSection={addCustomSection} addPaper={addPaper} addSubtopic={addSubtopic} admin={admin} allSections={allSections} bd2={bd2} bg={bg} calibrationData={calibrationData} curBData={curBData} curBoard={curBoard} curTopics={curTopics} deleteCustomSec={deleteCustomSec} deletePaper={deletePaper} deleteSubtopic={deleteSubtopic} editingTitle={editingTitle} fcHist={fcHist} hProps={hProps} journalData={journalData} modal={modal} navToSection={navToSection} renameCustomSubtopic={renameCustomSubtopic} renameCustomTopic={renameCustomTopic} setBlurtSecId2={setBlurtSecId2} setBlurtSubjId={setBlurtSubjId} setEditingTitle={setEditingTitle} setFocusMode={setFocusMode} setModal={setModal} setScreen={setScreen} setSubjTab={setSubjTab} setTTSubj={setTTSubj} setTab={setTab} setTargetGrades={setTargetGrades} stats={stats} subIdx={subIdx} subjDef={subjDef} subjTab={subjTab} subjects={subjects} targetGrades={targetGrades} timetableExams={timetableExams} user={user} />;
 
-  if (screen === "section" && section) return <SectionScreen D={D} addToSection={addToSection} admin={admin} bd2={bd2} bg={bg} cramMode={cramMode} curBData={curBData} curBoard={curBoard} editInSection={editInSection} elabOpen={elabOpen} elabText={elabText} enqueueOffline={enqueueOffline} errorPatternsAll={errorPatternsAll} explainFeedback={explainFeedback} explainText={explainText} fcConf={fcConf} fcHintLvl={fcHintLvl} fcHist={fcHist} fcIdx={fcIdx} fcSelfExp={fcSelfExp} fcSelfOpen={fcSelfOpen} flip={flip} goalModalShownThisTab={goalModalShownThisTab} hProps={hProps} labelTestComplete={labelTestComplete} labelTestMode={labelTestMode} logEvent={logEvent} markTodayActive={markTodayActive} marking={marking} modal={modal} noteSearch={noteSearch} qConf={qConf} qHintLvl={qHintLvl} qIdx={qIdx} qRes={qRes} qSelfDone={qSelfDone} qSelfExp={qSelfExp} removeExtra={removeExtra} runAchievementCheck={runAchievementCheck} section={section} selOpt={selOpt} setCalibrationData={setCalibrationData} setCramMode={setCramMode} setD={setD} setElabOpen={setElabOpen} setElabText={setElabText} setExplainFeedback={setExplainFeedback} setExplainText={setExplainText} setFCH={setFCH} setFcConf={setFcConf} setFcHintLvl={setFcHintLvl} setFcIdx={setFcIdx} setFcSelfExp={setFcSelfExp} setFcSelfOpen={setFcSelfOpen} setFlip={setFlip} setFocusMode={setFocusMode} setGoalModalShownThisTab={setGoalModalShownThisTab} setLabelTestComplete={setLabelTestComplete} setLabelTestMode={setLabelTestMode} setLadderTick={setLadderTick} setMark={setMark} setModal={setModal} setNoteSearch={setNoteSearch} setQConf={setQConf} setQHintLvl={setQHintLvl} setQIdx={setQIdx} setQRes={setQRes} setQSelfDone={setQSelfDone} setQSelfExp={setQSelfExp} setScreen={setScreen} setSelOpt={setSelOpt} setShowGoalModal={setShowGoalModal} setShowReflection={setShowReflection} setShowSketch={setShowSketch} setShuffledCards={setShuffledCards} setSmMdl={setSmMdl} setStats={setStats} setSvgPreview={setSvgPreview} setTA={setTA} setTab={setTab} setTransferQuestion={setTransferQuestion} showGoalModal={showGoalModal} showMdl={showMdl} showSketch={showSketch} shuffledCards={shuffledCards} subjDef={subjDef} subjects={subjects} svgPreview={svgPreview} tab={tab} textAns={textAns} touchStartRef={touchStartRef} transferQuestion={transferQuestion} user={user} />;
+  if (screen === "section" && section) return <ErrorBoundary D={D} label="Couldn't load this study screen" resetLabel="Back to notes" onReset={() => setTab("notes")}><SectionScreen D={D} addToSection={addToSection} admin={admin} bd2={bd2} bg={bg} cramMode={cramMode} curBData={curBData} curBoard={curBoard} editInSection={editInSection} elabOpen={elabOpen} elabText={elabText} enqueueOffline={enqueueOffline} errorPatternsAll={errorPatternsAll} explainFeedback={explainFeedback} explainText={explainText} fcConf={fcConf} fcHintLvl={fcHintLvl} fcHist={fcHist} fcIdx={fcIdx} fcSelfExp={fcSelfExp} fcSelfOpen={fcSelfOpen} flip={flip} goalModalShownThisTab={goalModalShownThisTab} hProps={hProps} labelTestComplete={labelTestComplete} labelTestMode={labelTestMode} logEvent={logEvent} markTodayActive={markTodayActive} marking={marking} modal={modal} noteSearch={noteSearch} qConf={qConf} qHintLvl={qHintLvl} qIdx={qIdx} qRes={qRes} qSelfDone={qSelfDone} qSelfExp={qSelfExp} removeExtra={removeExtra} runAchievementCheck={runAchievementCheck} section={section} selOpt={selOpt} setCalibrationData={setCalibrationData} setCramMode={setCramMode} setD={setD} setElabOpen={setElabOpen} setElabText={setElabText} setExplainFeedback={setExplainFeedback} setExplainText={setExplainText} setFCH={setFCH} setFcConf={setFcConf} setFcHintLvl={setFcHintLvl} setFcIdx={setFcIdx} setFcSelfExp={setFcSelfExp} setFcSelfOpen={setFcSelfOpen} setFlip={setFlip} setFocusMode={setFocusMode} setGoalModalShownThisTab={setGoalModalShownThisTab} setLabelTestComplete={setLabelTestComplete} setLabelTestMode={setLabelTestMode} setLadderTick={setLadderTick} setMark={setMark} setModal={setModal} setNoteSearch={setNoteSearch} setQConf={setQConf} setQHintLvl={setQHintLvl} setQIdx={setQIdx} setQRes={setQRes} setQSelfDone={setQSelfDone} setQSelfExp={setQSelfExp} setScreen={setScreen} setSelOpt={setSelOpt} setShowGoalModal={setShowGoalModal} setShowReflection={setShowReflection} setShowSketch={setShowSketch} setShuffledCards={setShuffledCards} setSmMdl={setSmMdl} setStats={setStats} setSvgPreview={setSvgPreview} setTA={setTA} setTab={setTab} setTransferQuestion={setTransferQuestion} showGoalModal={showGoalModal} showMdl={showMdl} showSketch={showSketch} shuffledCards={shuffledCards} subjDef={subjDef} subjects={subjects} svgPreview={svgPreview} tab={tab} textAns={textAns} touchStartRef={touchStartRef} transferQuestion={transferQuestion} user={user} /></ErrorBoundary>;
   if (screen === "dashboard") return <DashboardScreen D={D} achievements={achievements} activityCounts={activityCounts} activityDates={activityDates} allSections={allSections} bg={bg} boardData={boardData} boardSels={boardSels} calibrationData={calibrationData} ensureBoardLoaded={ensureBoardLoaded} fcHist={fcHist} gradeSnapshots={gradeSnapshots} hProps={hProps} pedCtx={pedCtx} setScreen={setScreen} setSubIdx={setSubIdx} setSubjTab={setSubjTab} setTTSubj={setTTSubj} setTargetGrades={setTargetGrades} setTimelineSelected={setTimelineSelected} stats={stats} streak={streak} subjects={subjects} targetGrades={targetGrades} timelineSelected={timelineSelected} timetableExams={timetableExams} totalDaysStudied={totalDaysStudied} user={user} />;
   if (screen === "target") return <TargetScreen D={D} bd2={bd2} bg={bg} boardSels={boardSels} getBD={getBD} hProps={hProps} markTodayActive={markTodayActive} setScreen={setScreen} setStats={setStats} setTTI={setTTI} setTTIdx={setTTIdx} setTTMk={setTTMk} setTTRes={setTTRes} setTTSO={setTTSO} setTTSubj={setTTSubj} setTTTA={setTTTA} stats={stats} subjects={subjects} ttIdx={ttIdx} ttItems={ttItems} ttMarking={ttMarking} ttRes={ttRes} ttSelOpt={ttSelOpt} ttSubj={ttSubj} ttTextAns={ttTextAns} />;
   return (
@@ -2589,15 +2590,17 @@ export default function App() {
       )}
       {}
       {focusMode && screen === "section" && section && (
-        <FocusMode
-          D={D}
-          cards={section.flashcards || []}
-          questions={section.questions || []}
-          section={section}
-          subj={subjDef}
-          fcHist={fcHist}
-          onExit={() => setFocusMode(false)}
-        />
+        <ErrorBoundary D={D} label="Couldn't load Focus Mode" resetLabel="Exit Focus Mode" onReset={() => setFocusMode(false)}>
+          <FocusMode
+            D={D}
+            cards={section.flashcards || []}
+            questions={section.questions || []}
+            section={section}
+            subj={subjDef}
+            fcHist={fcHist}
+            onExit={() => setFocusMode(false)}
+          />
+        </ErrorBoundary>
       )}
       <MobileBottomNav
         screen={screen}
