@@ -68,13 +68,34 @@ toastOut{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translate
 .rich-body ul,.rich-body ol{padding-left:20px;margin:3px 0}
 .rich-body li{margin-bottom:2px}
 .rich-body h3{font-size:14px;font-weight:700;margin:6px 0 3px}
-.rich-display{line-height:1.75;font-size:13px}
-.rich-display b,.rich-display strong{font-weight:700}
+.rich-display{line-height:1.7;font-size:14.5px;color:inherit}
+.rich-display>*:first-child{margin-top:0}
+.rich-display>*:last-child{margin-bottom:0}
+.rich-display p{margin:0 0 10px}
+.rich-display b,.rich-display strong{font-weight:700;color:inherit}
 .rich-display i,.rich-display em{font-style:italic}
 .rich-display u{text-decoration:underline}
-.rich-display ul,.rich-display ol{padding-left:20px;margin:4px 0}
-.rich-display li{margin-bottom:2px}
-.rich-display h3{font-size:14px;font-weight:700;margin:6px 0 3px}
+.rich-display h3{font-size:15px;font-weight:800;margin:14px 0 6px;letter-spacing:-.01em}
+.rich-display ul,.rich-display ol{padding-left:22px;margin:8px 0}
+.rich-display li{margin-bottom:6px;padding-left:3px}
+.rich-display ul li::marker{color:#7c3aed}
+.rich-display ol li::marker{color:#7c3aed;font-weight:700}
+.rich-display table{margin:12px 0;border-radius:10px;overflow:hidden;box-shadow:0 0 0 1px rgba(124,58,237,.12)}
+.rich-display th{font-weight:700;font-size:12.5px;letter-spacing:.02em}
+.rich-display td,.rich-display th{line-height:1.5}
+.rich-display figure{margin:14px 0}
+/* ── Learning-optimised note callouts ── */
+.rd-callout{position:relative;margin:12px 0;padding:11px 14px 12px 16px;border-radius:12px;border-left:4px solid var(--rd-accent,#7c3aed);background:var(--rd-bg,rgba(124,58,237,.07))}
+.rd-callout .rd-clabel{display:block;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--rd-accent,#7c3aed);margin-bottom:5px}
+.rd-callout .rd-cbody{font-size:14px;line-height:1.6}
+.rd-callout .rd-cbody>*:first-child{margin-top:0}
+.rd-callout .rd-cbody>*:last-child{margin-bottom:0}
+.rd-callout .rd-cbody ul,.rd-callout .rd-cbody ol{margin:4px 0}
+.rd-def{--rd-accent:#7c3aed;--rd-bg:rgba(124,58,237,.08)}
+.rd-alt{--rd-accent:#d6336c;--rd-bg:rgba(214,51,108,.08)}
+.rd-key{--rd-accent:#0d9488;--rd-bg:rgba(13,148,136,.10)}
+.rd-tip{--rd-accent:#d97706;--rd-bg:rgba(217,119,6,.11)}
+.rd-eg{--rd-accent:#2563eb;--rd-bg:rgba(37,99,235,.08)}
 /* ── Evidence-based learning UI enhancements ── */
 @keyframes
 sectionReveal{from{opacity:0;max-height:0;padding-top:0;padding-bottom:0}to{opacity:1;max-height:3000px}}

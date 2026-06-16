@@ -440,15 +440,11 @@ timeline.\nReturn:
           )}
           {tab === "flashcards" &&
             (() => {
-              if (
-                !goalModalShownThisTab &&
-                !showGoalModal &&
-                cards.length > 0
-              ) {
-                setGoalModalShownThisTab(true);
-                setShowGoalModal(true);
-              }
-
+              // NOTE: the session-goal modal must NOT be triggered here.
+              // Calling parent setState during this child's render crashes the
+              // flashcards tab ("Cannot update a component while rendering a
+              // different component"). It is opened from the Focus Mode control
+              // instead. See setShowGoalModal usage in the header actions.
               const [shuffled, setShuffled] = [shuffledCards, setShuffledCards];
               const activeCards = shuffled || cards;
               const safeFI =

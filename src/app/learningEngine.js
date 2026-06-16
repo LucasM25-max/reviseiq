@@ -94,74 +94,102 @@ export function computeSubjectSnapshot(subject, allSections = [], stats = {}, fc
 export function computeNextBestActions({ subjects = [], allSections = [], stats = {}, fcHist = {}, timetableExams = [], nowTs = Date.now() }) {
   const actions = [];
 
-  // 1) Highest due-card load first.
-  const dueBySubject = subjects
-    .map(s => {
-      const sections = allSections.filter(sec => sec.subjectId === s.id);
-      const due = sections.reduce((a, sec) => a + getSectionDueCount(sec, fcHist, nowTs), 0);
-      return { subject: s, due, sections };
-    })
-    .filter(x => x.due > 0)
-    .sort((a, b) => b.due - a.due);
+  // 1) The exam revision timetable comes FIRST. The closer an exam is, the
+  //    higher its priority, and exam-driven work always sits above weak-area
+  //    practice and spaced repetition.
+  const upcomingExams = (timetableExams || [])
+    .filter((e) => e && e.date)
+    .map((e) => ({
+      exam: e,
+      days: Math.round((new Date(e.date + "T00:00:00").getTime() - nowTs) / 86400000),
+    }))
+    .filter((x) => x.days >= 0)
+    .sort((a, b) => a.days - b.days);
 
-  if (dueBySubject[0]) {
-    const top = dueBySubject[0];
-    const bestSec = [...top.sections]
-      .map(sec => ({ sec, due: getSectionDueCount(sec, fcHist, nowTs) }))
-      .sort((a, b) => b.due - a.due)[0]?.sec || null;
+  upcomingExams.slice(0, 3).forEach(({ exam, days }, i) => {
+    const subj = subjects.find((s) => s.id === exam.subjectId);
     actions.push({
-      kind: 'flashcards',
-      priority: 100,
-      subjectId: top.subject.id,
-      sectionId: bestSec ? bestSec.id : null,
-      label: `Review ${top.due} due ${top.subject.name} flashcards`,
-      subtitle: bestSec ? bestSec.title : top.subject.name,
+      kind: 'exam',
+      priority: 1000 - days * 5 - i,
+      subjectId: exam.subjectId,
+      sectionId: exam.sectionId || null,
+      examId: exam.id,
+      days,
+      label: `Exam prep: ${(subj && subj.name) || exam.label || 'Upcoming exam'}`,
+      subtitle:
+        days === 0
+          ? 'Exam today — final active recall'
+          : days === 1
+            ? 'Exam tomorrow — revise now'
+            : `Exam in ${days} days — stay on your timetable`,
     });
-  }
+  });
 
-  // 2) Weakest question section.
+  // 2) Weak areas next (lowest question accuracy first).
   const weakSections = allSections
-    .map(sec => ({ sec, pct: getQuestionAccuracy(sec.id, stats) }))
-    .filter(x => x.pct != null)
+    .map((sec) => ({ sec, pct: getQuestionAccuracy(sec.id, stats) }))
+    .filter((x) => x.pct != null)
     .sort((a, b) => a.pct - b.pct);
 
-  if (weakSections[0]) {
-    const wk = weakSections[0];
+  weakSections.slice(0, 2).forEach((wk, i) => {
     actions.push({
       kind: 'questions',
-      priority: 90,
+      priority: 500 - i * 10 - wk.pct,
       subjectId: wk.sec.subjectId,
       sectionId: wk.sec.id,
       label: `Practice questions: ${wk.sec.title}`,
       subtitle: `Weakest area · ${wk.pct}% accuracy`,
     });
-  }
+  });
 
-  // 3) Urgent exam prep.
-  const urgent = getUrgentExam(timetableExams, nowTs);
-  if (urgent) {
+  // 3) Spaced repetition: subjects carrying the most due flashcards.
+  const dueBySubject = subjects
+    .map((s) => {
+      const sections = allSections.filter((sec) => sec.subjectId === s.id);
+      const due = sections.reduce((a, sec) => a + getSectionDueCount(sec, fcHist, nowTs), 0);
+      return { subject: s, due, sections };
+    })
+    .filter((x) => x.due > 0)
+    .sort((a, b) => b.due - a.due);
+
+  dueBySubject.slice(0, 2).forEach((top, i) => {
+    const bestSec = [...top.sections]
+      .map((sec) => ({ sec, due: getSectionDueCount(sec, fcHist, nowTs) }))
+      .sort((a, b) => b.due - a.due)[0]?.sec || null;
     actions.push({
-      kind: 'exam',
-      priority: urgent.days <= 3 ? 95 : urgent.days <= 7 ? 85 : 70,
-      subjectId: urgent.exam.subjectId,
-      sectionId: urgent.exam.sectionId || null,
-      examId: urgent.exam.id,
-      days: urgent.days,
-      label: `Exam prep: ${urgent.exam.label || 'Upcoming exam'}`,
-      subtitle: urgent.days === 0 ? 'Exam today' : urgent.days === 1 ? 'Exam tomorrow' : `Exam in ${urgent.days} days`,
+      kind: 'flashcards',
+      priority: 300 - i * 10,
+      subjectId: top.subject.id,
+      sectionId: bestSec ? bestSec.id : null,
+      label: `Review ${top.due} due ${top.subject.name} flashcards`,
+      subtitle: bestSec ? bestSec.title : top.subject.name,
     });
-  }
+  });
 
+  // 4) Nothing scheduled yet? Get the student moving with available content.
   if (!actions.length) {
-    actions.push({
-      kind: 'mock',
-      priority: 50,
-      label: 'Take a mock exam',
-      subtitle: 'Simulate exam conditions',
-    });
+    const firstWithCards = allSections.find((sec) => (sec.flashcards || []).length > 0);
+    if (firstWithCards) {
+      const subj = subjects.find((s) => s.id === firstWithCards.subjectId);
+      actions.push({
+        kind: 'flashcards',
+        priority: 100,
+        subjectId: firstWithCards.subjectId,
+        sectionId: firstWithCards.id,
+        label: `Study ${(subj && subj.name) || ''} flashcards`.replace(/\s+/g, ' ').trim(),
+        subtitle: firstWithCards.title,
+      });
+    } else {
+      actions.push({
+        kind: 'mock',
+        priority: 50,
+        label: 'Take a mock exam',
+        subtitle: 'Simulate exam conditions',
+      });
+    }
   }
 
-  return actions.sort((a, b) => b.priority - a.priority).slice(0, 3);
+  return actions.sort((a, b) => b.priority - a.priority).slice(0, 6);
 }
 
 export function buildTodaySessionPlan({ subjects = [], allSections = [], stats = {}, fcHist = {}, timetableExams = [], nowTs = Date.now() }) {

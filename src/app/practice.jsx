@@ -14,6 +14,7 @@ export function TodayWidget({
   onNavigateBlurt,
   onMock,
 }) {
+  const [expanded, setExpanded] = useState(false);
   const plan = computeNextBestActions({
     subjects,
     allSections,
@@ -95,7 +96,10 @@ export function TodayWidget({
   const hairline = D ? "rgba(255,255,255,.08)" : "rgba(16,24,40,.07)";
 
   const hero = finalItems[0];
-  const rest = finalItems.slice(1);
+  const maxVisible = expanded ? finalItems.length : 3;
+  const rest = finalItems.slice(1, maxVisible);
+  const moreAvailable = finalItems.length > maxVisible;
+  const moreCount = Math.min(3, finalItems.length - 3);
 
   const wrap = { display: "flex", flexDirection: "column", gap: 14 };
   const head = { display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" };
@@ -135,6 +139,8 @@ export function TodayWidget({
   const rowSub = { fontSize: 12.5, color: muc, marginTop: 2 };
   const numStyle = function (c) { return { fontSize: 12.5, fontWeight: 800, color: c }; };
   const chevStyle = function (c) { return { flexShrink: 0, fontSize: 18, color: c, fontWeight: 700 }; };
+  const moreBtn = { display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", cursor: "pointer", padding: "12px 16px", borderRadius: 14, border: "1.5px dashed " + hairline, background: "transparent", color: muc, fontSize: 13.5, fontWeight: 700, transition: "border-color .16s ease, color .16s ease" };
+  const moreSpan = { fontWeight: 800, color: "#7c3aed" };
 
   return (
     <div style={wrap}>
@@ -194,6 +200,19 @@ export function TodayWidget({
             );
           })}
         </div>
+      ) : null}
+      {moreAvailable ? (
+        <button
+          onClick={function () { setExpanded(true); }}
+          style={moreBtn}
+          onMouseEnter={function (e) { e.currentTarget.style.borderColor = "#7c3aed"; e.currentTarget.style.color = "#7c3aed"; }}
+          onMouseLeave={function (e) { e.currentTarget.style.borderColor = hairline; e.currentTarget.style.color = muc; }}
+        >
+          Ready for more?
+          <span style={moreSpan}>
+            +{moreCount} more task{moreCount === 1 ? "" : "s"} →
+          </span>
+        </button>
       ) : null}
     </div>
   );

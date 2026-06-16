@@ -128,26 +128,9 @@ export function HomeScreen(props) {
             </div>
           </div>
 
-          <div style={hero}>
-            <div style={heroGlow} />
-            <div style={heroInner}>
-              <div style={heroCol}>
-                <div style={heroKicker}>Your next goal {nextGoal.icon}</div>
-                <h3 style={heroTitle}>{nextGoal.title}</h3>
-                <p style={heroSub}>{nextGoal.instruction}</p>
-                <div style={heroRow}>
-                  <span style={startWith}>Why now: {nextGoal.reason}</span>
-                  <span style={heroBadge}>≈ {nextGoal.etaMin} min</span>
-                </div>
-              </div>
-              <button
-                onClick={() => goToGoal(nextGoal)}
-                style={startBtn}
-              >
-                Start →
-              </button>
-            </div>
-          </div>
+          {/* The single primary call-to-action lives in the consolidated
+              "Today" plan below (TodayWidget). The old "Your next goal" hero
+              duplicated that top task, so it has been removed. */}
 
           {subjects.length > 0 ? (
             <div style={readyCardWrap}>
