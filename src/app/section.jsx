@@ -229,21 +229,7 @@ export function SectionScreen(props) {
               >
                 {subj.name}
               </button>
-              <button
-                onClick={() => setFocusMode(true)}
-                style={{
-                  fontSize: 12,
-                  padding: "6px 14px",
-                  borderRadius: 8,
-                  border: "1px solid #7c3aed",
-                  background: "transparent",
-                  color: "#7c3aed",
-                  cursor: "pointer",
-                  fontWeight: 600,
-                }}
-              >
-                Focus Mode
-              </button>
+              
             </div>
           )}
           {!inFocusMode && (

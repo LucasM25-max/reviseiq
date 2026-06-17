@@ -61,7 +61,7 @@ export function Header({
     WebkitBackdropFilter: "saturate(180%) blur(18px)",
     position: "sticky",
     top: 0,
-    zIndex: 50,
+    zIndex: 200,
   };
   var innerStyle = {
     maxWidth: 1100,

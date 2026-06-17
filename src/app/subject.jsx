@@ -1141,22 +1141,7 @@ grade${parseInt(target) - parseInt(predicted) !== 1 ? "s" : ""} to go`}
                   );
                 })()}
               {}
-              {!subj._politics && (
-                <button
-                  onClick={() => setFocusMode(true)}
-                  style={{
-                    ...B("#7c3aed", true, {
-                      width: "100%",
-                      padding: "11px 0",
-                      fontSize: 13,
-                      fontWeight: 700,
-                      marginBottom: 18,
-                    }),
-                  }}
-                >
-                  Start Focus Mode
-                </button>
-              )}
+              
               <div
                 style={{
                   display: "flex",
