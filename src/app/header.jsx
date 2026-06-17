@@ -19,6 +19,7 @@ export function Header({
   onLeaderboards,
   onAccount,
   onContact,
+  onFocus,
   streak,
   onSearch,
   globalOverlays,
@@ -144,6 +145,22 @@ export function Header({
     lineHeight: 1,
     padding: 0,
   };
+  var focusBtn = {
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
+    padding: "6px 13px",
+    borderRadius: 999,
+    background: GRAD,
+    color: "#fff",
+    border: "none",
+    fontSize: 12.5,
+    fontWeight: 700,
+    cursor: "pointer",
+    flexShrink: 0,
+    boxShadow: "0 6px 16px -6px rgba(124,58,237,.7)",
+  };
+  var focusBtnIcon = { fontSize: 13, lineHeight: 1 };
   var userChip = {
     display: "flex",
     alignItems: "center",
@@ -261,6 +278,12 @@ export function Header({
             <span style={streakIcon}>🔥</span>
             <span style={streakNum}>{streak}d</span>
           </div>
+        )}
+        {typeof onFocus === "function" && (
+          <button onClick={onFocus} style={focusBtn} aria-label="Focus Mode" title="Focus Mode">
+            <span style={focusBtnIcon}>⏱</span>
+            <span>Focus</span>
+          </button>
         )}
         <button onClick={onDark} style={iconBtn} aria-label="Toggle theme">
           {D ? "☀️" : "🌙"}

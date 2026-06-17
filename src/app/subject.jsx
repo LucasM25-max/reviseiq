@@ -48,22 +48,23 @@ export function SubjectScreen(props) {
           >
             <div
               style={{
-                width: 56,
-                height: 56,
-                borderRadius: 16,
+                width: 64,
+                height: 64,
+                borderRadius: 18,
                 background: `linear-gradient(135deg,${subj.accent},
 ${subj.accent}88)`,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                fontSize: 26,
+                fontSize: 30,
                 flexShrink: 0,
+                boxShadow: "0 10px 24px -8px " + subj.accent,
               }}
             >
               {subj.icon}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 6 }}>
+              <h2 style={{ fontSize: 30, fontWeight: 800, marginBottom: 8, letterSpacing: "-0.02em" }}>
                 {subj.name}
               </h2>
               {!subj._politics && (
@@ -854,10 +855,10 @@ grade${parseInt(target) - parseInt(predicted) !== 1 ? "s" : ""} to go`}
                               </div>
                               <div style={{ display: "flex", gap: 8 }}>
                                 <span style={{ fontSize: 11, color: mu(D) }}>
-                                  {(sec.flashcards || []).length}
+                                  🎴 {(sec.flashcards || []).length}
                                 </span>
                                 <span style={{ fontSize: 11, color: mu(D) }}>
-                                  {(sec.questions || []).length}
+                                  ✏️ {(sec.questions || []).length}
                                 </span>
                               </div>
                             </div>
@@ -959,8 +960,9 @@ grade${parseInt(target) - parseInt(predicted) !== 1 ? "s" : ""} to go`}
                       <span
                         style={{
                           fontWeight: 800,
-                          fontSize: 16,
+                          fontSize: 18,
                           color: subj.accent,
+                          letterSpacing: "-0.01em",
                         }}
                       >
                         {tp.title}
@@ -1008,10 +1010,11 @@ grade${parseInt(target) - parseInt(predicted) !== 1 ? "s" : ""} to go`}
                               style={{
                                 width: "100%",
                                 textAlign: "left",
-                                padding: "12px 14px",
-                                borderRadius: 12,
+                                padding: "14px 16px",
+                                borderRadius: 14,
                                 border: "1.5px solid" + bd2,
-                                background: "transparent",
+                                background: D ? "rgba(255,255,255,.03)" : "#ffffff",
+                                boxShadow: D ? "0 1px 3px rgba(0,0,0,.35)" : "0 2px 6px rgba(16,24,40,.06)",
                                 cursor: "pointer",
                                 transition: "all .15s",
                                 color: tx(D),
@@ -1022,7 +1025,7 @@ grade${parseInt(target) - parseInt(predicted) !== 1 ? "s" : ""} to go`}
                               }}
                               onMouseLeave={function (e) {
                                 e.currentTarget.style.borderColor = bd2;
-                                e.currentTarget.style.background = "transparent";
+                                e.currentTarget.style.background = D ? "rgba(255,255,255,.03)" : "#ffffff";
                               }}
                             >
                               <div
@@ -1067,10 +1070,10 @@ grade${parseInt(target) - parseInt(predicted) !== 1 ? "s" : ""} to go`}
                               </div>
                               <div style={{ display: "flex", gap: 8 }}>
                                 <span style={{ fontSize: 11, color: mu(D) }}>
-                                  {(sec.flashcards || []).length}
+                                  🎴 {(sec.flashcards || []).length}
                                 </span>
                                 <span style={{ fontSize: 11, color: mu(D) }}>
-                                  {(sec.questions || []).length}
+                                  ✏️ {(sec.questions || []).length}
                                 </span>
                               </div>
                             </div>

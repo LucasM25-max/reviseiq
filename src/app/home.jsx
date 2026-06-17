@@ -248,10 +248,9 @@ export function HomeScreen(props) {
           <div style={subjGrid}>
             {[
               { icon: "📚", label: "Study", desc: "Subjects, flashcards & questions", on: () => setScreen("study") },
-              { icon: "🧠", label: "Sage · AI Coach", desc: "Tutor & homework help", on: () => setScreen("coach") },
+              { icon: "🧠", label: "Coach", desc: "Sage AI tutor & homework help", on: () => setScreen("coach") },
               { icon: "📈", label: "Progress", desc: "Mastery, calibration & journal", on: () => setScreen("dashboard") },
-              { icon: "📅", label: "Timetable", desc: "Exam dates & countdown", on: () => setScreen("timetable") },
-              { icon: "📝", label: "Mock exam", desc: "Sit a full timed paper", on: () => setScreen("mock") },
+              { icon: "🤝", label: "Social", desc: "Friends, groups & leaderboards", on: () => setScreen("friends") },
             ].map((it) => (
               <button key={it.label} style={subjCard} onClick={it.on} onMouseEnter={liftIn} onMouseLeave={liftOut}>
                 <div style={subjIcon("#7c3aed")}>{it.icon}</div>

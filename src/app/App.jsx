@@ -1452,7 +1452,16 @@ export default function App() {
   };
   const bg = D ? "#0a0a14" : "#f9fafb",
     bd2 = D ? "#262844" : "#e5e7eb";
+  const focusModeCards =
+    section && section.flashcards && section.flashcards.length
+      ? section.flashcards
+      : subjDef
+        ? allSections
+            .filter((s) => s.subjectId === subjDef.id)
+            .reduce((acc, s) => acc.concat(s.flashcards || []), [])
+        : allSections.reduce((acc, s) => acc.concat(s.flashcards || []), []);
   const _goEl = (
+    <>
     <GlobalOverlays
       D={D}
       online={online}
@@ -1479,6 +1488,19 @@ export default function App() {
       onLeaderboards={() => setScreen("friends")}
       streak={streak}
     />
+    {focusMode && (
+      <ErrorBoundary D={D} label="Couldn't load Focus Mode" resetLabel="Exit Focus Mode" onReset={() => setFocusMode(false)}>
+        <FocusMode
+          D={D}
+          cards={focusModeCards}
+          section={section}
+          subj={subjDef}
+          fcHist={fcHist}
+          onExit={() => setFocusMode(false)}
+        />
+      </ErrorBoundary>
+    )}
+    </>
   );
   const hProps = {
     user,
@@ -1521,6 +1543,7 @@ export default function App() {
     onLeaderboards: () => setScreen("friends"),
     onAccount: () => setScreen("account"),
     onContact: () => setScreen("contact"),
+    onFocus: () => setFocusMode(true),
     streak,
     onSearch: () => setSearchOpen(true),
     globalOverlays: _goEl,
@@ -2401,22 +2424,6 @@ export default function App() {
             Choose a subject to learn, review flashcards and practise questions —
             or sit a target test or a full mock exam.
           </p>
-          {examModes.length > 0 && (
-            <>
-              <p style={sectionLabel}>Tests &amp; exams</p>
-              <div style={examGrid}>
-                {examModes.map((m) => (
-                  <button key={m.id} onClick={m.fn} style={examCard}>
-                    <span style={examIcon}>{m.icon}</span>
-                    <span>
-                      <p style={examTitle}>{m.title}</p>
-                      <p style={examDesc}>{m.desc}</p>
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
           <p style={sectionLabel}>Your subjects</p>
           {real.length === 0 ? (
             <p style={studyEmpty}>
@@ -2456,6 +2463,22 @@ export default function App() {
                 );
               })}
             </div>
+          )}
+          {examModes.length > 0 && (
+            <>
+              <p style={sectionLabel}>Tests &amp; exams</p>
+              <div style={examGrid}>
+                {examModes.map((m) => (
+                  <button key={m.id} onClick={m.fn} style={examCard}>
+                    <span style={examIcon}>{m.icon}</span>
+                    <span>
+                      <p style={examTitle}>{m.title}</p>
+                      <p style={examDesc}>{m.desc}</p>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </>
           )}
         </div>
       </div>
@@ -2589,19 +2612,6 @@ export default function App() {
         </div>
       )}
       {}
-      {focusMode && screen === "section" && section && (
-        <ErrorBoundary D={D} label="Couldn't load Focus Mode" resetLabel="Exit Focus Mode" onReset={() => setFocusMode(false)}>
-          <FocusMode
-            D={D}
-            cards={section.flashcards || []}
-            questions={section.questions || []}
-            section={section}
-            subj={subjDef}
-            fcHist={fcHist}
-            onExit={() => setFocusMode(false)}
-          />
-        </ErrorBoundary>
-      )}
       <MobileBottomNav
         screen={screen}
         onHome={() => setScreen("home")}
