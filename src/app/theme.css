@@ -14,12 +14,18 @@
   --riq-display: "Fraunces", Georgia, "Times New Roman", serif;
   --riq-display-alt: "Sora", var(--riq-font);
 
-  /* Brand spine: indigo -> violet */
+  /* Brand spine — themeable. Defaults = "Lumen" (indigo -> violet). */
+  /* themes.js overrides these custom properties on :root to recolour the app. */
+  --riq-accent: #7c3aed;
+  --riq-accent-rgb: 124, 58, 237;
   --riq-primary: #5b54f0;
+  --riq-primary-rgb: 91, 84, 240;
   --riq-primary-2: #8b5cf6;
+  --riq-primary-2-rgb: 139, 92, 246;
   --riq-primary-3: #d946ef;
-  --riq-gradient: linear-gradient(120deg, #5b54f0 0%, #8b5cf6 50%, #d946ef 100%);
-  --riq-ring: rgba(91, 84, 240, 0.42);
+  --riq-primary-3-rgb: 217, 70, 239;
+  --riq-gradient: linear-gradient(120deg, var(--riq-primary) 0%, var(--riq-primary-2) 50%, var(--riq-primary-3) 100%);
+  --riq-ring: rgba(var(--riq-primary-rgb), 0.42);
   --riq-ease: cubic-bezier(0.22, 1, 0.36, 1);
   --riq-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 

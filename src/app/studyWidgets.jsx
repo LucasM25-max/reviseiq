@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { resolveVar } from "./themes.js";
 import { calcBrierScore, getStrategyRecommendation } from "./coreHelpers.js";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { fsrsRetrievability, getCardState } from "./fsrs.js";
@@ -26,18 +27,18 @@ export function PastPapersTab({
             padding: "10px 14px",
             borderRadius: 12,
             background: D ? "#1a1a2e" : "#f5f3ff",
-            border: "1.5px solid #7c3aed",
+            border: "1.5px solid var(--riq-accent)",
             marginBottom: 18,
           }}
         >
-          <span style={{ fontSize: 11, fontWeight: 700, color: "#7c3aed" }}>
+          <span style={{ fontSize: 11, fontWeight: 700, color: "var(--riq-accent)" }}>
             ADMIN
           </span>
 
           <button
             onClick={onAdd}
             style={{
-              ...B("#7c3aed", true, { fontSize: 12, padding: "5px 12px" }),
+              ...B("var(--riq-accent)", true, { fontSize: 12, padding: "5px 12px" }),
             }}
           >
             ＋ Add Past Paper
@@ -206,7 +207,7 @@ export function MasteryRing({ pct, size, accent }) {
         cy={(size || 32) / 2}
         r={r}
         fill="none"
-        stroke={accent || "#10b981"}
+        stroke={resolveVar(accent || "#10b981")}
         strokeWidth={3}
         strokeDasharray={circ}
         strokeDashoffset={circ - dash}
@@ -227,7 +228,7 @@ export function SRInfoTooltip({ D }) {
           border: "none",
           cursor: "pointer",
           fontSize: 12,
-          color: "#7c3aed",
+          color: "var(--riq-accent)",
           padding: "0 2px",
           lineHeight: 1,
         }}
@@ -260,7 +261,7 @@ export function SRInfoTooltip({ D }) {
             color: D ? "#e5e7eb" : "#374151",
           }}
         >
-          <div style={{ fontWeight: 700, marginBottom: 6, color: "#7c3aed" }}>
+          <div style={{ fontWeight: 700, marginBottom: 6, color: "var(--riq-accent)" }}>
             Spaced Repetition
           </div>
           <p style={{ margin: 0 }}>
@@ -359,7 +360,7 @@ export function ForecastBar({ cards, fcHist, D, accent }) {
               style={{
                 fontSize: 9,
                 color:
-                  count > 0 ? accent || "#7c3aed" : D ? "#4b5563" : "#d1d5db",
+                  count > 0 ? accent || "var(--riq-accent)" : D ? "#4b5563" : "#d1d5db",
                 fontWeight: count > 0 ? 700 : 400,
               }}
             >
@@ -370,7 +371,7 @@ export function ForecastBar({ cards, fcHist, D, accent }) {
                 width: "100%",
                 borderRadius: 3,
                 background:
-                  count > 0 ? accent || "#7c3aed" : D ? "#262844" : "#e5e7eb",
+                  count > 0 ? accent || "var(--riq-accent)" : D ? "#262844" : "#e5e7eb",
                 height: Math.max(4, Math.round((count / max) * 28)),
                 transition: "height .2s",
                 opacity: i === 0 ? 1 : 0.7,
@@ -504,8 +505,8 @@ export function SessionGoalModal({ D, onStart, onSkip }) {
                     flex: 1,
                     padding: "8px 4px",
                     borderRadius: 10,
-                    border: `2px solid ${confidence === v ? "#7c3aed" : bd2}`,
-                    background: confidence === v ? "#7c3aed" : "transparent",
+                    border: `2px solid ${confidence === v ? "var(--riq-accent)" : bd2}`,
+                    background: confidence === v ? "var(--riq-accent)" : "transparent",
                     color:
                       confidence === v ? "#fff" : D ? "#9ca3af" : "#6b7280",
                     cursor: "pointer",
@@ -521,7 +522,7 @@ export function SessionGoalModal({ D, onStart, onSkip }) {
             <div
               style={{
                 fontSize: 11,
-                color: "#7c3aed",
+                color: "var(--riq-accent)",
                 textAlign: "center",
                 marginTop: 4,
                 fontWeight: 600,
@@ -554,8 +555,8 @@ export function SessionGoalModal({ D, onStart, onSkip }) {
                     minWidth: 44,
                     padding: "8px 4px",
                     borderRadius: 9,
-                    border: `2px solid ${duration === t ? "#7c3aed" : bd2}`,
-                    background: duration === t ? "#7c3aed" : "transparent",
+                    border: `2px solid ${duration === t ? "var(--riq-accent)" : bd2}`,
+                    background: duration === t ? "var(--riq-accent)" : "transparent",
                     color: duration === t ? "#fff" : D ? "#9ca3af" : "#6b7280",
                     cursor: "pointer",
                     fontSize: 12,
@@ -599,7 +600,7 @@ export function SessionGoalModal({ D, onStart, onSkip }) {
               padding: "11px 0",
               borderRadius: 12,
               border: "none",
-              background: "#7c3aed",
+              background: "var(--riq-accent)",
               color: "#fff",
               fontWeight: 700,
               fontSize: 14,
@@ -638,7 +639,7 @@ export function PostSessionReflection({ D, sessionGoal, subjectId, onSave, onSki
         ...C(D),
         marginTop: 16,
         overflow: "hidden",
-        border: "1.5px solid #7c3aed",
+        border: "1.5px solid var(--riq-accent)",
       }}
       className="slide-up"
     >
@@ -658,7 +659,7 @@ export function PostSessionReflection({ D, sessionGoal, subjectId, onSave, onSki
       >
         <span style={{ fontSize: 18 }}> </span>
         <span
-          style={{ flex: 1, fontSize: 13, fontWeight: 700, color: "#7c3aed" }}
+          style={{ flex: 1, fontSize: 13, fontWeight: 700, color: "var(--riq-accent)" }}
         >
           Session Reflection
           <span
@@ -673,7 +674,7 @@ export function PostSessionReflection({ D, sessionGoal, subjectId, onSave, onSki
         </span>
 
         <span
-          style={{ fontSize: 11, color: "#7c3aed", fontWeight: 700 }}
+          style={{ fontSize: 11, color: "var(--riq-accent)", fontWeight: 700 }}
         ></span>
       </button>
       <div
@@ -776,7 +777,7 @@ solid ${bd2}`,
               padding: "9px 0",
               borderRadius: 10,
               border: "none",
-              background: "#7c3aed",
+              background: "var(--riq-accent)",
               color: "#fff",
               fontWeight: 700,
               fontSize: 13,
@@ -822,7 +823,7 @@ export function StudyJournalTab({ D, entries, mu2, tx2 }) {
                 width: 10,
                 height: 10,
                 borderRadius: "50%",
-                background: "#7c3aed",
+                background: "var(--riq-accent)",
                 flexShrink: 0,
                 marginTop: 4,
               }}
@@ -853,7 +854,7 @@ export function StudyJournalTab({ D, entries, mu2, tx2 }) {
               <div
                 style={{
                   fontSize: 12,
-                  color: "#7c3aed",
+                  color: "var(--riq-accent)",
                   fontWeight: 600,
                   marginBottom: 6,
                 }}
@@ -916,7 +917,7 @@ export function StudyJournalTab({ D, entries, mu2, tx2 }) {
                     style={{
                       fontSize: 10,
                       fontWeight: 700,
-                      color: "#7c3aed",
+                      color: "var(--riq-accent)",
                       textTransform: "uppercase",
                       letterSpacing: "0.07em",
                       marginBottom: 6,
@@ -1032,7 +1033,7 @@ export function CalibrationGauge({ D, calibData, subjectName }) {
             <path
               d={`M 12 56 A ${r} ${r} 0 0 1 100 56`}
               fill="none"
-              stroke={col}
+              stroke={resolveVar(col)}
               strokeWidth={10}
               strokeLinecap="round"
               strokeDasharray={arcLen}
@@ -1048,7 +1049,7 @@ export function CalibrationGauge({ D, calibData, subjectName }) {
               textAnchor="middle"
               fontSize={15}
               fontWeight={700}
-              fill={col}
+              fill={resolveVar(col)}
             >
               {score.toFixed(2)}
             </text>
@@ -1265,7 +1266,7 @@ export function MemoryDecayChart({ D, cardState, accent }) {
           <Line
             type="monotone"
             dataKey="fsrs"
-            stroke={accent}
+            stroke={resolveVar(accent)}
             strokeWidth={2}
             dot={false}
             name="fsrs"

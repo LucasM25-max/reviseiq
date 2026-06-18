@@ -1776,7 +1776,7 @@ export default function App() {
       <div
         style={{
           minHeight: "100vh",
-          background: D ? "radial-gradient(1200px 820px at 12% -12%, rgba(124,58,237,.20), transparent 60%), radial-gradient(1000px 720px at 102% 4%, rgba(217,70,239,.14), transparent 55%), radial-gradient(900px 700px at 50% 120%, rgba(59,130,246,.10), transparent 55%), #0a0a14" : "radial-gradient(1100px 780px at 10% -10%, rgba(124,58,237,.10), transparent 60%), radial-gradient(940px 660px at 104% 2%, rgba(217,70,239,.08), transparent 55%), radial-gradient(820px 640px at 50% 116%, rgba(59,130,246,.06), transparent 55%), #f6f6fc",
+          background: D ? "radial-gradient(1200px 820px at 12% -12%, rgba(var(--riq-accent-rgb),.20), transparent 60%), radial-gradient(1000px 720px at 102% 4%, rgba(var(--riq-primary-3-rgb),.14), transparent 55%), radial-gradient(900px 700px at 50% 120%, rgba(59,130,246,.10), transparent 55%), #0a0a14" : "radial-gradient(1100px 780px at 10% -10%, rgba(var(--riq-accent-rgb),.10), transparent 60%), radial-gradient(940px 660px at 104% 2%, rgba(var(--riq-primary-3-rgb),.08), transparent 55%), radial-gradient(820px 640px at 50% 116%, rgba(59,130,246,.06), transparent 55%), #f6f6fc",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -1948,7 +1948,7 @@ export default function App() {
             onClick={handleAuth}
             style={{
               width: "100%",
-              background: canSubmit ? "#7c3aed" : "#d1d5db",
+              background: canSubmit ? "var(--riq-accent)" : "#d1d5db",
               color: "#fff",
               border: "none",
               borderRadius: 12,
@@ -2319,7 +2319,7 @@ export default function App() {
     const _sh = D
       ? "0 20px 50px -34px rgba(0,0,0,.85)"
       : "0 20px 50px -34px rgba(76,29,149,.35)";
-    const GRAD = "linear-gradient(120deg,#5b54f0,#8b5cf6,#d946ef)";
+    const GRAD = "linear-gradient(120deg,var(--riq-primary),var(--riq-primary-2),var(--riq-primary-3))";
     const studyShell = {
       minHeight: "100vh",
       background: D ? "#0a0a14" : "#f6f7fb",
@@ -2588,7 +2588,7 @@ export default function App() {
                   setPrereqModal(null);
                 }}
                 style={{
-                  ...B("#7c3aed", false, { padding: "8px 12px", fontSize: 12 }),
+                  ...B("var(--riq-accent)", false, { padding: "8px 12px", fontSize: 12 }),
                 }}
               >
                 Go to prerequisite
@@ -2718,7 +2718,7 @@ export default function App() {
                       style={{
                         fontSize: 13,
                         fontWeight: 700,
-                        color: "#7c3aed",
+                        color: "var(--riq-accent)",
                       }}
                     >
                       {count}

@@ -1,4 +1,5 @@
 import React from "react";
+import { themePrimary, themePrimary2, themePrimary3 } from "./themes.js";
 
 /* ============================================================
    Lumen — signature presentational components.
@@ -7,9 +8,8 @@ import React from "react";
    stay robust; referenced as style={name}.
    ============================================================ */
 
-const GRAD_FROM = "#5b54f0";
-const GRAD_MID = "#8b5cf6";
-const GRAD_TO = "#d946ef";
+// Gradient stops resolve to concrete hex at render time
+// (SVG presentation attributes cannot use CSS custom properties).
 
 const txc = (D) => (D ? "#eef1fb" : "#0a0a14");
 const muc = (D) => (D ? "#98a2bd" : "#5b6478");
@@ -44,9 +44,9 @@ export function Ring({ value = 0, size = 96, stroke = 10, color = "gradient", la
       <svg width={size} height={size} style={svgSt}>
         <defs>
           <linearGradient id={id} x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor={GRAD_FROM} />
-            <stop offset="60%" stopColor={GRAD_MID} />
-            <stop offset="100%" stopColor={GRAD_TO} />
+            <stop offset="0%" stopColor={themePrimary()} />
+            <stop offset="60%" stopColor={themePrimary2()} />
+            <stop offset="100%" stopColor={themePrimary3()} />
           </linearGradient>
         </defs>
         <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={trackColor} strokeWidth={stroke} />
@@ -109,13 +109,13 @@ export function CalibrationDial({ value = 0.5, bias = 0, size = 220, D }) {
         <defs>
           <linearGradient id="caldial" x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stopColor="#f59e0b" />
-            <stop offset="50%" stopColor={GRAD_MID} />
+            <stop offset="50%" stopColor={themePrimary2()} />
             <stop offset="100%" stopColor="#22c55e" />
           </linearGradient>
         </defs>
         <path d={arc(Math.PI, 2 * Math.PI)} fill="none" stroke={trackColor} strokeWidth={14} strokeLinecap="round" />
         <path d={arc(Math.PI, ang)} fill="none" stroke="url(#caldial)" strokeWidth={14} strokeLinecap="round" style={arcSt} />
-        <circle cx={nx} cy={ny} r={9} fill="#fff" stroke={GRAD_MID} strokeWidth={3} style={needleSt} />
+        <circle cx={nx} cy={ny} r={9} fill="#fff" stroke={themePrimary2()} strokeWidth={3} style={needleSt} />
       </svg>
       <div style={ctr}>
         <div className="riq-figure" style={pctSt}>{pct}%</div>
@@ -138,7 +138,7 @@ export function MasteryConstellation({ topics = [], width = 520, height = 320, D
     const rad = 5 + (t.size == null ? 0.5 : t.size) * 9;
     return { id: t.id, name: t.name, x, y, ret, rad };
   });
-  const col = (ret) => (ret > 0.75 ? GRAD_MID : ret > 0.45 ? "#8b8ff0" : "#f59e0b");
+  const col = (ret) => (ret > 0.75 ? themePrimary2() : ret > 0.45 ? "#8b8ff0" : "#f59e0b");
   const lineColor = D ? "rgba(255,255,255,.06)" : "rgba(16,24,40,.06)";
   const svgSt = { display: "block", overflow: "visible" };
   const labelSt = { pointerEvents: "none" };
@@ -174,7 +174,7 @@ export function SessionRecap({ minutes, reviewed, strengthened = [], shaky = [],
   const goodLbl = { fontSize: 12.5, fontWeight: 800, color: "#22c55e" };
   const warnLbl = { fontSize: 12.5, fontWeight: 800, color: "#f59e0b" };
   const listText = { fontSize: 14, color: txc(D), marginTop: 4 };
-  const nudge = { marginTop: 18, padding: "12px 14px", borderRadius: 14, background: D ? "rgba(139,92,246,.14)" : "rgba(139,92,246,.08)", color: txc(D), fontSize: 14, fontWeight: 600 };
+  const nudge = { marginTop: 18, padding: "12px 14px", borderRadius: 14, background: D ? "rgba(var(--riq-primary-2-rgb),.14)" : "rgba(var(--riq-primary-2-rgb),.08)", color: txc(D), fontSize: 14, fontWeight: 600 };
   return (
     <div className="riq-pop" style={card}>
       <div style={title}>Session recap</div>

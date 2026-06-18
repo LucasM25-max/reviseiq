@@ -319,7 +319,7 @@ export function TargetScreen(props) {
                         width: "100%",
                         background:
                           ttTextAns.trim() && !ttMarking
-                            ? "#7c3aed"
+                            ? "var(--riq-accent)"
                             : "#9ca3af",
                         color: "#fff",
                         border: "none",
@@ -343,7 +343,7 @@ export function TargetScreen(props) {
                         ...C(D),
                         padding: 18,
                         background: D ? "#1a1a2e" : "#f8f7ff",
-                        borderColor: "#7c3aed",
+                        borderColor: "var(--riq-accent)",
                       }}
                       className="fade-in"
                     >

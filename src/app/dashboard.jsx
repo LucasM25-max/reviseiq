@@ -1,6 +1,7 @@
 import { DEFAULT_BOARD, SK_ERROR_PATTERNS, calcBrierScore } from "./coreHelpers.js";
 import { LearningTimeline } from "./diagrams.jsx";
 import { Header } from "./header.jsx";
+import { themeAccent } from "./themes.js";
 import { CalibrationDial, MasteryConstellation, StatTile } from "./lumen.jsx";
 import { ACHIEVEMENTS, calculateExamReadiness, calculateMastery } from "./mastery.jsx";
 import { calcLongestStreak, todayStr } from "./scheduling.js";
@@ -46,9 +47,9 @@ export function DashboardScreen(props) {
     }
     function hmColor(cnt, D) {
       if (cnt === 0) return D ? "#191a2b" : "#f3f4f6";
-      if (cnt === 1) return D ? "#7c3aed" : "#c4b5fd";
+      if (cnt === 1) return D ? "var(--riq-accent)" : "#c4b5fd";
       if (cnt === 2) return D ? "#6d28d9" : "#a78bfa";
-      if (cnt >= 3) return D ? "#4c1d95" : "#7c3aed";
+      if (cnt >= 3) return D ? "#4c1d95" : "var(--riq-accent)";
       return D ? "#191a2b" : "#f3f4f6";
     }
 
@@ -407,7 +408,7 @@ export function DashboardScreen(props) {
                                 borderRadius: 2,
                                 background: hmColor(cell.cnt, D),
                                 border: cell.isToday
-                                  ? "2px solid #7c3aed"
+                                  ? "2px solid var(--riq-accent)"
                                   : "2px solid transparent",
                                 transition: "background .2s",
                                 cursor: "default",
@@ -635,8 +636,8 @@ export function DashboardScreen(props) {
                   <Radar
                     name="Score"
                     dataKey="pct"
-                    stroke="#7c3aed"
-                    fill="#7c3aed"
+                    stroke={themeAccent()}
+                    fill={themeAccent()}
                     fillOpacity={0.25}
                     strokeWidth={2}
                   />
@@ -978,7 +979,7 @@ export function DashboardScreen(props) {
                 ...C(D),
                 padding: 18,
                 marginBottom: 16,
-                borderColor: "#7c3aed",
+                borderColor: "var(--riq-accent)",
                 borderWidth: 1.5,
               }}
             >
@@ -995,7 +996,7 @@ export function DashboardScreen(props) {
                     width: 38,
                     height: 38,
                     borderRadius: 10,
-                    background: "#7c3aed22",
+                    background: "rgba(var(--riq-accent-rgb), 0.13)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -1008,7 +1009,7 @@ export function DashboardScreen(props) {
                     style={{
                       fontSize: 11,
                       fontWeight: 800,
-                      color: "#7c3aed",
+                      color: "var(--riq-accent)",
                       letterSpacing: "0.07em",
                       textTransform: "uppercase",
                       marginBottom: 3,
@@ -1075,7 +1076,7 @@ export function DashboardScreen(props) {
               <div style={{ textAlign: "right" }}>
                 <div style={{ fontSize: 11, color: mu(D) }}>Achievements</div>
                 <div
-                  style={{ fontWeight: 700, fontSize: 20, color: "#7c3aed" }}
+                  style={{ fontWeight: 700, fontSize: 20, color: "var(--riq-accent)" }}
                 >
                   {achievements.length}/{ACHIEVEMENTS.length}
                 </div>

@@ -1,4 +1,5 @@
 import React from "react";
+import { resolveVar } from "./themes.js";
 
 function stripHtml(s) {
   return (s == null ? "" : String(s)).replace(/<[^>]*>/g, "").trim();
@@ -14,7 +15,7 @@ function aText(card) {
 }
 
 const PHASES = {
-  work: { label: "Focus", color: "#7c3aed", grad: "linear-gradient(135deg,#7c3aed,#8b5cf6)" },
+  work: { label: "Focus", color: "var(--riq-accent)", grad: "linear-gradient(135deg,var(--riq-accent),var(--riq-primary-2))" },
   short: { label: "Short break", color: "#10b981", grad: "linear-gradient(135deg,#10b981,#059669)" },
   long: { label: "Long break", color: "#0ea5e9", grad: "linear-gradient(135deg,#0ea5e9,#0284c7)" },
 };
@@ -486,7 +487,7 @@ export function FocusMode({ D = false, cards = [], section, subj, onExit }) {
           <button style={ghostBtn(showSettings, meta.color)} onClick={() => setShowSettings((v) => !v)}>
             ⚙️ Settings
           </button>
-          <button style={ghostBtn(noise, "#7c3aed")} onClick={toggleNoise} title="Brown noise">
+          <button style={ghostBtn(noise, "var(--riq-accent)")} onClick={toggleNoise} title="Brown noise">
             {noise ? "🔊" : "🔇"} Noise
           </button>
           <button style={exitBtn} onClick={() => setExitConfirm(true)}>
@@ -506,7 +507,7 @@ export function FocusMode({ D = false, cards = [], section, subj, onExit }) {
               cy="110"
               r={R}
               fill="none"
-              stroke={meta.color}
+              stroke={resolveVar(meta.color)}
               strokeWidth="12"
               strokeLinecap="round"
               strokeDasharray={circ}

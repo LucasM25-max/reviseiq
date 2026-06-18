@@ -232,8 +232,8 @@ Requests${
               fontSize: 11,
               padding: "4px 10px",
               borderRadius: 20,
-              border: `1.5px solid ${t === tab ? "#7c3aed" : bd2}`,
-              background: t === tab ? "#7c3aed" : "transparent",
+              border: `1.5px solid ${t === tab ? "var(--riq-accent)" : bd2}`,
+              background: t === tab ? "var(--riq-accent)" : "transparent",
               color: t === tab ? "#fff" : mu(D),
               cursor: "pointer",
               fontWeight: t === tab ? 600 : 400,
@@ -288,7 +288,7 @@ Requests${
                         ? "#1c1d30"
                         : "#f9fafb",
                     border: isMe
-                      ? "1.5px solid #7c3aed"
+                      ? "1.5px solid var(--riq-accent)"
                       : "1.5px solid transparent",
                   }}
                 >
@@ -306,7 +306,7 @@ Requests${
                       flex: 1,
                       fontSize: 12,
                       fontWeight: isMe ? 700 : 400,
-                      color: isMe ? "#7c3aed" : tx(D),
+                      color: isMe ? "var(--riq-accent)" : tx(D),
                     }}
                   >
                     {name}
@@ -362,7 +362,7 @@ Requests${
               onClick={sendReq}
               disabled={busy || !search.trim()}
               style={{
-                ...B("#7c3aed", false, {
+                ...B("var(--riq-accent)", false, {
                   padding: "8px 14px",
                   fontSize: 12,
                   opacity: busy || !search.trim() ? 0.4 : 1,
@@ -414,7 +414,7 @@ Requests${
                       width: 28,
                       height: 28,
                       borderRadius: "50%",
-                      background: "linear-gradient(135deg,#7c3aed,#8b5cf6)",
+                      background: "linear-gradient(135deg,var(--riq-accent),var(--riq-primary-2))",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",

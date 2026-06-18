@@ -345,7 +345,7 @@ ${s.name}`,
                         style={{
                           fontSize: 11,
                           fontWeight: 600,
-                          color: "#7c3aed",
+                          color: "var(--riq-accent)",
                         }}
                       >
                         {f.diagram.type}
@@ -414,7 +414,7 @@ Keep labels short (2-4 words). Maximum 8 items. Use appropriate accent colour.`;
                       }
                     }}
                     style={{
-                      ...B("#7c3aed", true, {
+                      ...B("var(--riq-accent)", true, {
                         fontSize: 12,
                         padding: "7px 14px",
                       }),
@@ -566,7 +566,7 @@ Keep labels short (2-4 words). Maximum 8 items. Use appropriate accent colour.`;
                 >
                   <label
                     style={{
-                      ...B("#7c3aed", true, {
+                      ...B("var(--riq-accent)", true, {
                         fontSize: 12,
                         padding: "6px 12px",
                         cursor: "pointer",
@@ -629,7 +629,7 @@ name","sublabel":"optional"}]}}\nKeep labels under 4 words. Max 7 items.`;
                       }
                     }}
                     style={{
-                      ...B("#7c3aed", true, {
+                      ...B("var(--riq-accent)", true, {
                         fontSize: 12,
                         padding: "6px 12px",
                       }),
@@ -690,7 +690,7 @@ name","sublabel":"optional"}]}}\nKeep labels under 4 words. Max 7 items.`;
                         style={{
                           fontSize: 11,
                           fontWeight: 600,
-                          color: "#7c3aed",
+                          color: "var(--riq-accent)",
                         }}
                       >
                         {f.diagram.type}
@@ -769,7 +769,7 @@ name","sublabel":"optional"}]}}\nKeep labels under 4 words. Max 7 items.`;
                           checked={f.answer === i}
                           onChange={() => set("answer", i)}
                           style={{
-                            accentColor: "#7c3aed",
+                            accentColor: "var(--riq-accent)",
                             width: 14,
                             height: 14,
                           }}
@@ -983,7 +983,7 @@ solid ${D ? "#374151" : "#d1d5db"}`,
             onClick={save}
             disabled={!valid()}
             style={{
-              ...B("#7c3aed", false, {
+              ...B("var(--riq-accent)", false, {
                 flex: 2,
                 padding: "10px 0",
                 opacity: valid() ? 1 : 0.4,

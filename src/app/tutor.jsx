@@ -608,7 +608,7 @@ student has shared this file with you]`,
     <div
       style={{
         minHeight: "100vh",
-        background: D ? "radial-gradient(1200px 820px at 12% -12%, rgba(124,58,237,.20), transparent 60%), radial-gradient(1000px 720px at 102% 4%, rgba(217,70,239,.14), transparent 55%), radial-gradient(900px 700px at 50% 120%, rgba(59,130,246,.10), transparent 55%), #0a0a14" : "radial-gradient(1100px 780px at 10% -10%, rgba(124,58,237,.10), transparent 60%), radial-gradient(940px 660px at 104% 2%, rgba(217,70,239,.08), transparent 55%), radial-gradient(820px 640px at 50% 116%, rgba(59,130,246,.06), transparent 55%), #f6f6fc",
+        background: D ? "radial-gradient(1200px 820px at 12% -12%, rgba(var(--riq-accent-rgb),.20), transparent 60%), radial-gradient(1000px 720px at 102% 4%, rgba(var(--riq-primary-3-rgb),.14), transparent 55%), radial-gradient(900px 700px at 50% 120%, rgba(59,130,246,.10), transparent 55%), #0a0a14" : "radial-gradient(1100px 780px at 10% -10%, rgba(var(--riq-accent-rgb),.10), transparent 60%), radial-gradient(940px 660px at 104% 2%, rgba(var(--riq-primary-3-rgb),.08), transparent 55%), radial-gradient(820px 640px at 50% 116%, rgba(59,130,246,.06), transparent 55%), #f6f6fc",
         display: "flex",
         flexDirection: "column",
         color: tx(D),
@@ -667,9 +667,9 @@ student has shared this file with you]`,
                     fontSize: 11,
                     padding: "5px 12px",
                     borderRadius: 20,
-                    border: `1.5px solid ${mode === m ? "#7c3aed" : bd2}`,
+                    border: `1.5px solid ${mode === m ? "var(--riq-accent)" : bd2}`,
 
-                    background: mode === m ? "#7c3aed" : "transparent",
+                    background: mode === m ? "var(--riq-accent)" : "transparent",
                     color: mode === m ? "#fff" : mu(D),
                     cursor: "pointer",
                     fontWeight: mode === m ? 700 : 400,
@@ -776,7 +776,7 @@ student has shared this file with you]`,
                           : "#ecfdf5",
                   color:
                     socraticLevel === 2
-                      ? "#7c3aed"
+                      ? "var(--riq-accent)"
                       : socraticLevel === 1
                         ? "#d97706"
                         : "#059669",
@@ -912,7 +912,7 @@ student has shared this file with you]`,
                       width: 30,
                       height: 30,
                       borderRadius: "50%",
-                      background: "linear-gradient(135deg,#5b54f0,#8b5cf6 55%,#d946ef)",
+                      background: "linear-gradient(135deg,var(--riq-primary),var(--riq-primary-2) 55%,var(--riq-primary-3))",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -931,7 +931,7 @@ student has shared this file with you]`,
                     borderRadius: isU
                       ? "16px 16px 4px 16px"
                       : "16px 16px 16px 4px",
-                    background: isU ? "#7c3aed" : D ? "rgba(255,255,255,.05)" : "rgba(124,58,237,.07)",
+                    background: isU ? "var(--riq-accent)" : D ? "rgba(255,255,255,.05)" : "rgba(var(--riq-accent-rgb),.07)",
                     color: isU ? "#fff" : tx(D),
                     fontSize: 13,
                     lineHeight: 1.7,
@@ -1004,7 +1004,7 @@ student has shared this file with you]`,
                             : D
                               ? "rgba(99,102,241,.12)"
                               : "#ede9fe",
-                        color: stag === "notes" ? "#059669" : "#7c3aed",
+                        color: stag === "notes" ? "#059669" : "var(--riq-accent)",
                       }}
                     >
                       {stag === "notes" ? "Your notes" : "General knowledge"}
@@ -1074,7 +1074,7 @@ student has shared this file with you]`,
                 width: 30,
                 height: 30,
                 borderRadius: "50%",
-                background: "linear-gradient(135deg,#5b54f0,#8b5cf6 55%,#d946ef)",
+                background: "linear-gradient(135deg,var(--riq-primary),var(--riq-primary-2) 55%,var(--riq-primary-3))",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -1089,7 +1089,7 @@ student has shared this file with you]`,
               style={{
                 padding: "10px 14px",
                 borderRadius: "16px 16px 16px 4px",
-                background: D ? "rgba(255,255,255,.05)" : "rgba(124,58,237,.07)",
+                background: D ? "rgba(255,255,255,.05)" : "rgba(var(--riq-accent-rgb),.07)",
                 fontSize: 13,
                 color: mu(D),
               }}
@@ -1130,7 +1130,7 @@ student has shared this file with you]`,
                     gap: 5,
                     padding: "4px 8px",
                     borderRadius: 8,
-                    background: D ? "rgba(255,255,255,.05)" : "rgba(124,58,237,.07)",
+                    background: D ? "rgba(255,255,255,.05)" : "rgba(var(--riq-accent-rgb),.07)",
                     border: `1px solid ${bd2}`,
                     maxWidth: 160,
                   }}
@@ -1285,7 +1285,7 @@ student has shared this file with you]`,
               onClick={send}
               disabled={sending || (!input.trim() && !files.length)}
               style={{
-                ...B("#7c3aed", false, {
+                ...B("var(--riq-accent)", false, {
                   padding: "9px 16px",
                   flexShrink: 0,
                   fontSize: 16,

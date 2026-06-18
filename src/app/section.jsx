@@ -160,7 +160,7 @@ export function SectionScreen(props) {
                   padding: "4px 12px",
                   borderRadius: 20,
                   border: "none",
-                  background: tab === "flashcards" ? "#7c3aed" : "transparent",
+                  background: tab === "flashcards" ? "var(--riq-accent)" : "transparent",
                   color:
                     tab === "flashcards" ? "#fff" : D ? "#8896b3" : "#9ca3af",
                   cursor: "pointer",
@@ -176,7 +176,7 @@ export function SectionScreen(props) {
                   padding: "4px 12px",
                   borderRadius: 20,
                   border: "none",
-                  background: tab === "questions" ? "#7c3aed" : "transparent",
+                  background: tab === "questions" ? "var(--riq-accent)" : "transparent",
                   color:
                     tab === "questions" ? "#fff" : D ? "#8896b3" : "#9ca3af",
                   cursor: "pointer",
@@ -431,7 +431,7 @@ timeline.\nReturn:
               fcHist={fcHist}
               setFCH={setFCH}
               D={D}
-              accent={subj?.accent || "#7c3aed"}
+              accent={subj?.accent || "var(--riq-accent)"}
               markTodayActive={markTodayActive}
               sectionTitle={section.title || section.name || ""}
             />
@@ -560,7 +560,7 @@ timeline.\nReturn:
                                 background: D
                                   ? "rgba(99,102,241,.15)"
                                   : "#f5f3ff",
-                                color: "#7c3aed",
+                                color: "var(--riq-accent)",
                               }}
                             >
                               {qCW.word.toUpperCase()}
@@ -588,7 +588,7 @@ timeline.\nReturn:
                             borderRadius: 8,
                             marginBottom: 10,
                             background: D ? "rgba(99,102,241,.08)" : "#f5f3ff",
-                            border: "1px solid #7c3aed44",
+                            border: "1px solid rgba(var(--riq-accent-rgb), 0.27)",
 
                             fontSize: 11,
                             color: D ? "#ddd6fe" : "#4c1d95",
@@ -616,7 +616,7 @@ timeline.\nReturn:
                               })
                             }
                             style={{
-                              ...B("#7c3aed", true, {
+                              ...B("var(--riq-accent)", true, {
                                 fontSize: 12,
                                 padding: "5px 12px",
                               }),
@@ -703,9 +703,9 @@ timeline.\nReturn:
                               fontSize: 12,
                               padding: "6px 12px",
                               borderRadius: 8,
-                              border: "1px solid #7c3aed",
+                              border: "1px solid var(--riq-accent)",
                               background: "transparent",
-                              color: "#7c3aed",
+                              color: "var(--riq-accent)",
                               cursor: "pointer",
                             }}
                           >
@@ -1211,7 +1211,7 @@ mark${q.marks !== 1 ? "s" : ""}]`}
                                   width: "100%",
                                   background:
                                     textAns.trim() && !marking
-                                      ? "#7c3aed"
+                                      ? "var(--riq-accent)"
                                       : "#9ca3af",
                                   color: "#fff",
                                   border: "none",
@@ -1240,7 +1240,7 @@ mark${q.marks !== 1 ? "s" : ""}]`}
                                     ...C(D),
                                     padding: 20,
                                     background: D ? "#1a1a2e" : "#f8f7ff",
-                                    borderColor: "#7c3aed",
+                                    borderColor: "var(--riq-accent)",
                                   }}
                                   className="fade-in"
                                 >
@@ -1647,7 +1647,7 @@ mark${q.marks !== 1 ? "s" : ""}]`}
                                           padding: "7px 16px",
                                           borderRadius: 8,
                                           border: "none",
-                                          background: "#7c3aed",
+                                          background: "var(--riq-accent)",
                                           color: "#fff",
                                           cursor: "pointer",
                                         }}
@@ -1666,7 +1666,7 @@ mark${q.marks !== 1 ? "s" : ""}]`}
                                             background: D
                                               ? "rgba(99,102,241,.1)"
                                               : "#f5f3ff",
-                                            border: "1px solid #7c3aed22",
+                                            border: "1px solid rgba(var(--riq-accent-rgb), 0.13)",
                                             fontSize: 11,
                                             color: D ? "#c4b5fd" : "#5b21b6",
                                           }}

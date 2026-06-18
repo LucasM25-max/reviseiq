@@ -74,7 +74,7 @@ export function Flashcards({
   fcHist = {},
   setFCH,
   D = false,
-  accent = "#7c3aed",
+  accent = "var(--riq-accent)",
   markTodayActive,
   sectionTitle = "",
 }) {
@@ -106,7 +106,7 @@ export function Flashcards({
   const cardBorder = "1px solid " + (D ? "#262844" : "#ece9f7");
   const textColor = D ? "#e8ecf4" : "#1f2937";
   const muted = D ? "#8896b3" : "#9ca3af";
-  const accentGrad = "linear-gradient(135deg," + accent + ",#8b5cf6)";
+  const accentGrad = "linear-gradient(135deg," + accent + ",var(--riq-primary-2))";
 
   const rootStyle = { maxWidth: "640px", margin: "0 auto", color: textColor };
   const wrapStyle = {
@@ -135,7 +135,7 @@ export function Flashcards({
     fontSize: "14.5px",
     color: "#fff",
     background: accentGrad,
-    boxShadow: "0 10px 24px -10px rgba(124,58,237,.6)",
+    boxShadow: "0 10px 24px -10px rgba(var(--riq-accent-rgb),.6)",
   };
 
   if (valid.length === 0) {
@@ -244,7 +244,7 @@ export function Flashcards({
   const progFill = {
     height: "100%",
     borderRadius: "999px",
-    background: "linear-gradient(90deg," + accent + ",#8b5cf6)",
+    background: "linear-gradient(90deg," + accent + ",var(--riq-primary-2))",
     transition: "width .35s ease",
     width: pct + "%",
   };
@@ -291,7 +291,7 @@ export function Flashcards({
   };
   const barFront = {
     ...barBase,
-    background: "linear-gradient(90deg," + accent + ",#8b5cf6,#d946ef)",
+    background: "linear-gradient(90deg," + accent + ",var(--riq-primary-2),var(--riq-primary-3))",
   };
   const barBack = {
     ...barBase,
@@ -332,7 +332,7 @@ export function Flashcards({
     fontSize: "15px",
     color: "#fff",
     background: accentGrad,
-    boxShadow: "0 10px 24px -10px rgba(124,58,237,.6)",
+    boxShadow: "0 10px 24px -10px rgba(var(--riq-accent-rgb),.6)",
   };
   const rateWrap = {
     display: "grid",

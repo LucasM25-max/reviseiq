@@ -217,7 +217,7 @@ export function SearchModal({
             <span
               style={{
                 fontSize: 10,
-                color: "#7c3aed",
+                color: "var(--riq-accent)",
                 fontWeight: 600,
                 background: D ? "#3b0764" : "#f5f3ff",
                 padding: "2px 7px",
@@ -311,7 +311,7 @@ export function SubjectSelectionScreen({
       <div
         style={{
           minHeight: "100vh",
-          background: D ? "radial-gradient(1200px 820px at 12% -12%, rgba(124,58,237,.20), transparent 60%), radial-gradient(1000px 720px at 102% 4%, rgba(217,70,239,.14), transparent 55%), radial-gradient(900px 700px at 50% 120%, rgba(59,130,246,.10), transparent 55%), #0a0a14" : "radial-gradient(1100px 780px at 10% -10%, rgba(124,58,237,.10), transparent 60%), radial-gradient(940px 660px at 104% 2%, rgba(217,70,239,.08), transparent 55%), radial-gradient(820px 640px at 50% 116%, rgba(59,130,246,.06), transparent 55%), #f6f6fc",
+          background: D ? "radial-gradient(1200px 820px at 12% -12%, rgba(var(--riq-accent-rgb),.20), transparent 60%), radial-gradient(1000px 720px at 102% 4%, rgba(var(--riq-primary-3-rgb),.14), transparent 55%), radial-gradient(900px 700px at 50% 120%, rgba(59,130,246,.10), transparent 55%), #0a0a14" : "radial-gradient(1100px 780px at 10% -10%, rgba(var(--riq-accent-rgb),.10), transparent 60%), radial-gradient(940px 660px at 104% 2%, rgba(var(--riq-primary-3-rgb),.08), transparent 55%), radial-gradient(820px 640px at 50% 116%, rgba(59,130,246,.06), transparent 55%), #f6f6fc",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -331,7 +331,7 @@ export function SubjectSelectionScreen({
           {}
           <div
             style={{
-              background: "linear-gradient(135deg,#7c3aed,#8b5cf6)",
+              background: "linear-gradient(135deg,var(--riq-accent),var(--riq-primary-2))",
               padding: "32px 32px 24px",
             }}
           >
@@ -521,7 +521,7 @@ export function SubjectSelectionScreen({
                   "No subjects selected yet"
                 ) : (
                   <>
-                    <strong style={{ color: "#7c3aed" }}>
+                    <strong style={{ color: "var(--riq-accent)" }}>
                       {selected.size}
                     </strong>
                     subject{selected.size !== 1 ? "s" : ""} selected
@@ -555,7 +555,7 @@ export function SubjectSelectionScreen({
                     padding: "11px 28px",
                     borderRadius: 12,
                     border: "none",
-                    background: selected.size > 0 ? "#7c3aed" : "#9ca3af",
+                    background: selected.size > 0 ? "var(--riq-accent)" : "#9ca3af",
                     color: "#fff",
                     fontWeight: 700,
                     fontSize: 14,
@@ -576,7 +576,7 @@ export function SubjectSelectionScreen({
     <div
       style={{
         minHeight: "100vh",
-        background: D ? "radial-gradient(1200px 820px at 12% -12%, rgba(124,58,237,.20), transparent 60%), radial-gradient(1000px 720px at 102% 4%, rgba(217,70,239,.14), transparent 55%), radial-gradient(900px 700px at 50% 120%, rgba(59,130,246,.10), transparent 55%), #0a0a14" : "radial-gradient(1100px 780px at 10% -10%, rgba(124,58,237,.10), transparent 60%), radial-gradient(940px 660px at 104% 2%, rgba(217,70,239,.08), transparent 55%), radial-gradient(820px 640px at 50% 116%, rgba(59,130,246,.06), transparent 55%), #f6f6fc",
+        background: D ? "radial-gradient(1200px 820px at 12% -12%, rgba(var(--riq-accent-rgb),.20), transparent 60%), radial-gradient(1000px 720px at 102% 4%, rgba(var(--riq-primary-3-rgb),.14), transparent 55%), radial-gradient(900px 700px at 50% 120%, rgba(59,130,246,.10), transparent 55%), #0a0a14" : "radial-gradient(1100px 780px at 10% -10%, rgba(var(--riq-accent-rgb),.10), transparent 60%), radial-gradient(940px 660px at 104% 2%, rgba(var(--riq-primary-3-rgb),.08), transparent 55%), radial-gradient(820px 640px at 50% 116%, rgba(59,130,246,.06), transparent 55%), #f6f6fc",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -595,7 +595,7 @@ export function SubjectSelectionScreen({
       >
         <div
           style={{
-            background: "linear-gradient(135deg,#7c3aed,#8b5cf6)",
+            background: "linear-gradient(135deg,var(--riq-accent),var(--riq-primary-2))",
             padding: "28px 32px 22px",
           }}
         >
@@ -779,7 +779,7 @@ export function SubjectSelectionScreen({
               padding: "12px 32px",
               borderRadius: 12,
               border: "none",
-              background: "#7c3aed",
+              background: "var(--riq-accent)",
               color: "#fff",
               fontWeight: 700,
               fontSize: 14,
@@ -869,8 +869,8 @@ export function OnboardingWizard({ D, onComplete }) {
                 style={{
                   padding: "10px 18px",
                   borderRadius: 10,
-                  border: `2px solid ${b === board ? "#7c3aed" : "#e5e7eb"}`,
-                  background: b === board ? "#7c3aed" : "transparent",
+                  border: `2px solid ${b === board ? "var(--riq-accent)" : "#e5e7eb"}`,
+                  background: b === board ? "var(--riq-accent)" : "transparent",
                   color: b === board ? "#fff" : D ? "#d1d5db" : "#374151",
                   fontWeight: 600,
                   fontSize: 14,
@@ -884,7 +884,7 @@ export function OnboardingWizard({ D, onComplete }) {
           <button
             onClick={() => setStep(2)}
             style={{
-              background: "#7c3aed",
+              background: "var(--riq-accent)",
               color: "#fff",
               border: "none",
               borderRadius: 12,
@@ -980,7 +980,7 @@ export function OnboardingWizard({ D, onComplete }) {
               onClick={() => onComplete(board, examDate || null)}
               style={{
                 flex: 2,
-                background: "#7c3aed",
+                background: "var(--riq-accent)",
                 color: "#fff",
                 border: "none",
                 borderRadius: 12,

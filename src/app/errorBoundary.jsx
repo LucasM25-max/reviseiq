@@ -33,7 +33,7 @@ export class ErrorBoundary extends React.Component {
         borderRadius: 18,
         background: D ? "#13131f" : "#ffffff",
         border: "1px solid " + (D ? "#262844" : "#ece9f7"),
-        boxShadow: "0 10px 34px rgba(91,84,240,0.12)",
+        boxShadow: "0 10px 34px rgba(var(--riq-primary-rgb),0.12)",
         textAlign: "center",
         fontFamily: "'IBM Plex Sans', sans-serif",
       };
@@ -72,7 +72,7 @@ export class ErrorBoundary extends React.Component {
         fontWeight: 700,
         fontSize: 14,
         color: "#fff",
-        background: "linear-gradient(135deg,#5b54f0,#8b5cf6)",
+        background: "linear-gradient(135deg,var(--riq-primary),var(--riq-primary-2))",
       };
       const err = this.state.error;
       const msg =

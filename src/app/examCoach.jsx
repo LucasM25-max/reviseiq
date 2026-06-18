@@ -314,7 +314,7 @@ export function ExamCoachScreen({
       : feedback.overallBand === "Achieving"
         ? "#3b82f6"
         : "#f59e0b"
-    : "#7c3aed";
+    : "var(--riq-accent)";
   return (
     <div
       style={{ minHeight: "100vh", background: bg, color: tx2 }}
@@ -415,8 +415,8 @@ export function ExamCoachScreen({
                       style={{
                         padding: "6px 12px",
                         borderRadius: 20,
-                        border: "1.5px solid" + (sel ? "#7c3aed" : "#d1d5db"),
-                        background: sel ? "#7c3aed" : "transparent",
+                        border: "1.5px solid" + (sel ? "var(--riq-accent)" : "#d1d5db"),
+                        background: sel ? "var(--riq-accent)" : "transparent",
                         color: sel ? "#fff" : mu2,
                         fontSize: 12,
                         cursor: "pointer",
@@ -445,7 +445,7 @@ export function ExamCoachScreen({
               style={{
                 fontSize: 11,
                 fontWeight: 700,
-                color: "#7c3aed",
+                color: "var(--riq-accent)",
                 marginBottom: 4,
               }}
             >
@@ -469,7 +469,7 @@ export function ExamCoachScreen({
               padding: "10px 22px",
               borderRadius: 10,
               border: "none",
-              background: loadingQ ? "#c4b5fd" : "#7c3aed",
+              background: loadingQ ? "#c4b5fd" : "var(--riq-accent)",
               color: "#fff",
               fontSize: 13,
               fontWeight: 600,
@@ -492,7 +492,7 @@ export function ExamCoachScreen({
               style={{
                 fontSize: 11,
                 fontWeight: 700,
-                color: "#7c3aed",
+                color: "var(--riq-accent)",
                 marginBottom: 8,
               }}
             >
@@ -530,7 +530,7 @@ export function ExamCoachScreen({
                           style={{
                             fontSize: 12,
                             fontWeight: 600,
-                            color: "#7c3aed",
+                            color: "var(--riq-accent)",
                             display: "block",
                             marginBottom: 4,
                           }}
@@ -580,7 +580,7 @@ export function ExamCoachScreen({
                       padding: "10px 22px",
                       borderRadius: 10,
                       border: "none",
-                      background: submitting ? "#c4b5fd" : "#7c3aed",
+                      background: submitting ? "#c4b5fd" : "var(--riq-accent)",
                       color: "#fff",
                       fontSize: 13,
                       fontWeight: 600,
@@ -749,7 +749,7 @@ export function ExamCoachScreen({
                     style={{
                       fontSize: 11,
                       fontWeight: 700,
-                      color: "#7c3aed",
+                      color: "var(--riq-accent)",
                       marginBottom: 4,
                     }}
                   >
@@ -793,7 +793,7 @@ export function ExamCoachScreen({
                       padding: "10px 18px",
                       borderRadius: 10,
                       border: "none",
-                      background: "#7c3aed",
+                      background: "var(--riq-accent)",
                       color: "#fff",
                       fontSize: 13,
                       fontWeight: 600,

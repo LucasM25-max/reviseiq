@@ -373,7 +373,7 @@ definitions.`,
     <div
       style={{
         minHeight: "100vh",
-        background: D ? "radial-gradient(1200px 820px at 12% -12%, rgba(124,58,237,.20), transparent 60%), radial-gradient(1000px 720px at 102% 4%, rgba(217,70,239,.14), transparent 55%), radial-gradient(900px 700px at 50% 120%, rgba(59,130,246,.10), transparent 55%), #0a0a14" : "radial-gradient(1100px 780px at 10% -10%, rgba(124,58,237,.10), transparent 60%), radial-gradient(940px 660px at 104% 2%, rgba(217,70,239,.08), transparent 55%), radial-gradient(820px 640px at 50% 116%, rgba(59,130,246,.06), transparent 55%), #f6f6fc",
+        background: D ? "radial-gradient(1200px 820px at 12% -12%, rgba(var(--riq-accent-rgb),.20), transparent 60%), radial-gradient(1000px 720px at 102% 4%, rgba(var(--riq-primary-3-rgb),.14), transparent 55%), radial-gradient(900px 700px at 50% 120%, rgba(59,130,246,.10), transparent 55%), #0a0a14" : "radial-gradient(1100px 780px at 10% -10%, rgba(var(--riq-accent-rgb),.10), transparent 60%), radial-gradient(940px 660px at 104% 2%, rgba(var(--riq-primary-3-rgb),.08), transparent 55%), radial-gradient(820px 640px at 50% 116%, rgba(59,130,246,.06), transparent 55%), #f6f6fc",
         color: tx(D),
       }}
       className="fade-in"
@@ -417,7 +417,7 @@ definitions.`,
               style={{
                 fontSize: 13,
                 fontWeight: 600,
-                color: doneS === totalS ? "#16a34a" : "#7c3aed",
+                color: doneS === totalS ? "#16a34a" : "var(--riq-accent)",
                 padding: "6px 14px",
                 borderRadius: 20,
                 background:
@@ -459,12 +459,12 @@ definitions.`,
                 padding: "10px 18px",
                 fontSize: 13,
                 fontWeight: tab === t ? 600 : 400,
-                color: tab === t ? "#7c3aed" : mu(D),
+                color: tab === t ? "var(--riq-accent)" : mu(D),
                 background: "none",
                 border: "none",
                 cursor: "pointer",
                 borderBottom:
-                  tab === t ? "2px solid #7c3aed" : "2px solidtransparent",
+                  tab === t ? "2px solid var(--riq-accent)" : "2px solidtransparent",
                 marginBottom: -1,
               }}
             >
@@ -541,8 +541,8 @@ definitions.`,
                         style={{
                           padding: "5px 12px",
                           borderRadius: 8,
-                          border: `1.5px solid ${on ? "#7c3aed" : bd2}`,
-                          background: on ? "#7c3aed" : "transparent",
+                          border: `1.5px solid ${on ? "var(--riq-accent)" : bd2}`,
+                          background: on ? "var(--riq-accent)" : "transparent",
                           color: on ? "#fff" : mu(D),
                           fontSize: 12,
                           cursor: "pointer",
@@ -628,7 +628,7 @@ definitions.`,
                     setNewEvTitle("");
                   }}
                   style={{
-                    ...B("#7c3aed", false, {
+                    ...B("var(--riq-accent)", false, {
                       padding: "9px 16px",
                       fontSize: 12,
                       fontWeight: 700,
@@ -695,7 +695,7 @@ definitions.`,
             <button
               onClick={() => setTab("exams")}
               style={{
-                ...B("#7c3aed", false, {
+                ...B("var(--riq-accent)", false, {
                   width: "100%",
                   padding: "11px 0",
                   fontSize: 13,
@@ -787,7 +787,7 @@ definitions.`,
                 onClick={addExam}
                 disabled={!eDate || !eSubj}
                 style={{
-                  ...B("#7c3aed", false, {
+                  ...B("var(--riq-accent)", false, {
                     width: "100%",
                     padding: "10px 0",
                     fontSize: 13,
@@ -924,7 +924,7 @@ definitions.`,
                       setTab("schedule");
                     }}
                     style={{
-                      ...B("#7c3aed", false, {
+                      ...B("var(--riq-accent)", false, {
                         flex: 2,
                         padding: "12px 0",
                         fontSize: 14,
@@ -957,7 +957,7 @@ definitions.`,
                   <button
                     onClick={generate}
                     style={{
-                      ...B("#7c3aed", false, {
+                      ...B("var(--riq-accent)", false, {
                         fontSize: 13,
                         padding: "10px 22px",
                       }),
@@ -970,7 +970,7 @@ definitions.`,
                   <button
                     onClick={() => setTab("exams")}
                     style={{
-                      ...B("#7c3aed", true, {
+                      ...B("var(--riq-accent)", true, {
                         fontSize: 13,
                         padding: "10px 22px",
                       }),
@@ -1012,7 +1012,7 @@ definitions.`,
                           padding: "4px 12px",
                           borderRadius: 20,
                           background: D ? "#191a2b" : "#f3f4f6",
-                          border: `1.5px solid ${subj?.accent || "#7c3aed"}`,
+                          border: `1.5px solid ${subj?.accent || "var(--riq-accent)"}`,
                         }}
                       >
                         <span style={{ fontSize: 12 }}>{subj?.icon}</span>
@@ -1076,7 +1076,7 @@ definitions.`,
                           style={{
                             fontWeight: 700,
                             fontSize: 13,
-                            color: isToday ? "#7c3aed" : tx(D),
+                            color: isToday ? "var(--riq-accent)" : tx(D),
                           }}
                         >
                           {fmtD(day)}
@@ -1087,7 +1087,7 @@ definitions.`,
                               fontSize: 10,
                               fontWeight: 700,
                               color: "#fff",
-                              background: "#7c3aed",
+                              background: "var(--riq-accent)",
                               padding: "1px 7px",
                               borderRadius: 10,
                             }}
@@ -1129,7 +1129,7 @@ definitions.`,
                               style={{
                                 ...C(D),
                                 overflow: "hidden",
-                                borderLeft: `4px solid ${subj?.accent || "#7c3aed"}`,
+                                borderLeft: `4px solid ${subj?.accent || "var(--riq-accent)"}`,
                                 opacity: done ? 0.7 : 1,
                               }}
                             >
@@ -1154,7 +1154,7 @@ definitions.`,
                                     style={{
                                       fontSize: 11,
                                       fontWeight: 700,
-                                      color: subj?.accent || "#7c3aed",
+                                      color: subj?.accent || "var(--riq-accent)",
                                       fontFamily: "monospace",
                                     }}
                                   >
@@ -1208,7 +1208,7 @@ definitions.`,
                                       style={{
                                         height: "100%",
                                         borderRadius: 3,
-                                        background: subj?.accent || "#7c3aed",
+                                        background: subj?.accent || "var(--riq-accent)",
                                         width: `${(actsDone / sess.activities.length) * 100}%`,
                                         transition: "width .3s",
                                       }}
@@ -1332,7 +1332,7 @@ definitions.`,
                                               onClick={() => onNav(act)}
                                               style={{
                                                 ...B(
-                                                  subj?.accent || "#7c3aed",
+                                                  subj?.accent || "var(--riq-accent)",
                                                   true,
                                                   {
                                                     fontSize: 11,

@@ -34,7 +34,7 @@ export function TodayWidget({
         emoji: "\u{1F9E0}",
         text: item.label,
         sub: item.subtitle,
-        color: subj ? subj.accent : "#7c3aed",
+        color: subj ? subj.accent : "var(--riq-accent)",
         action: function () {
           if (sec) onNavigateSection(sec, "flashcards");
         },
@@ -79,7 +79,7 @@ export function TodayWidget({
       emoji: "\u{1F4DD}",
       text: "Take a mock exam",
       sub: "Simulate real exam conditions",
-      color: "#7c3aed",
+      color: "var(--riq-accent)",
       action: onMock,
     };
   });
@@ -110,25 +110,25 @@ export function TodayWidget({
     position: "relative", overflow: "hidden", textAlign: "left", cursor: "pointer",
     display: "flex", alignItems: "center", gap: 16, width: "100%",
     padding: "20px 22px", borderRadius: 20, border: "1px solid " + hairline,
-    background: "linear-gradient(135deg, rgba(124,58,237,.16), rgba(217,70,239,.10))",
-    boxShadow: "0 18px 40px -24px rgba(124,58,237,.55)",
+    background: "linear-gradient(135deg, rgba(var(--riq-accent-rgb),.16), rgba(var(--riq-primary-3-rgb),.10))",
+    boxShadow: "0 18px 40px -24px rgba(var(--riq-accent-rgb),.55)",
     transition: "transform .18s cubic-bezier(.22,1,.36,1), box-shadow .18s ease",
   };
   const heroBadge = {
     flexShrink: 0, width: 56, height: 56, borderRadius: 16, display: "flex",
     alignItems: "center", justifyContent: "center", fontSize: 28,
     background: D ? "rgba(255,255,255,.06)" : "#fff",
-    boxShadow: "0 6px 18px -8px " + (hero.color || "#7c3aed"),
+    boxShadow: "0 6px 18px -8px " + (hero.color || "var(--riq-accent)"),
   };
   const heroBody = { flex: 1, minWidth: 0 };
-  const heroKicker = { fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: "#7c3aed", marginBottom: 4 };
+  const heroKicker = { fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--riq-accent)", marginBottom: 4 };
   const heroText = { fontSize: 17, fontWeight: 800, color: txc, lineHeight: 1.25 };
   const heroSub = { fontSize: 13.5, color: muc, marginTop: 3, fontWeight: 600 };
   const heroCta = {
     flexShrink: 0, alignSelf: "center", fontSize: 14, fontWeight: 800, color: "#fff",
     padding: "10px 16px", borderRadius: 12, whiteSpace: "nowrap", border: "none",
-    background: "linear-gradient(135deg, #7c3aed, #d946ef)",
-    boxShadow: "0 10px 22px -10px rgba(124,58,237,.8)",
+    background: "linear-gradient(135deg, var(--riq-accent), var(--riq-primary-3))",
+    boxShadow: "0 10px 22px -10px rgba(var(--riq-accent-rgb),.8)",
   };
 
   const list = { display: "flex", flexDirection: "column", gap: 8 };
@@ -140,7 +140,7 @@ export function TodayWidget({
   const numStyle = function (c) { return { fontSize: 12.5, fontWeight: 800, color: c }; };
   const chevStyle = function (c) { return { flexShrink: 0, fontSize: 18, color: c, fontWeight: 700 }; };
   const moreBtn = { display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", cursor: "pointer", padding: "12px 16px", borderRadius: 14, border: "1.5px dashed " + hairline, background: "transparent", color: muc, fontSize: 13.5, fontWeight: 700, transition: "border-color .16s ease, color .16s ease" };
-  const moreSpan = { fontWeight: 800, color: "#7c3aed" };
+  const moreSpan = { fontWeight: 800, color: "var(--riq-accent)" };
 
   return (
     <div style={wrap}>
@@ -154,11 +154,11 @@ export function TodayWidget({
         style={heroCard}
         onMouseEnter={function (e) {
           e.currentTarget.style.transform = "translateY(-2px)";
-          e.currentTarget.style.boxShadow = "0 26px 50px -22px rgba(124,58,237,.7)";
+          e.currentTarget.style.boxShadow = "0 26px 50px -22px rgba(var(--riq-accent-rgb),.7)";
         }}
         onMouseLeave={function (e) {
           e.currentTarget.style.transform = "";
-          e.currentTarget.style.boxShadow = "0 18px 40px -24px rgba(124,58,237,.55)";
+          e.currentTarget.style.boxShadow = "0 18px 40px -24px rgba(var(--riq-accent-rgb),.55)";
         }}
       >
         <div style={heroBadge}>{hero.emoji}</div>
@@ -205,7 +205,7 @@ export function TodayWidget({
         <button
           onClick={function () { setExpanded(true); }}
           style={moreBtn}
-          onMouseEnter={function (e) { e.currentTarget.style.borderColor = "#7c3aed"; e.currentTarget.style.color = "#7c3aed"; }}
+          onMouseEnter={function (e) { e.currentTarget.style.borderColor = "var(--riq-accent)"; e.currentTarget.style.color = "var(--riq-accent)"; }}
           onMouseLeave={function (e) { e.currentTarget.style.borderColor = hairline; e.currentTarget.style.color = muc; }}
         >
           Ready for more?
@@ -246,7 +246,7 @@ export function PracticeSessionScreen({
     <div
       style={{
         minHeight: "100vh",
-        background: D ? "radial-gradient(1200px 820px at 12% -12%, rgba(124,58,237,.20), transparent 60%), radial-gradient(1000px 720px at 102% 4%, rgba(217,70,239,.14), transparent 55%), radial-gradient(900px 700px at 50% 120%, rgba(59,130,246,.10), transparent 55%), #0a0a14" : "radial-gradient(1100px 780px at 10% -10%, rgba(124,58,237,.10), transparent 60%), radial-gradient(940px 660px at 104% 2%, rgba(217,70,239,.08), transparent 55%), radial-gradient(820px 640px at 50% 116%, rgba(59,130,246,.06), transparent 55%), #f6f6fc",
+        background: D ? "radial-gradient(1200px 820px at 12% -12%, rgba(var(--riq-accent-rgb),.20), transparent 60%), radial-gradient(1000px 720px at 102% 4%, rgba(var(--riq-primary-3-rgb),.14), transparent 55%), radial-gradient(900px 700px at 50% 120%, rgba(59,130,246,.10), transparent 55%), #0a0a14" : "radial-gradient(1100px 780px at 10% -10%, rgba(var(--riq-accent-rgb),.10), transparent 60%), radial-gradient(940px 660px at 104% 2%, rgba(var(--riq-primary-3-rgb),.08), transparent 55%), radial-gradient(820px 640px at 50% 116%, rgba(59,130,246,.06), transparent 55%), #f6f6fc",
         color: tx(D),
       }}
       className="fade-in"
@@ -285,7 +285,7 @@ export function PracticeSessionScreen({
             style={{
               height: "100%",
               width: pct + "%",
-              background: "#7c3aed",
+              background: "var(--riq-accent)",
               transition: "width .25sease",
             }}
           />
@@ -330,7 +330,7 @@ export function PracticeSessionScreen({
                   <button
                     onClick={() => onOpenBlock && onOpenBlock(b)}
                     style={{
-                      ...B("#7c3aed", false, {
+                      ...B("var(--riq-accent)", false, {
                         fontSize: 12,
                         padding: "7px 12px",
                       }),

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { stripHtml } from "./ui.jsx";
+import { themeAccent } from "./themes.js";
 
 export function _cleanText(s) {
   return (s || "")
@@ -133,7 +134,7 @@ export function ClozeCard({ card, D, onSubmit, DiagramRendererComp }) {
           padding: "8px 14px",
           borderRadius: 8,
           border: "none",
-          background: "#7c3aed",
+          background: "var(--riq-accent)",
           color: "#fff",
           cursor: "pointer",
           fontWeight: 700,
@@ -230,7 +231,7 @@ export function SequenceCard({ card, D, onSubmit }) {
           padding: "8px 14px",
           borderRadius: 8,
           border: "none",
-          background: "#7c3aed",
+          background: "var(--riq-accent)",
           color: "#fff",
           cursor: "pointer",
           fontWeight: 700,
@@ -345,7 +346,7 @@ export function QuestionFigure({ figure, D, figureNumber = 1, DiagramRendererCom
                   y={h - pad - hh}
                   width={bw}
                   height={hh}
-                  fill="#7c3aed"
+                  fill={themeAccent()}
                 />
                 <text
                   x={x + bw / 2}
@@ -389,7 +390,7 @@ export function QuestionFigure({ figure, D, figureNumber = 1, DiagramRendererCom
             stroke="#94a3b8"
           />
           <line x1={pad} y1={pad} x2={pad} y2={h - pad} stroke="#94a3b8" />
-          <path d={d} fill="none" stroke="#7c3aed" strokeWidth="2" />
+          <path d={d} fill="none" stroke={themeAccent()} strokeWidth="2" />
         </svg>
       );
     }
@@ -414,7 +415,7 @@ export function QuestionFigure({ figure, D, figureNumber = 1, DiagramRendererCom
               cx={sx(Number(p.x) || 0)}
               cy={sy(Number(p.y) || 0)}
               r="4"
-              fill={p.anomaly ? "#ef4444" : "#7c3aed"}
+              fill={p.anomaly ? "#ef4444" : themeAccent()}
             />
           ))}
         </svg>

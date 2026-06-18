@@ -65,7 +65,7 @@ ${n.heading}\n${stripHtml(n.body)}`,
     <div
       style={{
         minHeight: "100vh",
-        background: D ? "radial-gradient(1200px 820px at 12% -12%, rgba(124,58,237,.20), transparent 60%), radial-gradient(1000px 720px at 102% 4%, rgba(217,70,239,.14), transparent 55%), radial-gradient(900px 700px at 50% 120%, rgba(59,130,246,.10), transparent 55%), #0a0a14" : "radial-gradient(1100px 780px at 10% -10%, rgba(124,58,237,.10), transparent 60%), radial-gradient(940px 660px at 104% 2%, rgba(217,70,239,.08), transparent 55%), radial-gradient(820px 640px at 50% 116%, rgba(59,130,246,.06), transparent 55%), #f6f6fc",
+        background: D ? "radial-gradient(1200px 820px at 12% -12%, rgba(var(--riq-accent-rgb),.20), transparent 60%), radial-gradient(1000px 720px at 102% 4%, rgba(var(--riq-primary-3-rgb),.14), transparent 55%), radial-gradient(900px 700px at 50% 120%, rgba(59,130,246,.10), transparent 55%), #0a0a14" : "radial-gradient(1100px 780px at 10% -10%, rgba(var(--riq-accent-rgb),.10), transparent 60%), radial-gradient(940px 660px at 104% 2%, rgba(var(--riq-primary-3-rgb),.08), transparent 55%), radial-gradient(820px 640px at 50% 116%, rgba(59,130,246,.06), transparent 55%), #f6f6fc",
         color: tx(D),
       }}
       className="fade-in"
@@ -98,7 +98,7 @@ ${n.heading}\n${stripHtml(n.body)}`,
             padding: "12px 16px",
             borderRadius: 12,
             background: D ? "rgba(99,102,241,0.08)" : "#f0f9ff",
-            border: "1px solid #7c3aed",
+            border: "1px solid var(--riq-accent)",
             marginBottom: 20,
             fontSize: 12,
             color: D ? "#ddd6fe" : "#1e40af",
@@ -228,7 +228,7 @@ ${n.heading}\n${stripHtml(n.body)}`,
               onClick={submit}
               disabled={!canSubmit || busy}
               style={{
-                ...B("#7c3aed", false, {
+                ...B("var(--riq-accent)", false, {
                   padding: "12px 0",
                   fontSize: 14,
                   fontWeight: 700,
@@ -435,7 +435,7 @@ ${n.heading}\n${stripHtml(n.body)}`,
                 onClick={reset}
                 style={{
                   flex: 2,
-                  ...B("#7c3aed", false, {
+                  ...B("var(--riq-accent)", false, {
                     padding: "11px 0",
                     fontSize: 13,
                     fontWeight: 700,

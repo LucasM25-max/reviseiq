@@ -211,7 +211,7 @@ export function GradeBoundaryBar({ pct, D }) {
     { grade: "5", min: 60, max: 69, color: "#84cc16" },
     { grade: "6", min: 70, max: 77, color: "#22c55e" },
     { grade: "7", min: 78, max: 85, color: "#06b6d4" },
-    { grade: "8", min: 86, max: 93, color: "#7c3aed" },
+    { grade: "8", min: 86, max: 93, color: "var(--riq-accent)" },
     { grade: "9", min: 94, max: 100, color: "#a855f7" },
   ];
   var clampedPct = Math.max(0, Math.min(100, pct));
@@ -786,7 +786,7 @@ export function MockExamScreen({
   if (phase === "setup")
     return (
       <div
-        style={{ minHeight: "100vh", background: D ? "radial-gradient(1200px 820px at 12% -12%, rgba(124,58,237,.20), transparent 60%), radial-gradient(1000px 720px at 102% 4%, rgba(217,70,239,.14), transparent 55%), radial-gradient(900px 700px at 50% 120%, rgba(59,130,246,.10), transparent 55%), #0a0a14" : "radial-gradient(1100px 780px at 10% -10%, rgba(124,58,237,.10), transparent 60%), radial-gradient(940px 660px at 104% 2%, rgba(217,70,239,.08), transparent 55%), radial-gradient(820px 640px at 50% 116%, rgba(59,130,246,.06), transparent 55%), #f6f6fc" }}
+        style={{ minHeight: "100vh", background: D ? "radial-gradient(1200px 820px at 12% -12%, rgba(var(--riq-accent-rgb),.20), transparent 60%), radial-gradient(1000px 720px at 102% 4%, rgba(var(--riq-primary-3-rgb),.14), transparent 55%), radial-gradient(900px 700px at 50% 120%, rgba(59,130,246,.10), transparent 55%), #0a0a14" : "radial-gradient(1100px 780px at 10% -10%, rgba(var(--riq-accent-rgb),.10), transparent 60%), radial-gradient(940px 660px at 104% 2%, rgba(var(--riq-primary-3-rgb),.08), transparent 55%), radial-gradient(820px 640px at 50% 116%, rgba(59,130,246,.06), transparent 55%), #f6f6fc" }}
         className="fade-in"
       >
         <div style={{ maxWidth: 700, margin: "0 auto", padding: "32px 24px" }}>
@@ -921,7 +921,7 @@ export function MockExamScreen({
                       style={{
                         padding: "12px 16px",
                         borderRadius: 10,
-                        border: `1.5px solid ${tier === t ? "#7c3aed" : bd2}`,
+                        border: `1.5px solid ${tier === t ? "var(--riq-accent)" : bd2}`,
                         background:
                           tier === t
                             ? D
@@ -936,7 +936,7 @@ export function MockExamScreen({
                         style={{
                           fontWeight: 700,
                           fontSize: 13,
-                          color: tier === t ? "#7c3aed" : tx(D),
+                          color: tier === t ? "var(--riq-accent)" : tx(D),
                         }}
                       >
                         {label}
@@ -975,7 +975,7 @@ export function MockExamScreen({
                         ...C(D),
                         padding: "14px 16px",
                         cursor: isCS ? "default" : "pointer",
-                        borderColor: selPaper === i && !isCS ? "#7c3aed" : bd2,
+                        borderColor: selPaper === i && !isCS ? "var(--riq-accent)" : bd2,
                         borderWidth: selPaper === i && !isCS ? 2 : 1,
                         background:
                           selPaper === i && !isCS
@@ -1006,7 +1006,7 @@ export function MockExamScreen({
                               fontWeight: 700,
                               fontSize: 14,
                               color:
-                                selPaper === i && !isCS ? "#7c3aed" : tx(D),
+                                selPaper === i && !isCS ? "var(--riq-accent)" : tx(D),
                             }}
                           >
                             {p.n}
@@ -1037,7 +1037,7 @@ export function MockExamScreen({
                               style={{
                                 fontSize: 11,
                                 fontWeight: 600,
-                                color: subj?.accent || "#7c3aed",
+                                color: subj?.accent || "var(--riq-accent)",
                               }}
                             >
                               {p.m}
@@ -1140,7 +1140,7 @@ export function MockExamScreen({
                   }
                 }}
                 style={{
-                  ...B("#7c3aed", false, {
+                  ...B("var(--riq-accent)", false, {
                     width: "100%",
                     padding: "13px 0",
                     fontSize: 14,
@@ -1170,7 +1170,7 @@ export function MockExamScreen({
   if (phase === "configure")
     return (
       <div
-        style={{ minHeight: "100vh", background: D ? "radial-gradient(1200px 820px at 12% -12%, rgba(124,58,237,.20), transparent 60%), radial-gradient(1000px 720px at 102% 4%, rgba(217,70,239,.14), transparent 55%), radial-gradient(900px 700px at 50% 120%, rgba(59,130,246,.10), transparent 55%), #0a0a14" : "radial-gradient(1100px 780px at 10% -10%, rgba(124,58,237,.10), transparent 60%), radial-gradient(940px 660px at 104% 2%, rgba(217,70,239,.08), transparent 55%), radial-gradient(820px 640px at 50% 116%, rgba(59,130,246,.06), transparent 55%), #f6f6fc" }}
+        style={{ minHeight: "100vh", background: D ? "radial-gradient(1200px 820px at 12% -12%, rgba(var(--riq-accent-rgb),.20), transparent 60%), radial-gradient(1000px 720px at 102% 4%, rgba(var(--riq-primary-3-rgb),.14), transparent 55%), radial-gradient(900px 700px at 50% 120%, rgba(59,130,246,.10), transparent 55%), #0a0a14" : "radial-gradient(1100px 780px at 10% -10%, rgba(var(--riq-accent-rgb),.10), transparent 60%), radial-gradient(940px 660px at 104% 2%, rgba(var(--riq-primary-3-rgb),.08), transparent 55%), radial-gradient(820px 640px at 50% 116%, rgba(59,130,246,.06), transparent 55%), #f6f6fc" }}
         className="fade-in"
       >
         <div style={{ maxWidth: 600, margin: "0 auto", padding: "32px 24px" }}>
@@ -1249,7 +1249,7 @@ export function MockExamScreen({
             <button
               onClick={() => prepare(config)}
               style={{
-                ...B("#7c3aed", false, {
+                ...B("var(--riq-accent)", false, {
                   width: "100%",
                   padding: "13px 0",
                   fontSize: 14,
@@ -1270,7 +1270,7 @@ export function MockExamScreen({
       <div
         style={{
           minHeight: "100vh",
-          background: D ? "radial-gradient(1200px 820px at 12% -12%, rgba(124,58,237,.20), transparent 60%), radial-gradient(1000px 720px at 102% 4%, rgba(217,70,239,.14), transparent 55%), radial-gradient(900px 700px at 50% 120%, rgba(59,130,246,.10), transparent 55%), #0a0a14" : "radial-gradient(1100px 780px at 10% -10%, rgba(124,58,237,.10), transparent 60%), radial-gradient(940px 660px at 104% 2%, rgba(217,70,239,.08), transparent 55%), radial-gradient(820px 640px at 50% 116%, rgba(59,130,246,.06), transparent 55%), #f6f6fc",
+          background: D ? "radial-gradient(1200px 820px at 12% -12%, rgba(var(--riq-accent-rgb),.20), transparent 60%), radial-gradient(1000px 720px at 102% 4%, rgba(var(--riq-primary-3-rgb),.14), transparent 55%), radial-gradient(900px 700px at 50% 120%, rgba(59,130,246,.10), transparent 55%), #0a0a14" : "radial-gradient(1100px 780px at 10% -10%, rgba(var(--riq-accent-rgb),.10), transparent 60%), radial-gradient(940px 660px at 104% 2%, rgba(var(--riq-primary-3-rgb),.08), transparent 55%), radial-gradient(820px 640px at 50% 116%, rgba(59,130,246,.06), transparent 55%), #f6f6fc",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -1300,7 +1300,7 @@ export function MockExamScreen({
       <div
         style={{
           minHeight: "100vh",
-          background: D ? "radial-gradient(1200px 820px at 12% -12%, rgba(124,58,237,.20), transparent 60%), radial-gradient(1000px 720px at 102% 4%, rgba(217,70,239,.14), transparent 55%), radial-gradient(900px 700px at 50% 120%, rgba(59,130,246,.10), transparent 55%), #0a0a14" : "radial-gradient(1100px 780px at 10% -10%, rgba(124,58,237,.10), transparent 60%), radial-gradient(940px 660px at 104% 2%, rgba(217,70,239,.08), transparent 55%), radial-gradient(820px 640px at 50% 116%, rgba(59,130,246,.06), transparent 55%), #f6f6fc",
+          background: D ? "radial-gradient(1200px 820px at 12% -12%, rgba(var(--riq-accent-rgb),.20), transparent 60%), radial-gradient(1000px 720px at 102% 4%, rgba(var(--riq-primary-3-rgb),.14), transparent 55%), radial-gradient(900px 700px at 50% 120%, rgba(59,130,246,.10), transparent 55%), #0a0a14" : "radial-gradient(1100px 780px at 10% -10%, rgba(var(--riq-accent-rgb),.10), transparent 60%), radial-gradient(940px 660px at 104% 2%, rgba(var(--riq-primary-3-rgb),.08), transparent 55%), radial-gradient(820px 640px at 50% 116%, rgba(59,130,246,.06), transparent 55%), #f6f6fc",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -1390,7 +1390,7 @@ export function MockExamScreen({
   if (phase === "results" && results)
     return (
       <div
-        style={{ minHeight: "100vh", background: D ? "radial-gradient(1200px 820px at 12% -12%, rgba(124,58,237,.20), transparent 60%), radial-gradient(1000px 720px at 102% 4%, rgba(217,70,239,.14), transparent 55%), radial-gradient(900px 700px at 50% 120%, rgba(59,130,246,.10), transparent 55%), #0a0a14" : "radial-gradient(1100px 780px at 10% -10%, rgba(124,58,237,.10), transparent 60%), radial-gradient(940px 660px at 104% 2%, rgba(217,70,239,.08), transparent 55%), radial-gradient(820px 640px at 50% 116%, rgba(59,130,246,.06), transparent 55%), #f6f6fc" }}
+        style={{ minHeight: "100vh", background: D ? "radial-gradient(1200px 820px at 12% -12%, rgba(var(--riq-accent-rgb),.20), transparent 60%), radial-gradient(1000px 720px at 102% 4%, rgba(var(--riq-primary-3-rgb),.14), transparent 55%), radial-gradient(900px 700px at 50% 120%, rgba(59,130,246,.10), transparent 55%), #0a0a14" : "radial-gradient(1100px 780px at 10% -10%, rgba(var(--riq-accent-rgb),.10), transparent 60%), radial-gradient(940px 660px at 104% 2%, rgba(var(--riq-primary-3-rgb),.08), transparent 55%), radial-gradient(820px 640px at 50% 116%, rgba(59,130,246,.06), transparent 55%), #f6f6fc" }}
         className="fade-in"
       >
         <div style={{ maxWidth: 760, margin: "0 auto", padding: "32px 24px" }}>
@@ -1537,10 +1537,10 @@ export function MockExamScreen({
                 });
               }}
               style={{
-                ...B(reviewMode ? "#7c3aed" : "transparent", !reviewMode, {
+                ...B(reviewMode ? "var(--riq-accent)" : "transparent", !reviewMode, {
                   fontSize: 12,
                   padding: "8px 14px",
-                  borderColor: reviewMode ? "#7c3aed" : bd2,
+                  borderColor: reviewMode ? "var(--riq-accent)" : bd2,
                   color: reviewMode ? "#fff" : mu(D),
                 }),
               }}
@@ -1617,7 +1617,7 @@ export function MockExamScreen({
                               width: 28,
                               height: 28,
                               borderRadius: "50%",
-                              background: "#7c3aed",
+                              background: "var(--riq-accent)",
                               color: "#fff",
                               display: "flex",
                               alignItems: "center",
@@ -1699,7 +1699,7 @@ export function MockExamScreen({
                                 background: D
                                   ? "rgba(99,102,241,.06)"
                                   : "#f8f9ff",
-                                borderLeft: "2px solid #7c3aed",
+                                borderLeft: "2px solid var(--riq-accent)",
                               }}
                             >
                               <div
@@ -1714,7 +1714,7 @@ export function MockExamScreen({
                                   style={{
                                     fontWeight: 700,
                                     fontSize: 13,
-                                    color: "#7c3aed",
+                                    color: "var(--riq-accent)",
                                     fontFamily: "monospace",
                                   }}
                                 >
@@ -2210,7 +2210,7 @@ export function MockExamScreen({
               }}
               style={{
                 flex: 1,
-                ...B("#7c3aed", false, { padding: "12px 0", fontSize: 14 }),
+                ...B("var(--riq-accent)", false, { padding: "12px 0", fontSize: 14 }),
               }}
             >
               Try Another Paper
@@ -2243,7 +2243,7 @@ export function MockExamScreen({
     <div
       style={{
         minHeight: "100vh",
-        background: D ? "radial-gradient(1200px 820px at 12% -12%, rgba(124,58,237,.20), transparent 60%), radial-gradient(1000px 720px at 102% 4%, rgba(217,70,239,.14), transparent 55%), radial-gradient(900px 700px at 50% 120%, rgba(59,130,246,.10), transparent 55%), #0a0a14" : "radial-gradient(1100px 780px at 10% -10%, rgba(124,58,237,.10), transparent 60%), radial-gradient(940px 660px at 104% 2%, rgba(217,70,239,.08), transparent 55%), radial-gradient(820px 640px at 50% 116%, rgba(59,130,246,.06), transparent 55%), #f6f6fc",
+        background: D ? "radial-gradient(1200px 820px at 12% -12%, rgba(var(--riq-accent-rgb),.20), transparent 60%), radial-gradient(1000px 720px at 102% 4%, rgba(var(--riq-primary-3-rgb),.14), transparent 55%), radial-gradient(900px 700px at 50% 120%, rgba(59,130,246,.10), transparent 55%), #0a0a14" : "radial-gradient(1100px 780px at 10% -10%, rgba(var(--riq-accent-rgb),.10), transparent 60%), radial-gradient(940px 660px at 104% 2%, rgba(var(--riq-primary-3-rgb),.08), transparent 55%), radial-gradient(820px 640px at 50% 116%, rgba(59,130,246,.06), transparent 55%), #f6f6fc",
         color: tx(D),
       }}
       className="fade-in"
@@ -2336,7 +2336,7 @@ export function MockExamScreen({
                 setPaused(false);
               }}
               style={{
-                ...B("#7c3aed", false, {
+                ...B("var(--riq-accent)", false, {
                   fontSize: 14,
                   padding: "10px 28px",
                   fontWeight: 700,
@@ -2392,7 +2392,7 @@ export function MockExamScreen({
                 style={{
                   height: "100%",
                   borderRadius: 4,
-                  background: timeCritical ? "#ef4444" : "#7c3aed",
+                  background: timeCritical ? "#ef4444" : "var(--riq-accent)",
                   width: pctTime + "%",
                   transition: "width 1s linear",
                 }}
@@ -2405,7 +2405,7 @@ export function MockExamScreen({
                 fontSize: 20,
                 fontWeight: 800,
                 fontFamily: "monospace",
-                color: timeCritical ? "#ef4444" : "#7c3aed",
+                color: timeCritical ? "#ef4444" : "var(--riq-accent)",
               }}
             >
               {fmtTime(timeLeft)}
@@ -2449,11 +2449,11 @@ export function MockExamScreen({
                 });
               }}
               style={{
-                ...B(showExtract ? "#7c3aed" : "transparent", !showExtract, {
+                ...B(showExtract ? "var(--riq-accent)" : "transparent", !showExtract, {
                   fontSize: 11,
                   padding: "5px 10px",
                   flexShrink: 0,
-                  borderColor: showExtract ? "#7c3aed" : bd2,
+                  borderColor: showExtract ? "var(--riq-accent)" : bd2,
                   color: showExtract ? "#fff" : mu(D),
                 }),
               }}
@@ -2469,11 +2469,11 @@ export function MockExamScreen({
                 });
               }}
               style={{
-                ...B(splitScreen ? "#7c3aed" : "transparent", !splitScreen, {
+                ...B(splitScreen ? "var(--riq-accent)" : "transparent", !splitScreen, {
                   fontSize: 11,
                   padding: "5px 10px",
                   flexShrink: 0,
-                  borderColor: splitScreen ? "#7c3aed" : bd2,
+                  borderColor: splitScreen ? "var(--riq-accent)" : bd2,
                   color: splitScreen ? "#fff" : mu(D),
                 }),
               }}
@@ -2705,7 +2705,7 @@ export function MockExamScreen({
                     flexShrink: 0,
                     background:
                       i === qIdx
-                        ? "#7c3aed"
+                        ? "var(--riq-accent)"
                         : done
                           ? "#16a34a"
                           : D
@@ -2733,7 +2733,7 @@ export function MockExamScreen({
                   style={{
                     fontSize: 10,
                     fontWeight: 700,
-                    color: "#7c3aed",
+                    color: "var(--riq-accent)",
                     background: D ? "rgba(99,102,241,.15)" : "#f5f3ff",
                     padding: "2px 8px",
                     borderRadius: 10,
@@ -2791,7 +2791,7 @@ export function MockExamScreen({
                     width: 32,
                     height: 32,
                     borderRadius: "50%",
-                    background: "#7c3aed",
+                    background: "var(--riq-accent)",
                     color: "#fff",
                     display: "flex",
                     alignItems: "center",
@@ -2846,7 +2846,7 @@ export function MockExamScreen({
                     style={{
                       ...C(D),
                       padding: 20,
-                      borderLeft: "3px solid #7c3aed",
+                      borderLeft: "3px solid var(--riq-accent)",
                     }}
                   >
                     <div
@@ -2870,7 +2870,7 @@ export function MockExamScreen({
                           style={{
                             fontWeight: 800,
                             fontSize: 15,
-                            color: "#7c3aed",
+                            color: "var(--riq-accent)",
                             fontFamily: "monospace",
                             minWidth: 28,
                           }}
@@ -2938,7 +2938,7 @@ export function MockExamScreen({
                                 textAlign: "left",
                                 padding: "9px 13px",
                                 borderRadius: 9,
-                                border: `1.5px solid ${sel ? "#7c3aed" : bd2}`,
+                                border: `1.5px solid ${sel ? "var(--riq-accent)" : bd2}`,
                                 background: sel
                                   ? D
                                     ? "rgba(99,102,241,.15)"
@@ -2946,7 +2946,7 @@ export function MockExamScreen({
                                   : "transparent",
                                 cursor: "pointer",
                                 fontSize: 13,
-                                color: sel ? "#7c3aed" : tx(D),
+                                color: sel ? "var(--riq-accent)" : tx(D),
                                 transition: "border-color .15s,background .15s",
                               }}
                             >
@@ -3056,7 +3056,7 @@ export function MockExamScreen({
                           textAlign: "left",
                           padding: "10px 14px",
                           borderRadius: 10,
-                          border: `1.5px solid ${sel ? "#7c3aed" : bd2}`,
+                          border: `1.5px solid ${sel ? "var(--riq-accent)" : bd2}`,
                           background: sel
                             ? D
                               ? "rgba(99,102,241,.15)"
@@ -3064,7 +3064,7 @@ export function MockExamScreen({
                             : "transparent",
                           cursor: "pointer",
                           fontSize: 13,
-                          color: sel ? "#7c3aed" : tx(D),
+                          color: sel ? "var(--riq-accent)" : tx(D),
                           transition: "border-color .15s,background .15s",
                         }}
                       >
@@ -3250,7 +3250,7 @@ export function MockExamScreen({
               style={{
                 flex: 2,
                 ...B(
-                  qIdx < questions.length - 1 ? "#7c3aed" : "#16a34a",
+                  qIdx < questions.length - 1 ? "var(--riq-accent)" : "#16a34a",
                   false,
                   { fontSize: 13, padding: "10px 0" },
                 ),

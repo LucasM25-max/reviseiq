@@ -1,4 +1,5 @@
 import React from "react";
+import { resolveVar } from "./themes.js";
 import { calcBrierScore } from "./coreHelpers.js";
 import { fsrsRetrievability } from "./fsrs.js";
 import { C, mu } from "./ui.jsx";
@@ -250,7 +251,7 @@ export function checkNewAchievements(
 export function MasteryRings({ mastery, accent, size = 60, D }) {
   const { flashcardMastery: fm, questionAccuracy: qa, coverage: cov } = mastery;
   const rings = [
-    { pct: fm, color: "#7c3aed", r: 26, label: "FC" },
+    { pct: fm, color: "var(--riq-accent)", r: 26, label: "FC" },
     { pct: qa, color: "#10b981", r: 18, label: "Q" },
     { pct: cov, color: "#f59e0b", r: 10, label: "Cv" },
   ];
@@ -279,7 +280,7 @@ export function MasteryRings({ mastery, accent, size = 60, D }) {
               cy={30}
               r={r}
               fill="none"
-              stroke={color}
+              stroke={resolveVar(color)}
               strokeWidth={4}
               strokeDasharray={circ}
               strokeDashoffset={circ - dash}
@@ -316,7 +317,7 @@ export function MasteryPanel({ D, mastery, subjectName }) {
     {
       label: "Flashcard Mastery",
       val: fm,
-      color: "#7c3aed",
+      color: "var(--riq-accent)",
       icon: "🗂️",
       desc: `Cards with stability >14
 days`,
@@ -448,8 +449,8 @@ activity`,
       >
         <span
           style={{
-            background: "#7c3aed22",
-            color: "#7c3aed",
+            background: "rgba(var(--riq-accent-rgb), 0.13)",
+            color: "var(--riq-accent)",
             padding: "2px 7px",
             borderRadius: 8,
           }}
@@ -496,7 +497,7 @@ export function ExamReadinessGauge({ D, readiness, subjectName, accent }) {
     score >= 80
       ? "#10b981"
       : score >= 60
-        ? "#7c3aed"
+        ? "var(--riq-accent)"
         : score >= 40
           ? "#f59e0b"
           : "#ef4444";
@@ -539,7 +540,7 @@ export function ExamReadinessGauge({ D, readiness, subjectName, accent }) {
               cy={50}
               r={r}
               fill="none"
-              stroke={col}
+              stroke={resolveVar(col)}
               strokeWidth={8}
               strokeDasharray={`${dash} ${circ - dash}`}
               strokeDashoffset={-offset}
@@ -552,7 +553,7 @@ export function ExamReadinessGauge({ D, readiness, subjectName, accent }) {
               textAnchor="middle"
               fontSize={20}
               fontWeight={800}
-              fill={col}
+              fill={resolveVar(col)}
             >
               {score}
             </text>
@@ -654,7 +655,7 @@ export function AchievementToast({ achievement, D, onClose }) {
         left: "50%",
         transform: "translateX(-50%)",
         zIndex: 9999,
-        background: "linear-gradient(135deg,#7c3aed,#8b5cf6)",
+        background: "linear-gradient(135deg,var(--riq-accent),var(--riq-primary-2))",
         color: "#fff",
         borderRadius: 16,
         padding: "14px 20px",
@@ -734,7 +735,7 @@ export function TrophyGrid({ D, achievementIds }) {
               padding: 14,
               textAlign: "center",
               opacity: earned ? 1 : 0.35,
-              borderColor: earned ? "#7c3aed" : undefined,
+              borderColor: earned ? "var(--riq-accent)" : undefined,
               transition: "opacity .2s",
             }}
           >
@@ -757,7 +758,7 @@ export function TrophyGrid({ D, achievementIds }) {
                 style={{
                   marginTop: 6,
                   fontSize: 9,
-                  color: "#7c3aed",
+                  color: "var(--riq-accent)",
                   fontWeight: 700,
                 }}
               >

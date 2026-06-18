@@ -374,7 +374,7 @@ grade${parseInt(target) - parseInt(predicted) !== 1 ? "s" : ""} to go`}
                     padding: "16px 20px",
                     borderRadius: 14,
                     background: D ? "rgba(99,102,241,.08)" : "#f5f3ff",
-                    border: "1.5px solid #7c3aed",
+                    border: "1.5px solid var(--riq-accent)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
@@ -387,7 +387,7 @@ grade${parseInt(target) - parseInt(predicted) !== 1 ? "s" : ""} to go`}
                       style={{
                         fontSize: 13,
                         fontWeight: 700,
-                        color: "#7c3aed",
+                        color: "var(--riq-accent)",
                         marginBottom: 2,
                       }}
                     >
@@ -409,7 +409,7 @@ grade${parseInt(target) - parseInt(predicted) !== 1 ? "s" : ""} to go`}
                       padding: "10px 22px",
                       borderRadius: 10,
                       border: "none",
-                      background: "#7c3aed",
+                      background: "var(--riq-accent)",
                       color: "#fff",
                       fontWeight: 700,
                       fontSize: 14,
@@ -591,7 +591,7 @@ grade${parseInt(target) - parseInt(predicted) !== 1 ? "s" : ""} to go`}
                             style={{
                               fontWeight: 700,
                               fontSize: 15,
-                              border: "1.5px solid #7c3aed",
+                              border: "1.5px solid var(--riq-accent)",
                               borderRadius: 6,
                               padding: "2px 8px",
                               background: "transparent",
@@ -630,11 +630,11 @@ grade${parseInt(target) - parseInt(predicted) !== 1 ? "s" : ""} to go`}
                                 style={{
                                   padding: "5px 10px",
                                   borderRadius: 7,
-                                  border: "1.5px solid #7c3aed",
+                                  border: "1.5px solid var(--riq-accent)",
                                   background: "transparent",
                                   cursor: "pointer",
                                   fontSize: 11,
-                                  color: "#7c3aed",
+                                  color: "var(--riq-accent)",
                                   fontWeight: 600,
                                 }}
                               >
@@ -652,7 +652,7 @@ grade${parseInt(target) - parseInt(predicted) !== 1 ? "s" : ""} to go`}
                                 padding: "5px 10px",
                                 borderRadius: 7,
                                 border: "none",
-                                background: "#7c3aed",
+                                background: "var(--riq-accent)",
                                 cursor: "pointer",
                                 fontSize: 11,
                                 color: "#fff",
@@ -795,7 +795,7 @@ grade${parseInt(target) - parseInt(predicted) !== 1 ? "s" : ""} to go`}
                                     style={{
                                       fontSize: 13,
                                       fontWeight: 600,
-                                      border: "1.5px solid #7c3aed",
+                                      border: "1.5px solid var(--riq-accent)",
                                       borderRadius: 6,
                                       padding: "2px 6px",
                                       background: "transparent",
@@ -892,7 +892,7 @@ grade${parseInt(target) - parseInt(predicted) !== 1 ? "s" : ""} to go`}
                                       background: "none",
                                       border: "none",
                                       cursor: "pointer",
-                                      color: "#7c3aed",
+                                      color: "var(--riq-accent)",
                                       fontWeight: 600,
                                     }}
                                   >

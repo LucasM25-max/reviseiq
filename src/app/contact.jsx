@@ -232,8 +232,8 @@ export function ContactScreen({ D, user, isAdmin, onBack }) {
                   style={{
                     padding: "7px 18px",
                     borderRadius: 8,
-                    border: "1.5px solid" + (tab === t ? "#7c3aed" : bd),
-                    background: tab === t ? "#7c3aed" : "none",
+                    border: "1.5px solid" + (tab === t ? "var(--riq-accent)" : bd),
+                    background: tab === t ? "var(--riq-accent)" : "none",
                     color: tab === t ? "#fff" : D ? "#d1d5db" : "#374151",
                     fontWeight: 600,
                     fontSize: 13,
@@ -292,7 +292,7 @@ export function ContactScreen({ D, user, isAdmin, onBack }) {
                     padding: "8px 20px",
                     borderRadius: 8,
                     border: "none",
-                    background: "#7c3aed",
+                    background: "var(--riq-accent)",
                     color: "#fff",
                     fontWeight: 600,
                     fontSize: 13,
@@ -378,7 +378,7 @@ export function ContactScreen({ D, user, isAdmin, onBack }) {
                     padding: "10px 24px",
                     borderRadius: 8,
                     border: "none",
-                    background: !msg.trim() ? "#9ca3af" : "#7c3aed",
+                    background: !msg.trim() ? "#9ca3af" : "var(--riq-accent)",
                     color: "#fff",
                     fontWeight: 700,
                     fontSize: 14,
@@ -469,7 +469,7 @@ export function ContactScreen({ D, user, isAdmin, onBack }) {
                       <div
                         key={ri}
                         style={{
-                          borderLeft: "3px solid #7c3aed",
+                          borderLeft: "3px solid var(--riq-accent)",
                           paddingLeft: 12,
                           marginBottom: 8,
                           marginLeft: 8,
@@ -479,7 +479,7 @@ export function ContactScreen({ D, user, isAdmin, onBack }) {
                           style={{
                             fontSize: 11,
                             fontWeight: 700,
-                            color: "#7c3aed",
+                            color: "var(--riq-accent)",
                             marginBottom: 3,
                           }}
                         >
@@ -539,7 +539,7 @@ export function ContactScreen({ D, user, isAdmin, onBack }) {
                         padding: "016px",
                         borderRadius: 8,
                         border: "none",
-                        background: "#7c3aed",
+                        background: "var(--riq-accent)",
                         color: "#fff",
                         fontWeight: 600,
                         fontSize: 12,

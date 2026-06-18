@@ -232,7 +232,7 @@ export function SchoolLeaderboard({ user, school, D }) {
                     : "#f9fafb",
 
                 border: isMe
-                  ? "1.5px solid #7c3aed"
+                  ? "1.5px solid var(--riq-accent)"
                   : "1.5px solid transparent",
                 flexShrink: 0,
               }}
@@ -255,7 +255,7 @@ export function SchoolLeaderboard({ user, school, D }) {
                   flex: 1,
                   fontSize: 13,
                   fontWeight: isMe ? 700 : 400,
-                  color: isMe ? "#7c3aed" : tx2,
+                  color: isMe ? "var(--riq-accent)" : tx2,
                 }}
               >
                 {name}

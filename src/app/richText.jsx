@@ -247,7 +247,7 @@ Mono',monospace;background:rgba(99,102,241,.13);padding:1px
             e.preventDefault();
             insLatex();
           }}
-          style={{ ...bs, color: "#7c3aed" }}
+          style={{ ...bs, color: "var(--riq-accent)" }}
           title="Insert LaTeX"
         >
           ∑ LaTeX
@@ -536,7 +536,7 @@ export function MD({ text, D }) {
 export const NOTE_SEC_DEFS = {
   "CORE CONTENT": {
     icon: "📘",
-    border: "#7c3aed",
+    border: "var(--riq-accent)",
     bg_l: "#f5f3ff",
     bg_d: "rgba(99,102,241,.08)",
     lbl_l: "#5b21b6",
@@ -863,7 +863,7 @@ export function SmartNoteCard({
   const isHtml = (note.body || "").trimStart().startsWith("<");
   const parsed = !isHtml ? parseNoteBody(note.body || "") : null;
   const bd2 = D ? "#262844" : "#e5e7eb";
-  const accentCol = subjectAccent || "#7c3aed";
+  const accentCol = subjectAccent || "var(--riq-accent)";
   const isSideBySide =
     note.layoutMode === "side-by-side" && (note.images || []).length > 0;
 
@@ -968,7 +968,7 @@ export function SmartNoteCard({
                 border: "none",
                 cursor: "pointer",
                 fontSize: 13,
-                color: "#7c3aed",
+                color: "var(--riq-accent)",
                 padding: "2px 6px",
               }}
             >
@@ -983,7 +983,7 @@ export function SmartNoteCard({
                   border: "none",
                   cursor: "pointer",
                   fontSize: 13,
-                  color: "#7c3aed",
+                  color: "var(--riq-accent)",
                   padding: "2px 6px",
                 }}
               >

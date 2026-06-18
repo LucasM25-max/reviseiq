@@ -119,7 +119,7 @@ export const pctToGrade = (pct) =>
 
 export const gradeColor = (g) =>
   ({
-    9: "#7c3aed",
+    9: "var(--riq-accent)",
     8: "#2563eb",
     7: "#0891b2",
     6: "#16a34a",
@@ -194,7 +194,7 @@ export function MobileBottomNav({ screen, onHome, onStudy, onProgress, onTutor, 
               style={{
                 fontSize: 10,
                 fontWeight: active ? 700 : 400,
-                color: active ? "#7c3aed" : D ? "#8896b3" : "#9ca3af",
+                color: active ? "var(--riq-accent)" : D ? "#8896b3" : "#9ca3af",
               }}
             >
               {item.label}
@@ -205,7 +205,7 @@ export function MobileBottomNav({ screen, onHome, onStudy, onProgress, onTutor, 
                   width: 4,
                   height: 4,
                   borderRadius: "50%",
-                  background: "#7c3aed",
+                  background: "var(--riq-accent)",
                   marginTop: 1,
                 }}
               />

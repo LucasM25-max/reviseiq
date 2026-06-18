@@ -32,17 +32,17 @@ export function HomeScreen(props) {
     const examChip = { display: "inline-flex", alignItems: "center", gap: 8, padding: "8px 14px", borderRadius: 999, border: "1px solid " + line, background: glassBg, color: ink, fontSize: 13, fontWeight: 700, cursor: "pointer", marginTop: 12 };
     const cardSh = D ? "0 20px 50px -34px rgba(0,0,0,.85)" : "0 20px 50px -34px rgba(76,29,149,.35)";
     const auroraBg = D
-      ? "radial-gradient(1200px 820px at 12% -12%, rgba(124,58,237,.20), transparent 60%), radial-gradient(1000px 720px at 102% 4%, rgba(217,70,239,.14), transparent 55%), radial-gradient(900px 700px at 50% 120%, rgba(59,130,246,.10), transparent 55%), #0a0a14"
-      : "radial-gradient(1100px 780px at 10% -10%, rgba(124,58,237,.10), transparent 60%), radial-gradient(940px 660px at 104% 2%, rgba(217,70,239,.08), transparent 55%), radial-gradient(820px 640px at 50% 116%, rgba(59,130,246,.06), transparent 55%), #f6f6fc";
+      ? "radial-gradient(1200px 820px at 12% -12%, rgba(var(--riq-accent-rgb),.20), transparent 60%), radial-gradient(1000px 720px at 102% 4%, rgba(var(--riq-primary-3-rgb),.14), transparent 55%), radial-gradient(900px 700px at 50% 120%, rgba(59,130,246,.10), transparent 55%), #0a0a14"
+      : "radial-gradient(1100px 780px at 10% -10%, rgba(var(--riq-accent-rgb),.10), transparent 60%), radial-gradient(940px 660px at 104% 2%, rgba(var(--riq-primary-3-rgb),.08), transparent 55%), radial-gradient(820px 640px at 50% 116%, rgba(59,130,246,.06), transparent 55%), #f6f6fc";
 
     const pageShell = { minHeight: "100vh", background: auroraBg, color: ink, paddingBottom: 64 };
     const container = { maxWidth: 1080, margin: "0 auto", padding: "0 22px", display: "flex", flexDirection: "column", gap: 22, boxSizing: "border-box" };
     const greetRow = { display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 16, flexWrap: "wrap", marginTop: 28 };
     const greetH = { margin: 0, fontSize: 30, fontWeight: 800, letterSpacing: "-.02em", lineHeight: 1.08, color: ink, fontFamily: "var(--riq-display, inherit)" };
     const greetSub = { margin: "7px 0 0", fontSize: 14.5, color: sub, fontWeight: 500 };
-    const ghostBtn = { fontSize: 13, fontWeight: 700, color: D ? "#c4b5fd" : "#6d28d9", padding: "9px 15px", borderRadius: 11, border: "1px solid " + (D ? "rgba(167,139,250,.3)" : "rgba(124,58,237,.25)"), background: D ? "rgba(124,58,237,.08)" : "rgba(124,58,237,.05)", cursor: "pointer", whiteSpace: "nowrap" };
+    const ghostBtn = { fontSize: 13, fontWeight: 700, color: D ? "#c4b5fd" : "#6d28d9", padding: "9px 15px", borderRadius: 11, border: "1px solid " + (D ? "rgba(167,139,250,.3)" : "rgba(var(--riq-accent-rgb),.25)"), background: D ? "rgba(var(--riq-accent-rgb),.08)" : "rgba(var(--riq-accent-rgb),.05)", cursor: "pointer", whiteSpace: "nowrap" };
 
-    const hero = { position: "relative", overflow: "hidden", borderRadius: 26, padding: "30px 30px", background: "linear-gradient(135deg, #5b21b6 0%, #7c3aed 42%, #c026d3 100%)", boxShadow: "0 30px 70px -34px rgba(124,58,237,.75)", color: "#fff" };
+    const hero = { position: "relative", overflow: "hidden", borderRadius: 26, padding: "30px 30px", background: "linear-gradient(135deg, #5b21b6 0%, var(--riq-accent) 42%, #c026d3 100%)", boxShadow: "0 30px 70px -34px rgba(var(--riq-accent-rgb),.75)", color: "#fff" };
     const heroGlow = { position: "absolute", top: -120, right: -80, width: 360, height: 360, borderRadius: "50%", background: "radial-gradient(circle, rgba(255,255,255,.22), transparent 70%)", pointerEvents: "none" };
     const heroCol = { flex: 1, minWidth: 0 };
     const heroInner = { position: "relative", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 24, flexWrap: "wrap" };
@@ -60,7 +60,7 @@ export function HomeScreen(props) {
     const statLbl = { fontSize: 12, fontWeight: 600, color: sub, marginTop: 6, textTransform: "uppercase", letterSpacing: ".04em" };
     const heatTile = { background: glassBg, border: "1px solid " + line, borderRadius: 18, padding: "16px 18px", boxShadow: cardSh, backdropFilter: "blur(12px)", display: "flex", gap: 5, alignItems: "center", flexWrap: "wrap" };
     const weekCol = { display: "flex", flexDirection: "column", gap: 4 };
-    const cellStyle = function (c) { return { width: 13, height: 13, borderRadius: 4, background: c.a ? "linear-gradient(135deg,#7c3aed,#c026d3)" : (D ? "rgba(255,255,255,.08)" : "rgba(16,24,40,.06)"), outline: c.t ? "2px solid " + (D ? "#c4b5fd" : "#7c3aed") : "none", outlineOffset: 1 }; };
+    const cellStyle = function (c) { return { width: 13, height: 13, borderRadius: 4, background: c.a ? "linear-gradient(135deg,var(--riq-accent),#c026d3)" : (D ? "rgba(255,255,255,.08)" : "rgba(16,24,40,.06)"), outline: c.t ? "2px solid " + (D ? "#c4b5fd" : "var(--riq-accent)") : "none", outlineOffset: 1 }; };
 
     const sectionLbl = { fontSize: 12.5, fontWeight: 800, letterSpacing: ".1em", textTransform: "uppercase", color: sub, margin: "6px 0 -6px" };
     const card = { background: glassBg, border: "1px solid " + line, borderRadius: 22, padding: 22, boxShadow: cardSh, backdropFilter: "blur(12px)" };
@@ -71,10 +71,10 @@ export function HomeScreen(props) {
     const h3s = { margin: 0, fontSize: 17, fontWeight: 800, color: ink, fontFamily: "var(--riq-display, inherit)" };
     const dayRow = { display: "flex", gap: 10, marginTop: 14, overflowX: "auto", paddingBottom: 4 };
     const dayChip = { flexShrink: 0, minWidth: 124, textAlign: "left", padding: "12px 14px", borderRadius: 14, border: "1px solid " + line, background: D ? "rgba(255,255,255,.03)" : "#fff", cursor: "pointer" };
-    const dayName = { fontSize: 12, fontWeight: 800, color: D ? "#c4b5fd" : "#7c3aed", textTransform: "uppercase", letterSpacing: ".05em" };
+    const dayName = { fontSize: 12, fontWeight: 800, color: D ? "#c4b5fd" : "var(--riq-accent)", textTransform: "uppercase", letterSpacing: ".05em" };
     const dayTask = { fontSize: 12.5, color: sub, marginTop: 5, lineHeight: 1.4 };
     const toggleRow = { display: "flex", justifyContent: "flex-end" };
-    const toggleBtn = { fontSize: 12.5, fontWeight: 700, color: D ? "#c4b5fd" : "#6d28d9", padding: "8px 14px", borderRadius: 11, border: "1px solid " + (D ? "rgba(167,139,250,.3)" : "rgba(124,58,237,.25)"), background: "transparent", cursor: "pointer" };
+    const toggleBtn = { fontSize: 12.5, fontWeight: 700, color: D ? "#c4b5fd" : "#6d28d9", padding: "8px 14px", borderRadius: 11, border: "1px solid " + (D ? "rgba(167,139,250,.3)" : "rgba(var(--riq-accent-rgb),.25)"), background: "transparent", cursor: "pointer" };
 
     const subjGrid = { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(216px, 1fr))", gap: 14 };
     const subjCard = { position: "relative", textAlign: "left", padding: 18, borderRadius: 20, border: "1px solid " + line, background: glassBg, boxShadow: cardSh, backdropFilter: "blur(12px)", cursor: "pointer", transition: "transform .18s cubic-bezier(.22,1,.36,1), box-shadow .18s ease", display: "flex", flexDirection: "column" };
@@ -92,16 +92,16 @@ export function HomeScreen(props) {
     const personalGrid = { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 12, marginTop: 16 };
     const personalCard = { textAlign: "left", padding: 16, borderRadius: 16, border: "1px solid " + line, background: D ? "rgba(255,255,255,.03)" : "#fff", cursor: "pointer", transition: "transform .16s ease" };
     const emptyNote = { fontSize: 13, color: sub, marginTop: 14, lineHeight: 1.5 };
-    const adminBar = { borderRadius: 16, border: "1px solid " + (D ? "rgba(167,139,250,.3)" : "#ddd6fe"), background: D ? "rgba(124,58,237,.08)" : "rgba(124,58,237,.05)", overflow: "hidden" };
+    const adminBar = { borderRadius: 16, border: "1px solid " + (D ? "rgba(167,139,250,.3)" : "#ddd6fe"), background: D ? "rgba(var(--riq-accent-rgb),.08)" : "rgba(var(--riq-accent-rgb),.05)", overflow: "hidden" };
     const adminHead = { padding: "10px 16px", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", borderBottom: "1px solid " + (D ? "rgba(167,139,250,.25)" : "#ddd6fe") };
     const adminTag = { fontSize: 12, fontWeight: 800, color: D ? "#c4b5fd" : "#6d28d9", textTransform: "uppercase", letterSpacing: ".06em" };
     const adminHint = { fontSize: 12.5, color: sub };
     const adminBtns = { padding: "12px 16px", display: "flex", gap: 10, flexWrap: "wrap" };
-    const adminBtn = { fontSize: 12, fontWeight: 700, padding: "6px 14px", borderRadius: 9, border: "1.5px solid " + (D ? "#a78bfa" : "#7c3aed"), background: "transparent", color: D ? "#c4b5fd" : "#6d28d9", cursor: "pointer" };
+    const adminBtn = { fontSize: 12, fontWeight: 700, padding: "6px 14px", borderRadius: 9, border: "1.5px solid " + (D ? "#a78bfa" : "var(--riq-accent)"), background: "transparent", color: D ? "#c4b5fd" : "#6d28d9", cursor: "pointer" };
 
-    const liftIn = function (e) { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 26px 56px -30px rgba(124,58,237,.5)"; };
+    const liftIn = function (e) { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 26px 56px -30px rgba(var(--riq-accent-rgb),.5)"; };
     const liftOut = function (e) { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = cardSh; };
-    const choiceIn = function (e) { e.currentTarget.style.borderColor = D ? "#a78bfa" : "#7c3aed"; e.currentTarget.style.transform = "translateY(-2px)"; };
+    const choiceIn = function (e) { e.currentTarget.style.borderColor = D ? "#a78bfa" : "var(--riq-accent)"; e.currentTarget.style.transform = "translateY(-2px)"; };
     const choiceOut = function (e) { e.currentTarget.style.borderColor = line; e.currentTarget.style.transform = ""; };
 
     const _subjReadiness = subjects.map(function (s) { try { return calculateExamReadiness(s.id, allSections, fcHist, stats, calibrationData[s.id], timetableExams)?.score ?? 0; } catch (e) { return 0; } });
@@ -253,7 +253,7 @@ export function HomeScreen(props) {
               { icon: "🤝", label: "Social", desc: "Friends, groups & leaderboards", on: () => setScreen("friends") },
             ].map((it) => (
               <button key={it.label} style={subjCard} onClick={it.on} onMouseEnter={liftIn} onMouseLeave={liftOut}>
-                <div style={subjIcon("#7c3aed")}>{it.icon}</div>
+                <div style={subjIcon("var(--riq-accent)")}>{it.icon}</div>
                 <div style={subjName}>{it.label}</div>
                 <div style={choiceDesc}>{it.desc}</div>
               </button>

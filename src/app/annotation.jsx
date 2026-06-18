@@ -122,7 +122,7 @@ export function ImageAnnotator({ value, onChange, D }) {
             }}
             title={t.tip}
             style={{
-              ...B(tool === t.id ? "#7c3aed" : "transparent", tool !== t.id, {
+              ...B(tool === t.id ? "var(--riq-accent)" : "transparent", tool !== t.id, {
                 fontSize: 13,
                 padding: "4px 10px",
                 borderColor: D ? "#374151" : "#d1d5db",
@@ -145,7 +145,7 @@ export function ImageAnnotator({ value, onChange, D }) {
                 borderRadius: "50%",
                 background: c,
                 border:
-                  color === c ? "2px solid #7c3aed" : "2px solid transparent",
+                  color === c ? "2px solid var(--riq-accent)" : "2px solid transparent",
                 cursor: "pointer",
                 flexShrink: 0,
                 outline: "none",
@@ -369,7 +369,7 @@ export function ImagePanel({ images = [], onChange, D }) {
         <button
           onClick={() => fileRef.current?.click()}
           style={{
-            ...B("#7c3aed", true, { fontSize: 11, padding: "4px 10px" }),
+            ...B("var(--riq-accent)", true, { fontSize: 11, padding: "4px 10px" }),
           }}
         >
           ＋ Upload
@@ -405,7 +405,7 @@ export function ImagePanel({ images = [], onChange, D }) {
               <button
                 onClick={() => setAI(annotatingIdx === i ? null : i)}
                 style={{
-                  ...B("#7c3aed", true, { fontSize: 11, padding: "4px 10px" }),
+                  ...B("var(--riq-accent)", true, { fontSize: 11, padding: "4px 10px" }),
                 }}
               >
                 {annotatingIdx === i ? "✓Done" : "Annotate"}

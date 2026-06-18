@@ -5,6 +5,7 @@ import { generateProgressReport } from "./progress.js";
 import { loadGroup, upsertGroupScore } from "./social.jsx";
 import { ALL_SUBJECTS } from "./subjects.js";
 import { C, I, mu, tx } from "./ui.jsx";
+import { ThemePicker } from "./themePicker.jsx";
 
 export function Header({
   user,
@@ -52,7 +53,7 @@ export function Header({
     [menuOpen],
   );
   var line = D ? "rgba(255,255,255,.08)" : "rgba(16,24,40,.08)";
-  var GRAD = "linear-gradient(120deg,#5b54f0,#8b5cf6,#d946ef)";
+  var GRAD = "linear-gradient(120deg,var(--riq-primary),var(--riq-primary-2),var(--riq-primary-3))";
   var softBg = D ? "rgba(255,255,255,.05)" : "rgba(16,24,40,.04)";
   var barStyle = {
     background: D ? "rgba(10,10,20,.72)" : "rgba(255,255,255,.72)",
@@ -90,8 +91,8 @@ export function Header({
     gap: 6,
     fontSize: 12,
     fontWeight: 600,
-    color: D ? "#c4b5fd" : "#7c3aed",
-    background: D ? "rgba(124,58,237,.18)" : "rgba(124,58,237,.08)",
+    color: D ? "#c4b5fd" : "var(--riq-accent)",
+    background: D ? "rgba(var(--riq-accent-rgb),.18)" : "rgba(var(--riq-accent-rgb),.08)",
     borderRadius: 999,
     padding: "4px 11px",
     flexShrink: 0,
@@ -158,7 +159,7 @@ export function Header({
     fontWeight: 700,
     cursor: "pointer",
     flexShrink: 0,
-    boxShadow: "0 6px 16px -6px rgba(124,58,237,.7)",
+    boxShadow: "0 6px 16px -6px rgba(var(--riq-accent-rgb),.7)",
   };
   var focusBtnIcon = { fontSize: 13, lineHeight: 1 };
   var userChip = {
@@ -253,7 +254,7 @@ export function Header({
         : D
           ? "rgba(255,255,255,.06)"
           : "rgba(16,24,40,.05)",
-      color: active ? "#fff" : D ? "#c4b5fd" : "#7c3aed",
+      color: active ? "#fff" : D ? "#c4b5fd" : "var(--riq-accent)",
     };
   }
   return (
@@ -391,7 +392,7 @@ export function AccountScreen({
     <div
       style={{
         minHeight: "100vh",
-        background: D ? "radial-gradient(1200px 820px at 12% -12%, rgba(124,58,237,.20), transparent 60%), radial-gradient(1000px 720px at 102% 4%, rgba(217,70,239,.14), transparent 55%), radial-gradient(900px 700px at 50% 120%, rgba(59,130,246,.10), transparent 55%), #0a0a14" : "radial-gradient(1100px 780px at 10% -10%, rgba(124,58,237,.10), transparent 60%), radial-gradient(940px 660px at 104% 2%, rgba(217,70,239,.08), transparent 55%), radial-gradient(820px 640px at 50% 116%, rgba(59,130,246,.06), transparent 55%), #f6f6fc",
+        background: D ? "radial-gradient(1200px 820px at 12% -12%, rgba(var(--riq-accent-rgb),.20), transparent 60%), radial-gradient(1000px 720px at 102% 4%, rgba(var(--riq-primary-3-rgb),.14), transparent 55%), radial-gradient(900px 700px at 50% 120%, rgba(59,130,246,.10), transparent 55%), #0a0a14" : "radial-gradient(1100px 780px at 10% -10%, rgba(var(--riq-accent-rgb),.10), transparent 60%), radial-gradient(940px 660px at 104% 2%, rgba(var(--riq-primary-3-rgb),.08), transparent 55%), radial-gradient(820px 640px at 50% 116%, rgba(59,130,246,.06), transparent 55%), #f6f6fc",
         padding: 24,
         overflowY: "auto",
       }}
@@ -440,7 +441,7 @@ export function AccountScreen({
                 width: 44,
                 height: 44,
                 borderRadius: "50%",
-                background: "linear-gradient(135deg,#7c3aed,#8b5cf6)",
+                background: "linear-gradient(135deg,var(--riq-accent),var(--riq-primary-2))",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -563,7 +564,7 @@ export function AccountScreen({
             onClick={handleSave}
             style={{
               width: "100%",
-              background: saved ? "#16a34a" : "#7c3aed",
+              background: saved ? "#16a34a" : "var(--riq-accent)",
               color: "#fff",
               border: "none",
               borderRadius: 12,
@@ -579,6 +580,7 @@ export function AccountScreen({
           </button>
         </div>
         {}
+        <ThemePicker D={D} />
         <div style={{ ...C(D), padding: 22, marginBottom: 18 }}>
           <div
             style={{
@@ -612,9 +614,9 @@ export function AccountScreen({
               style={{
                 padding: "8px 18px",
                 borderRadius: 10,
-                border: "1.5px solid #7c3aed",
+                border: "1.5px solid var(--riq-accent)",
                 background: "transparent",
-                color: "#7c3aed",
+                color: "var(--riq-accent)",
                 fontWeight: 600,
                 fontSize: 13,
                 cursor: "pointer",
@@ -773,9 +775,9 @@ export function AccountScreen({
             style={{
               padding: "7px 12px",
               borderRadius: 9,
-              border: "1px solid #7c3aed",
+              border: "1px solid var(--riq-accent)",
               background: "transparent",
-              color: "#7c3aed",
+              color: "var(--riq-accent)",
               fontSize: 12,
               cursor: "pointer",
             }}
@@ -859,7 +861,7 @@ export function AdminBar({ D, actions }) {
         padding: "8px 12px",
         borderRadius: 10,
         background: D ? "rgba(99,102,241,.12)" : "#f5f3ff",
-        border: "1.5px solid #7c3aed",
+        border: "1.5px solid var(--riq-accent)",
         marginBottom: 16,
         alignItems: "center",
         flexWrap: "wrap",
@@ -869,7 +871,7 @@ export function AdminBar({ D, actions }) {
         style={{
           fontSize: 10,
           fontWeight: 800,
-          color: "#7c3aed",
+          color: "var(--riq-accent)",
           letterSpacing: "0.08em",
           textTransform: "uppercase",
           marginRight: 4,
@@ -886,8 +888,8 @@ export function AdminBar({ D, actions }) {
               fontSize: 12,
               padding: "5px 14px",
               borderRadius: 7,
-              border: "1.5px solid #7c3aed",
-              background: "#7c3aed",
+              border: "1.5px solid var(--riq-accent)",
+              background: "var(--riq-accent)",
               color: "#fff",
               cursor: "pointer",
               fontWeight: 600,
