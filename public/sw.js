@@ -1,7 +1,7 @@
 // ReviseIQ service worker - network-first, self-updating.
 // Bumping CACHE forces a fresh cache; old caches are purged on activate so a
 // new deploy is always picked up instead of frozen at the first cached bundle.
-const CACHE = "reviseiq-shell-v5";
+const CACHE = "reviseiq-shell-v6";
 const ASSET_RE = /\.(?:js|css|woff2?|ttf|otf|png|jpe?g|svg|gif|webp|ico)$/;
 
 self.addEventListener("install", () => {

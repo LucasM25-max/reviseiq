@@ -44,6 +44,15 @@ export function SubjectScreen(props) {
               gap: 16,
               marginBottom: 20,
               flexWrap: "wrap",
+              padding: "22px 24px",
+              borderRadius: 20,
+              border: "1.5px solid " + bd2,
+              background: D
+                ? "linear-gradient(135deg, rgba(var(--riq-accent-rgb),.16), rgba(var(--riq-primary-3-rgb),.05) 60%), #12121d"
+                : "linear-gradient(135deg, rgba(var(--riq-accent-rgb),.08), rgba(var(--riq-primary-3-rgb),.03) 60%), #ffffff",
+              boxShadow: D
+                ? "0 14px 36px -14px rgba(0,0,0,.6)"
+                : "0 16px 40px -16px rgba(var(--riq-accent-rgb),.4)",
             }}
           >
             <div
@@ -1010,13 +1019,13 @@ grade${parseInt(target) - parseInt(predicted) !== 1 ? "s" : ""} to go`}
                               style={{
                                 width: "100%",
                                 textAlign: "left",
-                                padding: "14px 16px",
-                                borderRadius: 14,
+                                padding: "16px 18px",
+                                borderRadius: 16,
                                 border: "1.5px solid" + bd2,
                                 background: D ? "rgba(255,255,255,.03)" : "#ffffff",
-                                boxShadow: D ? "0 1px 3px rgba(0,0,0,.35)" : "0 2px 6px rgba(16,24,40,.06)",
+                                boxShadow: D ? "0 1px 3px rgba(0,0,0,.35)" : "0 4px 14px -6px rgba(16,24,40,.12)",
                                 cursor: "pointer",
-                                transition: "all .15s",
+                                transition: "all .18s",
                                 color: tx(D),
                               }}
                               onMouseEnter={function (e) {
