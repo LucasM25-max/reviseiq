@@ -192,17 +192,10 @@ export function registerReviseIQServiceWorker() {
         })
         .catch(function () {});
     }
-    if (window.caches && caches.keys) {
-      caches
-        .keys()
-        .then(function (keys) {
-          keys.forEach(function (k) {
-            if (k !== "reviseiq-shell-v2")
-              caches.delete(k).catch(function () {});
-          });
-        })
-        .catch(function () {});
-    }
+    // Old caches are purged by the service worker's own activate handler,
+    // which keeps only the current versioned cache. We intentionally do NOT
+    // delete caches by a hardcoded name here (that name went stale and could
+    // wipe the live cache on every load).
     // Real file served at origin root (proper scope + MIME), network-first.
     navigator.serviceWorker
       .register("/sw.js")
@@ -214,5 +207,13 @@ export function registerReviseIQServiceWorker() {
         }
       })
       .catch(function () {});
+    // Auto-refresh stale clients: when a freshly deployed worker activates and
+    // takes control, reload once so the user immediately gets the new build
+    // instead of a frozen, cached app shell.
+    navigator.serviceWorker.addEventListener("controllerchange", function () {
+      if (window.__riqSWReloaded) return;
+      window.__riqSWReloaded = true;
+      window.location.reload();
+    });
   } catch (_) {}
 }
