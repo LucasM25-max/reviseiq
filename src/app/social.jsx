@@ -350,14 +350,14 @@ export function GlobalLeaderboard({ user, D }) {
   if (loading)
     return (
       <div style={rootStyle}>
-        <p style={titleStyle}>\uD83C\uDF0D Global Leaderboard</p>
+        <p style={titleStyle}>🌍 Global Leaderboard</p>
         <div style={emptyStyle}>Loading global leaderboard\u2026</div>
       </div>
     );
   if (!entries.length)
     return (
       <div style={rootStyle}>
-        <p style={titleStyle}>\uD83C\uDF0D Global Leaderboard</p>
+        <p style={titleStyle}>🌍 Global Leaderboard</p>
         <div style={emptyStyle}>
           No students ranked yet \u2014 start studying to claim the top spot!
         </div>
@@ -366,7 +366,7 @@ export function GlobalLeaderboard({ user, D }) {
   const top = entries.slice(0, 100);
   return (
     <div style={rootStyle}>
-      <p style={titleStyle}>\uD83C\uDF0D Global Leaderboard</p>
+      <p style={titleStyle}>🌍 Global Leaderboard</p>
       <div style={listStyle}>
         {top.map((e, i) => {
           const isMe = e.username === user;

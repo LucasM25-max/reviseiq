@@ -26,6 +26,7 @@ import { ContentBlock, SmartNoteCard } from "./richText.jsx";
 import { calcLongestStreak, calcStreak, ensureCardVariantCached, generateTransferQuestion, generateWeeklyPlan, getLadderLevel, maybeUseVariantText, selectAdaptiveQuestions, todayStr, updateAdaptiveLevel, updateLadderLevel, verifyExplanation } from "./scheduling.js";
 import { SubjectSelectionScreen } from "./searchOnboard.jsx";
 import { SchoolLeaderboard, GlobalLeaderboard, mergeTopics, upsertGroupScore } from "./social.jsx";
+import { LeaderboardHub } from "./leaderboardHub.jsx";
 import { GENERATED_CONTENT, getGeneratedTopics } from "./generatedContent.js";
 import { getNextGoal, logLearningEvent, loadLearningEvents } from "./learningEngine.js";
 import { CalibrationGauge, ForecastBar, MasteryRing, MemoryDecayChart, PastPapersTab, PostSessionReflection, SRInfoTooltip, SessionGoalModal, StrategyRecommendation, StudyJournalTab } from "./studyWidgets.jsx";
@@ -2259,59 +2260,18 @@ export default function App() {
     );
   if (screen === "friends")
     return (
-      <div
-        style={{ minHeight: "100vh", background: bg, color: tx(D) }}
-        className="fade-in"
-      >
+      <div className="fade-in">
         <Header {...hProps} />
-        <div style={{ maxWidth: 700, margin: "0 auto", padding: "32px 24px" }}>
-          <button
-            onClick={() => setScreen("home")}
-            style={{
-              fontSize: 13,
-              color: mu(D),
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              marginBottom: 20,
-            }}
-          >
-            {" "}
-            Home
-          </button>
-          <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>
-            Leaderboards
-          </h2>
-          <p style={{ fontSize: 13, color: mu(D), marginBottom: 24 }}>
-            See how you rank at your school and with friends
-          </p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ ...C(D), padding: 22 }}>
-              <GlobalLeaderboard user={user} D={D} />
-              <SchoolLeaderboard user={user} school={userSchool} D={D} />
-              {!userSchool && (
-                <p style={{ fontSize: 12, color: mu(D), marginTop: 10 }}>
-                  You can add your school in Account Settings.
-                </p>
-              )}
-            </div>
-            <div style={{ ...C(D), padding: 22 }}>
-              <p
-                style={{
-                  fontSize: 13,
-                  fontWeight: 700,
-                  marginBottom: 12,
-                  color: tx(D),
-                }}
-              >
-                Friends
-              </p>
-              <FriendsPanel user={user} D={D} />
-            </div>
-          </div>
-        </div>
+        <LeaderboardHub
+          user={user}
+          userDisplayName={userDisplayName}
+          userSchool={userSchool}
+          D={D}
+          onHome={() => setScreen("home")}
+        />
       </div>
     );
+
   if (screen === "study") {
     const _dnk = D ? "#eef1fb" : "#0f1729";
     const _sub = D ? "#9aa3c2" : "#5b6478";

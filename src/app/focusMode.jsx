@@ -1,5 +1,6 @@
 import React from "react";
 import { resolveVar } from "./themes.js";
+import { createPortal } from "react-dom";
 
 function stripHtml(s) {
   return (s == null ? "" : String(s)).replace(/<[^>]*>/g, "").trim();
@@ -438,7 +439,7 @@ export function FocusMode({ D = false, cards = [], section, subj, onExit }) {
     const confirmTitle = { fontSize: "18px", fontWeight: 800, marginBottom: "6px" };
     const confirmSub = { fontSize: "14px", color: muted, lineHeight: 1.5 };
     const confirmOverlay = { ...overlayStyle, alignItems: "center", justifyContent: "center" };
-    return (
+    return createPortal(
       <div style={confirmOverlay}>
         <div style={confirmCard}>
           <div style={breakEmoji}>🚪</div>
@@ -456,7 +457,8 @@ export function FocusMode({ D = false, cards = [], section, subj, onExit }) {
             </button>
           </div>
         </div>
-      </div>
+      </div>,
+      document.body,
     );
   }
 
@@ -476,7 +478,7 @@ export function FocusMode({ D = false, cards = [], section, subj, onExit }) {
   }
   const untilLong = perLong - doneInCycle === 0 ? perLong : perLong - doneInCycle;
 
-  return (
+  return createPortal(
     <div style={overlayStyle}>
       <div style={topBar}>
         <div style={subjTag}>
@@ -669,6 +671,7 @@ export function FocusMode({ D = false, cards = [], section, subj, onExit }) {
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
