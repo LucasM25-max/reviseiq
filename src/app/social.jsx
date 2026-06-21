@@ -272,6 +272,174 @@ export function SchoolLeaderboard({ user, school, D }) {
   );
 }
 
+export function useGlobalLeaderboard(user) {
+  const [entries, setEntries] = useState([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await window.storage.list("gcse:lb:", true);
+        if (!res || !res.keys || !res.keys.length) {
+          if (!cancelled) setLoading(false);
+          return;
+        }
+        const fetched = await Promise.allSettled(
+          res.keys.map((k) => window.storage.get(k, true)),
+        );
+        const all = fetched
+          .filter((r) => r.status === "fulfilled" && r.value && r.value.value)
+          .map((r) => {
+            try {
+              return JSON.parse(r.value.value);
+            } catch (e) {
+              return null;
+            }
+          })
+          .filter((e) => e && e.username);
+        let activeUsernames = new Set();
+        try {
+          const ar = await window.storage.get("gcse:accounts", true);
+          if (ar && ar.value) {
+            const accs = JSON.parse(ar.value);
+            Object.keys(accs).forEach((k) =>
+              activeUsernames.add(k.toLowerCase()),
+            );
+          }
+        } catch (_) {}
+        const filtered =
+          activeUsernames.size > 0
+            ? all.filter((e) => activeUsernames.has(e.username.toLowerCase()))
+            : all;
+        const seen = {};
+        const deduped = [];
+        filtered.forEach((e) => {
+          const key = e.username.toLowerCase();
+          if (!seen[key]) {
+            seen[key] = true;
+            deduped.push(e);
+          }
+        });
+        deduped.sort((a, b) => (b.score || 0) - (a.score || 0));
+        if (!cancelled) setEntries(deduped);
+      } catch (_) {}
+      if (!cancelled) setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+  return { entries, loading };
+}
+
+export function GlobalLeaderboard({ user, D }) {
+  const { entries, loading } = useGlobalLeaderboard(user);
+  const mu2 = D ? "#8896b3" : "#9ca3af";
+  const tx2 = D ? "#e8ecf4" : "#111827";
+  const rootStyle = { marginBottom: 18 };
+  const titleStyle = {
+    fontSize: 13,
+    fontWeight: 800,
+    letterSpacing: ".04em",
+    textTransform: "uppercase",
+    color: mu2,
+    margin: "0 0 10px",
+  };
+  const listStyle = { display: "flex", flexDirection: "column", gap: 6 };
+  const emptyStyle = { color: mu2, fontSize: 13, padding: "6px 0" };
+  if (loading)
+    return (
+      <div style={rootStyle}>
+        <p style={titleStyle}>\uD83C\uDF0D Global Leaderboard</p>
+        <div style={emptyStyle}>Loading global leaderboard\u2026</div>
+      </div>
+    );
+  if (!entries.length)
+    return (
+      <div style={rootStyle}>
+        <p style={titleStyle}>\uD83C\uDF0D Global Leaderboard</p>
+        <div style={emptyStyle}>
+          No students ranked yet \u2014 start studying to claim the top spot!
+        </div>
+      </div>
+    );
+  const top = entries.slice(0, 100);
+  return (
+    <div style={rootStyle}>
+      <p style={titleStyle}>\uD83C\uDF0D Global Leaderboard</p>
+      <div style={listStyle}>
+        {top.map((e, i) => {
+          const isMe = e.username === user;
+          const medal = i === 0 ? "\uD83E\uDD47" : i === 1 ? "\uD83E\uDD48" : i === 2 ? "\uD83E\uDD49" : null;
+          const name = e.displayName || e.username || "";
+          const rowBg = isMe
+            ? D
+              ? "rgba(99,102,241,.2)"
+              : "#f5f3ff"
+            : D
+              ? "#1c1d30"
+              : "#f9fafb";
+          const rowStyle = {
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            padding: "7px 12px",
+            borderRadius: 8,
+            background: rowBg,
+            border: isMe
+              ? "1.5px solid var(--riq-accent)"
+              : "1.5px solid transparent",
+          };
+          const rankStyle = {
+            width: 28,
+            textAlign: "center",
+            fontWeight: 800,
+            fontSize: 14,
+            flexShrink: 0,
+          };
+          const rankNumStyle = { color: mu2, fontSize: 12, fontWeight: 700 };
+          const nameStyle = {
+            flex: 1,
+            fontWeight: isMe ? 800 : 600,
+            fontSize: 14,
+            color: tx2,
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          };
+          const schoolStyle = {
+            fontSize: 11,
+            color: mu2,
+            maxWidth: 130,
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          };
+          const ptsStyle = {
+            fontWeight: 800,
+            fontSize: 13,
+            color: "var(--riq-accent)",
+            flexShrink: 0,
+          };
+          return (
+            <div key={e.username} style={rowStyle}>
+              <span style={rankStyle}>
+                {medal || <span style={rankNumStyle}>#{i + 1}</span>}
+              </span>
+              <span style={nameStyle}>
+                {name}
+                {isMe ? " (you)" : ""}
+              </span>
+              {e.school ? <span style={schoolStyle}>{e.school}</span> : null}
+              <span style={ptsStyle}>{e.score || 0} pts</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export function mergeTopics(baseTopics, boardCustom, boardExtras) {
   function expandAdminTopic(cs) {
     const subs = cs.subtopics || [];

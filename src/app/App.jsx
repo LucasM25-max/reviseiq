@@ -25,7 +25,7 @@ import { AO_COLORS, autoHints, detectAOLabel, detectCW, detectCardType } from ".
 import { ContentBlock, SmartNoteCard } from "./richText.jsx";
 import { calcLongestStreak, calcStreak, ensureCardVariantCached, generateTransferQuestion, generateWeeklyPlan, getLadderLevel, maybeUseVariantText, selectAdaptiveQuestions, todayStr, updateAdaptiveLevel, updateLadderLevel, verifyExplanation } from "./scheduling.js";
 import { SubjectSelectionScreen } from "./searchOnboard.jsx";
-import { SchoolLeaderboard, mergeTopics, upsertGroupScore } from "./social.jsx";
+import { SchoolLeaderboard, GlobalLeaderboard, mergeTopics, upsertGroupScore } from "./social.jsx";
 import { GENERATED_CONTENT, getGeneratedTopics } from "./generatedContent.js";
 import { getNextGoal, logLearningEvent, loadLearningEvents } from "./learningEngine.js";
 import { CalibrationGauge, ForecastBar, MasteryRing, MemoryDecayChart, PastPapersTab, PostSessionReflection, SRInfoTooltip, SessionGoalModal, StrategyRecommendation, StudyJournalTab } from "./studyWidgets.jsx";
@@ -2287,6 +2287,7 @@ export default function App() {
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div style={{ ...C(D), padding: 22 }}>
+              <GlobalLeaderboard user={user} D={D} />
               <SchoolLeaderboard user={user} school={userSchool} D={D} />
               {!userSchool && (
                 <p style={{ fontSize: 12, color: mu(D), marginTop: 10 }}>
